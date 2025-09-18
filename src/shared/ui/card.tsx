@@ -1,10 +1,6 @@
 import * as React from "react"
 
-<<<<<<<< HEAD:src/shared/ui/card.tsx
 import { cn } from "@/shared/lib/utils"
-========
-import { cn } from "@/shared/utils/lib/utils"
->>>>>>>> main:src/shared/components/ui/card.tsx
 
 const Card = React.forwardRef<
   HTMLDivElement,
