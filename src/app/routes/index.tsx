@@ -3,28 +3,53 @@ import { lazy, Suspense } from 'react';
 
 import { ProtectedRoute } from '@/auth/components/ProtectedRoute';
 import { GuestRoute } from '@/auth/components/GuestRoute';
+import { navigationConfig } from '@/app/config/navigation.config';
 
+// Lazy imports
 const RootLayout = lazy(() => import('@/app/layouts/RootLayout'));
 const Register = lazy(() => import('@/auth/pages/Register'));
 const Dashboard = lazy(() => import('@/domains/dashboard/pages/Dashboard'));
+const Trainings = lazy(() => import('@/domains/trainings/pages/Trainings'));
+const Students = lazy(() => import('@/domains/students/pages/Students'));
 const NotFound = lazy(() => import('@/shared/pages/NotFound'));
-{/* 
-	GUEST ROUTE - NO AUTH
-	<GuestRoute>
-		<Suspense fallback={<div>Loading...</div>}>
-			<Register />
-		</Suspense>
-	</GuestRoute> 
-*/}
 
-{/* 
-	GUEST ROUTE - NO AUTH
-	<ProtectedRoute>
-		<Suspense fallback={<div>Loading...</div>}>
-			<Dashboard />
-		</Suspense>
-	</ProtectedRoute>
-*/}
+const routeComponents = {
+  '/dashboard': Dashboard,
+  '/register': Register,
+  '/trainings': Trainings,
+  '/students' : Students,
+  // '/calendar': Calendar,
+  // '/settings': Settings,
+} as const;
+
+function generateRouteElement(href: string, requiresAuth?: boolean, guestOnly?: boolean) {
+  const Component = routeComponents[href as keyof typeof routeComponents];
+  
+  if (!Component) {
+    return (
+      <div className="p-4">
+        <h1>Página en desarrollo</h1>
+        <p>La página {href} está en construcción.</p>
+      </div>
+    );
+  }
+
+  const element = (
+    <Suspense fallback={<div>Loading...</div>}>
+      <Component />
+    </Suspense>
+  );
+
+  if (requiresAuth) {
+    return <ProtectedRoute>{element}</ProtectedRoute>;
+  }
+  
+  if (guestOnly) {
+    return <GuestRoute>{element}</GuestRoute>;
+  }
+
+  return element;
+}
 
 export const router = createBrowserRouter([
   {
@@ -44,26 +69,12 @@ export const router = createBrowserRouter([
         index: true,
         element: <Navigate to="/dashboard" replace />,
       },
-      {
-        path: 'dashboard',
-        element: (
-          <ProtectedRoute>
-            <Suspense fallback={<div>Loading...</div>}>
-              <Dashboard />
-            </Suspense>
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'register',
-        element: (
-          <GuestRoute>
-            <Suspense fallback={<div>Loading...</div>}>
-              <Register />
-            </Suspense>
-          </GuestRoute>
-        ),
-      },
+      
+      ...navigationConfig.map((navItem) => ({
+        path: navItem.href.replace('/', ''), 
+        element: generateRouteElement(navItem.href, navItem.requiresAuth, navItem.guestOnly)
+      })),
+      
       {
         path: '*',
         element: <Navigate to="/" replace />,
@@ -71,3 +82,5 @@ export const router = createBrowserRouter([
     ],
   },
 ]);
+
+export { navigationConfig };

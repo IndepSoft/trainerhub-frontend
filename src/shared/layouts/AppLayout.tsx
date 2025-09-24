@@ -1,4 +1,4 @@
-import { AppSidebar } from "@/shared/components/AppSidebar"
+import { AppSidebar } from "@/shared/components/navigation/AppSidebar"
 import { SidebarInset, SidebarProvider } from "../ui/sidebar"
 import { Outlet } from "react-router-dom"
 
