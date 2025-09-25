@@ -23,7 +23,7 @@ export const navigationConfig: NavigationItem[] = [
     icon: Home,
     requiresAuth: true,        
     showInSidebar: true,
-    showInNavbar: true,
+    showInNavbar: false,
     showInMobile: true
   },
   {
@@ -43,7 +43,7 @@ export const navigationConfig: NavigationItem[] = [
     icon: Dumbbell,
     requiresAuth: true,        
     showInSidebar: true,
-    showInNavbar: true,
+    showInNavbar: false,
     showInMobile: true,
   },
   {
@@ -63,7 +63,7 @@ export const navigationConfig: NavigationItem[] = [
     icon: BarChart3,
     requiresAuth: true,
     showInSidebar: true,
-    showInNavbar: true,
+    showInNavbar: false,
     showInMobile: false
   },
   {

@@ -4,7 +4,6 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -14,28 +13,28 @@ import {
 import { GalleryVerticalEnd } from "lucide-react"
 import { getSidebarRoutes } from "@/app/config/navigation.config"
 import { NavItem } from "./NavItem"
+import { PersonCard } from "../PersonCard"
+import { Separator } from "@radix-ui/react-separator"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const sidebarRoutes = getSidebarRoutes()
 
   return (
     <Sidebar variant="inset" {...props}>
-      
+
       {/* Header */}
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <Link to="/">
-                <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                  <GalleryVerticalEnd className="size-4" />
-                </div>
-                <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-semibold">TrainerHub</span>
-                  <span className="text-xs">v1.0.0</span>
-                </div>
-              </Link>
+            <SidebarMenuButton size="lg" className="text-2xl font-bold tracking-wide justify-center" asChild>
+              <Link to="/">TrainerHub</Link>
             </SidebarMenuButton>
+          </SidebarMenuItem>
+          <Separator className="my-0.5" />
+          <SidebarMenuItem>
+            <div className="px-4 py-4 border-b border-t  from-blue-50 to-indigo-50">
+              <PersonCard />
+            </div>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
@@ -43,7 +42,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       {/* Contenido - Navegación Dinámica */}
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Aplicación</SidebarGroupLabel>
+          <Separator className="my-2" />
           <SidebarGroupContent>
             <nav className="space-y-1">
               {sidebarRoutes.map((route) => (
@@ -64,16 +63,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
       {/* Footer */}
       <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton>
-              <GalleryVerticalEnd className="size-4" />
-              <span>v1.0.0</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <div className="border-t bg-gray-50">
+          <button className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors text-sm font-medium text-gray-700">
+            <GalleryVerticalEnd className="size-4" />
+            <span>v1.0.0</span>
+          </button>
+        </div>
       </SidebarFooter>
-      
+
     </Sidebar>
   )
 }
