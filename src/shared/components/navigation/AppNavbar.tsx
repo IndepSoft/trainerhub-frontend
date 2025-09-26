@@ -9,7 +9,7 @@ export function AppNavbar() {
     const navbarRoutes = getNavbarRoutes()
 
     return (
-        <header className="h-16 bg-gray-200 border-b flex-shrink-0">
+        <header className="h-16 border-b flex-shrink-0">
             <div className="flex items-center h-16 px-4">
                 {/* Botón para toggle del sidebar */}
                 <SidebarTrigger className="mr-4 hidden md:flex" />
