@@ -7,6 +7,7 @@ import { GuestRoute } from '@/auth/components/GuestRoute';
 const RootLayout = lazy(() => import('@/app/layouts/RootLayout'));
 const Register = lazy(() => import('@/auth/pages/Register'));
 const Dashboard = lazy(() => import('@/domains/dashboard/pages/Dashboard'));
+const Gamification = lazy(() => import('@/domains/gamification/pages/Gamification'));
 const NotFound = lazy(() => import('@/shared/pages/NotFound'));
 {/* 
 	GUEST ROUTE - NO AUTH
@@ -50,6 +51,16 @@ export const router = createBrowserRouter([
           <ProtectedRoute>
             <Suspense fallback={<div>Loading...</div>}>
               <Dashboard />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'gamification',
+        element: (
+          <ProtectedRoute>
+            <Suspense fallback={<div>Loading...</div>}>
+              <Gamification />
             </Suspense>
           </ProtectedRoute>
         ),
