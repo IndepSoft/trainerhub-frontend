@@ -11,6 +11,7 @@ const Register = lazy(() => import('@/auth/pages/Register'));
 const Dashboard = lazy(() => import('@/domains/dashboard/pages/Dashboard'));
 const Trainings = lazy(() => import('@/domains/trainings/pages/Trainings'));
 const Students = lazy(() => import('@/domains/students/pages/Students'));
+const Gamification = lazy(() => import('@/domains/gamification/pages/Gamification'));
 const NotFound = lazy(() => import('@/shared/pages/NotFound'));
 
 const routeComponents = {
