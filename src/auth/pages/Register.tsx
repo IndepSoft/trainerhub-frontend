@@ -3,7 +3,6 @@ import { useAuthStore } from '@/app/stores/authStore'
 import { Button } from '@/shared/ui/button'
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardFooter,
@@ -80,7 +79,7 @@ export default function Register() {
                 </form>
               </CardContent>
               <CardFooter className="flex-col gap-2">
-                <Button type="submit" className="w-full">
+                <Button onClick={handleLogin} type="submit" className="w-full">
                   Login
                 </Button>
                 <Button variant="outline" className="w-full">

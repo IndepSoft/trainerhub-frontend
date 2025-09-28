@@ -21,6 +21,7 @@ const routeComponents = {
   '/register': Register,
   '/trainings': Trainings,
   '/students': Students,
+  '/gamification': Gamification,
   // '/calendar': Calendar,
   // '/settings': Settings,
 } as const

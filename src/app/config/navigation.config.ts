@@ -6,6 +6,7 @@ import {
   BarChart3,
   Calendar,
   Users,
+  Award,
 } from 'lucide-react'
 
 export interface NavigationItem {
@@ -59,6 +60,16 @@ export const navigationConfig: NavigationItem[] = [
     label: 'Calendario',
     href: '/calendar',
     icon: Calendar,
+    requiresAuth: true,
+    showInSidebar: true,
+    showInNavbar: false,
+    showInMobile: true,
+  },
+  {
+    id: 'gamification',
+    label: 'Logros',
+    href: '/gamification',
+    icon: Award,
     requiresAuth: true,
     showInSidebar: true,
     showInNavbar: false,
