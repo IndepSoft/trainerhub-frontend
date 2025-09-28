@@ -1,116 +1,123 @@
-import { type LucideIcon, Home, Dumbbell, Settings, BarChart3, Calendar, Users } from 'lucide-react'
+import {
+  type LucideIcon,
+  Home,
+  Dumbbell,
+  Settings,
+  BarChart3,
+  Calendar,
+  Users,
+} from 'lucide-react'
 
 export interface NavigationItem {
-	id: string
-	label: string
-	href: string
-	icon?: LucideIcon
-	badge?: string | number
-	disabled?: boolean
-	requiresAuth?: boolean      // para ProtectedRoute
-	guestOnly?: boolean        // para GuestRoute
-	showInSidebar?: boolean
-	showInNavbar?: boolean
-	showInMobile?: boolean
-	children?: NavigationItem[]
+  id: string
+  label: string
+  href: string
+  icon?: LucideIcon
+  badge?: string | number
+  disabled?: boolean
+  requiresAuth?: boolean // para ProtectedRoute
+  guestOnly?: boolean // para GuestRoute
+  showInSidebar?: boolean
+  showInNavbar?: boolean
+  showInMobile?: boolean
+  children?: NavigationItem[]
 }
 
 export const navigationConfig: NavigationItem[] = [
-	{
-		id: 'dashboard',
-		label: 'Dashboard',
-		href: '/dashboard',
-		icon: Home,
-		requiresAuth: true,
-		showInSidebar: true,
-		showInNavbar: false,
-		showInMobile: true
-	},
-	{
-		id: 'students',
-		label: 'Estudiantes',
-		href: '/students',
-		icon: Users,
-		requiresAuth: true,
-		showInSidebar: true,
-		showInNavbar: false,
-		showInMobile: true
-	},
-	{
-		id: 'trainings',
-		label: 'Entrenamientos',
-		href: '/trainings',
-		icon: Dumbbell,
-		requiresAuth: true,
-		showInSidebar: true,
-		showInNavbar: false,
-		showInMobile: true,
-	},
-	{
-		id: 'calendar',
-		label: 'Calendario',
-		href: '/calendar',
-		icon: Calendar,
-		requiresAuth: true,
-		showInSidebar: true,
-		showInNavbar: false,
-		showInMobile: true
-	},
-	{
-		id: 'reports',
-		label: 'Reportes',
-		href: '/reports',
-		icon: BarChart3,
-		requiresAuth: true,
-		showInSidebar: true,
-		showInNavbar: false,
-		showInMobile: false
-	},
-	{
-		id: 'settings',
-		label: 'Configuración',
-		href: '/settings',
-		icon: Settings,
-		requiresAuth: true,
-		showInSidebar: true,
-		showInNavbar: false,
-		showInMobile: true
-	},
+  {
+    id: 'dashboard',
+    label: 'Dashboard',
+    href: '/dashboard',
+    icon: Home,
+    requiresAuth: true,
+    showInSidebar: true,
+    showInNavbar: false,
+    showInMobile: true,
+  },
+  {
+    id: 'students',
+    label: 'Estudiantes',
+    href: '/students',
+    icon: Users,
+    requiresAuth: true,
+    showInSidebar: true,
+    showInNavbar: false,
+    showInMobile: true,
+  },
+  {
+    id: 'trainings',
+    label: 'Entrenamientos',
+    href: '/trainings',
+    icon: Dumbbell,
+    requiresAuth: true,
+    showInSidebar: true,
+    showInNavbar: false,
+    showInMobile: true,
+  },
+  {
+    id: 'calendar',
+    label: 'Calendario',
+    href: '/calendar',
+    icon: Calendar,
+    requiresAuth: true,
+    showInSidebar: true,
+    showInNavbar: false,
+    showInMobile: true,
+  },
+  {
+    id: 'reports',
+    label: 'Reportes',
+    href: '/reports',
+    icon: BarChart3,
+    requiresAuth: true,
+    showInSidebar: true,
+    showInNavbar: false,
+    showInMobile: false,
+  },
+  {
+    id: 'settings',
+    label: 'Configuración',
+    href: '/settings',
+    icon: Settings,
+    requiresAuth: true,
+    showInSidebar: true,
+    showInNavbar: false,
+    showInMobile: true,
+  },
 
-
-	// Rutas de guest (sin auth)
-	{
-		id: 'register',
-		label: 'Registro',
-		href: '/register',
-		guestOnly: true,          // ← Solo para GuestRoute
-		showInSidebar: false,
-		showInNavbar: false,
-		showInMobile: false
-	},
-	{
-		id: 'login',
-		label: 'Login',
-		href: '/login',
-		guestOnly: true,          // ← Solo para GuestRoute
-		showInSidebar: false,
-		showInNavbar: false,
-		showInMobile: false
-	}
+  // Rutas de guest (sin auth)
+  {
+    id: 'register',
+    label: 'Registro',
+    href: '/register',
+    guestOnly: true, // ← Solo para GuestRoute
+    showInSidebar: false,
+    showInNavbar: false,
+    showInMobile: false,
+  },
+  {
+    id: 'login',
+    label: 'Login',
+    href: '/login',
+    guestOnly: true, // ← Solo para GuestRoute
+    showInSidebar: false,
+    showInNavbar: false,
+    showInMobile: false,
+  },
 ]
 
 // Helpers para filtrar rutas
 export const getSidebarRoutes = () =>
-	navigationConfig.filter(item => item.showInSidebar && item.requiresAuth)
+  navigationConfig.filter((item) => item.showInSidebar && item.requiresAuth)
 
 export const getNavbarRoutes = () =>
-	navigationConfig.filter(item => item.showInNavbar && item.requiresAuth)
+  navigationConfig.filter((item) => item.showInNavbar && item.requiresAuth)
 
 export const getMobileRoutes = () =>
-	navigationConfig.filter(item => item.showInMobile && item.requiresAuth)
+  navigationConfig.filter((item) => item.showInMobile && item.requiresAuth)
 
 export const getGuestRoutes = () =>
-	navigationConfig.filter(item => item.guestOnly)
+  navigationConfig.filter((item) => item.guestOnly)
 
 export const getProtectedRoutes = () =>
-	navigationConfig.filter(item => item.requiresAuth)
+  navigationConfig.filter((item) => item.requiresAuth)

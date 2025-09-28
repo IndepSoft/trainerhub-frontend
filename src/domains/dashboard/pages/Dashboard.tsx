@@ -1,7 +1,3 @@
 export default function Dashboard() {
-  return (
-	<div>
-	  dashboard works!
-	</div>
-  )
+  return <div>dashboard works!</div>
 }

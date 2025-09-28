@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom"
+import { Link } from 'react-router-dom'
 import {
   Sidebar,
   SidebarContent,
@@ -8,25 +8,28 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarFooter
-} from "@/shared/ui/sidebar"
-import { GalleryVerticalEnd } from "lucide-react"
-import { getSidebarRoutes } from "@/app/config/navigation.config"
-import { NavItem } from "./NavItem"
-import { PersonCard } from "../PersonCard"
-import { Separator } from "@radix-ui/react-separator"
+  SidebarFooter,
+} from '@/shared/ui/sidebar'
+import { GalleryVerticalEnd } from 'lucide-react'
+import { getSidebarRoutes } from '@/app/config/navigation.config'
+import { NavItem } from './NavItem'
+import { PersonCard } from '../PersonCard'
+import { Separator } from '@radix-ui/react-separator'
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const sidebarRoutes = getSidebarRoutes()
 
   return (
     <Sidebar variant="inset" {...props}>
-
       {/* Header */}
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" className="text-2xl font-bold tracking-wide justify-center" asChild>
+            <SidebarMenuButton
+              size="lg"
+              className="text-2xl font-bold tracking-wide justify-center"
+              asChild
+            >
               <Link to="/">TrainerHub</Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -70,7 +73,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </button>
         </div>
       </SidebarFooter>
-
     </Sidebar>
   )
 }

@@ -23,7 +23,7 @@ export default function RootLayout() {
       <SidebarInset>
         <div className="flex flex-col">
           <AppNavbar />
-          
+
           <main className="flex-1 overflow-auto">
             <div className="p-4 max-w-7xl mx-auto">
               <Outlet />

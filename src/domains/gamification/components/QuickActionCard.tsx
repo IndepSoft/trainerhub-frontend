@@ -1,5 +1,5 @@
-import { Card, CardContent } from "@/shared/ui/card"
-import type { LucideIcon } from "lucide-react"
+import { Card, CardContent } from '@/shared/ui/card'
+import type { LucideIcon } from 'lucide-react'
 
 type QuickActionCardProps = {
   icon: LucideIcon

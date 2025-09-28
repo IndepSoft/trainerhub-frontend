@@ -1,5 +1,5 @@
-import React from "react"
-import type { LucideIcon } from "lucide-react"
+import React from 'react'
+import type { LucideIcon } from 'lucide-react'
 
 interface NotificationItemProps {
   icon: LucideIcon
@@ -9,7 +9,13 @@ interface NotificationItemProps {
   description: string
 }
 
-export function NotificationItem({ icon: Icon, bgColor, iconColor, title, description }: NotificationItemProps) {
+export function NotificationItem({
+  icon: Icon,
+  bgColor,
+  iconColor,
+  title,
+  description,
+}: NotificationItemProps) {
   return (
     <div className={`flex items-center space-x-3 p-3 rounded-lg ${bgColor}`}>
       <Icon className={`h-5 w-5 ${iconColor}`} />
