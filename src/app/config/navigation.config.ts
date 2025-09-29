@@ -98,9 +98,9 @@ export const navigationConfig: NavigationItem[] = [
 
   // Rutas de guest (sin auth)
   {
-    id: 'register',
-    label: 'Registro',
-    href: '/register',
+    id: 'authentication',
+    label: 'Autenticación',
+    href: '/authentication',
     guestOnly: true, // ← Solo para GuestRoute
     showInSidebar: false,
     showInNavbar: false,

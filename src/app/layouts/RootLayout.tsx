@@ -6,12 +6,12 @@ import { SidebarInset } from '@/shared/ui/sidebar'
 export default function RootLayout() {
   const location = useLocation()
 
-  const hideNavRoutes = ['/register', '/login']
+  const hideNavRoutes = ['/authentication']
   const shouldHideNav = hideNavRoutes.includes(location.pathname)
 
   if (shouldHideNav) {
     return (
-      <div className="h-dvh">
+      <div className="h-dvh w-dvw">
         <Outlet />
       </div>
     )

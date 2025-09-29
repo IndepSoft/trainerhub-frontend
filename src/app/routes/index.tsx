@@ -7,7 +7,7 @@ import { navigationConfig } from '@/app/config/navigation.config'
 
 // Lazy imports
 const RootLayout = lazy(() => import('@/app/layouts/RootLayout'))
-const Register = lazy(() => import('@/auth/pages/Register'))
+const Authentication = lazy(() => import('@/auth/pages/Authentication'))
 const Dashboard = lazy(() => import('@/domains/dashboard/pages/Dashboard'))
 const Trainings = lazy(() => import('@/domains/trainings/pages/Trainings'))
 const Students = lazy(() => import('@/domains/students/pages/Students'))
@@ -18,7 +18,7 @@ const NotFound = lazy(() => import('@/shared/pages/NotFound'))
 
 const routeComponents = {
   '/dashboard': Dashboard,
-  '/register': Register,
+  '/authentication': Authentication,
   '/trainings': Trainings,
   '/students': Students,
   '/gamification': Gamification,

@@ -37,7 +37,7 @@ export default function RecentActivity() {
   return (
     <Card className="flex-1">
       <CardHeader>
-        <CardTitle>Actividad Reciente</CardTitle>
+		    <CardTitle className="font-bold text-lg">Actividades Recientes</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-4">
