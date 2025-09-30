@@ -17,6 +17,8 @@ import { RecentAchievementsItem } from '../components/RecentAchievementsItem'
 import { MetricCard } from '../components/MetricCard'
 import { NotificationItem } from '../components/NotificationItem'
 import { StreakTrackingSystem } from '../components/StreakTrackingSystem'
+import { PersonalizedChallenges } from '../components/PersonalizedChallenges'
+import { AchievementSystem } from '../components/AchievementSystem'
 
 export default function Gamification() {
   const [activeTab, setActiveTab] = useState('overview')
@@ -212,11 +214,11 @@ export default function Gamification() {
             </TabsContent>
 
             <TabsContent value="achievements" className="mt-6">
-              {/* <AchievementSystem /> */}
+              <AchievementSystem />
             </TabsContent>
 
             <TabsContent value="challenges" className="mt-6">
-              {/* <PersonalizedChallenges /> */}
+              <PersonalizedChallenges />
             </TabsContent>
 
             <TabsContent value="streaks" className="mt-6">
