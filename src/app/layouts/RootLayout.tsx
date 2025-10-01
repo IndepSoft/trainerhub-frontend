@@ -18,19 +18,20 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    <div className="flex h-dvh w-dvw">
+      {/* Sidebar */}
       <AppSidebar />
-      <SidebarInset>
-        <div className="flex flex-col">
-          <AppNavbar />
 
-          <main className="flex-1 overflow-auto">
-            <div className="p-4 max-w-7xl mx-auto">
-              <Outlet />
-            </div>
-          </main>
-        </div>
+      {/* Contenido con inset */}
+      <SidebarInset className="flex-1 flex flex-col">
+        <AppNavbar />
+
+        <main className="flex-1 overflow-auto">
+          <div className="p-4 max-w-7xl mx-auto">
+            <Outlet />
+          </div>
+        </main>
       </SidebarInset>
-    </>
+    </div>
   )
 }
