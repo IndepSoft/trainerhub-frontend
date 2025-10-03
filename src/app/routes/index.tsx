@@ -15,6 +15,7 @@ const Gamification = lazy(
   () => import('@/domains/gamification/pages/Gamification')
 )
 const NotFound = lazy(() => import('@/shared/pages/NotFound'))
+const Calendar = lazy(() => import('@/domains/calendar/pages/Calendar'))
 
 const routeComponents = {
   '/dashboard': Dashboard,
@@ -22,7 +23,7 @@ const routeComponents = {
   '/trainings': Trainings,
   '/students': Students,
   '/gamification': Gamification,
-  // '/calendar': Calendar,
+  '/calendar': Calendar,
   // '/settings': Settings,
 } as const
 
