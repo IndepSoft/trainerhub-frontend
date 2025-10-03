@@ -24,7 +24,7 @@ interface PageHeaderContentProps {
 function PageHeaderRoot({ children, className = '' }: PageHeaderProps) {
   return (
     <header
-      className={`flex flex-col  space-y-4 p-4 md:p-6 bg-white border-b ${className}`}
+      className={`flex flex-col  space-y-4 p-2 pb-6 bg-white border-b ${className}`}
     >
       {children}
     </header>
@@ -42,10 +42,7 @@ function PageHeaderTitle({ children, className = '' }: PageHeaderTitleProps) {
   )
 }
 
-function PageHeaderActions({
-  children,
-  className = '',
-}: PageHeaderActionsProps) {
+function PageHeaderActions({ children, className = '' }: PageHeaderActionsProps) {
   return (
     <div
       className={`flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2 ${className}`}
@@ -55,13 +52,10 @@ function PageHeaderActions({
   )
 }
 
-function PageHeaderContent({
-  children,
-  className = '',
-}: PageHeaderContentProps) {
+function PageHeaderContent({ children, className = '' }: PageHeaderContentProps) {
   return (
     <div
-      className={`flex flex-col space-y-3 md:flex-row md:justify-between md:items-start md:space-y-0 ${className}`}
+      className={`flex flex-col space-y-2 md:flex-row md:justify-between md:items-end md:space-y-0 ${className}`} // space-y-2 en lugar de space-y-3
     >
       {children}
     </div>

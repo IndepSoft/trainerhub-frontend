@@ -21,9 +21,9 @@ export function InputWithIcon({
   const iconPositionClass = iconPosition === 'left' ? 'left-3' : 'right-3'
   
   return (
-    <div className="relative w-full">
+    <div className="relative w-full text-gray-400">
       {(icon || loading) && (
-        <span className={`absolute top-1/ -translate-y-1/2 ${iconPositionClass}`}>
+        <span className={`absolute top-1/2 -translate-y-1/2 ${iconPositionClass}`}>
           {loading ? (
             <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
           ) : (
