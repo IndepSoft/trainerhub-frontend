@@ -18,19 +18,20 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    <div className="flex h-dvh w-dvw overflow-hidden">
+      {/* Sidebar fijo */}
       <AppSidebar />
-      <SidebarInset>
-        <div className="flex flex-col">
-          <AppNavbar />
 
-          <main className="flex-1 overflow-auto">
-            <div className="p-4 max-w-7xl mx-auto">
-              <Outlet />
-            </div>
-          </main>
+      {/* Contenido principal */}
+      <SidebarInset className="flex-1 flex flex-col min-h-0">
+        {/* Navbar global fija */}
+        <AppNavbar />
+
+        {/* Espacio para cada página (Outlet) */}
+        <div className="p-4  flex-1 flex flex-col overflow-hidden min-h-0">
+          <Outlet />
         </div>
       </SidebarInset>
-    </>
+    </div>
   )
 }

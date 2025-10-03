@@ -5,7 +5,7 @@ import RecentActivity from '../components/organisms/RecentActivity'
 
 export default function Dashboard() {
   return (
-    <div className="students-page">
+    <div className="flex flex-col flex-1 overflow-hidden">
       <PageHeader>
         <PageHeader.Content>
           <div>
@@ -17,15 +17,20 @@ export default function Dashboard() {
         </PageHeader.Content>
       </PageHeader>
 
-      <section className="page-content mt-8">
-        <div className="w-full mb-6">
-          <IndicatorsList></IndicatorsList>
+      {/* <section className="page-content mt-8"> */}
+      <main className="mt-8 flex-1 overflow-auto">
+        <div className="ps-4 pe-4 pb-4 max-w-8xl mx-auto">
+          <div className="space-y-6"></div>
+          <div className="w-full mb-6">
+            <IndicatorsList></IndicatorsList>
+          </div>
+          <div className="w-full flex gap-4">
+            <UpcomingSessions></UpcomingSessions>
+            <RecentActivity></RecentActivity>
+          </div>
         </div>
-        <div className="w-full flex gap-4">
-          <UpcomingSessions></UpcomingSessions>
-          <RecentActivity></RecentActivity>
-        </div>
-      </section>
+      </main>
+      {/* </section> */}
     </div>
   )
 }
