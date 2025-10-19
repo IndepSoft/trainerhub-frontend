@@ -1,9 +1,16 @@
-import { SidebarProvider } from '@/shared/ui/sidebar'
+import { CoreProviders } from "./CoreProviders"
+import { UIProviders } from "./UIProviders"
 
 interface AppProvidersProps {
   children: React.ReactNode
 }
 
 export function AppProviders({ children }: AppProvidersProps) {
-  return <SidebarProvider defaultOpen={true}>{children}</SidebarProvider>
+  return (
+    <CoreProviders>
+      <UIProviders>
+        {children}
+      </UIProviders>
+    </CoreProviders>
+  )
 }
