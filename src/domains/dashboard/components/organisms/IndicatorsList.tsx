@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import IndicatorCard, { type IIndicatorProps } from '../molecules/IndicatorCard'
+import { useEffect, useState } from 'react'
+import IndicatorCardComponent, { type IIndicatorCardProps } from '@/shared/components/card-custom/IndicatorCardComponent'
 import {
   BanknoteArrowUp,
   BicepsFlexed,
@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 
 export default function IndicatorsList() {
-  const [indicators, setIndicators] = useState<IIndicatorProps[]>([])
+  const [indicators, setIndicators] = useState<IIndicatorCardProps[]>([])
 
   useEffect(() => {
     setIndicators([
@@ -51,7 +51,7 @@ export default function IndicatorsList() {
   return (
     <div className="flex gap-4">
       {indicators.map((indicator, i) => (
-        <IndicatorCard
+        <IndicatorCardComponent
           key={i}
           title={indicator.title}
           delta={indicator.delta}
@@ -60,7 +60,7 @@ export default function IndicatorsList() {
           icon={indicator.icon}
           indicator={indicator.indicator}
           period={indicator.period}
-        ></IndicatorCard>
+        ></IndicatorCardComponent>
       ))}
     </div>
   )
