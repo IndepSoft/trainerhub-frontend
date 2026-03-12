@@ -1,12 +1,12 @@
+// @/app/stores/authStore.ts
+import { authService, type AuthUser } from '@/auth/infrastructure/authService'
 import { create } from 'zustand'
-import { supabase } from '@/shared/lib/supabaseClient'
-import type { User } from '@supabase/supabase-js'
 
 interface AuthState {
-  user: User | null
+  user: AuthUser | null
   loading: boolean
   initialized: boolean
-  setUser: (user: User | null) => void
+  setUser: (user: AuthUser | null) => void
   logout: () => Promise<void>
   initializeAuth: () => Promise<void>
 }
@@ -19,27 +19,37 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setUser: (user) => set({ user }),
 
   logout: async () => {
-    await supabase.auth.signOut()
-    set({ user: null })
+    try {
+      await authService.signOut()
+      set({ user: null })
+    } catch (error) {
+      console.error('Logout error:', error)
+      throw error
+    }
   },
 
   initializeAuth: async () => {
     if (get().initialized) return
 
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const user = await authService.getCurrentSession()
       set({ 
-        user: session?.user ?? null, 
+        user, 
         loading: false,
         initialized: true 
       })
 
-      supabase.auth.onAuthStateChange((_event, session) => {
-        set({ user: session?.user ?? null })
+      authService.onAuthStateChange((user) => {
+        set({ user })
       })
+
     } catch (error) {
       console.error('Auth initialization error:', error)
-      set({ loading: false, initialized: true })
+      set({ 
+        loading: false, 
+        initialized: true,
+        user: null 
+      })
     }
   },
 }))
