@@ -75,7 +75,7 @@ export function CreateSessionModal() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2">
+        <Button className="h-11 gap-2 sm:h-9">
           <Plus className="w-4 h-4" />
           Nueva Sesión
         </Button>

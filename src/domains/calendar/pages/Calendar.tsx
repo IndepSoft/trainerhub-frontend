@@ -21,6 +21,7 @@ export default function Calendar() {
     currentDate,
     weekDates,
     viewMode,
+    canChooseViewMode,
     selectedSession,
     countByStatus,
     setViewMode,
@@ -39,7 +40,9 @@ export default function Calendar() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Apilado en movil: en una fila, el titulo y los controles se
+          comprimian mutuamente por debajo de 640 px. */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">
             Agenda y Programación
@@ -47,18 +50,22 @@ export default function Calendar() {
           <p className="text-muted-foreground">Gestiona tus sesiones y citas</p>
         </div>
         <div className="flex items-center gap-3">
-          <Select
-            value={viewMode}
-            onValueChange={(value: CalendarViewMode) => setViewMode(value)}
-          >
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="week">Semana</SelectItem>
-              <SelectItem value="day">Día</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* El selector solo aparece cuando hay algo que elegir: en movil el
+              modo esta forzado a dia, asi que ofrecerlo mentiria. */}
+          {canChooseViewMode && (
+            <Select
+              value={viewMode}
+              onValueChange={(value: CalendarViewMode) => setViewMode(value)}
+            >
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="week">Semana</SelectItem>
+                <SelectItem value="day">Día</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
           <CreateSessionModal />
         </div>
       </div>
