@@ -24,7 +24,7 @@ export default function IndicatorCardComponent({
   period,
 }: IIndicatorCardProps) {
   return (
-    <Card className="flex-1 bg-gray-50">
+    <Card className="h-full bg-gray-50">
       <CardContent className="pt-4 pb-2 flex justify-between">
         <div className="flex flex-col gap-2">
           <CardTitle className="text-muted-foreground">{title}</CardTitle>

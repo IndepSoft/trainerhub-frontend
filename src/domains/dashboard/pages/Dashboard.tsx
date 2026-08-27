@@ -25,7 +25,7 @@ export default function Dashboard() {
           <div className="w-full mb-6">
             <IndicatorList indicators={summary.indicators} />
           </div>
-          <div className="w-full flex gap-4">
+          <div className="flex w-full flex-col gap-4 lg:flex-row">
             <UpcomingSessionsCard sessions={summary.upcomingSessions} />
             <RecentActivityCard activities={summary.recentActivity} />
           </div>

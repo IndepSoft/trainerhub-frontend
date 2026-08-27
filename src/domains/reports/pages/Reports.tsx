@@ -85,7 +85,7 @@ export default function Reports() {
         <div className="ps-4 pe-4 pb-4 max-w-8xl mx-auto">
           <div className="space-y-6"></div>
           <div className="w-full mb-6">
-            <div className="flex gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {indicators.map((indicator, i) => (
                 <IndicatorCardComponent
                   key={i}

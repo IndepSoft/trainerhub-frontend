@@ -54,18 +54,26 @@ Commit `750bad9` — en `feature/pwa-adaptation`.
 - [x] Verificado a 375 px: sin rejilla de 8 columnas, sin selector, 0 desborde
 - [x] Verificado a 1280 px: vista semanal de vuelta, columnas de 113 px
 
-### ⬜ 3 · dashboard → apilar indicadores y tarjetas
+### ✅ 3 · dashboard → apilar indicadores y tarjetas
 
-Es el que parte de cero: ni un solo prefijo responsive.
+Partía de cero: no tenía ni un solo prefijo responsive.
 
-- [ ] Los 4 indicadores dejan de ir en una fila `flex gap-4` fija
-- [ ] Las dos tarjetas inferiores (Próximas Sesiones / Actividades) se apilan
-- [ ] Ningún bloque de texto por debajo de 280 px
-- [ ] Verificado a 375 px
-- [ ] Verificado a 1280 px sin regresión
+- [x] Los 4 indicadores pasan a rejilla `1 / sm:2 / lg:4`, ya no a una fila fija
+- [x] Las dos tarjetas inferiores se apilan hasta `lg`
+- [x] `IndicatorCardComponent` deja de declarar su propio `flex-1`: la
+      disposición es responsabilidad del contenedor, no de la tarjeta
+- [x] Mismo arreglo aplicado a `reports`, que repetía el patrón idéntico
+- [x] Verificado a 375 px
+- [x] Verificado a 1280 px sin regresión
 
-Objetivo medible: hoy los indicadores caen a 121–154 px y el texto de
-actividades a 77 px, unos ocho caracteres por línea.
+| Medida | Antes | Después |
+|---|---|---|
+| Ancho de indicador | 121–154 px | **311 px** |
+| Texto de actividad | 77 px | **232 px** |
+| Tarjetas inferiores | lado a lado | apiladas, 343 px |
+
+En escritorio se conserva: los cuatro en una fila a 226 px y las dos tarjetas
+lado a lado a 468 px.
 
 ### ⬜ 4 · Pestañas desplazables y objetivos táctiles
 

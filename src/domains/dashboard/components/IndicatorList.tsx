@@ -7,7 +7,7 @@ interface IndicatorListProps {
 
 export function IndicatorList({ indicators }: IndicatorListProps) {
   return (
-    <div className="flex gap-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {indicators.map((indicator) => (
         <IndicatorCardComponent
           key={indicator.id}
