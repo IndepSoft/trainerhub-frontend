@@ -60,7 +60,22 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
+          // El centrado NO usa transform a proposito. Antes era
+          // `top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2`, pero la
+          // animacion de entrada `zoom-in-95` reescribe la propiedad
+          // `transform` completa y se llevaba por delante las traslaciones:
+          // el dialogo quedaba descentrado. En escritorio solo se notaba como
+          // un desplazamiento feo; a 375 px empujaba 178 px del dialogo fuera
+          // de la pantalla, con su contenido inalcanzable.
+          //
+          // `inset-0` mas `m-auto` y `h-fit` centran en los dos ejes sin tocar
+          // `transform`, asi que la animacion puede quedarselo entero.
+          //
+          // `max-h` con `overflow-y-auto` es la otra mitad del arreglo: sin
+          // ella, un dialogo mas alto que la pantalla se corta por arriba y por
+          // abajo en movil. Se usa `dvh` para que la barra de direcciones del
+          // navegador movil no descuadre el alto.
+          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed inset-0 z-50 m-auto grid h-fit max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] overflow-y-auto gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
           className
         )}
         {...props}

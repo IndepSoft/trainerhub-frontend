@@ -80,6 +80,39 @@ alternativas descartadas, una restricción externa, una trampa conocida.
 
 Prohibido el comentario que repite el código (`// incrementa el contador`).
 
+### 1.6 Responsive obligatorio: el objetivo es una PWA
+
+TrainerHub va a ser una aplicación instalable. Eso cambia el listón: el móvil no
+es una adaptación posterior, es el caso base. Una PWA instalada se juzga como una
+app nativa, no como una página web que se ve regular en el teléfono.
+
+Estas cinco reglas salen de una auditoría medida en navegador a 375 px, no de una
+lectura del código. Encontró tres defectos que compilaban y pasaban el lint sin
+una sola queja.
+
+**Ninguna rejilla con número de columnas fijo.** Toda `grid-cols-N` con N mayor
+que 1 arranca en `grid-cols-1` y sube por punto de ruptura. Sin excepciones: es
+la causa de los dos fallos críticos que encontró la auditoría. La vista semanal
+del calendario usaba `grid-cols-8` sin prefijo, lo que en un móvil deja columnas
+de 33 px donde ni el texto «Lun» cabe.
+
+**Cero desbordamiento horizontal a 375 px.** Criterio comprobable:
+`document.documentElement.scrollWidth` igual al ancho de la ventana en cada ruta.
+
+**Ancho mínimo útil, no sólo ausencia de desbordes.** Ninguna tarjeta ni bloque
+de texto por debajo de unos 280 px en móvil. No desbordar y ser legible son cosas
+distintas: el dashboard daba cero desbordamiento y a la vez comprimía el texto de
+actividades a 77 px de ancho, unos ocho caracteres por línea.
+
+**Objetivos táctiles de 44 × 44 px** en botones, pestañas y enlaces. Es requisito
+de plataforma para una app instalable —44 pt en Apple HIG, 48 dp en Material— y
+va por encima del mínimo de 24 px que exige WCAG 2.2 AA.
+
+**Se verifica en dispositivo, no leyendo clases.** Cada dominio se abre a 375 px
+antes de darlo por terminado. Las clases de Tailwind no dicen la verdad sobre el
+resultado: `flex-1` no desborda nunca, simplemente aplasta el contenido hasta que
+deja de comunicar.
+
 ---
 
 ## 2. Arquitectura: puertos y adaptadores
@@ -213,7 +246,10 @@ Variables en `.env` (plantilla en `.env.example`). `.gitignore` cubre `.env` y
 3. Ningún `any`, ningún `as` de conveniencia, ningún bloque comentado.
 4. Ningún import de infraestructura fuera de su carpeta.
 5. Nombres completos y descriptivos.
-6. Si se dejó algo a medias, va documentado con `TODO:` explicando qué falta y
+6. **Si el cambio es visible, se abre a 375 px** y se comprueban las reglas de
+   §1.6: sin desbordamiento, sin bloques por debajo de 280 px, objetivos táctiles
+   de 44 px.
+7. Si se dejó algo a medias, va documentado con `TODO:` explicando qué falta y
    por qué — y se menciona al reportar. Nunca se entrega en silencio.
 
 ---
