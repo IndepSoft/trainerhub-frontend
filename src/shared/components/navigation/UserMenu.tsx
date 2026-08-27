@@ -9,7 +9,7 @@ import {
 } from '@/shared/ui/dropdown-menu'
 import { LogOut, User } from 'lucide-react'
 import { getInitials, getShortName } from '@/shared/utils/nameHelpers'
-import type { Trainer } from '@/shared/types/trainer'
+import type { Trainer } from '@/shared/domain/entities/trainer'
 import { useLogout } from '@/auth/hooks/useLogout'
 
 interface UserMenuProps {
@@ -20,9 +20,9 @@ interface UserMenuProps {
 export function UserMenu({ trainer, loading }: UserMenuProps) {
   const { handleLogout } = useLogout()
   
-  const displayName = getShortName(trainer?.first_name, trainer?.last_name)
-  const initials = getInitials(trainer?.first_name, trainer?.last_name)
-  const avatarUrl = trainer?.photo_url
+  const displayName = getShortName(trainer?.firstName, trainer?.lastName)
+  const initials = getInitials(trainer?.firstName, trainer?.lastName)
+  const avatarUrl = trainer?.photoUrl
 
   return (
     <DropdownMenu>

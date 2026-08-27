@@ -1,6 +1,6 @@
-// @/app/stores/authStore.ts
-import { authService, type AuthUser } from '@/auth/infrastructure/authService'
 import { create } from 'zustand'
+import { container } from '@/app/container'
+import type { AuthUser } from '@/shared/domain/entities/auth'
 
 interface AuthState {
   user: AuthUser | null
@@ -9,7 +9,11 @@ interface AuthState {
   setUser: (user: AuthUser | null) => void
   logout: () => Promise<void>
   initializeAuth: () => Promise<void>
+  /** Cancela la suscripcion a cambios de sesion. */
+  disposeAuth: () => void
 }
+
+let unsubscribe: (() => void) | null = null
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
@@ -19,37 +23,29 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setUser: (user) => set({ user }),
 
   logout: async () => {
-    try {
-      await authService.signOut()
-      set({ user: null })
-    } catch (error) {
-      console.error('Logout error:', error)
-      throw error
-    }
+    await container.auth.signOut()
+    set({ user: null })
   },
 
   initializeAuth: async () => {
     if (get().initialized) return
 
     try {
-      const user = await authService.getCurrentSession()
-      set({ 
-        user, 
-        loading: false,
-        initialized: true 
-      })
-
-      authService.onAuthStateChange((user) => {
-        set({ user })
-      })
-
+      const user = await container.auth.getCurrentUser()
+      set({ user, loading: false, initialized: true })
     } catch (error) {
       console.error('Auth initialization error:', error)
-      set({ 
-        loading: false, 
-        initialized: true,
-        user: null 
-      })
+      set({ user: null, loading: false, initialized: true })
     }
+
+    // La baja se guarda: antes se descartaba y la suscripcion quedaba viva.
+    unsubscribe?.()
+    unsubscribe = container.auth.onAuthStateChange((user) => set({ user }))
+  },
+
+  disposeAuth: () => {
+    unsubscribe?.()
+    unsubscribe = null
+    set({ initialized: false })
   },
 }))

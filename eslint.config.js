@@ -23,6 +23,22 @@ export default tseslint.config([
       // Alinea eslint con noUnusedParameters de tsconfig: el prefijo `_` marca
       // un binding intencionadamente sin usar (firma impuesta por un callback,
       // prop declarada pero aun no cableada).
+      // El desacoplamiento de Supabase se sostiene aqui, no en la buena fe:
+      // fuera de shared/infrastructure/supabase nadie puede importar el SDK ni
+      // el cliente. Si migras a un backend propio, esta regla te garantiza que
+      // no queda ninguna fuga escondida en un componente.
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@supabase/*', '**/infrastructure/supabase/client'],
+              message:
+                'No importes Supabase directamente. Usa los puertos de @/shared/domain/ports via el container (@/app/container).',
+            },
+          ],
+        },
+      ],
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
@@ -31,6 +47,13 @@ export default tseslint.config([
           caughtErrorsIgnorePattern: '^_',
         },
       ],
+    },
+  },
+  {
+    // El adaptador es, por definicion, el unico que conoce el proveedor.
+    files: ['src/shared/infrastructure/supabase/**'],
+    rules: {
+      'no-restricted-imports': 'off',
     },
   },
 ])

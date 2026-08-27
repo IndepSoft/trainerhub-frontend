@@ -1,8 +1,12 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/app/stores/authStore'
-import { authService } from '../infrastructure/authService'
-import type { LoginCredentials } from '../infrastructure/authService'
+import { container } from '@/app/container'
+import { AppError } from '@/shared/domain/errors'
+import type { LoginCredentials } from '@/shared/domain/entities/auth'
+
+const messageFor = (err: unknown) =>
+  AppError.is(err) ? err.message : 'Error al iniciar sesión'
 
 export const useLogin = () => {
   const navigate = useNavigate()
@@ -15,11 +19,11 @@ export const useLogin = () => {
     setLoading(true)
 
     try {
-      const user = await authService.loginWithEmail(credentials)
-      setUser(user) // Actualiza el store
+      const user = await container.auth.signInWithEmail(credentials)
+      setUser(user)
       navigate('/dashboard', { replace: true })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al iniciar sesión')
+      setError(messageFor(err))
     } finally {
       setLoading(false)
     }
@@ -30,21 +34,15 @@ export const useLogin = () => {
     setLoading(true)
 
     try {
-      await authService.loginWithGoogle()
-      // La navegación la maneja el redirect de OAuth
+      await container.auth.signInWithGoogle()
+      // La navegacion la resuelve el redirect de OAuth al volver.
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al iniciar sesión')
+      setError(messageFor(err))
       setLoading(false)
     }
   }
 
   const clearError = () => setError(null)
 
-  return {
-    loginWithEmail,
-    loginWithGoogle,
-    error,
-    loading,
-    clearError,
-  }
+  return { loginWithEmail, loginWithGoogle, error, loading, clearError }
 }

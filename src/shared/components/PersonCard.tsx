@@ -12,9 +12,9 @@ export function PersonCard() {
     return <PersonCardSkeleton />
   }
 
-  const displayName = getShortName(trainer?.first_name, trainer?.last_name)
-  const initials = getInitials(trainer?.first_name, trainer?.last_name)
-  const avatarUrl = trainer?.photo_url || undefined
+  const displayName = getShortName(trainer?.firstName, trainer?.lastName)
+  const initials = getInitials(trainer?.firstName, trainer?.lastName)
+  const avatarUrl = trainer?.photoUrl
 
   return (
     <div className="flex items-center gap-3">
