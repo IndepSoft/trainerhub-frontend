@@ -1,9 +1,12 @@
 import { PageHeader } from '@/shared/components/PageHeader'
-import IndicatorsList from '../components/organisms/IndicatorsList'
-import UpcomingSessions from '../components/organisms/UpcomingSessions'
-import RecentActivity from '../components/organisms/RecentActivity'
+import { IndicatorList } from '../components/IndicatorList'
+import { UpcomingSessionsCard } from '../components/UpcomingSessionsCard'
+import { RecentActivityCard } from '../components/RecentActivityCard'
+import { useDashboardSummary } from '../hooks/useDashboardSummary'
 
 export default function Dashboard() {
+  const { summary } = useDashboardSummary()
+
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
       <PageHeader>
@@ -17,20 +20,17 @@ export default function Dashboard() {
         </PageHeader.Content>
       </PageHeader>
 
-      {/* <section className="page-content mt-8"> */}
       <main className="mt-8 flex-1 overflow-auto">
         <div className="ps-4 pe-4 pb-4 max-w-8xl mx-auto">
-          <div className="space-y-6"></div>
           <div className="w-full mb-6">
-            <IndicatorsList></IndicatorsList>
+            <IndicatorList indicators={summary.indicators} />
           </div>
           <div className="w-full flex gap-4">
-            <UpcomingSessions></UpcomingSessions>
-            <RecentActivity></RecentActivity>
+            <UpcomingSessionsCard sessions={summary.upcomingSessions} />
+            <RecentActivityCard activities={summary.recentActivity} />
           </div>
         </div>
       </main>
-      {/* </section> */}
     </div>
   )
 }
