@@ -1,0 +1,228 @@
+# CLAUDE.md — trainerhub-frontend
+
+Guía del proyecto. Claude Code la lee automáticamente en cada sesión abierta
+desde este repositorio.
+
+**Registro de cambios y decisiones:** [`docs/CAMBIOS-Y-ARQUITECTURA.md`](docs/CAMBIOS-Y-ARQUITECTURA.md)
+
+---
+
+## 1. Reglas no negociables
+
+Estas reglas están por encima de la conveniencia, la prisa y el tamaño de la
+tarea. Si una petición sólo puede cumplirse rompiéndolas, hay que decirlo y
+proponer la alternativa correcta, no romperlas en silencio.
+
+### 1.1 Nada de parches rápidos
+
+No se aceptan soluciones temporales, atajos ni código puesto "para que funcione
+ahora". Si algo requiere un rodeo, el rodeo se discute antes de escribirlo.
+
+Un caso real de este repositorio muestra por qué: `AuthService.loginWithEmail`
+devolvía un usuario `dev-user` fijo con la llamada real comentada debajo. Como
+atajo de desarrollo parecía inofensivo; en realidad daba acceso a toda la
+aplicación a cualquiera que escribiese cualquier cosa en el formulario, y
+sobrevivió a varios commits porque nadie lo miró de cerca. Los parches rápidos
+no se quedan cortos: se quedan.
+
+Corolario: **nada de código comentado**. Si no se usa, se borra — el historial
+de git es el archivo. Un bloque comentado no dice si es un plan, un experimento
+fallido o una regresión.
+
+### 1.2 Nada de código spaghetti
+
+- Una responsabilidad por módulo, por función y por componente.
+- Prohibido saltarse capas: un componente jamás accede a infraestructura.
+- Prohibida la lógica de negocio dentro de un componente de presentación.
+- Prohibida la duplicación silenciosa. Antes de crear algo, se busca si ya existe.
+
+Otro caso real: `useAuthUser` y `useTrainer` hacían lo mismo, uno bien (vía
+repositorio) y otro mal (consultando el proveedor directamente desde el hook y
+redeclarando el tipo `Trainer` en línea). Convivieron sin que nadie lo notara.
+
+### 1.3 Todo tipado
+
+- **`any` está prohibido.** Si no se conoce el tipo, es `unknown` y se estrecha.
+- Prohibido `as` para silenciar al compilador. Un *cast* sólo es legítimo en la
+  frontera de infraestructura, sobre datos crudos externos, y acompañado de su
+  *mapper*.
+- Prohibido `@ts-ignore` y `@ts-expect-error` sin una línea que explique por qué.
+- Toda función exportada declara su tipo de retorno explícitamente.
+- Los *props* de cada componente van en una interfaz con nombre, nunca en línea.
+
+### 1.4 Nada de abreviaturas
+
+Los nombres se escriben completos y describen la intención, no la mecánica.
+
+| Prohibido | Correcto |
+|---|---|
+| `usr`, `u` | `user` |
+| `btn` | `button` |
+| `hdl`, `h` | `handleSubmit` |
+| `tmp`, `aux`, `data2` | el nombre de lo que realmente contiene |
+| `e` (salvo el evento de un handler) | `error`, `element`, `entry` |
+| `res`, `req` | `response`, `request` |
+| `cfg` | `configuration` |
+| `arr`, `lst` | el plural del elemento: `students`, `sessions` |
+
+Excepciones aceptadas por convención universal: `id`, `url`, `i` como índice de
+bucle, y `_` como descarte explícito.
+
+Lo mismo vale para las implementaciones: nada de encadenar operaciones crípticas
+para ahorrar líneas. Un paso intermedio con nombre siempre gana a un *one-liner*
+ingenioso.
+
+### 1.5 Comentarios que explican el porqué
+
+El código dice *qué* hace. El comentario existe para decir *por qué*, y sobre
+todo para dejar constancia de lo que no es evidente: una decisión con
+alternativas descartadas, una restricción externa, una trampa conocida.
+
+Prohibido el comentario que repite el código (`// incrementa el contador`).
+
+---
+
+## 2. Arquitectura: puertos y adaptadores
+
+**Objetivo explícito del proyecto: el frontend no debe depender de Supabase.**
+Migrar a un backend propio tiene que ser escribir adaptadores nuevos y cambiar
+la raíz de composición — nunca recorrer la aplicación.
+
+### 2.1 Dirección de dependencias
+
+```
+componentes / páginas
+        ↓
+      hooks
+        ↓
+   PUERTOS (interfaces)            ← el dominio define el contrato
+        ↑
+   ADAPTADORES (implementaciones)  ← la infraestructura lo cumple
+```
+
+La flecha de los adaptadores **sube**. Es la inversión de dependencias: el
+dominio no conoce a la infraestructura; la infraestructura se pliega al dominio.
+
+### 2.2 Las capas
+
+| Carpeta | Qué contiene | Qué tiene prohibido |
+|---|---|---|
+| `shared/domain/entities` | Entidades de la aplicación, en camelCase | Cualquier import externo |
+| `shared/domain/ports` | Interfaces: qué necesita la aplicación | Cualquier implementación |
+| `shared/domain/errors.ts` | `AppError` normalizado | Errores de proveedor |
+| `shared/infrastructure/<proveedor>` | Cliente, *mappers*, traducción de errores | Ser importado desde fuera |
+| `app/container.ts` | Raíz de composición | Lógica de cualquier tipo |
+| `<dominio>/hooks` | Estado de React sobre los puertos | Tocar infraestructura |
+| `<dominio>/components`, `pages` | Presentación | Lógica de negocio y acceso a datos |
+
+### 2.3 Reglas del desacoplamiento
+
+**El SDK del proveedor sólo se importa dentro de su carpeta de infraestructura.**
+Lo impide `no-restricted-imports` en `eslint.config.js`; no es una convención,
+falla el lint.
+
+**Los puertos se describen en operaciones de negocio, nunca de consulta.**
+
+```ts
+// ✅ el puerto expresa una intención
+findByProfileId(profileId: string): Promise<Trainer | null>
+
+// ❌ el puerto filtra el lenguaje de consulta del proveedor: el desacoplamiento
+//    sería ficticio, porque un backend propio no tiene .eq()
+select(columns: string, filters: (query: Query) => Query): Promise<Row[]>
+```
+
+Por esto se eliminó `useSupabaseQuery`, que recibía un nombre de tabla suelto y
+un constructor de filtros.
+
+**Cada entidad tiene su *mapper*.** El `snake_case` de Postgres, los nulos de SQL
+y las claves numéricas mueren en `mappers.ts`. El dominio no hereda las
+decisiones del esquema.
+
+**Los errores se traducen en la frontera.** Ningún `PostgrestError` ni
+equivalente futuro cruza hacia la aplicación: se convierte en `AppError` con un
+código propio.
+
+**La raíz de composición es el único punto que nombra implementaciones.** Nadie
+más instancia un adaptador ni lo importa por su clase.
+
+---
+
+## 3. SOLID, aplicado a este proyecto
+
+- **Responsabilidad única.** Un hook orquesta estado; un repositorio accede a
+  datos; un *mapper* traduce; un componente pinta. Cuando algo hace dos de esas
+  cosas, se parte.
+- **Abierto/cerrado.** Añadir un proveedor es añadir un adaptador, no editar los
+  existentes. Añadir un dominio es añadir su carpeta y una línea en el router.
+- **Sustitución de Liskov.** Cualquier implementación de un puerto debe ser
+  intercambiable sin que el consumidor lo note: mismos errores (`AppError`),
+  misma semántica del ausente (`null`, no excepción).
+- **Segregación de interfaces.** Puertos pequeños y por capacidad. Antes varios
+  puertos por caso de uso que un `TrainerRepository` con veinte métodos.
+- **Inversión de dependencias.** Los hooks dependen de `AuthPort`, jamás de
+  `SupabaseAuthAdapter`. Se tipa contra la interfaz, siempre.
+
+---
+
+## 4. Contexto del proyecto
+
+### 4.1 Stack
+
+React 19 · TypeScript 5.8 · Vite 7 · Tailwind 3.4 · shadcn/ui (new-york) ·
+react-router-dom 7 · zustand 5 · Supabase (tras adaptador)
+
+### 4.2 Comandos
+
+```bash
+npm run dev      # servidor de desarrollo
+npm run build    # tsc -b && vite build
+npm run lint     # eslint .
+npm run preview  # sirve el build
+```
+
+### 4.3 Convenciones establecidas
+
+- Alias `@/` para todo `src/`. Relativos sólo dentro del mismo módulo.
+- Función `cn` en `@/shared/lib/utils` (alineado con `components.json`).
+- Componentes UI en `shared/ui/` — territorio de shadcn, no se edita a mano
+  salvo necesidad justificada.
+- Rutas por dominio en `<dominio>/infrastructure/routes.tsx`, compuestas en
+  `app/routes/index.tsx`.
+- HOC `withSuspense` y `withProtectedRoute` para lo transversal de rutas.
+
+### 4.4 Entorno
+
+Variables en `.env` (plantilla en `.env.example`). `.gitignore` cubre `.env` y
+`.env.*` con excepción para `.env.example`. **Ninguna clave se commitea.**
+
+---
+
+## 5. Antes de dar algo por terminado
+
+1. `npm run build` en verde. **No es opcional y no se da por supuesto: se ejecuta.**
+2. `npm run lint` sin errores nuevos.
+3. Ningún `any`, ningún `as` de conveniencia, ningún bloque comentado.
+4. Ningún import de infraestructura fuera de su carpeta.
+5. Nombres completos y descriptivos.
+6. Si se dejó algo a medias, va documentado con `TODO:` explicando qué falta y
+   por qué — y se menciona al reportar. Nunca se entrega en silencio.
+
+---
+
+## 6. Deuda conocida
+
+Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
+[`docs/CAMBIOS-Y-ARQUITECTURA.md`](docs/CAMBIOS-Y-ARQUITECTURA.md).
+
+- Los cinco dominios pintan datos simulados; no hay repositorios salvo
+  `TrainerRepository`.
+- `navigation.config.ts` declara `/reports`, `/settings` y `/login`, que no
+  existen como rutas.
+- `GuestRoute` está implementado pero no cableado: falta `withGuestRoute`.
+- Props declaradas y sin conectar, marcadas con `TODO:` en gamification y
+  calendar. `ChallengeCard.onUpdate` es la más grave: el padre le pasa un
+  manejador real que nunca se invoca.
+- La subestructura de carpetas difiere entre dominios; falta unificarla.
+- Seis errores de lint previos: `no-explicit-any` en tres ficheros y
+  `react-refresh` en componentes de shadcn.

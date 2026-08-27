@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import IndicatorCard, { type IIndicatorProps } from '../molecules/IndicatorCard'
 import IndicatorCardComponent, { type IIndicatorCardProps } from '@/shared/components/card-custom/IndicatorCardComponent'
 import {
   BanknoteArrowUp,

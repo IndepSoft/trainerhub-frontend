@@ -10,7 +10,7 @@ import {
   Trophy,
   Users,
 } from 'lucide-react'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { StatCard } from '../components/StatCard'
 import { QuickActionCard } from '../components/QuickActionCard'
 import { RecentAchievementsItem } from '../components/RecentAchievementsItem'

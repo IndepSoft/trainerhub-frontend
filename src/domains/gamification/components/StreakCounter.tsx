@@ -11,11 +11,12 @@ import type { StreakCounterProps } from '../types/streak.types'
 import { streakTypeConfig } from '../libs/streakTypeConfig'
 import { getFlameIntensity, getRiskColor } from '../libs/streak.utils'
 
+// TODO: la prop `size` esta declarada en StreakCounterProps pero no se usa;
+// StreakTrackingSystem la pasa en dos sitios y no tiene efecto.
 export function StreakCounter({
     streakData,
     showRiskAlert = true,
     onStreakAction,
-    size = 'medium',
 }: StreakCounterProps) {
     const [showDetails, setShowDetails] = useState(false)
 
