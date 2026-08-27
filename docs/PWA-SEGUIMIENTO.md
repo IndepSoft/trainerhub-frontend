@@ -6,6 +6,7 @@ que se avanza, para no perder el hilo entre sesiones.
 **Regla que lo gobierna:** [`../CLAUDE.md`](../CLAUDE.md) §1.6 — Responsive
 obligatorio.
 **Auditoría de origen:** medida en navegador a 375 × 812 el 27 ago 2026.
+**Contexto de sesión y trampas del entorno:** [`HANDOFF-SESION.md`](HANDOFF-SESION.md)
 
 Criterio para marcar un paso: **verificado en navegador a 375 px**, no
 «compila». Tres de los defectos encontrados compilaban y pasaban el lint sin
