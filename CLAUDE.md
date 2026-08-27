@@ -108,6 +108,9 @@ actividades a 77 px de ancho, unos ocho caracteres por línea.
 de plataforma para una app instalable —44 pt en Apple HIG, 48 dp en Material— y
 va por encima del mínimo de 24 px que exige WCAG 2.2 AA.
 
+**Seguimiento del trabajo:** [`docs/PWA-SEGUIMIENTO.md`](docs/PWA-SEGUIMIENTO.md)
+lleva la lista de pasos con su estado.
+
 **Se verifica en dispositivo, no leyendo clases.** Cada dominio se abre a 375 px
 antes de darlo por terminado. Las clases de Tailwind no dicen la verdad sobre el
 resultado: `flex-1` no desborda nunca, simplemente aplasta el contenido hasta que
