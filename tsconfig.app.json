@@ -17,12 +17,8 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@/shared/ui/*": ["./src/shared/ui/*"],
-      "@/shared/lib/*": ["./src/shared/lib/*"],
-      "@/shared/hooks/*": ["./src/shared/hooks/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src"]
