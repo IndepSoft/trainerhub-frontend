@@ -17,11 +17,83 @@ import { es } from "date-fns/locale"
 import { cn } from '@/shared/lib/utils'
 import { challengeTypes, rewardTypes } from "../libs/challengeTypeConfig"
 import { mockStudents } from "../data/mockChallenges"
+import type {
+  Challenge,
+  Objective,
+  RewardType,
+  TrackingFrequency,
+} from "../types/challenge.types"
+
+/**
+ * `Objective` es una union discriminada: para weight_loss, strength_gain y
+ * attendance el propio tipo fija la unidad y la frecuencia, y para las otras dos
+ * restringe la frecuencia a un subconjunto. El formulario, en cambio, guarda
+ * cadenas libres.
+ *
+ * Este constructor hace explicito ese estrechamiento y devuelve null si la
+ * combinacion no es valida. Antes el desajuste se tapaba con `any`, lo que
+ * permitia construir un reto invalido -por ejemplo con type vacio- y meterlo en
+ * el estado como si fuera legitimo.
+ */
+function buildObjective(
+  type: string,
+  target: number,
+  unit: string,
+  trackingFrequency: string
+): Objective | null {
+  switch (type) {
+    case "weight_loss":
+      return { type, target, unit: "kg", currentValue: 0, measurable: true, trackingFrequency: "weekly" }
+    case "strength_gain":
+      return { type, target, unit: "kg", currentValue: 0, measurable: true, trackingFrequency: "per_session" }
+    case "attendance":
+      return { type, target, unit: "sessions", currentValue: 0, measurable: true, trackingFrequency: "daily" }
+    case "habit_formation":
+      if (trackingFrequency !== "daily" && trackingFrequency !== "weekly") return null
+      return { type, target, unit, currentValue: 0, measurable: true, trackingFrequency }
+    case "endurance":
+      if (trackingFrequency !== "per_session" && trackingFrequency !== "weekly") return null
+      return { type, target, unit, currentValue: 0, measurable: true, trackingFrequency }
+    default:
+      return null
+  }
+}
+
+/**
+ * Frecuencias que `Objective` admite para cada tipo de reto.
+ *
+ * Los tres primeros tipos tienen la frecuencia fijada por el propio tipo; los
+ * otros dos aceptan un subconjunto. El formulario ofrecia siempre las tres, asi
+ * que permitia elegir combinaciones que el dominio prohibe -por ejemplo
+ * habit_formation con per_session-. Ese desajuste lo ocultaba el `any`.
+ */
+const ALLOWED_FREQUENCIES_BY_TYPE: Record<string, TrackingFrequency[]> = {
+  weight_loss: ["weekly"],
+  strength_gain: ["per_session"],
+  attendance: ["daily"],
+  habit_formation: ["daily", "weekly"],
+  endurance: ["per_session", "weekly"],
+}
+
+const FREQUENCY_LABELS: Record<TrackingFrequency, string> = {
+  daily: "Diario",
+  weekly: "Semanal",
+  per_session: "Por Sesión",
+}
+
+function isRewardType(value: string): value is RewardType {
+  return (
+    value === "discount" ||
+    value === "free_session" ||
+    value === "supplement" ||
+    value === "custom"
+  )
+}
 
 interface ChallengeCreationProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onCreateChallenge: (challenge: any) => void
+  onCreateChallenge: (challenge: Challenge) => void
 }
 
 export function ChallengeCreation({ open, onOpenChange, onCreateChallenge }: ChallengeCreationProps) {
@@ -58,21 +130,26 @@ export function ChallengeCreation({ open, onOpenChange, onCreateChallenge }: Cha
   }
 
   const handleSubmit = () => {
-    const challenge = {
+    const objective = buildObjective(
+      formData.type,
+      Number.parseFloat(formData.target),
+      formData.unit,
+      formData.trackingFrequency
+    )
+
+    // isStepValid() ya impide llegar aqui con el formulario incompleto, pero el
+    // compilador no lo sabe: esta guarda convierte esa garantia en algo que el
+    // tipo puede respaldar.
+    if (!objective || !isRewardType(formData.rewardType)) return
+
+    const challenge: Challenge = {
       id: Date.now().toString(),
       title: formData.title,
       description: formData.description,
       studentId: formData.studentId,
       studentName: selectedStudent?.name || "",
       createdBy: "trainer-1",
-      objective: {
-        type: formData.type,
-        target: Number.parseFloat(formData.target),
-        unit: formData.unit,
-        currentValue: 0,
-        measurable: true,
-        trackingFrequency: formData.trackingFrequency,
-      },
+      objective,
       startDate: formData.startDate,
       endDate: formData.endDate,
       reward: {
@@ -164,7 +241,17 @@ export function ChallengeCreation({ open, onOpenChange, onCreateChallenge }: Cha
                         "cursor-pointer transition-all",
                         formData.type === type.id ? "ring-2 ring-blue-500 bg-blue-50" : "hover:bg-gray-50",
                       )}
-                      onClick={() => setFormData({ ...formData, type: type.id, unit: type.units[0] })}
+                      onClick={() =>
+                        // La frecuencia se limpia al cambiar de tipo: la elegida antes
+                        // puede no ser valida para el tipo nuevo, y arrastrarla dejaria
+                        // el formulario en un estado que el envio rechazaria en silencio.
+                        setFormData({
+                          ...formData,
+                          type: type.id,
+                          unit: type.units[0],
+                          trackingFrequency: "",
+                        })
+                      }
                     >
                       <CardContent className="p-4">
                         <div className="flex items-center space-x-3">
@@ -249,9 +336,11 @@ export function ChallengeCreation({ open, onOpenChange, onCreateChallenge }: Cha
                     <SelectValue placeholder="¿Con qué frecuencia se medirá?" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="daily">Diario</SelectItem>
-                    <SelectItem value="weekly">Semanal</SelectItem>
-                    <SelectItem value="per_session">Por Sesión</SelectItem>
+                    {(ALLOWED_FREQUENCIES_BY_TYPE[formData.type] ?? []).map((frequency) => (
+                      <SelectItem key={frequency} value={frequency}>
+                        {FREQUENCY_LABELS[frequency]}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

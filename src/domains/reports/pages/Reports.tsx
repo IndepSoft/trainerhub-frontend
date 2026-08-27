@@ -12,46 +12,57 @@ import {
 import { useEffect, useState } from 'react'
 import SummaryComponent from '../components/SummaryComponent'
 
+/**
+ * Indicadores de la cabecera de Reportes.
+ *
+ * A nivel de modulo a proposito: son estaticos, y dentro del componente se
+ * recreaban en cada render, lo que obligaba a omitirlos de las dependencias del
+ * useEffect y disparaba react-hooks/exhaustive-deps.
+ *
+ * TODO: valores de ejemplo. Deben venir del backend cuando exista el
+ * repositorio de reportes.
+ */
+const indicatorsVal: IIndicatorCardProps[] = [
+  {
+    title: 'Alumnos Activos',
+    indicator: 24,
+    icon: Users,
+    delta: 5,
+    deltaType: 'up',
+    period: 'month',
+  },
+  {
+    title: 'Sesiones Completadas',
+    indicator: 125,
+    icon: CalendarDays,
+    delta: 2,
+    deltaType: 'up',
+    period: 'week',
+  },
+  {
+    title: 'Tasa de Asistencia',
+    indicator: 87,
+    icon: BanknoteArrowUp,
+    sufix: '%',
+    delta: 200,
+    deltaType: 'up',
+    period: 'month',
+  },
+  {
+    title: 'Ingresos Totales',
+    indicator: 4800,
+    prefix: '$',
+    icon: BicepsFlexed,
+    delta: 4.8,
+    deltaType: 'up',
+    period: 'month',
+  },
+]
+
 export default function Reports() {
   const [indicators, setIndicators] = useState<IIndicatorCardProps[]>([])
   const [activeTab, setActiveTab] = useState('summary')
 
-  const indicatorsVal: IIndicatorCardProps[] = [
-    {
-      title: 'Alumnos Activos',
-      indicator: 24,
-      icon: Users,
-      delta: 5,
-      deltaType: 'up',
-      period: 'month',
-    },
-    {
-      title: 'Sesiones Completadas',
-      indicator: 125,
-      icon: CalendarDays,
-      delta: 2,
-      deltaType: 'up',
-      period: 'week',
-    },
-    {
-      title: 'Tasa de Asistencia',
-      indicator: 87,
-      icon: BanknoteArrowUp,
-      sufix: '%',
-      delta: 200,
-      deltaType: 'up',
-      period: 'month',
-    },
-    {
-      title: 'Ingresos Totales',
-      indicator: 4800,
-      prefix: '$',
-      icon: BicepsFlexed,
-      delta: 4.8,
-      deltaType: 'up',
-      period: 'month',
-    },
-  ]
   useEffect(() => {
     setIndicators(indicatorsVal)
   }, [])

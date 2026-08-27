@@ -409,7 +409,7 @@ export default function Calendar() {
         <SessionDetailsModal
           session={selectedSession}
           open={!!selectedSession}
-          onOpenChange={(open: any) => !open && setSelectedSession(null)}
+          onOpenChange={(open) => !open && setSelectedSession(null)}
           onStatusChange={handleStatusChange}
         />
       )}

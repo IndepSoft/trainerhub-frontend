@@ -56,4 +56,16 @@ export default tseslint.config([
       'no-restricted-imports': 'off',
     },
   },
+  {
+    // Componentes de shadcn/ui. El patron de la libreria es exportar el
+    // componente junto a sus variantes de `cva` en el mismo fichero, lo que
+    // choca de frente con react-refresh/only-export-components. No es un
+    // defecto que podamos corregir sin desviarnos de la libreria y romper la
+    // actualizacion de sus componentes, asi que la regla se desactiva aqui y
+    // solo aqui. El resto del proyecto la sigue teniendo activa.
+    files: ['src/shared/ui/**'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])

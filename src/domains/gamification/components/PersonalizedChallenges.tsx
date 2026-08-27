@@ -28,7 +28,7 @@ export function PersonalizedChallenges() {
     return matchesSearch && matchesStatus && matchesType
   })
 
-  const handleCreateChallenge = (newChallenge: any) => {
+  const handleCreateChallenge = (newChallenge: Challenge) => {
     setChallenges([...challenges, newChallenge])
   }
 
