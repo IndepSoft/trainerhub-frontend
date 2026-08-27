@@ -1,4 +1,3 @@
-// @/modules/auth/components/LoginForm.tsx
 import { useState } from 'react'
 import {
   CardContent,
@@ -12,15 +11,15 @@ import { Label } from '@/shared/ui/label'
 import { Button } from '@/shared/ui/button'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Chrome } from 'lucide-react'
-import { useLogin } from '@/auth/hooks/useLogin'
+import { useLogin } from '../hooks/useLogin'
 
-export default function LoginForm() {
+export function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const { loginWithEmail, loginWithGoogle, error, loading } = useLogin()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
     await loginWithEmail({ email, password })
   }
 
@@ -44,13 +43,13 @@ export default function LoginForm() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="login-email">Email</Label>
             <Input
-              id="email"
+              id="login-email"
               type="email"
               placeholder="tu@email.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(event) => setEmail(event.target.value)}
               disabled={loading}
               required
               autoComplete="email"
@@ -59,22 +58,27 @@ export default function LoginForm() {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="password">Contraseña</Label>
+              <Label htmlFor="login-password">Contraseña</Label>
+              {/*
+                TODO: la recuperacion de contraseña no esta implementada. El
+                boton llevaba un console.log como manejador, que habria acabado
+                en produccion. Requiere resetPasswordForEmail en AuthPort.
+              */}
               <Button
                 type="button"
                 variant="link"
                 size="sm"
                 className="px-0 font-normal"
-                onClick={() => console.log('Implementar recuperación')}
+                disabled
               >
                 ¿Olvidaste tu contraseña?
               </Button>
             </div>
             <Input
-              id="password"
+              id="login-password"
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(event) => setPassword(event.target.value)}
               disabled={loading}
               required
               autoComplete="current-password"
