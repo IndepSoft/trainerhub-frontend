@@ -3,8 +3,8 @@ import {
   CardContent,
 } from '@/shared/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
-import LoginForm from '../components/organisms/LoginForm'
-import RegisterForm from '../components/organisms/RegisterForm'
+import { LoginForm } from '../components/LoginForm'
+import { RegisterForm } from '../components/RegisterForm'
 
 export default function AuthenticationPage() {
   return (

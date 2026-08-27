@@ -66,9 +66,9 @@ export const navigationConfig: NavigationItem[] = [
     showInMobile: true,
   },
   {
-    id: 'gamification',
-    label: 'Logros',
-    href: '/gamification',
+    id: 'progress',
+    label: 'Progreso',
+    href: '/progress',
     icon: Award,
     requiresAuth: true,
     showInSidebar: true,

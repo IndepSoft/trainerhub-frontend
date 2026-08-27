@@ -15,15 +15,21 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
 import { Calendar, MoreHorizontal, TrendingUp } from 'lucide-react'
+import { getInitials, getShortName } from '@/shared/utils/nameHelpers'
+import type { Student, StudentLevel } from '../types/student.types'
 
-interface Student {
-  id: number
-  name: string
-  email: string
-  level: string
-  levelColor: string
-  photoUrl?: string
-  goals?: string[]
+/**
+ * Color de cada nivel.
+ *
+ * Antes viajaba dentro del propio estudiante, como campo `levelColor`, lo que
+ * obligaba a tocar los datos para cambiar un color y dejaba que el dominio
+ * conociera clases de Tailwind. Como tabla es decisión de la vista, y `Record`
+ * sobre la unión obliga a cubrir todos los niveles.
+ */
+const LEVEL_BADGE_COLOR: Record<StudentLevel, string> = {
+  Principiante: 'bg-yellow-500',
+  Intermedio: 'bg-blue-500',
+  Avanzado: 'bg-green-500',
 }
 
 interface StudentCardProps {
@@ -31,19 +37,22 @@ interface StudentCardProps {
 }
 
 export function StudentCard({ student }: StudentCardProps) {
+  const fullName = getShortName(student.firstName, student.lastName)
+  const initials = getInitials(student.firstName, student.lastName)
+
   return (
-    <Card key={student.id} className="hover:shadow-lg transition-shadow">
+    <Card className="hover:shadow-lg transition-shadow">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
               <Avatar>
-                <AvatarImage src={student.photoUrl || ''} alt="@shadcn" />
-                <AvatarFallback>CN</AvatarFallback>
+                <AvatarImage src={student.photoUrl} alt={fullName} />
+                <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
             </div>
             <div className="space-y-1 flex-1">
-              <CardTitle className="text-xl">{student.name}</CardTitle>
+              <CardTitle className="text-xl">{fullName}</CardTitle>
               <CardDescription>{student.email}</CardDescription>
             </div>
           </div>
@@ -63,48 +72,47 @@ export function StudentCard({ student }: StudentCardProps) {
           </DropdownMenu>
         </div>
       </CardHeader>
+
       <CardContent className="space-y-4">
-        {/* First Section */}
-        <div className="flex items-center gap-6 text-sm text-gray-600 ">
+        <div className="flex items-center gap-6 text-sm text-gray-600">
           <div className="flex items-start flex-col">
             <span className="font-semibold">Edad</span>
-            <span className="text-black font-bold">{10} años</span>
+            <span className="text-black font-bold">{student.age} años</span>
           </div>
           <div className="flex items-start flex-col">
             <span className="font-semibold">Nivel</span>
-            <Badge
-              className={`${student.levelColor} text-white hover:${student.levelColor}`}
-            >
+            <Badge className={`${LEVEL_BADGE_COLOR[student.level]} text-white`}>
               {student.level}
             </Badge>
           </div>
         </div>
 
-        {/* Second Section */}
-        <div className=" flex items-start text-md flex-col gap-1 text-sm text-gray-600">
+        <div className="flex items-start text-md flex-col gap-1 text-sm text-gray-600">
           <span>Objetivos</span>
           <div className="text-black">
-            {student.goals?.map((goal, idx) => (
-              <Badge key={idx} variant="outline" className="text-xs mr-1">
+            {student.goals.map((goal) => (
+              <Badge key={goal} variant="outline" className="text-xs mr-1">
                 {goal}
               </Badge>
             ))}
           </div>
         </div>
 
-        {/* Third Section */}
-        <div className=" flex items-center gap-6 text-sm text-gray-600">
-          <div className="flex items-start flex-col">
-            <span className="font-semibold">Edad</span>
-            <span className="font-bold text-black">{10} años</span>
-          </div>
+        {/*
+          Este bloque mostraba "Edad" otra vez, con el mismo valor que arriba.
+          Era una duplicacion por copia y se elimina; el porcentaje de grasa se
+          conserva.
+          TODO: decidir que metrica acompaña aqui al % de grasa -peso, altura-.
+        */}
+        <div className="flex items-center gap-6 text-sm text-gray-600">
           <div className="flex items-start flex-col">
             <span className="font-semibold">% Grasa</span>
-            <span className="font-bold text-black">{22}%</span>
+            <span className="font-bold text-black">
+              {student.bodyFatPercentage}%
+            </span>
           </div>
         </div>
 
-        {/* Four Section */}
         <div className="flex flex-col xl:flex-row items-stretch gap-4 text-sm w-full">
           <Button variant="outline" className="flex-1 gap-2">
             <TrendingUp className="h-4 w-4" />

@@ -1,5 +1,3 @@
-"use client"
-
 import { useState } from "react"
 import { Button } from '@/shared/ui/button'
 import {
@@ -17,7 +15,8 @@ import { Calendar } from '@/shared/ui/calendar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Plus, CalendarIcon, Clock, MapPin, User, Users } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from 'sonner'
+import { SESSION_LOCATIONS, TIME_SLOTS } from '../data/calendarOptions'
 
 const students = [
   { id: 1, name: "María García", avatar: "MG" },
@@ -34,37 +33,7 @@ const sessionTypes = [
   { value: "group", label: "Clase Grupal", icon: Users },
 ]
 
-const locations = ["Gimnasio Principal", "Sala Grupal", "Sala de Evaluación", "Oficina", "Exterior", "Online"]
 
-const timeSlots = [
-  "08:00",
-  "08:30",
-  "09:00",
-  "09:30",
-  "10:00",
-  "10:30",
-  "11:00",
-  "11:30",
-  "12:00",
-  "12:30",
-  "13:00",
-  "13:30",
-  "14:00",
-  "14:30",
-  "15:00",
-  "15:30",
-  "16:00",
-  "16:30",
-  "17:00",
-  "17:30",
-  "18:00",
-  "18:30",
-  "19:00",
-  "19:30",
-  "20:00",
-  "20:30",
-  "21:00",
-]
 
 export function CreateSessionModal() {
   const [isOpen, setIsOpen] = useState(false)
@@ -210,7 +179,7 @@ export function CreateSessionModal() {
                       <SelectValue placeholder="Seleccionar hora" />
                     </SelectTrigger>
                     <SelectContent>
-                      {timeSlots.map((time) => (
+                      {TIME_SLOTS.map((time) => (
                         <SelectItem key={time} value={time}>
                           {time}
                         </SelectItem>
@@ -250,7 +219,7 @@ export function CreateSessionModal() {
                   <SelectValue placeholder="Seleccionar ubicación" />
                 </SelectTrigger>
                 <SelectContent>
-                  {locations.map((loc) => (
+                  {SESSION_LOCATIONS.map((loc) => (
                     <SelectItem key={loc} value={loc}>
                       {loc}
                     </SelectItem>
