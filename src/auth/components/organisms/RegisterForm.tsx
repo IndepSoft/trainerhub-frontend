@@ -1,14 +1,11 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import {
-  Card,
   CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from '@/shared/ui/card'
-import { Input } from '@/shared/ui/input'
-import { Label } from '@radix-ui/react-label'
 import { Button } from '@/shared/ui/button'
 import FormField from '../molecules/FormField'
 import FormInputCustom from '../molecules/FormInputCustom'

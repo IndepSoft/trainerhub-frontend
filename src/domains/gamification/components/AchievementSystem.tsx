@@ -12,7 +12,9 @@ interface AchievementSystemProps {
   studentId?: string
 }
 
-export function AchievementSystem({ studentId }: AchievementSystemProps) {
+// TODO: `studentId` no se usa; los logros salen de predefinedAchievements (mock),
+// sin filtrar por estudiante.
+export function AchievementSystem(_props: AchievementSystemProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [selectedRarity, setSelectedRarity] = useState<string>("all")
 

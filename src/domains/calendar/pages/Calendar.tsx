@@ -189,7 +189,7 @@ export default function Calendar() {
     setSelectedSession(session)
   }
 
-  const handleStatusChange = (sessionId: number, newStatus: string) => {
+  const handleStatusChange = (_sessionId: number, newStatus: string) => {
     toast(`La sesión ha sido marcada como ${newStatus}.`)
   }
 

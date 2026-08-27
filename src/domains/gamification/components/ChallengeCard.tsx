@@ -64,19 +64,18 @@ const statusColors = {
   paused: "bg-yellow-100 text-yellow-800",
 }
 
+// TODO: PersonalizedChallenges pasa `onUpdate` con handleUpdateProgress, pero esta
+// tarjeta nunca lo invoca: actualizar el progreso de un reto no hace nada.
 export function ChallengeCard({
   challenge,
   showProgress = true,
   allowEdit = false,
-  onUpdate,
   onEdit,
   onTogglePause,
 }: ChallengeCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
 
   const daysRemaining = Math.ceil((challenge.endDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-  const totalDays = Math.ceil((challenge.endDate.getTime() - challenge.startDate.getTime()) / (1000 * 60 * 60 * 24))
-  const daysElapsed = totalDays - daysRemaining
 
   const completedMilestones = challenge.milestones.filter((m) => m.achieved).length
   const nextMilestone = challenge.milestones.find((m) => !m.achieved)

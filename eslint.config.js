@@ -19,5 +19,18 @@ export default tseslint.config([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Alinea eslint con noUnusedParameters de tsconfig: el prefijo `_` marca
+      // un binding intencionadamente sin usar (firma impuesta por un callback,
+      // prop declarada pero aun no cableada).
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
+    },
   },
 ])

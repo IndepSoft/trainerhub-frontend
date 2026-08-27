@@ -37,10 +37,10 @@ const categoryColors = {
   challenges: "bg-purple-50 text-purple-700",
 }
 
+// TODO: la prop `showProgress` esta declarada en AchievementBadgeProps pero no se usa.
 export function AchievementBadge({
   achievement,
   unlocked,
-  showProgress = false,
   size = "medium",
   onClick,
 }: AchievementBadgeProps) {
