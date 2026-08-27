@@ -3,11 +3,11 @@ import { withSuspense } from '@/shared/infrastructure/routing/withSuspense'
 import { lazy } from 'react'
 import type { RouteObject } from 'react-router-dom'
 
-const Calendar = lazy(() => import('@/domains/calendar/pages/Calendar'))
+const Progreso = lazy(() => import('../pages/Progreso'))
 
-export const calendarRoutes: RouteObject[] = [
+export const progresoRoutes: RouteObject[] = [
   {
-    path: '/calendar',
-    element: withSuspense(withProtectedRoute(<Calendar />)),
+    path: '/progreso',
+    element: withSuspense(withProtectedRoute(<Progreso />)),
   },
 ]

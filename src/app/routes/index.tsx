@@ -5,7 +5,7 @@ import { dashboardRoutes } from '@/domains/dashboard/infrastructure/routes'
 import { trainingsRoutes } from '@/domains/trainings/infrastructure/routes'
 import { studentsRoutes } from '@/domains/students/infrastructure/routes'
 import { authRoutes } from '@/auth/infrastructure/routes'
-import { gamificationRoutes } from '@/domains/gamification/infrastructure/routes'
+import { progresoRoutes } from '@/domains/progreso/infrastructure/routes'
 import { calendarRoutes } from '@/domains/calendar/infrastructure/routes'
 
 const RootLayout = lazy(() => import('@/app/layouts/RootLayout'))
@@ -15,7 +15,7 @@ const domainRoutes = [
   ...dashboardRoutes,
   ...trainingsRoutes,
   ...studentsRoutes,
-  ...gamificationRoutes,
+  ...progresoRoutes,
   ...calendarRoutes,
   ...authRoutes,
 ]
