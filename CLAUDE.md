@@ -169,8 +169,12 @@ más instancia un adaptador ni lo importa por su clase.
 
 ### 4.1 Stack
 
-React 19 · TypeScript 5.8 · Vite 7 · Tailwind 3.4 · shadcn/ui (new-york) ·
+React 19.2 · TypeScript 5.9 · Vite 7 · Tailwind 3.4 · shadcn/ui (new-york) ·
 react-router-dom 7 · zustand 5 · Supabase (tras adaptador)
+
+Node: la version la fija `.nvmrc`. `engines` declara el suelo (`>=22.12.0`, que
+impone Vite) y `.npmrc` con `engine-strict=true` hace que npm **falle** la
+instalacion si no se cumple, en vez de limitarse a avisar.
 
 ### 4.2 Comandos
 
@@ -180,6 +184,10 @@ npm run build    # tsc -b && vite build
 npm run lint     # eslint .
 npm run preview  # sirve el build
 ```
+
+**Integracion continua:** `.github/workflows/ci.yml` ejecuta `npm ci`, `npm run
+lint` y `npm run build` en cada PR hacia `develop` y `main`. Antes de abrir un
+PR, pasa esa misma secuencia en local — es exactamente lo que va a correr.
 
 ### 4.3 Convenciones establecidas
 
@@ -224,5 +232,9 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   calendar. `ChallengeCard.onUpdate` es la más grave: el padre le pasa un
   manejador real que nunca se invoca.
 - La subestructura de carpetas difiere entre dominios; falta unificarla.
-- Seis errores de lint previos: `no-explicit-any` en tres ficheros y
-  `react-refresh` en componentes de shadcn.
+- El dominio `reports` no tiene fichero de rutas ni esta registrado en el
+  router: su pagina y sus graficos existen pero son inalcanzables.
+- El lint esta en cero. `react-refresh/only-export-components` queda desactivada
+  **solo** en `src/shared/ui/**`, porque el patron de shadcn -componente y
+  variantes de `cva` en el mismo fichero- choca con ella y no es corregible sin
+  desviarse de la libreria.
