@@ -1,0 +1,63 @@
+name: CI
+
+# Se ejecuta en los PR hacia las ramas protegidas y tambien tras el merge, para
+# saber si la rama de integracion quedo en verde y no solo el PR aislado.
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+# Si llegan varios push seguidos a la misma rama, solo interesa el ultimo.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Solo lectura: este workflow no escribe nada en el repositorio.
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Lint y build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Descargar el codigo
+        uses: actions/checkout@v4
+
+      - name: Preparar Node
+        uses: actions/setup-node@v4
+        with:
+          # La version sale de .nvmrc, no escrita aqui a mano: asi el runner y
+          # las maquinas del equipo no pueden desincronizarse.
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      # npm ci, no npm install: instala exactamente lo que fija el lockfile y
+      # falla si package.json y package-lock.json han divergido.
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # Si el lint falla, esto sigue ejecutandose: mejor ver los dos informes de
+      # una vez que arreglar uno, esperar otra ronda y descubrir el siguiente.
+      - name: Build
+        if: '!cancelled()'
+        run: npm run build
+
+      # El build no necesita las variables de Supabase para compilar, pero sin
+      # ellas `import.meta.env.VITE_*` queda en undefined y la app reventaria al
+      # arrancar. Este artefacto sirve para inspeccionar el resultado del build,
+      # NO para desplegarlo: el job de despliegue debe compilar de nuevo con los
+      # secretos inyectados.
+      - name: Guardar el build
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ github.sha }}
+          path: dist/
+          retention-days: 7
