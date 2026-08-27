@@ -260,16 +260,20 @@ enumeración: mejor un token opaco y rotable.
 
 ## 6. Qué NO queda resuelto
 
-### 6.1 Dieciséis vulnerabilidades de dependencias
+### 6.1 Vulnerabilidades de dependencias — ✅ RESUELTO
 
-`npm audit` reporta 16 (13 altas) en esta rama. **No se aplicó aquí.** El
-`npm audit fix` correspondiente vive en la rama `refactor-claude`, que se creó
-antes de descubrir que los avances reales estaban en esta.
+`npm audit fix` aplicado sobre `develop`: de 16 vulnerabilidades (13 altas) a
+**cero**. Cambió 44 paquetes, todos dentro de los rangos semver ya declarados —
+`package.json` no se tocó.
 
-Del análisis original: ninguna era explotable en el proyecto tal como estaba,
-porque casi todas son ReDoS/DoS en herramientas de compilación. La que importa
-es `react-router`, por los *open redirect* — irrelevantes mientras las rutas sean
-literales, pero reales en cuanto exista un `?redirect=` en el flujo de login.
+La que de verdad importaba era `react-router`, por los *open redirect*:
+7.8.2 → 7.18.2. Eran irrelevantes mientras las rutas fuesen literales, pero
+habrían sido reales en cuanto existiera un `?redirect=` en el flujo de login.
+El resto eran ReDoS/DoS en herramientas de compilación.
+
+Verificado tras aplicarlo: build en verde, lint sin cambios, y las rutas de
+todos los dominios comprobadas en navegador — el salto de diez minors en el
+router era el riesgo real.
 
 ### 6.2 Deuda funcional
 
