@@ -1,5 +1,3 @@
-"use client"
-
 import { Button } from '@/shared/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -15,78 +13,24 @@ import {
   User,
   Edit,
   Trash2,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
   MessageSquare,
-} from "lucide-react"
+} from 'lucide-react'
+import { SESSION_STATUS, SESSION_STATUS_ENTRIES } from '../libs/sessionStatus'
+import { getStudentInitials, parseLocalDateKey } from '../libs/calendar.utils'
+import type { Session, SessionStatus } from '../types/calendar.types'
 import { toast } from "sonner"
 import { useState } from "react"
-
-interface Session {
-  id: number
-  title: string
-  student: string
-  type: string
-  category: string
-  date: string
-  time: string
-  duration: number
-  location: string
-  status: string
-  notes: string
-  avatar: string
-}
 
 interface SessionDetailsModalProps {
   session: Session
   open: boolean
   onOpenChange: (open: boolean) => void
-  onStatusChange: (sessionId: number, newStatus: string) => void
+  onStatusChange: (sessionId: string, newStatus: string) => void
 }
 
 export function SessionDetailsModal({ session, open, onOpenChange, onStatusChange }: SessionDetailsModalProps) {
-  const [newStatus, setNewStatus] = useState(session.status)
+  const [newStatus, setNewStatus] = useState<SessionStatus>(session.status)
   const [sessionNotes, setSessionNotes] = useState(session.notes)
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "confirmed":
-        return "bg-green-100 text-green-800"
-      case "pending":
-        return "bg-yellow-100 text-yellow-800"
-      case "cancelled":
-        return "bg-red-100 text-red-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
-  }
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "confirmed":
-        return <CheckCircle className="w-4 h-4" />
-      case "pending":
-        return <AlertCircle className="w-4 h-4" />
-      case "cancelled":
-        return <XCircle className="w-4 h-4" />
-      default:
-        return null
-    }
-  }
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "confirmed":
-        return "Confirmada"
-      case "pending":
-        return "Pendiente"
-      case "cancelled":
-        return "Cancelada"
-      default:
-        return "Desconocido"
-    }
-  }
 
   const handleStatusUpdate = () => {
     if (newStatus !== session.status) {
@@ -110,7 +54,7 @@ export function SessionDetailsModal({ session, open, onOpenChange, onStatusChang
           <DialogTitle className="flex items-center gap-3">
             <Avatar className="w-10 h-10">
               <AvatarImage src={`/generic-placeholder-icon.png?height=40&width=40`} />
-              <AvatarFallback>{session.avatar}</AvatarFallback>
+              <AvatarFallback>{getStudentInitials(session.student)}</AvatarFallback>
             </Avatar>
             <div>
               <h2 className="text-xl font-bold">{session.title}</h2>
@@ -131,7 +75,7 @@ export function SessionDetailsModal({ session, open, onOpenChange, onStatusChang
                   <Calendar className="w-5 h-5 text-muted-foreground" />
                   <div>
                     <p className="font-medium">
-                      {new Date(session.date).toLocaleDateString("es-ES", {
+                      {parseLocalDateKey(session.date).toLocaleDateString("es-ES", {
                         weekday: "long",
                         day: "numeric",
                         month: "long",
@@ -146,7 +90,7 @@ export function SessionDetailsModal({ session, open, onOpenChange, onStatusChang
                   <Clock className="w-5 h-5 text-muted-foreground" />
                   <div>
                     <p className="font-medium">
-                      {session.time} ({session.duration} min)
+                      {session.time} ({session.durationMinutes} min)
                     </p>
                     <p className="text-sm text-muted-foreground">Hora y duración</p>
                   </div>
@@ -165,7 +109,7 @@ export function SessionDetailsModal({ session, open, onOpenChange, onStatusChang
                   <div>
                     <p className="font-medium">{session.student}</p>
                     <p className="text-sm text-muted-foreground">
-                      {session.type === "individual" ? "Sesión individual" : "Sesión grupal"}
+                      {session.kind === 'individual' ? 'Sesión individual' : 'Sesión grupal'}
                     </p>
                   </div>
                 </div>
@@ -183,9 +127,11 @@ export function SessionDetailsModal({ session, open, onOpenChange, onStatusChang
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">Estado actual:</span>
-                  <Badge className={getStatusColor(session.status)}>
-                    {getStatusIcon(session.status)}
-                    <span className="ml-1">{getStatusText(session.status)}</span>
+                  <Badge className={SESSION_STATUS[session.status].badgeClassName}>
+                    {SESSION_STATUS[session.status].icon}
+                    <span className="ml-1">
+                      {SESSION_STATUS[session.status].label}
+                    </span>
                   </Badge>
                 </div>
               </div>
@@ -193,14 +139,24 @@ export function SessionDetailsModal({ session, open, onOpenChange, onStatusChang
               <div className="space-y-2">
                 <Label>Cambiar estado</Label>
                 <div className="flex gap-3">
-                  <Select value={newStatus} onValueChange={setNewStatus}>
+                  <Select
+                    value={newStatus}
+                    onValueChange={(value: SessionStatus) => setNewStatus(value)}
+                  >
                     <SelectTrigger className="flex-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="pending">Pendiente</SelectItem>
-                      <SelectItem value="confirmed">Confirmada</SelectItem>
-                      <SelectItem value="cancelled">Cancelada</SelectItem>
+                      {/*
+                        Las opciones salen de la tabla de estados: antes las
+                        etiquetas estaban escritas aqui y tambien en
+                        getStatusText, y podian divergir.
+                      */}
+                      {SESSION_STATUS_ENTRIES.map(([status, presentation]) => (
+                        <SelectItem key={status} value={status}>
+                          {presentation.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <Button onClick={handleStatusUpdate} disabled={newStatus === session.status}>
