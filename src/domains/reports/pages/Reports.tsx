@@ -81,7 +81,12 @@ export default function Reports() {
       </PageHeader>
 
       {/* <section className="page-content mt-8"> */}
-      <main className="mt-8 overflow-auto">
+      {/* Contenedor de scroll de la pagina. Es un div y no un <main> a
+          proposito: el landmark <main> ya lo pinta SidebarInset desde
+          RootLayout, y anidar uno dentro de otro es HTML invalido -solo se
+          admite uno por documento- ademas de confundir a los lectores de
+          pantalla. */}
+      <div className="mt-8 flex-1 overflow-auto">
         <div className="ps-4 pe-4 pb-4 max-w-8xl mx-auto">
           <div className="space-y-6"></div>
           <div className="w-full mb-6">
@@ -103,7 +108,7 @@ export default function Reports() {
           </div>
           <div className="w-full flex gap-4"></div>
         </div>
-      </main>
+      </div>
       <section className="w-full">
         <Card>
           <CardHeader>
