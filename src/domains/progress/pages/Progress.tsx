@@ -9,7 +9,7 @@ import { PersonalizedChallenges } from '../components/PersonalizedChallenges'
 import { AchievementSystem } from '../components/AchievementSystem'
 import { useProgressOverview } from '../hooks/useProgressOverview'
 
-export default function Progreso() {
+export default function Progress() {
   const [activeTab, setActiveTab] = useState('overview')
   const { overview } = useProgressOverview()
 
