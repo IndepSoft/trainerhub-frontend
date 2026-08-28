@@ -1,4 +1,3 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { TrendingUp } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader'
@@ -49,54 +48,58 @@ export default function Progress() {
             ))}
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Seguimiento de Progreso</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="w-full md:grid md:grid-cols-5">
-                  <TabsTrigger value="overview">Resumen</TabsTrigger>
-                  <TabsTrigger value="achievements">Logros</TabsTrigger>
-                  <TabsTrigger value="challenges">Desafíos</TabsTrigger>
-                  <TabsTrigger value="streaks">Rachas</TabsTrigger>
-                  <TabsTrigger value="analytics">Análisis</TabsTrigger>
-                </TabsList>
+          {/* Sin envoltura <Card>, por el mismo motivo que en Reportes: su
+              contenido son a su vez tarjetas, que pagaban el relleno dos veces y
+              caian a 277 px, bajo el minimo util de 280 de la regla 1.6. Un
+              <h2> da la misma informacion sin ese nivel, y ademas es un
+              encabezado de verdad para un lector de pantalla: CardTitle
+              renderiza un <div>. */}
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold leading-none tracking-tight">
+              Seguimiento de Progreso
+            </h2>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="w-full md:grid md:grid-cols-5">
+                <TabsTrigger value="overview">Resumen</TabsTrigger>
+                <TabsTrigger value="achievements">Logros</TabsTrigger>
+                <TabsTrigger value="challenges">Desafíos</TabsTrigger>
+                <TabsTrigger value="streaks">Rachas</TabsTrigger>
+                <TabsTrigger value="analytics">Análisis</TabsTrigger>
+              </TabsList>
 
-                <TabsContent value="overview" className="mt-6">
-                  <ProgressOverviewPanel
-                    overview={overview}
-                    onNavigateToTab={setActiveTab}
-                  />
-                </TabsContent>
+              <TabsContent value="overview" className="mt-6">
+                <ProgressOverviewPanel
+                  overview={overview}
+                  onNavigateToTab={setActiveTab}
+                />
+              </TabsContent>
 
-                <TabsContent value="achievements" className="mt-6">
-                  <AchievementSystem />
-                </TabsContent>
+              <TabsContent value="achievements" className="mt-6">
+                <AchievementSystem />
+              </TabsContent>
 
-                <TabsContent value="challenges" className="mt-6">
-                  <PersonalizedChallenges />
-                </TabsContent>
+              <TabsContent value="challenges" className="mt-6">
+                <PersonalizedChallenges />
+              </TabsContent>
 
-                <TabsContent value="streaks" className="mt-6">
-                  <StreakTrackingSystem />
-                </TabsContent>
+              <TabsContent value="streaks" className="mt-6">
+                <StreakTrackingSystem />
+              </TabsContent>
 
-                <TabsContent value="analytics" className="mt-6">
-                  <div className="text-center py-12">
-                    <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">
-                      Análisis Avanzado de Progreso
-                    </h3>
-                    <p className="text-muted-foreground">
-                      Métricas detalladas, reportes de participación y análisis de
-                      efectividad estarán disponibles próximamente.
-                    </p>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
+              <TabsContent value="analytics" className="mt-6">
+                <div className="text-center py-12">
+                  <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">
+                    Análisis Avanzado de Progreso
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Métricas detalladas, reportes de participación y análisis de
+                    efectividad estarán disponibles próximamente.
+                  </p>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </section>
         </div>
       </div>
     </div>

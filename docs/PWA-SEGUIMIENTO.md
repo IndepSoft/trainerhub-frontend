@@ -253,6 +253,25 @@ Sigue en pie la pregunta de producto que hay detrás, y que este paso **no**
 resuelve: el bloque repite las mismas cinco solapas que `/progress` y cuatro de
 ellas siguen vacías. Puede que sobre entero en Reportes.
 
+### ✅ 8 · Mismo anidamiento en `progress`
+
+Al auditar tras el refactor de `shared` aparecieron **seis tarjetas a 277 px en
+`/progress`**: el mismo patrón `Card` → `Tabs` → `Card`, en dos sitios.
+
+- [x] `Progress.tsx`: fuera la envoltura «Seguimiento de Progreso»
+- [x] `StreakTrackingSystem.tsx`: fuera la envoltura «Rachas por Categoría»,
+      un nivel más abajo, que seguía dejando tres tarjetas a 277
+- [x] Verificado a 375 px en las seis rutas más las cuatro pestañas de
+      `progress`: **0 contenedores bajo 280, 0 controles bajo 44, 0 desborde**
+- [x] Verificado a 1280 px: la lista de pestañas vuelve a `grid` de 36 px
+
+Los títulos se conservan como `<h2>` y `<h3>`, con lo que `/progress` pasa de
+tener un solo `<h1>` a una jerarquía `<h1>` → `<h2>` → `<h3>`.
+
+Matiz de medición: en la pestaña «Logros» hay elementos de 64 y 96 px, pero son
+**insignias de logro**, que la propia §1.6 exime del umbral. El criterio se
+aplica a contenedores, no a insignias.
+
 ---
 
 ## Deuda anotada de paso

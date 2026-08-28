@@ -3,7 +3,7 @@ import { AppSidebar } from '@/shared/components/navigation/AppSidebar'
 import { AppNavbar } from '@/shared/components/navigation/AppNavbar'
 import { SidebarInset } from '@/shared/ui/sidebar'
 import { useAuth } from '@/auth/hooks/useAuth'
-import { useTrainer } from '@/shared/hooks/useTrainer'
+import { useTrainer } from '@/app/hooks/useTrainer'
 
 export default function RootLayout() {
   const location = useLocation()
