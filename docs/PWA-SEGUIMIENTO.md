@@ -171,17 +171,64 @@ relleno para ganar 3 px sería maquillar la medida.
 Pendiente relacionado: `navigation.config.ts` también declara `/settings` y
 `/login`, que siguen sin existir como rutas.
 
-### ⬜ 6 · Manifiesto, service worker e iconos
+### ✅ 6 · Manifiesto, service worker e iconos
 
-**Sólo cuando no quede nada roto que cachear.** Un service worker sirviendo una
-vista de 33 px la deja disponible sin conexión.
+- [x] `vite-plugin-pwa` 1.3.0 instalado, 0 vulnerabilidades
+- [x] `manifest.webmanifest`: nombre, descripción, `lang: es`, `scope`,
+      `display: standalone`, colores del tema
+- [x] Iconos 192 / 512, maskable 512 y apple-touch 180 — **provisionales**
+- [x] `theme-color`, metaetiquetas de Apple, `lang="es"` y título real en
+      `index.html`, que seguía siendo la plantilla de Vite
+- [x] Estrategia de caché decidida y verificada
+- [x] Verificado sin conexión de verdad
+- [ ] **Comprobar instalabilidad en un dispositivo real** — no se puede hacer
+      desde aquí, ver abajo
 
-- [ ] `vite-plugin-pwa` (hoy no hay ninguna dependencia PWA)
-- [ ] `manifest.webmanifest`: nombre, iconos, `display: standalone`, colores
-- [ ] Iconos 192 / 512 y maskable
-- [ ] `theme-color` y metaetiquetas de Apple en `index.html` (hoy sólo `viewport`)
-- [ ] Estrategia de caché: qué va precacheado y qué va a red primero
-- [ ] Comprobar instalabilidad en un dispositivo real
+**El bloqueante era otro: el build no emitía `index.html`.** `vite.config.ts`
+declaraba `build.rollupOptions.input: './src/app/main.tsx'`, lo que sustituye la
+entrada HTML por defecto de Vite. Resultado: `dist/` salía con `assets/` y nada
+más. El artefacto de producción **no se podía servir**, y sin HTML no hay dónde
+inyectar el manifiesto ni el registro del service worker. Llevaba dando «build
+en verde» todo este tiempo. Se elimina el `input`; `index.html` ya apuntaba a
+`/src/app/main.tsx`, así que basta con eso.
+
+**Estrategia de caché.** Se precachea sólo el armazón —js, css, html, iconos,
+fuentes: 42 entradas— con `navigateFallback` a `index.html` para que las rutas
+profundas funcionen. Las respuestas de la API **no se cachean a propósito**: son
+datos autenticados de un entrenador concreto, y la caché de un service worker
+sobrevive al cierre de sesión y queda al alcance de quien use luego el
+dispositivo. Verificado: `apiEnCache: false`.
+
+**Prueba sin conexión.** Con el servidor de vista previa **parado**, navegar a
+`/reports` cargó el armazón desde la caché, React arrancó y el router redirigió a
+`/authentication` por no haber sesión. Es la prueba real, no la teoría.
+
+Matiz aprendido de paso: un `fetch('/reports')` desde JavaScript **falla** con el
+servidor caído aunque la navegación funcione. `navigateFallback` sólo atiende
+peticiones de navegación (`mode: 'navigate'`), no llamadas de `fetch`.
+
+**Otros dos arreglos que exigió el paso:**
+
+- `tsconfig.node.json` no tenía `skipLibCheck`, así que `tsc -b` comprobaba los
+  `.d.ts` de Workbox —escritos contra globales de service worker— y fallaba.
+  Añadir `"WebWorker"` al `lib` no vale: choca con `DOM`, porque ambos declaran
+  `self`, `location` y `navigator`.
+- `Authentication.tsx` y `QuickActionCard.tsx` forzaban `CardContent className="p-6"`,
+  que anulaba el relleno móvil del paso 5. Es redundante —`p-6` ya es el valor
+  desde `md`— y sólo servía para pisar el móvil. Los campos del login pasan de
+  261 a 277 px.
+
+⚠️ **Los iconos son un marcador de posición.** Una mancuerna blanca sobre el azul
+primario del tema, generada por script. Cumplen los requisitos técnicos —tamaños,
+`purpose: maskable` con la marca dentro de la zona segura del 80 %— pero no son la
+identidad de TrainerHub. El script queda fuera del repositorio; se regeneran desde
+el logo real cuando exista.
+
+⚠️ **La instalabilidad no está verificada.** Los requisitos técnicos sí lo están
+y son medibles: contexto seguro, service worker activo y controlando la página,
+manifiesto con `name`, `short_name`, `start_url`, `display: standalone` e iconos
+de 192 y 512. Pero `beforeinstallprompt` no se dispara en el panel embebido, que
+no es un Chrome completo. Falta abrirlo en un teléfono.
 
 ---
 

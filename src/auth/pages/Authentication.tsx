@@ -11,7 +11,7 @@ export default function AuthenticationPage() {
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="w-full max-w-lg p-4">
         <Card>
-          <CardContent className="p-6">
+          <CardContent>
             <Tabs 
               defaultValue="login" 
               className="w-full"
