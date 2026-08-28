@@ -3,6 +3,7 @@ import { Plus, UserPlus } from 'lucide-react'
 import { StudentCard } from '../components/StudentCard'
 import { StudentFilters } from '../components/StudentFilters'
 import { useStudents } from '../hooks/useStudents'
+import { Button } from '@/shared/ui/button'
 
 export default function Students() {
   const { students } = useStudents()
@@ -28,20 +29,14 @@ export default function Students() {
             </p>
           </div>
           <PageHeader.Actions>
-            <button
-              onClick={handleInviteStudent}
-              className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50 flex items-center space-x-2"
-            >
+            <Button variant="outline" onClick={handleInviteStudent}>
               <UserPlus className="w-4 h-4" />
               <span>Invitar Estudiante</span>
-            </button>
-            <button
-              onClick={handleAddStudent}
-              className="px-4 py-2 bg-primary text-white text-sm rounded-lg hover:bg-blue-700 flex items-center space-x-2"
-            >
+            </Button>
+            <Button onClick={handleAddStudent}>
               <Plus className="w-4 h-4" />
               <span>Agregar Estudiante</span>
-            </button>
+            </Button>
           </PageHeader.Actions>
         </PageHeader.Content>
       </PageHeader>

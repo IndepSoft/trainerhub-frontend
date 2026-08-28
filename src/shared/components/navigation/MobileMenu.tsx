@@ -40,7 +40,7 @@ export function MobileMenu() {
     <>
       <button
         onClick={toggleMenu}
-        className="md:hidden p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
+        className="md:hidden inline-flex h-11 w-11 items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
         aria-label="Toggle mobile menu"
         aria-expanded={isOpen}
       >
@@ -68,7 +68,7 @@ export function MobileMenu() {
                 </div>
                 <button
                   onClick={closeMenu}
-                  className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-md transition-colors"
+                  className="inline-flex h-11 w-11 items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-md transition-colors"
                   aria-label="Close mobile menu"
                 >
                   <X className="h-5 w-5" />
@@ -114,9 +114,9 @@ export function MobileMenu() {
 
               {/* Footer */}
               <div className="border-t bg-gray-50 p-4">
-                <button className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors text-sm font-medium text-gray-700">
-                  <span>v1.0.0</span>
-                </button>
+                <p className="text-center text-sm font-medium text-gray-500">
+                  v1.0.0
+                </p>
               </div>
             </div>
           </div>

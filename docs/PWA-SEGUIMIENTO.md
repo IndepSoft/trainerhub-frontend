@@ -76,16 +76,51 @@ Partía de cero: no tenía ni un solo prefijo responsive.
 En escritorio se conserva: los cuatro en una fila a 226 px y las dos tarjetas
 lado a lado a 468 px.
 
-### ⬜ 4 · Pestañas desplazables y objetivos táctiles
+### ✅ 4 · Pestañas desplazables y objetivos táctiles
 
 Transversal: toca `shared/ui` y `shared/components/navigation`.
 
-- [ ] Las `TabsList` con `grid-cols-5` pasan a desplazamiento horizontal en móvil
-      (afecta a `progress`, `reports`, `AchievementSystem`, `StreakTrackingSystem`)
-- [ ] Botón de menú móvil: hoy **36 × 36** → 44
-- [ ] Botón de notificaciones: hoy **28 × 28** → 44
-- [ ] Revisar el resto de `size="sm"` y `size="icon"` en móvil
-- [ ] Verificado a 375 px en todas las rutas
+- [x] Las cuatro `TabsList` con `grid-cols-5` pasan a desplazamiento horizontal
+      en móvil y conservan la rejilla desde `md`
+- [x] Botón de menú móvil: 36 × 36 → **44 × 44**
+- [x] Botón de notificaciones: 28 × 28 → **44 × 44**
+- [x] Revisado el resto de `size="sm"` y `size="icon"`
+- [x] Verificado a 375 px en `/dashboard`, `/trainings`, `/students`,
+      `/calendar`, `/progress` y `/authentication`: **0 desborde, 0 controles
+      por debajo de 44 px**
+- [x] Verificado a 1280 px sin regresión: la lista vuelve a `grid`, 36 px de
+      alto, pestañas de 229 × 29
+
+**Lo que el plan no anticipaba.** El defecto no eran cuatro `TabsList`: era que
+**ninguna variante de `Button` llegaba a 44 px** —`sm` 32, `default` 36, `lg` 40,
+`icon` 36— y el disparador de `Select` se quedaba en 36. Parchear los diez sitios
+que las usan habría sido duplicación; el arreglo está en la variante, móvil
+primero, con `md:` devolviendo la altura compacta en escritorio.
+
+| Medida | Antes | Después |
+|---|---|---|
+| Pestaña en `progress` | 57 × 29 | **69–84 × 44**, con desplazamiento |
+| Lista de pestañas | comprimida a 261 px | 261 visibles / 383 de contenido |
+| Botones de `StudentCard` | 261 × 38 | **261 × 44** |
+| Filtros de `Select` | 227 × 36 | **227 × 44** |
+
+**Tres trampas que costó encontrar**, anotadas para no repetirlas:
+
+- `min-width` explícito en una pestaña **destruye** el `min-width: auto` de
+  flexbox, que era justo lo que impedía comprimirlas. Con él, las cinco
+  seguían aplastándose a 51 px en vez de desbordar y desplazarse. Se quitó: el
+  ancho lo da el contenido más `px-3`.
+- `height` no basta para un botón con `flex-1` dentro de una columna flex:
+  `flex-basis: 0` gana y lo dejaba en 38 px. El suelo tiene que ser `min-height`.
+- Dos botones de `ChallengeCard` eran `size="sm"` con un icono dentro y **sin
+  nombre accesible**. Pasan a `size="icon"` con `aria-label`.
+
+Además, los dos botones de la cabecera de `students` estaban escritos a mano
+—con un `hover:bg-blue-700` fuera del sistema de color— en vez de usar el
+componente compartido. Ahora usan `Button`.
+
+⚠️ **`reports` recibió el mismo cambio pero no se ha podido verificar en
+navegador**: sigue sin ruta registrada. Queda cubierto por el paso 5.
 
 ### ⬜ 5 · Registrar la ruta de `reports`
 

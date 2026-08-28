@@ -116,7 +116,7 @@ export default function Reports() {
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="w-full md:grid md:grid-cols-5">
                 <TabsTrigger value="summary">Resumen</TabsTrigger>
                 <TabsTrigger value="achievements">Logros</TabsTrigger>
                 <TabsTrigger value="challenges">Desafíos</TabsTrigger>

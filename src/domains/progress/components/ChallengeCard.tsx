@@ -99,10 +99,15 @@ export function ChallengeCard({
           <div className="flex items-center space-x-2">
             {allowEdit && (
               <>
-                <Button variant="ghost" size="sm" onClick={onEdit}>
+                <Button variant="ghost" size="icon" aria-label="Editar desafío" onClick={onEdit}>
                   <Edit className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="sm" onClick={onTogglePause}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={challenge.status === "paused" ? "Reanudar desafío" : "Pausar desafío"}
+                  onClick={onTogglePause}
+                >
                   {challenge.status === "paused" ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
                 </Button>
               </>
