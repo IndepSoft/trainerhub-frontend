@@ -122,18 +122,54 @@ componente compartido. Ahora usan `Button`.
 ⚠️ **`reports` recibió el mismo cambio pero no se ha podido verificar en
 navegador**: sigue sin ruta registrada. Queda cubierto por el paso 5.
 
-### ⬜ 5 · Registrar la ruta de `reports`
+### ✅ 5 · Registrar la ruta de `reports`
 
-Sin ruta no hay forma de auditarlo, y hoy el sidebar enlaza a una página que no
-existe.
+Sin ruta no había forma de auditarlo, y el sidebar enlazaba a una página que no
+existía.
 
-- [ ] Crear `reports/infrastructure/routes.tsx` con `withProtectedRoute`
-- [ ] Registrarlo en `app/routes/index.tsx`
-- [ ] Auditarlo a 375 px como los demás
-- [ ] Corregir lo que aparezca
+- [x] Creado `reports/infrastructure/routes.tsx` con `withProtectedRoute`
+- [x] Registrado en `app/routes/index.tsx`
+- [x] Auditado a 375 px
+- [x] Verificado a 1280 px sin regresión
+
+**El defecto que salió era grave y estructural.** La página era ilegible casi
+entera: el contenedor de scroll medía **0 px de alto** con 624 px de contenido, y
+la sección de gamificación —1760 px— colgaba **fuera** de él, dentro de una raíz
+`overflow-hidden`. Sin scroll posible, todo lo que pasaba de 812 px era
+inalcanzable, incluidas las pestañas que el paso 4 acababa de arreglar.
+
+Es la misma clase de fallo que cerró `a26ec30` para las otras cinco páginas. En
+`reports` quedó a medias: recibió el `flex-1` pero la sección suelta nunca se
+movió dentro del contenedor. Ahora sigue la estructura de las demás.
+
+| Medida | Antes | Después |
+|---|---|---|
+| Contenedor de scroll | **0** visible / 624 | **595** visible / 2232 |
+| Sección fuera del scroll | sí, 1760 px | no |
+| Desborde horizontal | 0 | 0 |
+| Controles bajo 44 px | 0 | 0 |
+
+De paso, y por las reglas 1.1 y 1.2:
+
+- Bloque de código comentado y dos `<div>` vacíos, eliminados.
+- `useState` + `useEffect` copiaban a estado una constante de módulo: sólo
+  añadían un render extra y un primer pintado en blanco. Se usa la constante.
+- Las cuatro pestañas sin contenido mostraban «page2 works» —andamiaje del
+  generador— que un usuario lee como un fallo. Pasan a un aviso honesto con un
+  `TODO` que explica qué falta decidir.
+- El relleno de `Card` baja a 16 px en móvil y vuelve a 24 desde `md`: una
+  tarjeta dentro de otra pagaba el relleno dos veces.
+
+⚠️ **Lo que no queda cerrado.** Las cuatro tarjetas de gráficos miden **277 px**,
+tres por debajo del mínimo de 280. La causa de raíz no es el relleno sino el
+anidamiento: son tarjetas dentro de la tarjeta «Sistema de Gamificación», que a
+su vez repite las mismas cinco solapas que `/progress`. Quitar esa envoltura
+las dejaría en 343 px y de paso resolvería la duplicación —pero es una decisión
+de producto, no de responsive, y por eso no se ha tomado aquí. Seguir bajando
+relleno para ganar 3 px sería maquillar la medida.
 
 Pendiente relacionado: `navigation.config.ts` también declara `/settings` y
-`/login`, que tampoco existen como rutas.
+`/login`, que siguen sin existir como rutas.
 
 ### ⬜ 6 · Manifiesto, service worker e iconos
 

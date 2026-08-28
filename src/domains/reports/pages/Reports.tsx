@@ -9,7 +9,7 @@ import {
   CalendarDays,
   Users,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import SummaryComponent from '../components/SummaryComponent'
 
 /**
@@ -60,12 +60,7 @@ const indicatorsVal: IIndicatorCardProps[] = [
 ]
 
 export default function Reports() {
-  const [indicators, setIndicators] = useState<IIndicatorCardProps[]>([])
   const [activeTab, setActiveTab] = useState('summary')
-
-  useEffect(() => {
-    setIndicators(indicatorsVal)
-  }, [])
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
@@ -80,73 +75,86 @@ export default function Reports() {
         </PageHeader.Content>
       </PageHeader>
 
-      {/* <section className="page-content mt-8"> */}
       {/* Contenedor de scroll de la pagina. Es un div y no un <main> a
           proposito: el landmark <main> ya lo pinta SidebarInset desde
           RootLayout, y anidar uno dentro de otro es HTML invalido -solo se
           admite uno por documento- ademas de confundir a los lectores de
           pantalla. */}
       <div className="mt-8 flex-1 overflow-auto">
-        <div className="ps-4 pe-4 pb-4 max-w-8xl mx-auto">
-          <div className="space-y-6"></div>
-          <div className="w-full mb-6">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {indicators.map((indicator, i) => (
-                <IndicatorCardComponent
-                  key={i}
-                  title={indicator.title}
-                  delta={indicator.delta}
-                  deltaType={indicator.deltaType}
-                  prefix={indicator.prefix}
-                  sufix={indicator.sufix}
-                  icon={indicator.icon}
-                  indicator={indicator.indicator}
-                  period={indicator.period}
-                ></IndicatorCardComponent>
-              ))}
-            </div>
+        <div className="ps-4 pe-4 pb-4 max-w-8xl mx-auto space-y-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {indicatorsVal.map((indicator) => (
+              <IndicatorCardComponent
+                key={indicator.title}
+                title={indicator.title}
+                delta={indicator.delta}
+                deltaType={indicator.deltaType}
+                prefix={indicator.prefix}
+                sufix={indicator.sufix}
+                icon={indicator.icon}
+                indicator={indicator.indicator}
+                period={indicator.period}
+              />
+            ))}
           </div>
-          <div className="w-full flex gap-4"></div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Sistema de Gamificación</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="w-full md:grid md:grid-cols-5">
+                  <TabsTrigger value="summary">Resumen</TabsTrigger>
+                  <TabsTrigger value="achievements">Logros</TabsTrigger>
+                  <TabsTrigger value="challenges">Desafíos</TabsTrigger>
+                  <TabsTrigger value="streaks">Rachas</TabsTrigger>
+                  <TabsTrigger value="analytics">Análisis</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="summary" className="mt-6">
+                  <SummaryComponent />
+                </TabsContent>
+
+                {/* TODO: cuatro pestanas sin contenido. Heredaron el andamiaje
+                    «pageN works» del generador y nunca se completaron. Falta
+                    decidir en producto que muestra cada una: hoy repiten las
+                    mismas cinco solapas que /progress, asi que puede que
+                    sobren aqui en vez de tener que rellenarse. */}
+                <TabsContent value="achievements" className="mt-6">
+                  <EmptyTabNotice />
+                </TabsContent>
+
+                <TabsContent value="challenges" className="mt-6">
+                  <EmptyTabNotice />
+                </TabsContent>
+
+                <TabsContent value="streaks" className="mt-6">
+                  <EmptyTabNotice />
+                </TabsContent>
+
+                <TabsContent value="analytics" className="mt-6">
+                  <EmptyTabNotice />
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
         </div>
       </div>
-      <section className="w-full">
-        <Card>
-          <CardHeader>
-            <CardTitle>Sistema de Gamificación</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="w-full md:grid md:grid-cols-5">
-                <TabsTrigger value="summary">Resumen</TabsTrigger>
-                <TabsTrigger value="achievements">Logros</TabsTrigger>
-                <TabsTrigger value="challenges">Desafíos</TabsTrigger>
-                <TabsTrigger value="streaks">Rachas</TabsTrigger>
-                <TabsTrigger value="analytics">Análisis</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="summary" className="mt-6">
-                <SummaryComponent></SummaryComponent>
-              </TabsContent>
-
-              <TabsContent value="achievements" className="mt-6">
-                <div>page2 works</div>
-              </TabsContent>
-
-              <TabsContent value="challenges" className="mt-6">
-                <div>page3 works</div>
-              </TabsContent>
-
-              <TabsContent value="streaks" className="mt-6">
-                <div>page4 works</div>
-              </TabsContent>
-
-              <TabsContent value="analytics" className="mt-6">
-                <div>page5 works</div>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-      </section>
     </div>
+  )
+}
+
+/**
+ * Marcador para las pestanas de Reportes que aun no tienen contenido definido.
+ * Existe para que la interfaz diga la verdad -«no hay nada aqui todavia»- en
+ * vez de mostrar el «pageN works» del andamiaje, que un usuario lee como un
+ * fallo.
+ */
+function EmptyTabNotice() {
+  return (
+    <p className="text-sm text-muted-foreground py-8 text-center">
+      Esta sección todavía no tiene contenido.
+    </p>
   )
 }
