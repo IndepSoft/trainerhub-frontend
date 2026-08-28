@@ -33,10 +33,10 @@ export function PersonCard({ trainer, loading }: PersonCardProps) {
         <span className="font-semibold">{displayName}</span>
 
         <div className="flex items-center gap-1">
-          <span className="text-xs bg-orange-500 text-white px-2 py-1 rounded-lg">
+          <span className="rounded-action border border-ember/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ember-deep">
             Plan Gratuito
           </span>
-          <Crown className="w-3 h-3 text-orange-500" />
+          <Crown className="w-3 h-3 text-ember" />
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import {
-  IndicatorCard,
-  type IndicatorCardProps,
-} from '@/shared/components/IndicatorCard'
+  MetricBlock,
+  type MetricBlockProps,
+} from '@/shared/components/MetricBlock'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import {
@@ -23,7 +23,7 @@ import SummaryComponent from '../components/SummaryComponent'
  * TODO: valores de ejemplo. Deben venir del backend cuando exista el
  * repositorio de reportes.
  */
-const indicatorsVal: IndicatorCardProps[] = [
+const indicatorsVal: MetricBlockProps[] = [
   {
     title: 'Alumnos Activos',
     indicator: 24,
@@ -83,9 +83,9 @@ export default function Reports() {
           pantalla. */}
       <div className="mt-8 flex-1 overflow-auto">
         <div className="ps-4 pe-4 pb-4 max-w-8xl mx-auto space-y-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3 sm:grid-cols-2 sm:divide-x lg:grid-cols-4">
             {indicatorsVal.map((indicator) => (
-              <IndicatorCard
+              <MetricBlock
                 key={indicator.title}
                 title={indicator.title}
                 delta={indicator.delta}

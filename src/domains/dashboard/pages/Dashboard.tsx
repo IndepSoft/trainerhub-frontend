@@ -1,39 +1,33 @@
-import { PageHeader } from '@/shared/components/PageHeader'
 import { IndicatorList } from '../components/IndicatorList'
-import { UpcomingSessionsCard } from '../components/UpcomingSessionsCard'
-import { RecentActivityCard } from '../components/RecentActivityCard'
+import { UpcomingSessions } from '../components/UpcomingSessions'
+import { RecentActivity } from '../components/RecentActivity'
 import { useDashboardSummary } from '../hooks/useDashboardSummary'
 
 export default function Dashboard() {
   const { summary } = useDashboardSummary()
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
-      <PageHeader>
-        <PageHeader.Content>
-          <div>
-            <PageHeader.Title>Dashboard</PageHeader.Title>
-            <p className="text-sm text-gray-600 mt-1">
-              Resumen de tu actividad como entrenador
-            </p>
-          </div>
-        </PageHeader.Content>
-      </PageHeader>
+    <div className="flex flex-1 flex-col overflow-hidden bg-bone">
+      {/* Cabecera propia y no `PageHeader`: el registro sobrio quiere el titulo
+          en Condensed y una regla, no la caja blanca con borde inferior que
+          usan las demas paginas. Se unificara cuando les toque el rediseno. */}
+      <header className="shrink-0 px-5 pt-6 pb-5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/45">
+          Tu actividad
+        </p>
+        <h1 className="font-display text-4xl font-extrabold uppercase leading-none tracking-tight text-ink">
+          Dashboard
+        </h1>
+      </header>
 
-      {/* Contenedor de scroll de la pagina. Es un div y no un <main> a
-          proposito: el landmark <main> ya lo pinta SidebarInset desde
-          RootLayout, y anidar uno dentro de otro es HTML invalido -solo se
-          admite uno por documento- ademas de confundir a los lectores de
-          pantalla. */}
-      <div className="mt-8 flex-1 overflow-auto">
-        <div className="ps-4 pe-4 pb-4 max-w-8xl mx-auto">
-          <div className="w-full mb-6">
-            <IndicatorList indicators={summary.indicators} />
-          </div>
-          <div className="flex w-full flex-col gap-4 lg:flex-row">
-            <UpcomingSessionsCard sessions={summary.upcomingSessions} />
-            <RecentActivityCard activities={summary.recentActivity} />
-          </div>
+      {/* Contenedor de scroll de la pagina. Es un div y no un <main>: el
+          landmark ya lo pinta SidebarInset desde RootLayout. */}
+      <div className="flex-1 overflow-auto">
+        <IndicatorList indicators={summary.indicators} />
+
+        <div className="flex flex-col gap-10 px-5 py-8 lg:flex-row lg:gap-12">
+          <UpcomingSessions sessions={summary.upcomingSessions} />
+          <RecentActivity activities={summary.recentActivity} />
         </div>
       </div>
     </div>

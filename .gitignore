@@ -32,3 +32,8 @@ dist-ssr
 *.tsbuildinfo
 # Configuracion local de herramientas (launch.json de la vista previa)
 .claude/
+
+# Capturas de revision visual: se regeneran con `npx playwright test`
+tests/visual/salida/
+/test-results/
+/playwright-report/

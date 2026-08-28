@@ -1,17 +1,16 @@
-import { Badge } from '@/shared/ui/badge'
+import { cn } from '@/shared/lib/utils'
 import type { Session, SessionStatus } from '../types/dashboard.types'
 
 /**
  * Etiqueta y color de cada estado.
  *
- * Antes eran tres condicionales encadenados en el JSX. Como tabla, añadir un
- * estado es una línea y el compilador obliga a rellenarla: `Record` sobre la
- * unión no admite que falte ninguna clave.
+ * El estado es un dato, no una accion, asi que no usa la marca: va a la escala
+ * semantica. Si «Programada» usara Cobalt se leeria como un boton primario.
  */
 const STATUS_BADGE: Record<SessionStatus, { label: string; className: string }> = {
-  programmed: { label: 'Programada', className: 'bg-primary' },
-  confirmed: { label: 'Confirmada', className: 'bg-green-500' },
-  canceled: { label: 'Cancelada', className: 'bg-red-500' },
+  programmed: { label: 'Programada', className: 'border-cobalt/30 text-cobalt' },
+  confirmed: { label: 'Confirmada', className: 'border-scale-3/40 text-scale-3' },
+  canceled: { label: 'Cancelada', className: 'border-destructive/40 text-destructive' },
 }
 
 interface SessionItemProps {
@@ -22,16 +21,22 @@ export function SessionItem({ session }: SessionItemProps) {
   const badge = STATUS_BADGE[session.status]
 
   return (
-    <div className="flex items-center">
-      <div className="flex-1">
-        <span className="font-semibold text-md">{session.customer}</span>
-        <p className="text-muted-foreground">
-          {session.scheduledDate} - {session.activity}
-        </p>
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <p className="truncate font-semibold text-ink">{session.customer}</p>
+        <p className="truncate text-sm text-ink/50">{session.activity}</p>
       </div>
-      <div>
-        <Badge className={badge.className}>{badge.label}</Badge>
-      </div>
+
+      {/* Insignia de contorno, no de relleno: en el registro sobrio un bloque
+          de color solido para un estado compite con la cifra protagonista. */}
+      <span
+        className={cn(
+          'shrink-0 rounded-action border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider',
+          badge.className
+        )}
+      >
+        {badge.label}
+      </span>
     </div>
   )
 }

@@ -6,12 +6,45 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        // Barlow para toda la interfaz; su corte Condensed para el registro
+        // display. Misma familia, dos anchos: la app se siente una sola.
+        sans: ['Barlow', 'system-ui', 'sans-serif'],
+        display: ['Barlow Condensed', 'Barlow', 'system-ui', 'sans-serif'],
+      },
       borderRadius: {
+        // Dos radios, no una escala uniforme: los bloques van a escuadra y las
+        // acciones en pildora. Un `--radius` igual para todo es la firma
+        // reconocible de shadcn sin tematizar.
+        block: 'var(--radius-block)',
+        action: 'var(--radius-action)',
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
       colors: {
+        // Identidad. Los tintes son el mismo Cobalt a distinta opacidad,
+        // porque eso es lo que en realidad eran los 17 `bg-blue-50/100`
+        // repartidos por los dominios.
+        cobalt: {
+          DEFAULT: 'hsl(var(--cobalt))',
+          lift: 'hsl(var(--cobalt-lift))',
+          tint: 'hsl(var(--cobalt-tint-1))',
+          'tint-2': 'hsl(var(--cobalt-tint-2))',
+          'tint-3': 'hsl(var(--cobalt-tint-3))',
+        },
+        ember: {
+          DEFAULT: 'hsl(var(--ember))',
+          deep: 'hsl(var(--ember-deep))',
+        },
+        ink: 'hsl(var(--ink))',
+        bone: 'hsl(var(--bone))',
+        // Escala de dificultad, fuera de la marca a proposito.
+        scale: {
+          1: 'hsl(var(--scale-1))',
+          2: 'hsl(var(--scale-2))',
+          3: 'hsl(var(--scale-3))',
+        },
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {
