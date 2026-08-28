@@ -1,7 +1,9 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { TrendingUp } from 'lucide-react'
-import { PageHeader } from '@/shared/components/PageHeader'
 import { useState } from 'react'
+import { GamificationHeader } from '../components/GamificationHeader'
+import { MilestonePath } from '../components/MilestonePath'
+import { useGamificationProfile } from '../hooks/useGamificationProfile'
 import { StatCard } from '../components/StatCard'
 import { ProgressOverviewPanel } from '../components/ProgressOverviewPanel'
 import { StreakTrackingSystem } from '../components/StreakTrackingSystem'
@@ -12,22 +14,24 @@ import { useProgressOverview } from '../hooks/useProgressOverview'
 export default function Progress() {
   const [activeTab, setActiveTab] = useState('overview')
   const { overview } = useProgressOverview()
+  const { profile, levelCompletion, experienceToNextLevel } = useGamificationProfile()
 
   return (
     // Misma estructura de scroll que el resto de paginas: la cabecera queda
     // fija y solo desplaza <main>. Antes era un `space-y-6` suelto y la pagina
     // scrolleaba entera, cabecera incluida.
-    <div className="flex flex-col flex-1 overflow-hidden">
-      <PageHeader>
-        <PageHeader.Content>
-          <div>
-            <PageHeader.Title>Progreso</PageHeader.Title>
-            <p className="text-sm text-gray-600 mt-1">
-              Logros, desafíos y rachas de tus estudiantes
-            </p>
-          </div>
-        </PageHeader.Content>
-      </PageHeader>
+    <div className="flex flex-col flex-1 overflow-hidden bg-bone">
+      {/* Sin `PageHeader`: en el registro de gamificacion la cabecera es la
+          racha y el nivel, que el brief exige visibles siempre. Va `sticky`
+          dentro del contenedor de desplazamiento, mas abajo. */}
+      <header className="shrink-0 px-5 pt-6 pb-4">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/45">
+          Tu evolución
+        </p>
+        <h1 className="font-display text-4xl font-extrabold uppercase leading-none tracking-tight text-ink">
+          Progreso
+        </h1>
+      </header>
 
       {/* Contenedor de scroll de la pagina. Es un div y no un <main> a
           proposito: el landmark <main> ya lo pinta SidebarInset desde
@@ -35,6 +39,15 @@ export default function Progress() {
           admite uno por documento- ademas de confundir a los lectores de
           pantalla. */}
       <div className="flex-1 overflow-auto">
+        <GamificationHeader
+          streak={profile.streak}
+          level={profile.level}
+          levelCompletion={levelCompletion}
+          experienceToNextLevel={experienceToNextLevel}
+        />
+
+        <MilestonePath milestones={profile.milestones} />
+
         <div className="ps-4 pe-4 pb-4 pt-4 max-w-8xl mx-auto space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             {overview.stats.map((stat) => (

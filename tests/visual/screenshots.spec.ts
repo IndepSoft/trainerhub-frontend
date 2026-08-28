@@ -48,3 +48,17 @@ for (const viewport of VIEWPORTS) {
     })
   })
 }
+
+for (const viewport of VIEWPORTS) {
+  test(`progreso en ${viewport.name}`, async ({ page }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height })
+    await signIn(page)
+    await page.goto('/progress')
+    // Se espera a que terminen los contadores tipo odometro.
+    await page.waitForTimeout(2500)
+    await page.screenshot({
+      path: `tests/visual/salida/progreso-${viewport.name}.png`,
+      fullPage: true,
+    })
+  })
+}
