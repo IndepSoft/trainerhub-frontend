@@ -8,6 +8,11 @@ import { AppError } from '@/shared/domain/errors'
  *
  * Devuelve un mensaje ya traducido, no el error del proveedor: los componentes
  * no deben conocer PostgrestError ni ningun equivalente futuro.
+ *
+ * Vive en `app/` y no en `shared/` porque lee de `container`, la raiz de
+ * composicion. Un hook de `shared` que importa de `app` invierte la direccion de
+ * dependencias: la capa compartida no debe conocer a la aplicacion que la usa.
+ * Su unico consumidor es RootLayout, que tambien esta aqui.
  */
 export const useTrainer = (profileId?: string) => {
   const [trainer, setTrainer] = useState<Trainer | null>(null)

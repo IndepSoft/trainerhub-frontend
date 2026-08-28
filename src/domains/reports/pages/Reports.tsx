@@ -1,7 +1,8 @@
-import type { IIndicatorCardProps } from '@/shared/components/card-custom/IndicatorCardComponent'
-import IndicatorCardComponent from '@/shared/components/card-custom/IndicatorCardComponent'
+import {
+  IndicatorCard,
+  type IndicatorCardProps,
+} from '@/shared/components/IndicatorCard'
 import { PageHeader } from '@/shared/components/PageHeader'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import {
   BanknoteArrowUp,
@@ -9,7 +10,7 @@ import {
   CalendarDays,
   Users,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import SummaryComponent from '../components/SummaryComponent'
 
 /**
@@ -22,7 +23,7 @@ import SummaryComponent from '../components/SummaryComponent'
  * TODO: valores de ejemplo. Deben venir del backend cuando exista el
  * repositorio de reportes.
  */
-const indicatorsVal: IIndicatorCardProps[] = [
+const indicatorsVal: IndicatorCardProps[] = [
   {
     title: 'Alumnos Activos',
     indicator: 24,
@@ -43,7 +44,7 @@ const indicatorsVal: IIndicatorCardProps[] = [
     title: 'Tasa de Asistencia',
     indicator: 87,
     icon: BanknoteArrowUp,
-    sufix: '%',
+    suffix: '%',
     delta: 200,
     deltaType: 'up',
     period: 'month',
@@ -60,12 +61,7 @@ const indicatorsVal: IIndicatorCardProps[] = [
 ]
 
 export default function Reports() {
-  const [indicators, setIndicators] = useState<IIndicatorCardProps[]>([])
   const [activeTab, setActiveTab] = useState('summary')
-
-  useEffect(() => {
-    setIndicators(indicatorsVal)
-  }, [])
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
@@ -80,38 +76,41 @@ export default function Reports() {
         </PageHeader.Content>
       </PageHeader>
 
-      {/* <section className="page-content mt-8"> */}
-      <main className="mt-8 overflow-auto">
-        <div className="ps-4 pe-4 pb-4 max-w-8xl mx-auto">
-          <div className="space-y-6"></div>
-          <div className="w-full mb-6">
-            <div className="flex gap-4">
-              {indicators.map((indicator, i) => (
-                <IndicatorCardComponent
-                  key={i}
-                  title={indicator.title}
-                  delta={indicator.delta}
-                  deltaType={indicator.deltaType}
-                  prefix={indicator.prefix}
-                  sufix={indicator.sufix}
-                  icon={indicator.icon}
-                  indicator={indicator.indicator}
-                  period={indicator.period}
-                ></IndicatorCardComponent>
-              ))}
-            </div>
+      {/* Contenedor de scroll de la pagina. Es un div y no un <main> a
+          proposito: el landmark <main> ya lo pinta SidebarInset desde
+          RootLayout, y anidar uno dentro de otro es HTML invalido -solo se
+          admite uno por documento- ademas de confundir a los lectores de
+          pantalla. */}
+      <div className="mt-8 flex-1 overflow-auto">
+        <div className="ps-4 pe-4 pb-4 max-w-8xl mx-auto space-y-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {indicatorsVal.map((indicator) => (
+              <IndicatorCard
+                key={indicator.title}
+                title={indicator.title}
+                delta={indicator.delta}
+                deltaType={indicator.deltaType}
+                prefix={indicator.prefix}
+                suffix={indicator.suffix}
+                icon={indicator.icon}
+                indicator={indicator.indicator}
+                period={indicator.period}
+              />
+            ))}
           </div>
-          <div className="w-full flex gap-4"></div>
-        </div>
-      </main>
-      <section className="w-full">
-        <Card>
-          <CardHeader>
-            <CardTitle>Sistema de Gamificación</CardTitle>
-          </CardHeader>
-          <CardContent>
+
+          {/* Sin envoltura <Card>. La tenia, y como su contenido son a su vez
+              tarjetas, cada una pagaba el relleno dos veces y caia a 277 px, por
+              debajo del minimo util de 280 que fija la regla 1.6. Un encabezado
+              suelto da la misma informacion sin anadir un nivel de anidamiento
+              -y <h2> si es un encabezado para un lector de pantalla, cosa que
+              CardTitle no es: renderiza un <div>. */}
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold leading-none tracking-tight">
+              Sistema de Gamificación
+            </h2>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="w-full md:grid md:grid-cols-5">
                 <TabsTrigger value="summary">Resumen</TabsTrigger>
                 <TabsTrigger value="achievements">Logros</TabsTrigger>
                 <TabsTrigger value="challenges">Desafíos</TabsTrigger>
@@ -120,28 +119,47 @@ export default function Reports() {
               </TabsList>
 
               <TabsContent value="summary" className="mt-6">
-                <SummaryComponent></SummaryComponent>
+                <SummaryComponent />
               </TabsContent>
 
+              {/* TODO: cuatro pestanas sin contenido. Heredaron el andamiaje
+                  «pageN works» del generador y nunca se completaron. Falta
+                  decidir en producto que muestra cada una: hoy repiten las
+                  mismas cinco solapas que /progress, asi que puede que
+                  sobren aqui en vez de tener que rellenarse. */}
               <TabsContent value="achievements" className="mt-6">
-                <div>page2 works</div>
+                <EmptyTabNotice />
               </TabsContent>
 
               <TabsContent value="challenges" className="mt-6">
-                <div>page3 works</div>
+                <EmptyTabNotice />
               </TabsContent>
 
               <TabsContent value="streaks" className="mt-6">
-                <div>page4 works</div>
+                <EmptyTabNotice />
               </TabsContent>
 
               <TabsContent value="analytics" className="mt-6">
-                <div>page5 works</div>
+                <EmptyTabNotice />
               </TabsContent>
             </Tabs>
-          </CardContent>
-        </Card>
-      </section>
+          </section>
+        </div>
+      </div>
     </div>
+  )
+}
+
+/**
+ * Marcador para las pestanas de Reportes que aun no tienen contenido definido.
+ * Existe para que la interfaz diga la verdad -«no hay nada aqui todavia»- en
+ * vez de mostrar el «pageN works» del andamiaje, que un usuario lee como un
+ * fallo.
+ */
+function EmptyTabNotice() {
+  return (
+    <p className="text-sm text-muted-foreground py-8 text-center">
+      Esta sección todavía no tiene contenido.
+    </p>
   )
 }

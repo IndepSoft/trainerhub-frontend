@@ -169,34 +169,61 @@ export function StreakTrackingSystem() {
                 </CardContent>
             </Card>
 
-            {/* Streak Tabs */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Rachas por Categoría</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <Tabs defaultValue="all">
-                        <TabsList className="grid w-full grid-cols-5">
-                            <TabsTrigger value="all">
-                                Todas ({filteredStreaks.length})
-                            </TabsTrigger>
-                            <TabsTrigger value="workout">
-                                Entrenamiento ({streaksByType.workout.length})
-                            </TabsTrigger>
-                            <TabsTrigger value="nutrition">
-                                Nutrición ({streaksByType.nutrition.length})
-                            </TabsTrigger>
-                            <TabsTrigger value="weigh_in">
-                                Pesaje ({streaksByType.weigh_in.length})
-                            </TabsTrigger>
-                            <TabsTrigger value="check_in">
-                                Check-in ({streaksByType.check_in.length})
-                            </TabsTrigger>
-                        </TabsList>
+            {/* Sin envoltura <Card>: su contenido son a su vez tarjetas, que
+                pagaban el relleno dos veces y caian a 277 px, bajo el minimo
+                util de 280 de la regla 1.6. Mismo motivo que en Reportes y en
+                la pagina de Progreso. */}
+            <section className="space-y-4">
+                <h3 className="text-lg font-semibold leading-none tracking-tight">
+                    Rachas por Categoría
+                </h3>
+                <Tabs defaultValue="all">
+                <TabsList className="w-full md:grid md:grid-cols-5">
+                    <TabsTrigger value="all">
+                        Todas ({filteredStreaks.length})
+                    </TabsTrigger>
+                    <TabsTrigger value="workout">
+                        Entrenamiento ({streaksByType.workout.length})
+                    </TabsTrigger>
+                    <TabsTrigger value="nutrition">
+                        Nutrición ({streaksByType.nutrition.length})
+                    </TabsTrigger>
+                    <TabsTrigger value="weigh_in">
+                        Pesaje ({streaksByType.weigh_in.length})
+                    </TabsTrigger>
+                    <TabsTrigger value="check_in">
+                        Check-in ({streaksByType.check_in.length})
+                    </TabsTrigger>
+                </TabsList>
 
-                        <TabsContent value="all" className="mt-6">
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                {filteredStreaks.map((streak) => (
+                <TabsContent value="all" className="mt-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {filteredStreaks.map((streak) => (
+                            <StreakCounter
+                                key={`${streak.studentId}-${streak.streakType}`}
+                                streakData={streak}
+                                showRiskAlert={true}
+                                onStreakAction={(action) =>
+                                    handleStreakAction(streak.studentId, action)
+                                }
+                            />
+                        ))}
+                    </div>
+                </TabsContent>
+
+                {Object.entries(streaksByType).map(([type, typeStreaks]) => (
+                    <TabsContent key={type} value={type} className="mt-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {typeStreaks
+                                .filter(
+                                    (streak) =>
+                                        streak.studentName
+                                            .toLowerCase()
+                                            .includes(searchTerm.toLowerCase()) &&
+                                        (statusFilter === 'all' ||
+                                            streak.streakStatus === statusFilter)
+                                )
+                                .map((streak) => (
                                     <StreakCounter
                                         key={`${streak.studentId}-${streak.streakType}`}
                                         streakData={streak}
@@ -206,37 +233,11 @@ export function StreakTrackingSystem() {
                                         }
                                     />
                                 ))}
-                            </div>
-                        </TabsContent>
-
-                        {Object.entries(streaksByType).map(([type, typeStreaks]) => (
-                            <TabsContent key={type} value={type} className="mt-6">
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                    {typeStreaks
-                                        .filter(
-                                            (streak) =>
-                                                streak.studentName
-                                                    .toLowerCase()
-                                                    .includes(searchTerm.toLowerCase()) &&
-                                                (statusFilter === 'all' ||
-                                                    streak.streakStatus === statusFilter)
-                                        )
-                                        .map((streak) => (
-                                            <StreakCounter
-                                                key={`${streak.studentId}-${streak.streakType}`}
-                                                streakData={streak}
-                                                showRiskAlert={true}
-                                                onStreakAction={(action) =>
-                                                    handleStreakAction(streak.studentId, action)
-                                                }
-                                            />
-                                        ))}
-                                </div>
-                            </TabsContent>
-                        ))}
-                    </Tabs>
-                </CardContent>
-            </Card>
+                        </div>
+                    </TabsContent>
+                ))}
+                </Tabs>
+            </section>
 
             {/* Risk Alerts Summary */}
             {stats.atRiskStreaks > 0 && (

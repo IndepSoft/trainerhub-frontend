@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
 import { LogOut, User } from 'lucide-react'
-import { getInitials, getShortName } from '@/shared/utils/nameHelpers'
+import { getInitials, getShortName } from '@/shared/lib/personName'
 import type { Trainer } from '@/shared/domain/entities/trainer'
 import { useLogout } from '@/auth/hooks/useLogout'
 

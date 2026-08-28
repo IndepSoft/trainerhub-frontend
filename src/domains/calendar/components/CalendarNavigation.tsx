@@ -24,8 +24,10 @@ export function CalendarNavigation({
     viewMode === 'week' ? formatWeekRange(weekDates) : formatFullDate(currentDate)
 
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-4">
+    // Envuelve en movil: con una fecha larga como "jueves, 27 de agosto de
+    // 2026", el titulo y el boton "Hoy" se comprimian mutuamente.
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex items-center gap-2 sm:gap-4">
         {/*
           Los botones ya no eligen entre navegar semana o dia: el hook resuelve
           el salto segun el modo. Antes cada boton llevaba el ternario
@@ -34,22 +36,24 @@ export function CalendarNavigation({
         <Button
           variant="outline"
           size="sm"
+          className="h-11 w-11 shrink-0 sm:h-9 sm:w-9"
           onClick={onPrevious}
           aria-label="Periodo anterior"
         >
           <ChevronLeft className="w-4 h-4" />
         </Button>
-        <h2 className="text-xl font-semibold">{title}</h2>
+        <h2 className="text-base font-semibold sm:text-xl">{title}</h2>
         <Button
           variant="outline"
           size="sm"
+          className="h-11 w-11 shrink-0 sm:h-9 sm:w-9"
           onClick={onNext}
           aria-label="Periodo siguiente"
         >
           <ChevronRight className="w-4 h-4" />
         </Button>
       </div>
-      <Button variant="outline" onClick={onToday}>
+      <Button variant="outline" className="h-11 sm:h-9" onClick={onToday}>
         Hoy
       </Button>
     </div>

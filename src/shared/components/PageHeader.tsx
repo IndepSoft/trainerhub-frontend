@@ -1,61 +1,61 @@
 import type { ReactNode } from 'react'
+import { cn } from '@/shared/lib/utils'
 
-interface PageHeaderProps {
+/**
+ * Las cuatro piezas reciben lo mismo, asi que comparten interfaz. Antes habia
+ * cuatro declaraciones identicas de `{ children, className }`.
+ */
+interface PageHeaderSlotProps {
   children: ReactNode
   className?: string
 }
 
-interface PageHeaderTitleProps {
-  children: ReactNode
-  className?: string
-}
-
-interface PageHeaderActionsProps {
-  children: ReactNode
-  className?: string
-}
-
-interface PageHeaderContentProps {
-  children: ReactNode
-  className?: string
-}
-
-// Componente principal
-function PageHeaderRoot({ children, className = '' }: PageHeaderProps) {
+function PageHeaderRoot({ children, className }: PageHeaderSlotProps) {
   return (
     <header
-      className={`flex flex-col  space-y-4 p-2 pb-6 bg-white border-b ${className}`}
+      className={cn(
+        'flex flex-col space-y-4 p-2 pb-6 bg-white border-b',
+        className
+      )}
     >
       {children}
     </header>
   )
 }
 
-// Componentes secundarios
-function PageHeaderTitle({ children, className = '' }: PageHeaderTitleProps) {
+function PageHeaderTitle({ children, className }: PageHeaderSlotProps) {
   return (
     <h1
-      className={`text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 ${className}`}
+      className={cn(
+        'text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900',
+        className
+      )}
     >
       {children}
     </h1>
   )
 }
 
-function PageHeaderActions({ children, className = '' }: PageHeaderActionsProps) {
+function PageHeaderActions({ children, className }: PageHeaderSlotProps) {
   return (
     <div
-      className={`flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2 ${className}`}
+      className={cn(
+        'flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2',
+        className
+      )}
     >
       {children}
     </div>
   )
 }
 
-function PageHeaderContent({ children, className = '' }: PageHeaderContentProps) {
+function PageHeaderContent({ children, className }: PageHeaderSlotProps) {
   return (
     <div
-      className={`flex flex-col space-y-2 md:flex-row md:justify-between md:items-end md:space-y-0 ${className}`} // space-y-2 en lugar de space-y-3
+      className={cn(
+        'flex flex-col space-y-2 md:flex-row md:justify-between md:items-end md:space-y-0',
+        className
+      )}
     >
       {children}
     </div>

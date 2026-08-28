@@ -23,7 +23,7 @@ export function QuickActionCard({
       className="cursor-pointer hover:bg-gray-50 transition-colors"
       onClick={onClick}
     >
-      <CardContent className="p-6">
+      <CardContent>
         <div className="flex items-center space-x-4">
           <div className={`p-3 ${bgColor} rounded-full`}>
             <Icon className={`h-6 w-6 ${iconColor}`} />

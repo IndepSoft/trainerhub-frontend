@@ -1,31 +1,37 @@
 import { Crown } from 'lucide-react'
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
-import { useAuth } from '@/auth/hooks/useAuth'
-import { useTrainer } from '../hooks/useTrainer'
-import { getInitials, getShortName } from '../utils/nameHelpers'
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
+import { getInitials, getShortName } from '@/shared/lib/personName'
+import type { Trainer } from '@/shared/domain/entities/trainer'
 
-export function PersonCard() {
-  const { user } = useAuth()
-  const { trainer, loading } = useTrainer(user?.id)
+interface PersonCardProps {
+  trainer: Trainer | null
+  loading: boolean
+}
 
+/**
+ * Solo pinta. Antes llamaba a `useAuth` y `useTrainer` por su cuenta, asi que
+ * cada sitio donde se montaba -barra lateral y menu movil- lanzaba su propia
+ * peticion del mismo entrenador. Ahora los datos llegan por props desde
+ * RootLayout, que los pide una sola vez.
+ */
+export function PersonCard({ trainer, loading }: PersonCardProps) {
   if (loading) {
     return <PersonCardSkeleton />
   }
 
   const displayName = getShortName(trainer?.firstName, trainer?.lastName)
   const initials = getInitials(trainer?.firstName, trainer?.lastName)
-  const avatarUrl = trainer?.photoUrl
 
   return (
     <div className="flex items-center gap-3">
       <Avatar className="size-8">
-        <AvatarImage src={avatarUrl} alt={displayName} />
+        <AvatarImage src={trainer?.photoUrl} alt={displayName} />
         <AvatarFallback>{initials}</AvatarFallback>
       </Avatar>
-      
+
       <div className="flex flex-col gap-0.5 leading-none">
         <span className="font-semibold">{displayName}</span>
-        
+
         <div className="flex items-center gap-1">
           <span className="text-xs bg-orange-500 text-white px-2 py-1 rounded-lg">
             Plan Gratuito

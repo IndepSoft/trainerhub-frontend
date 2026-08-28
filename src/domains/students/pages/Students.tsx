@@ -3,6 +3,7 @@ import { Plus, UserPlus } from 'lucide-react'
 import { StudentCard } from '../components/StudentCard'
 import { StudentFilters } from '../components/StudentFilters'
 import { useStudents } from '../hooks/useStudents'
+import { Button } from '@/shared/ui/button'
 
 export default function Students() {
   const { students } = useStudents()
@@ -28,20 +29,14 @@ export default function Students() {
             </p>
           </div>
           <PageHeader.Actions>
-            <button
-              onClick={handleInviteStudent}
-              className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50 flex items-center space-x-2"
-            >
+            <Button variant="outline" onClick={handleInviteStudent}>
               <UserPlus className="w-4 h-4" />
               <span>Invitar Estudiante</span>
-            </button>
-            <button
-              onClick={handleAddStudent}
-              className="px-4 py-2 bg-primary text-white text-sm rounded-lg hover:bg-blue-700 flex items-center space-x-2"
-            >
+            </Button>
+            <Button onClick={handleAddStudent}>
               <Plus className="w-4 h-4" />
               <span>Agregar Estudiante</span>
-            </button>
+            </Button>
           </PageHeader.Actions>
         </PageHeader.Content>
       </PageHeader>
@@ -50,7 +45,12 @@ export default function Students() {
         <StudentFilters />
       </section>
 
-      <main className="flex-1 overflow-auto">
+      {/* Contenedor de scroll de la pagina. Es un div y no un <main> a
+          proposito: el landmark <main> ya lo pinta SidebarInset desde
+          RootLayout, y anidar uno dentro de otro es HTML invalido -solo se
+          admite uno por documento- ademas de confundir a los lectores de
+          pantalla. */}
+      <div className="flex-1 overflow-auto">
         <div className="ps-4 pe-4 pb-4 max-w-8xl mx-auto">
           <div className="space-y-6">
             <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
@@ -60,7 +60,7 @@ export default function Students() {
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   )
 }

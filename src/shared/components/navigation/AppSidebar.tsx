@@ -14,9 +14,15 @@ import { GalleryVerticalEnd } from 'lucide-react'
 import { getSidebarRoutes } from '@/app/config/navigation.config'
 import { NavItem } from './NavItem'
 import { PersonCard } from '../PersonCard'
-import { Separator } from '@radix-ui/react-separator'
+import { Separator } from '@/shared/ui/separator'
+import type { Trainer } from '@/shared/domain/entities/trainer'
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  trainer: Trainer | null
+  loading: boolean
+}
+
+export function AppSidebar({ trainer, loading, ...props }: AppSidebarProps) {
   const sidebarRoutes = getSidebarRoutes()
 
   return (
@@ -33,10 +39,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <Link to="/">TrainerHub</Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
-          <Separator className="my-0.4" />
+          <Separator className="my-1" />
           <SidebarMenuItem>
-            <div className="px-4 py-4 border-b border-t  from-blue-50 to-indigo-50">
-              <PersonCard />
+            <div className="px-4 py-4 border-b border-t">
+              <PersonCard trainer={trainer} loading={loading} />
             </div>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -67,10 +73,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       {/* Footer */}
       <SidebarFooter>
         <div className="border-t bg-gray-50">
-          <button className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-primary hover:bg-gray-300 rounded-lg transition-colors text-sm font-medium text-primary-foreground">
+          <p className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground">
             <GalleryVerticalEnd className="size-4" />
             <span>v1.0.0</span>
-          </button>
+          </p>
         </div>
       </SidebarFooter>
     </Sidebar>

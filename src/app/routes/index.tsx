@@ -7,6 +7,7 @@ import { studentsRoutes } from '@/domains/students/infrastructure/routes'
 import { authRoutes } from '@/auth/infrastructure/routes'
 import { progressRoutes } from '@/domains/progress/infrastructure/routes'
 import { calendarRoutes } from '@/domains/calendar/infrastructure/routes'
+import { reportsRoutes } from '@/domains/reports/infrastructure/routes'
 
 const RootLayout = lazy(() => import('@/app/layouts/RootLayout'))
 const NotFound = lazy(() => import('@/shared/pages/NotFound'))
@@ -17,6 +18,7 @@ const domainRoutes = [
   ...studentsRoutes,
   ...progressRoutes,
   ...calendarRoutes,
+  ...reportsRoutes,
   ...authRoutes,
 ]
 

@@ -99,14 +99,22 @@ de 33 px donde ni el texto «Lun» cabe.
 **Cero desbordamiento horizontal a 375 px.** Criterio comprobable:
 `document.documentElement.scrollWidth` igual al ancho de la ventana en cada ruta.
 
-**Ancho mínimo útil, no sólo ausencia de desbordes.** Ninguna tarjeta ni bloque
-de texto por debajo de unos 280 px en móvil. No desbordar y ser legible son cosas
-distintas: el dashboard daba cero desbordamiento y a la vez comprimía el texto de
-actividades a 77 px de ancho, unos ocho caracteres por línea.
+**Ancho mínimo útil, no sólo ausencia de desbordes.** No desbordar y ser legible
+son cosas distintas: el dashboard daba cero desbordamiento y a la vez comprimía el
+texto de actividades a 77 px de ancho, unos ocho caracteres por línea.
+
+El umbral se mide sobre **contenedores** —tarjetas, paneles, columnas—, que no
+deben bajar de unos 280 px en móvil. No se aplica a cada nodo de texto suelto:
+una insignia que pone «Cancelada» ocupa 74 px y eso es correcto, no un defecto.
+Para párrafos, el criterio útil no es el ancho sino la medida: por debajo de unos
+veinte caracteres por línea el texto deja de leerse con comodidad.
 
 **Objetivos táctiles de 44 × 44 px** en botones, pestañas y enlaces. Es requisito
 de plataforma para una app instalable —44 pt en Apple HIG, 48 dp en Material— y
 va por encima del mínimo de 24 px que exige WCAG 2.2 AA.
+
+**Seguimiento del trabajo:** [`docs/PWA-SEGUIMIENTO.md`](docs/PWA-SEGUIMIENTO.md)
+lleva la lista de pasos con su estado.
 
 **Se verifica en dispositivo, no leyendo clases.** Cada dominio se abre a 375 px
 antes de darlo por terminado. Las clases de Tailwind no dicen la verdad sobre el

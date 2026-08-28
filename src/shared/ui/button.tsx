@@ -5,7 +5,11 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/shared/lib/utils'
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  // `min-h-11` acompana a la altura de cada tamano porque `height` sola no
+  // basta: un boton con `flex-1` dentro de una columna flex recibe
+  // `flex-basis: 0`, que gana a `height` y lo dejaba en 38 px. El minimo si
+  // lo respeta el reparto flexible.
+  'inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap md:min-h-0 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
   {
     variants: {
       variant: {
@@ -20,11 +24,15 @@ const buttonVariants = cva(
         ghost: 'hover:bg-accent hover:text-accent-foreground',
         link: 'text-primary underline-offset-4 hover:underline',
       },
+      // Movil primero: 44 px es el objetivo tactil que exige la regla 1.6 para
+      // una PWA instalable, y ninguna variante de shadcn lo alcanzaba (sm 32,
+      // default 36, lg 40, icon 36). A partir de `md` vuelven a la altura
+      // compacta original, que en raton no estorba.
       size: {
-        default: 'h-9 px-4 py-2',
-        sm: 'h-8 rounded-md px-3 text-xs',
-        lg: 'h-10 rounded-md px-8',
-        icon: 'h-9 w-9',
+        default: 'h-11 px-4 py-2 md:h-9',
+        sm: 'h-11 rounded-md px-3 text-xs md:h-8',
+        lg: 'h-11 rounded-md px-8 md:h-10',
+        icon: 'h-11 w-11 md:h-9 md:w-9',
       },
     },
     defaultVariants: {

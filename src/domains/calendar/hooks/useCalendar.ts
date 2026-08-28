@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useIsMobile } from '@/shared/hooks/useIsMobile'
 import { sessionsMock } from '../data/sessions.mock'
 import { addDays, getWeekDates, toLocalDateKey } from '../libs/calendar.utils'
 import type {
@@ -11,7 +12,14 @@ interface UseCalendarResult {
   sessions: Session[]
   currentDate: Date
   weekDates: Date[]
+  /**
+   * Modo efectivo. En movil siempre es 'day': la rejilla semanal necesita ocho
+   * columnas y por debajo de 768 px eso deja 33 px por columna, donde no cabe
+   * ni el nombre del dia.
+   */
   viewMode: CalendarViewMode
+  /** false en movil, donde el modo esta forzado y el selector se oculta. */
+  canChooseViewMode: boolean
   selectedSession: Session | null
   countByStatus: Record<SessionStatus, number>
   setViewMode: (mode: CalendarViewMode) => void
@@ -34,9 +42,15 @@ interface UseCalendarResult {
  * pasaba antes con `navigateWeek` y `navigateDay`.
  */
 export function useCalendar(): UseCalendarResult {
+  const isMobile = useIsMobile()
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [viewMode, setViewMode] = useState<CalendarViewMode>('week')
+  const [preferredViewMode, setPreferredViewMode] = useState<CalendarViewMode>('week')
   const [selectedSession, setSelectedSession] = useState<Session | null>(null)
+
+  // La preferencia del usuario se conserva aparte del modo efectivo: si vuelve a
+  // una pantalla ancha, recupera la vista que tenia elegida en vez de quedarse
+  // en la diaria.
+  const viewMode: CalendarViewMode = isMobile ? 'day' : preferredViewMode
 
   const sessions = sessionsMock
 
@@ -86,9 +100,10 @@ export function useCalendar(): UseCalendarResult {
     currentDate,
     weekDates,
     viewMode,
+    canChooseViewMode: !isMobile,
     selectedSession,
     countByStatus,
-    setViewMode,
+    setViewMode: setPreferredViewMode,
     goToToday: () => setCurrentDate(new Date()),
     goToPrevious: () => moveBy(-step),
     goToNext: () => moveBy(step),

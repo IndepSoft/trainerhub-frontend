@@ -2,6 +2,10 @@ import * as React from 'react'
 
 import { cn } from '@/shared/lib/utils'
 
+// El relleno baja a 16 px en movil y recupera los 24 desde `md`. Motivo: una
+// tarjeta dentro de otra pagaba el relleno dos veces y la interior caia a 261 px,
+// por debajo del minimo util de 280 px que fija la regla 1.6. Se ve en Reportes,
+// donde las tarjetas de graficos viven dentro de la tarjeta de pestanas.
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -23,7 +27,7 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('flex flex-col space-y-1.5 p-6', className)}
+    className={cn('flex flex-col space-y-1.5 p-4 md:p-6', className)}
     {...props}
   />
 ))
@@ -57,7 +61,7 @@ const CardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn('p-6 pt-0', className)} {...props} />
+  <div ref={ref} className={cn('p-4 pt-0 md:p-6 md:pt-0', className)} {...props} />
 ))
 CardContent.displayName = 'CardContent'
 
@@ -67,7 +71,7 @@ const CardAction = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('flex items-center justify-end p-6 pt-0', className)}
+    className={cn('flex items-center justify-end p-4 pt-0 md:p-6 md:pt-0', className)}
     {...props}
   />
 ))
@@ -79,7 +83,7 @@ const CardFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('flex items-center p-6 pt-0', className)}
+    className={cn('flex items-center p-4 pt-0 md:p-6 md:pt-0', className)}
     {...props}
   />
 ))
