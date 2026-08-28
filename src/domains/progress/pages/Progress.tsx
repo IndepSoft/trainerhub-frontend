@@ -1,18 +1,18 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
-import { TrendingUp } from 'lucide-react'
 import { useState } from 'react'
+import { MetricBlock } from '@/shared/components/MetricBlock'
 import { GamificationHeader } from '../components/GamificationHeader'
 import { MilestonePath } from '../components/MilestonePath'
 import { useGamificationProfile } from '../hooks/useGamificationProfile'
-import { StatCard } from '../components/StatCard'
-import { ProgressOverviewPanel } from '../components/ProgressOverviewPanel'
 import { StreakTrackingSystem } from '../components/StreakTrackingSystem'
 import { PersonalizedChallenges } from '../components/PersonalizedChallenges'
 import { AchievementSystem } from '../components/AchievementSystem'
 import { useProgressOverview } from '../hooks/useProgressOverview'
 
 export default function Progress() {
-  const [activeTab, setActiveTab] = useState('overview')
+  // La pestana inicial es «Logros» porque «Resumen» ya no existe: el sendero
+  // de hitos y la cabecera de gamificacion son el resumen.
+  const [activeTab, setActiveTab] = useState('achievements')
   const { overview } = useProgressOverview()
   const { profile, levelCompletion, experienceToNextLevel } = useGamificationProfile()
 
@@ -48,18 +48,22 @@ export default function Progress() {
 
         <MilestonePath milestones={profile.milestones} />
 
-        <div className="ps-4 pe-4 pb-4 pt-4 max-w-8xl mx-auto space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            {overview.stats.map((stat) => (
-              <StatCard
-                key={stat.id}
-                icon={stat.icon}
-                color={stat.color}
-                label={stat.label}
-                value={stat.value}
-              />
-            ))}
-          </div>
+        {/* Contadores en el registro sobrio, con reglas de 1 px en vez de
+            tarjetas. Bajan de cinco a tres: «Rachas activas» lo dice ya la llama
+            de la cabecera, y «Puntos totales» competia con la barra de XP como
+            si fueran dos sistemas de puntos distintos. */}
+        <div className="grid grid-cols-1 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+          {overview.stats.map((stat) => (
+            <MetricBlock
+              key={stat.id}
+              title={stat.label}
+              indicator={stat.value}
+              icon={stat.icon}
+            />
+          ))}
+        </div>
+
+        <div className="ps-4 pe-4 pb-4 pt-6 max-w-8xl mx-auto space-y-6">
 
           {/* Sin envoltura <Card>, por el mismo motivo que en Reportes: su
               contenido son a su vez tarjetas, que pagaban el relleno dos veces y
@@ -72,20 +76,14 @@ export default function Progress() {
               Seguimiento de Progreso
             </h2>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="w-full md:grid md:grid-cols-5">
-                <TabsTrigger value="overview">Resumen</TabsTrigger>
+              {/* Tres pestanas y no cinco. «Resumen» sobraba desde que existe el
+                  sendero, y «Analisis» solo mostraba un cartel de «proximamente».
+                  Con tres caben a 125 px cada una a 375 px, sin desplazamiento. */}
+              <TabsList className="w-full md:grid md:grid-cols-3">
                 <TabsTrigger value="achievements">Logros</TabsTrigger>
                 <TabsTrigger value="challenges">Desafíos</TabsTrigger>
                 <TabsTrigger value="streaks">Rachas</TabsTrigger>
-                <TabsTrigger value="analytics">Análisis</TabsTrigger>
               </TabsList>
-
-              <TabsContent value="overview" className="mt-6">
-                <ProgressOverviewPanel
-                  overview={overview}
-                  onNavigateToTab={setActiveTab}
-                />
-              </TabsContent>
 
               <TabsContent value="achievements" className="mt-6">
                 <AchievementSystem />
@@ -99,18 +97,6 @@ export default function Progress() {
                 <StreakTrackingSystem />
               </TabsContent>
 
-              <TabsContent value="analytics" className="mt-6">
-                <div className="text-center py-12">
-                  <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">
-                    Análisis Avanzado de Progreso
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Métricas detalladas, reportes de participación y análisis de
-                    efectividad estarán disponibles próximamente.
-                  </p>
-                </div>
-              </TabsContent>
             </Tabs>
           </section>
         </div>

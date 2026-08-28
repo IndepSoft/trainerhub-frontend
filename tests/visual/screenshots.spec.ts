@@ -23,6 +23,22 @@ async function signIn(page: Page): Promise<void> {
   await page.waitForURL(/\/dashboard/, { timeout: 20_000 })
 }
 
+/**
+ * Desplaza el contenedor interno hasta abajo.
+ *
+ * `fullPage: true` no sirve en este layout: el desplazamiento vive en un div con
+ * `overflow-auto` dentro de una altura fija, asi que la captura de pagina
+ * completa se queda en lo que cabe en el viewport y todo lo de mas abajo no se
+ * revisa nunca.
+ */
+async function scrollInnerContainerToBottom(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const container = document.querySelector('.overflow-auto')
+    if (container) container.scrollTop = container.scrollHeight
+  })
+  await page.waitForTimeout(400)
+}
+
 for (const viewport of VIEWPORTS) {
   test(`dashboard en ${viewport.name}`, async ({ page }) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height })
@@ -73,6 +89,19 @@ for (const viewport of VIEWPORTS) {
     await page.screenshot({
       path: `tests/visual/salida/celebracion-${viewport.name}.png`,
       fullPage: true,
+    })
+  })
+}
+
+for (const viewport of VIEWPORTS) {
+  test(`progreso desplazado en ${viewport.name}`, async ({ page }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height })
+    await signIn(page)
+    await page.goto('/progress')
+    await page.waitForTimeout(2000)
+    await scrollInnerContainerToBottom(page)
+    await page.screenshot({
+      path: `tests/visual/salida/progreso-abajo-${viewport.name}.png`,
     })
   })
 }

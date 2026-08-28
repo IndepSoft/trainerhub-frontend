@@ -6,13 +6,18 @@ export type MetricTrend = 'up' | 'down' | 'same'
 
 export interface MetricBlockProps {
   title: string
-  indicator: number
+  indicator: number | string
   icon: LucideIcon
-  period: MetricPeriod
-  delta: number
   prefix?: string
   suffix?: string
-  deltaType: MetricTrend
+  /**
+   * La tendencia es opcional: hay metricas que no la tienen -«Logros activos»
+   * no se compara con nada-. Sin ella se omite la linea inferior en vez de
+   * pintar un cero enganoso, y no hace falta un segundo componente.
+   */
+  period?: MetricPeriod
+  delta?: number
+  deltaType?: MetricTrend
 }
 
 const PERIOD_LABELS: Record<MetricPeriod, string> = {
@@ -56,6 +61,8 @@ export function MetricBlock({
   deltaType,
   period,
 }: MetricBlockProps) {
+  const hasTrend = deltaType !== undefined && delta !== undefined && period !== undefined
+
   return (
     <div className="flex flex-col gap-3 py-6 px-5">
       <div className="flex items-start justify-between gap-3">
@@ -67,19 +74,21 @@ export function MetricBlock({
 
       <p className="metric-figures font-display text-5xl font-extrabold leading-none text-ink">
         {prefix}
-        {indicator.toLocaleString('es')}
+        {typeof indicator === 'number' ? indicator.toLocaleString('es') : indicator}
         <span className="ml-1 text-2xl font-bold text-ink/45">{suffix}</span>
       </p>
 
-      <p className="flex items-baseline gap-1.5 text-xs">
-        <span className={cn('metric-figures font-semibold', TREND_COLORS[deltaType])}>
-          {TREND_SIGNS[deltaType]}
-          {prefix}
-          {delta}
-          {suffix}
-        </span>
-        <span className="text-ink/40">{PERIOD_LABELS[period]}</span>
-      </p>
+      {hasTrend && (
+        <p className="flex items-baseline gap-1.5 text-xs">
+          <span className={cn('metric-figures font-semibold', TREND_COLORS[deltaType])}>
+            {TREND_SIGNS[deltaType]}
+            {prefix}
+            {delta}
+            {suffix}
+          </span>
+          <span className="text-ink/40">{PERIOD_LABELS[period]}</span>
+        </p>
+      )}
     </div>
   )
 }

@@ -3,9 +3,8 @@
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
-import { Badge } from '@/shared/ui/badge'
 import { AchievementBadge } from "./AchievementBadge"
-import { Trophy, Star, Target, Flame, Filter } from "lucide-react"
+import { Filter } from "lucide-react"
 import { predefinedAchievements } from "../data/predefinedAchievements"
 
 interface AchievementSystemProps {
@@ -19,7 +18,6 @@ export function AchievementSystem(_props: AchievementSystemProps) {
   const [selectedRarity, setSelectedRarity] = useState<string>("all")
 
   const unlockedAchievements = predefinedAchievements.filter((a) => a.unlockedAt)
-  const totalPoints = unlockedAchievements.reduce((sum, a) => sum + a.pointsReward, 0)
 
   const filteredAchievements = predefinedAchievements.filter((achievement) => {
     const categoryMatch = selectedCategory === "all" || achievement.category === selectedCategory
@@ -36,60 +34,29 @@ export function AchievementSystem(_props: AchievementSystemProps) {
 
   return (
     <div className="space-y-6">
-      {/* Achievement Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Trophy className="h-5 w-5 text-yellow-600" />
-              <div>
-                <p className="text-sm font-medium">Total Achievements</p>
-                <p className="text-2xl font-bold">
-                  {unlockedAchievements.length}/{predefinedAchievements.length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/*
+        Aqui habia cuatro tarjetas de contador. Se eliminan porque tres de ellas
+        repetian datos que ya estan mas arriba en la pagina:
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Star className="h-5 w-5 text-blue-600" />
-              <div>
-                <p className="text-sm font-medium">Total Points</p>
-                <p className="text-2xl font-bold">{totalPoints.toLocaleString()}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        - «Total Achievements» lo dice el contador «Logros activos».
+        - «Total Points» competia con la barra de XP como si fueran dos sistemas
+          de puntos distintos. Se decidio que solo hay uno, XP.
+        - «Current Streak» decia «21 days» ESCRITO A MANO, mientras la cabecera
+          de gamificacion mostraba 12. Dos rachas distintas en la misma pantalla.
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Flame className="h-5 w-5 text-orange-600" />
-              <div>
-                <p className="text-sm font-medium">Current Streak</p>
-                <p className="text-2xl font-bold">21 days</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Target className="h-5 w-5 text-green-600" />
-              <div>
-                <p className="text-sm font-medium">Completion Rate</p>
-                <p className="text-2xl font-bold">
-                  {Math.round((unlockedAchievements.length / predefinedAchievements.length) * 100)}%
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+        Sobrevive lo unico que no estaba duplicado -cuantos logros van de
+        cuantos-, como una linea de contexto y no como una fila de tarjetas.
+      */}
+      <p className="text-sm text-ink/50">
+        <span className="metric-figures font-display text-2xl font-extrabold text-ink">
+          {unlockedAchievements.length}
+        </span>
+        <span className="metric-figures text-ink/40"> / {predefinedAchievements.length}</span>
+        {' logros desbloqueados · '}
+        <span className="metric-figures font-semibold text-cobalt">
+          {Math.round((unlockedAchievements.length / predefinedAchievements.length) * 100)}%
+        </span>
+      </p>
 
       {/* Achievement Categories */}
       <Card>
@@ -162,7 +129,12 @@ export function AchievementSystem(_props: AchievementSystemProps) {
                       Unlocked {achievement.unlockedAt?.toLocaleDateString()}
                     </p>
                   </div>
-                  <Badge variant="secondary">+{achievement.pointsReward} pts</Badge>
+                  {/* XP y no «pts»: se decidio que hay un unico sistema de puntos. La
+                      pantalla de celebracion ya mostraba «+500 XP» para este mismo
+                      numero, asi que «pts» hacia parecer que eran dos cosas. */}
+                  <span className="metric-figures shrink-0 font-display text-sm font-bold text-cobalt">
+                    +{achievement.pointsReward} XP
+                  </span>
                 </div>
               ))}
           </div>
