@@ -1,3 +1,4 @@
+import type { Achievement } from '../types/achievement.types'
 import type { LevelProgress, Milestone } from '../types/gamification.types'
 
 /**
@@ -30,4 +31,23 @@ export function calculateMilestoneCompletion(milestone: Milestone): number {
  */
 export function findActiveMilestoneIndex(milestones: Milestone[]): number {
   return milestones.findIndex((milestone) => milestone.state === 'active')
+}
+
+/**
+ * El logro desbloqueado mas reciente, o null si no hay ninguno.
+ *
+ * `unlockedAt` es opcional en la entidad -un logro sin fecha esta por
+ * desbloquear-, asi que el filtrado por presencia de fecha es lo que distingue
+ * conseguido de pendiente. Sin el, un logro bloqueado podria acabar celebrado.
+ */
+export function findLatestUnlocked(achievements: Achievement[]): Achievement | null {
+  const unlocked = achievements.filter(
+    (achievement): achievement is Achievement & { unlockedAt: Date } =>
+      achievement.unlockedAt instanceof Date
+  )
+  if (unlocked.length === 0) return null
+
+  return unlocked.reduce((latest, candidate) =>
+    candidate.unlockedAt.getTime() > latest.unlockedAt.getTime() ? candidate : latest
+  )
 }

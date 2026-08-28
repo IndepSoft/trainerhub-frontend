@@ -62,3 +62,17 @@ for (const viewport of VIEWPORTS) {
     })
   })
 }
+
+for (const viewport of VIEWPORTS) {
+  test(`celebracion en ${viewport.name}`, async ({ page }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height })
+    await signIn(page)
+    await page.goto('/progress/celebracion')
+    // Se deja avanzar el confeti para capturarlo a medio vuelo.
+    await page.waitForTimeout(1400)
+    await page.screenshot({
+      path: `tests/visual/salida/celebracion-${viewport.name}.png`,
+      fullPage: true,
+    })
+  })
+}

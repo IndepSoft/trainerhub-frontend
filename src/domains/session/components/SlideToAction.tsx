@@ -7,6 +7,12 @@ interface SlideToActionProps {
   onConfirm: () => void
   /** Etiqueta del botón accesible equivalente, para teclado y lectores de pantalla. */
   accessibleLabel: string
+  /**
+   * `pause` es la acción reversible y va en Cobalt; `finish` es irreversible y
+   * va en Ink, más sobria, para que no compita con la principal ni invite a
+   * pulsarla por reflejo.
+   */
+  variant?: 'pause' | 'finish'
 }
 
 /**
@@ -20,20 +26,28 @@ interface SlideToActionProps {
  * deslizamiento no es alcanzable con teclado, así que sin este botón la acción
  * sería imposible sin ratón o dedo.
  */
-export function SlideToAction({ label, onConfirm, accessibleLabel }: SlideToActionProps) {
+export function SlideToAction({
+  label,
+  onConfirm,
+  accessibleLabel,
+  variant = 'pause',
+}: SlideToActionProps) {
   const { progress, isDragging, handlers } = useSlideToConfirm({ onConfirm })
 
   return (
     <div
-      className="relative shrink-0 select-none overflow-hidden bg-cobalt touch-none"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      className={cn(
+        'relative shrink-0 select-none overflow-hidden touch-none',
+        variant === 'finish' ? 'bg-ink' : 'bg-cobalt'
+      )}
       {...handlers}
     >
       {/* Estela del arrastre: aclara lo ya recorrido. */}
       <div
         aria-hidden="true"
         className={cn(
-          'absolute inset-y-0 left-0 bg-cobalt-lift',
+          'absolute inset-y-0 left-0',
+          variant === 'finish' ? 'bg-ember' : 'bg-cobalt-lift',
           !isDragging && 'transition-[width] duration-300 ease-out'
         )}
         style={{ width: `${progress * 100}%` }}

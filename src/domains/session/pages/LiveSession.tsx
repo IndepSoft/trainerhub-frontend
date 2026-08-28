@@ -1,4 +1,5 @@
 import { Satellite } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useLiveSession } from '../hooks/useLiveSession'
 import { SessionDuration } from '../components/SessionDuration'
 import { SessionMetrics } from '../components/SessionMetrics'
@@ -10,10 +11,21 @@ import { SlideToAction } from '../components/SlideToAction'
  * todos los cálculos en `session.utils`.
  */
 export default function LiveSession() {
-  const { session, metrics, state, paceSeconds, routeProgress, pause, resume } =
+  const navigate = useNavigate()
+  const { session, metrics, state, paceSeconds, routeProgress, pause, resume, finish } =
     useLiveSession()
 
   const isRunning = state === 'running'
+
+  /*
+   * Finalizar lleva a la celebracion. El gesto de deslizar tambien protege aqui,
+   * y con mas motivo: terminar por error una sesion en marcha no tiene vuelta
+   * atras. Solo aparece en pausa, para que no compita con la accion principal.
+   */
+  const handleFinish = () => {
+    finish()
+    navigate('/progress/celebracion')
+  }
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
@@ -53,11 +65,25 @@ export default function LiveSession() {
         </div>
       </div>
 
-      <SlideToAction
-        label={isRunning ? 'Desliza para pausar' : 'Desliza para reanudar'}
-        accessibleLabel={isRunning ? 'Pausar la sesión' : 'Reanudar la sesión'}
-        onConfirm={isRunning ? pause : resume}
-      />
+      {/* El margen de zona segura va aqui y no en cada franja: con dos
+          apiladas, aplicarlo a ambas dejaria un hueco entre ellas. En una
+          PWA instalada esto es lo que evita chocar con la barra de gestos. */}
+      <div className="shrink-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        {!isRunning && (
+          <SlideToAction
+            variant="finish"
+            label="Desliza para finalizar"
+            accessibleLabel="Finalizar la sesión"
+            onConfirm={handleFinish}
+          />
+        )}
+
+        <SlideToAction
+          label={isRunning ? 'Desliza para pausar' : 'Desliza para reanudar'}
+          accessibleLabel={isRunning ? 'Pausar la sesión' : 'Reanudar la sesión'}
+          onConfirm={isRunning ? pause : resume}
+        />
+      </div>
     </div>
   )
 }

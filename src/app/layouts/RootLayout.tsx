@@ -17,7 +17,13 @@ export default function RootLayout() {
    */
   const { trainer, loading } = useTrainer(user?.id)
 
-  const hideNavRoutes = ['/authentication']
+  /*
+   * Rutas a pantalla completa, sin barra lateral ni superior. La celebracion
+   * entra aqui porque el registro agresivo depende de ocupar la pantalla
+   * entera: con la navegacion alrededor, el bloque diagonal se lee como un
+   * banner dentro de la aplicacion y no como un momento.
+   */
+  const hideNavRoutes = ['/authentication', '/progress/celebracion']
   const shouldHideNav = hideNavRoutes.includes(location.pathname)
 
   if (shouldHideNav) {

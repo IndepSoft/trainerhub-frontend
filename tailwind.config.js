@@ -6,6 +6,22 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      keyframes: {
+        // Cada particula recibe su propia trayectoria por variables CSS, asi
+        // que un unico fotograma clave sirve para todas: sin esto harian falta
+        // treinta keyframes distintos o una animacion en JavaScript.
+        'confetti-burst': {
+          '0%': { transform: 'translate3d(0,0,0) rotate(0deg)', opacity: '1' },
+          '100%': {
+            transform:
+              'translate3d(var(--confetti-x), var(--confetti-y), 0) rotate(var(--confetti-rotation))',
+            opacity: '0',
+          },
+        },
+      },
+      animation: {
+        'confetti-burst': 'confetti-burst var(--confetti-duration) cubic-bezier(0.2,0.6,0.3,1) forwards',
+      },
       fontFamily: {
         // Barlow para toda la interfaz; su corte Condensed para el registro
         // display. Misma familia, dos anchos: la app se siente una sola.
