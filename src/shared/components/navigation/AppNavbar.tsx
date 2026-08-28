@@ -4,19 +4,21 @@ import { NavItem } from './NavItem'
 import { MobileMenu } from './MobileMenu'
 import { UserMenu } from './UserMenu'
 import { NotificationButton } from './NotificationButton'
-import { useAuth } from '@/auth/hooks/useAuth'
-import { useTrainer } from '@/shared/hooks/useTrainer'
+import type { Trainer } from '@/shared/domain/entities/trainer'
 
-export function AppNavbar() {
+interface AppNavbarProps {
+  trainer: Trainer | null
+  loading: boolean
+}
+
+export function AppNavbar({ trainer, loading }: AppNavbarProps) {
   const navbarRoutes = getNavbarRoutes()
-  const { user } = useAuth()
-  const { trainer, loading } = useTrainer(user?.id)
 
   return (
     <header className="h-16 border-b flex-shrink-0">
       <div className="flex items-center h-16 px-4">
         <SidebarTrigger className="mr-4 hidden md:flex" />
-        <MobileMenu />
+        <MobileMenu trainer={trainer} loading={loading} />
 
         <div className="flex-1 flex justify-between items-center">
           <nav className="hidden md:flex items-center space-x-1">

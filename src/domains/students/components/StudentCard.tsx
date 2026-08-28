@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
 import { Calendar, MoreHorizontal, TrendingUp } from 'lucide-react'
-import { getInitials, getShortName } from '@/shared/utils/nameHelpers'
+import { getInitials, getShortName } from '@/shared/lib/personName'
 import type { Student, StudentLevel } from '../types/student.types'
 
 /**

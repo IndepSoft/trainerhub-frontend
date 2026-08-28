@@ -1,5 +1,7 @@
-import type { IIndicatorCardProps } from '@/shared/components/card-custom/IndicatorCardComponent'
-import IndicatorCardComponent from '@/shared/components/card-custom/IndicatorCardComponent'
+import {
+  IndicatorCard,
+  type IndicatorCardProps,
+} from '@/shared/components/IndicatorCard'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import {
@@ -21,7 +23,7 @@ import SummaryComponent from '../components/SummaryComponent'
  * TODO: valores de ejemplo. Deben venir del backend cuando exista el
  * repositorio de reportes.
  */
-const indicatorsVal: IIndicatorCardProps[] = [
+const indicatorsVal: IndicatorCardProps[] = [
   {
     title: 'Alumnos Activos',
     indicator: 24,
@@ -42,7 +44,7 @@ const indicatorsVal: IIndicatorCardProps[] = [
     title: 'Tasa de Asistencia',
     indicator: 87,
     icon: BanknoteArrowUp,
-    sufix: '%',
+    suffix: '%',
     delta: 200,
     deltaType: 'up',
     period: 'month',
@@ -83,13 +85,13 @@ export default function Reports() {
         <div className="ps-4 pe-4 pb-4 max-w-8xl mx-auto space-y-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {indicatorsVal.map((indicator) => (
-              <IndicatorCardComponent
+              <IndicatorCard
                 key={indicator.title}
                 title={indicator.title}
                 delta={indicator.delta}
                 deltaType={indicator.deltaType}
                 prefix={indicator.prefix}
-                sufix={indicator.sufix}
+                suffix={indicator.suffix}
                 icon={indicator.icon}
                 indicator={indicator.indicator}
                 period={indicator.period}

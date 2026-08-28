@@ -7,7 +7,7 @@
  *
  * Se guardan `firstName` y `lastName` por separado, y no un `name` único, por
  * dos motivos: es como ya modela `Trainer` en `shared/domain/entities`, y es lo
- * que necesitan `getInitials` y `getShortName` de `shared/utils/nameHelpers`.
+ * que necesitan `getInitials` y `getShortName` de `shared/lib/personName`.
  */
 
 export type StudentLevel = 'Principiante' | 'Intermedio' | 'Avanzado'

@@ -3,8 +3,14 @@ import { X, Menu } from 'lucide-react'
 import { getMobileRoutes } from '@/app/config/navigation.config'
 import { NavItem } from './NavItem'
 import { PersonCard } from '../PersonCard'
+import type { Trainer } from '@/shared/domain/entities/trainer'
 
-export function MobileMenu() {
+interface MobileMenuProps {
+  trainer: Trainer | null
+  loading: boolean
+}
+
+export function MobileMenu({ trainer, loading }: MobileMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
   const mobileRoutes = getMobileRoutes()
@@ -76,11 +82,7 @@ export function MobileMenu() {
               </div>
 
               <div className="px-4 py-4 border-b from-blue-50 to-indigo-50">
-                <div className="flex items-center space-x-3">
-                  <div>
-                    <PersonCard />
-                  </div>
-                </div>
+                <PersonCard trainer={trainer} loading={loading} />
               </div>
 
               {/* Contenido - Navegación Dinámica */}
