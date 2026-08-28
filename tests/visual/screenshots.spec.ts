@@ -34,3 +34,17 @@ for (const viewport of VIEWPORTS) {
     })
   })
 }
+
+for (const viewport of VIEWPORTS) {
+  test(`sesion en vivo en ${viewport.name}`, async ({ page }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height })
+    await signIn(page)
+    await page.goto('/session')
+    // Se deja correr el cronometro para que las metricas no salgan a cero.
+    await page.waitForTimeout(9000)
+    await page.screenshot({
+      path: `tests/visual/salida/sesion-${viewport.name}.png`,
+      fullPage: true,
+    })
+  })
+}

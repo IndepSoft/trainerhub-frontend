@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { Timeline, TimelineEntry } from '@/shared/components/Timeline'
 import { SectionHeading } from './SectionHeading'
 import { SessionItem } from './SessionItem'
@@ -26,7 +27,19 @@ export function UpcomingSessions({ sessions }: UpcomingSessionsProps) {
               state={index === 0 ? 'active' : 'pending'}
               isLast={index === sessions.length - 1}
             >
-              <SessionItem session={session} />
+              {/* Solo la proxima sesion abre la pantalla en vivo: es la unica
+                  que se puede empezar ahora. Las demas se pintan igual pero no
+                  son accionables, para que el enlace signifique algo. */}
+              {index === 0 ? (
+                <Link
+                  to="/session"
+                  className="block rounded-sm outline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cobalt-lift"
+                >
+                  <SessionItem session={session} />
+                </Link>
+              ) : (
+                <SessionItem session={session} />
+              )}
             </TimelineEntry>
           ))}
         </Timeline>
