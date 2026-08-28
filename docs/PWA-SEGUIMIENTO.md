@@ -160,13 +160,11 @@ De paso, y por las reglas 1.1 y 1.2:
 - El relleno de `Card` baja a 16 px en móvil y vuelve a 24 desde `md`: una
   tarjeta dentro de otra pagaba el relleno dos veces.
 
-⚠️ **Lo que no queda cerrado.** Las cuatro tarjetas de gráficos miden **277 px**,
-tres por debajo del mínimo de 280. La causa de raíz no es el relleno sino el
-anidamiento: son tarjetas dentro de la tarjeta «Sistema de Gamificación», que a
-su vez repite las mismas cinco solapas que `/progress`. Quitar esa envoltura
-las dejaría en 343 px y de paso resolvería la duplicación —pero es una decisión
-de producto, no de responsive, y por eso no se ha tomado aquí. Seguir bajando
-relleno para ganar 3 px sería maquillar la medida.
+✅ **Cerrado después.** Las cuatro tarjetas de gráficos se quedaron en 277 px,
+tres por debajo del mínimo. La causa de raíz no era el relleno sino el
+anidamiento: eran tarjetas dentro de la tarjeta «Sistema de Gamificación». Se
+eliminó esa envoltura —ver el paso 7— y pasan a **311 px**, el mismo ancho que
+las demás tarjetas de la aplicación.
 
 Pendiente relacionado: `navigation.config.ts` también declara `/settings` y
 `/login`, que siguen sin existir como rutas.
@@ -229,6 +227,31 @@ y son medibles: contexto seguro, service worker activo y controlando la página,
 manifiesto con `name`, `short_name`, `start_url`, `display: standalone` e iconos
 de 192 y 512. Pero `beforeinstallprompt` no se dispara en el panel embebido, que
 no es un Chrome completo. Falta abrirlo en un teléfono.
+
+### ✅ 7 · Quitar la envoltura que estrechaba las tarjetas de gráficos
+
+Cierra el único defecto de §1.6 que quedaba medido y sin resolver.
+
+- [x] Eliminada la `<Card>` que envolvía las pestañas de Reportes
+- [x] El título se conserva como `<h2>` suelto
+- [x] Verificado a 375 px: **las ocho tarjetas a 311 px**, ninguna bajo 280
+- [x] Verificado a 1280 px sin regresión
+
+Una tarjeta cuyo contenido son a su vez tarjetas hace pagar el relleno dos
+veces. Un encabezado suelto da la misma información sin ese nivel de
+anidamiento, y de paso corrige una carencia de accesibilidad: `CardTitle`
+renderiza un `<div>`, que para un lector de pantalla **no es un encabezado**.
+La página pasa de tener sólo un `<h1>` a una jerarquía `<h1>` → `<h2>`.
+
+| Medida | Antes | Después |
+|---|---|---|
+| Tarjetas de gráficos a 375 px | 277 px | **311 px** |
+| Lienzo del gráfico a 375 px | 243 px | **277 px** |
+| Tarjeta ancha a 1280 px | 1148 px | **1201 px** |
+
+Sigue en pie la pregunta de producto que hay detrás, y que este paso **no**
+resuelve: el bloque repite las mismas cinco solapas que `/progress` y cuatro de
+ellas siguen vacías. Puede que sobre entero en Reportes.
 
 ---
 

@@ -1,7 +1,6 @@
 import type { IIndicatorCardProps } from '@/shared/components/card-custom/IndicatorCardComponent'
 import IndicatorCardComponent from '@/shared/components/card-custom/IndicatorCardComponent'
 import { PageHeader } from '@/shared/components/PageHeader'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import {
   BanknoteArrowUp,
@@ -98,47 +97,51 @@ export default function Reports() {
             ))}
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Sistema de Gamificación</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="w-full md:grid md:grid-cols-5">
-                  <TabsTrigger value="summary">Resumen</TabsTrigger>
-                  <TabsTrigger value="achievements">Logros</TabsTrigger>
-                  <TabsTrigger value="challenges">Desafíos</TabsTrigger>
-                  <TabsTrigger value="streaks">Rachas</TabsTrigger>
-                  <TabsTrigger value="analytics">Análisis</TabsTrigger>
-                </TabsList>
+          {/* Sin envoltura <Card>. La tenia, y como su contenido son a su vez
+              tarjetas, cada una pagaba el relleno dos veces y caia a 277 px, por
+              debajo del minimo util de 280 que fija la regla 1.6. Un encabezado
+              suelto da la misma informacion sin anadir un nivel de anidamiento
+              -y <h2> si es un encabezado para un lector de pantalla, cosa que
+              CardTitle no es: renderiza un <div>. */}
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold leading-none tracking-tight">
+              Sistema de Gamificación
+            </h2>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="w-full md:grid md:grid-cols-5">
+                <TabsTrigger value="summary">Resumen</TabsTrigger>
+                <TabsTrigger value="achievements">Logros</TabsTrigger>
+                <TabsTrigger value="challenges">Desafíos</TabsTrigger>
+                <TabsTrigger value="streaks">Rachas</TabsTrigger>
+                <TabsTrigger value="analytics">Análisis</TabsTrigger>
+              </TabsList>
 
-                <TabsContent value="summary" className="mt-6">
-                  <SummaryComponent />
-                </TabsContent>
+              <TabsContent value="summary" className="mt-6">
+                <SummaryComponent />
+              </TabsContent>
 
-                {/* TODO: cuatro pestanas sin contenido. Heredaron el andamiaje
-                    «pageN works» del generador y nunca se completaron. Falta
-                    decidir en producto que muestra cada una: hoy repiten las
-                    mismas cinco solapas que /progress, asi que puede que
-                    sobren aqui en vez de tener que rellenarse. */}
-                <TabsContent value="achievements" className="mt-6">
-                  <EmptyTabNotice />
-                </TabsContent>
+              {/* TODO: cuatro pestanas sin contenido. Heredaron el andamiaje
+                  «pageN works» del generador y nunca se completaron. Falta
+                  decidir en producto que muestra cada una: hoy repiten las
+                  mismas cinco solapas que /progress, asi que puede que
+                  sobren aqui en vez de tener que rellenarse. */}
+              <TabsContent value="achievements" className="mt-6">
+                <EmptyTabNotice />
+              </TabsContent>
 
-                <TabsContent value="challenges" className="mt-6">
-                  <EmptyTabNotice />
-                </TabsContent>
+              <TabsContent value="challenges" className="mt-6">
+                <EmptyTabNotice />
+              </TabsContent>
 
-                <TabsContent value="streaks" className="mt-6">
-                  <EmptyTabNotice />
-                </TabsContent>
+              <TabsContent value="streaks" className="mt-6">
+                <EmptyTabNotice />
+              </TabsContent>
 
-                <TabsContent value="analytics" className="mt-6">
-                  <EmptyTabNotice />
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
+              <TabsContent value="analytics" className="mt-6">
+                <EmptyTabNotice />
+              </TabsContent>
+            </Tabs>
+          </section>
         </div>
       </div>
     </div>
