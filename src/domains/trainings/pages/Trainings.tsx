@@ -26,7 +26,11 @@ export default function Trainings() {
               <Copy className="h-4 w-4" />
               Plantillas
             </Button>
-            <Button className="gap-2 bg-ink hover:bg-cobalt">
+            {/* Cobalt, como el primario del resto de paginas. Venia de un
+                `bg-blue-900` escrito a mano que el barrido de color convirtio en
+                Ink: una accion primaria en negro mientras la de estudiantes iba
+                en azul. */}
+            <Button className="gap-2">
               <Plus className="h-4 w-4" />
               Nueva Rutina
             </Button>

@@ -485,7 +485,10 @@ test.describe('tarjeta de estudiante', () => {
 
     // Se pulsa lejos del nombre, abajo a la derecha de la tarjeta: si el enlace
     // no estuviera estirado, ahi no habria nada que pulsar.
-    const caja = await tarjeta.locator('xpath=ancestor::*[contains(@class,"rounded-xl")][1]').boundingBox()
+    // Se busca el <article> contenedor y no una clase: la clase cambia con
+    // cada iteracion de diseno -paso de `rounded-xl` a `rounded-block`- y la
+    // prueba se rompia sin que la funcionalidad hubiera cambiado.
+    const caja = await tarjeta.locator('xpath=ancestor::article[1]').boundingBox()
     expect(caja).not.toBeNull()
     await page.mouse.click(caja!.x + caja!.width - 60, caja!.y + caja!.height - 30)
 
