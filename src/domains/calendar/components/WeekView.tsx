@@ -28,7 +28,11 @@ interface WeekViewProps {
 export function WeekView({ weekDates, getSessionsOfDay, onSelectSession }: WeekViewProps) {
   return (
     <div className="border-y border-cobalt-tint-3">
-      <div className="flex border-b border-cobalt-tint-3">
+      {/* Pegada arriba del contenedor de scroll: al desplazar la rejilla, saber
+          en que columna cae cada dia es imprescindible, y sin esto la fila de
+          dias se iba con el contenido. Fondo opaco obligatorio, o la rejilla se
+          transparenta por debajo al pasar. */}
+      <div className="sticky top-0 z-10 flex border-b border-cobalt-tint-3 bg-bone">
         <div className="w-14 shrink-0" />
         {weekDates.map((date, index) => (
           <div key={toLocalDateKey(date)} className="min-w-0 flex-1 py-2 text-center">

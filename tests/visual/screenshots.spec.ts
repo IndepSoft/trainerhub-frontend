@@ -35,12 +35,31 @@ async function signIn(page: Page): Promise<void> {
  * completa se queda en lo que cabe en el viewport y todo lo de mas abajo no se
  * revisa nunca.
  */
-async function scrollInnerContainerToBottom(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    const container = document.querySelector('.overflow-auto')
-    if (container) container.scrollTop = container.scrollHeight
+async function scrollInnerContainerToBottom(page: Page): Promise<number> {
+  const desplazado = await page.evaluate(() => {
+    /*
+     * El contenedor se busca DENTRO de <main> y quedandose con el que mas
+     * contenido oculto tiene.
+     *
+     * Antes se cogia el primer `.overflow-auto` del documento, que en escritorio
+     * es el de la barra lateral: la ayudante desplazaba el menu en vez de la
+     * pagina, y las pruebas pasaban sin comprobar nada. En movil colaba porque
+     * la barra lateral esta oculta.
+     */
+    const candidatos = [...document.querySelectorAll('main .overflow-auto')]
+    const objetivo = candidatos
+      .map((elemento) => ({
+        elemento,
+        oculto: elemento.scrollHeight - elemento.clientHeight,
+      }))
+      .sort((a, b) => b.oculto - a.oculto)[0]
+
+    if (!objetivo || objetivo.oculto <= 0) return 0
+    objetivo.elemento.scrollTop = objetivo.elemento.scrollHeight
+    return objetivo.elemento.scrollTop
   })
   await page.waitForTimeout(400)
+  return desplazado
 }
 
 for (const viewport of VIEWPORTS) {
@@ -663,4 +682,29 @@ test('vista semanal en desktop', async ({ page }) => {
   expect(desborde, 'desbordamiento horizontal').toBe(0)
 
   await page.screenshot({ path: 'tests/visual/salida/semana-desktop.png' })
+})
+
+/**
+ * La fila de dias no debe irse con la rejilla.
+ *
+ * Al desplazar una semana hay que seguir sabiendo en que columna cae cada dia;
+ * sin eso, la rejilla es un tablero de celdas sin encabezado.
+ */
+test('la fila de dias sigue visible al desplazar la semana', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await signIn(page)
+  await page.goto('/calendar')
+  await page.waitForTimeout(2000)
+
+  const sabado = page.getByText('Sáb', { exact: true })
+  await expect(sabado).toBeInViewport()
+
+  const desplazado = await scrollInnerContainerToBottom(page)
+  // Si no hubo desplazamiento, la prueba no estaria comprobando nada.
+  expect(desplazado, 'la rejilla debe haberse desplazado').toBeGreaterThan(200)
+
+  // Y la fila de dias sigue en pantalla.
+  await expect(sabado).toBeInViewport()
+
+  await page.screenshot({ path: 'tests/visual/salida/semana-desplazada.png' })
 })

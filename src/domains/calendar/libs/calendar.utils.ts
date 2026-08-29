@@ -91,3 +91,25 @@ export function parseLocalDateKey(key: string): Date {
   const [year, month, day] = key.split('-').map(Number)
   return new Date(year, month - 1, day)
 }
+
+/**
+ * Fecha corta para pantallas estrechas: «sáb 29 ago».
+ *
+ * `formatFullDate` da «sábado, 29 de agosto de 2026», que a 375 px obliga a la
+ * barra de navegación a partirse en dos filas y se come unos 56 px del campo de
+ * visión de la rejilla. El año se omite a propósito: en una agenda se navega
+ * dentro del año en curso, y cuando no es así lo dice el propio contexto.
+ */
+export function formatCompactDate(date: Date): string {
+  return date
+    .toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })
+    .replace(/\./g, '')
+}
+
+/** Rango de semana corto: «24 - 30 ago». */
+export function formatCompactWeekRange(weekDates: Date[]): string {
+  const first = weekDates[0].getDate()
+  const last = weekDates[6]
+  const month = last.toLocaleDateString('es-ES', { month: 'short' }).replace('.', '')
+  return `${first} - ${last.getDate()} ${month}`
+}
