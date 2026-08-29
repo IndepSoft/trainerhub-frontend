@@ -548,8 +548,13 @@ test('la tarjeta de rutina abre su ficha', async ({ page }) => {
   await page.waitForURL(/\/trainings\/.+/, { timeout: 15_000 })
   await expect(page.getByRole('heading', { level: 1 })).toContainText(titulo!.trim())
 
-  // Y las capturas del detalle, que es pantalla nueva.
+  // La ficha se captura DESPLAZADA: los bloques, que son lo que la estructura
+  // aporta, viven por debajo del pliegue.
+  await scrollInnerContainerToBottom(page)
   await page.screenshot({ path: 'tests/visual/salida/rutina-detalle-mobile.png' })
+
+  // La duracion es derivada: no existe campo que la almacene.
+  await expect(page.getByText('min estimados')).toBeVisible()
   expect(enlace).toBeDefined()
 })
 
@@ -747,7 +752,10 @@ test.describe('reparto de secciones', () => {
     // pintando las rutinas, porque no habia TabsContent.
     await lista.getByRole('tab', { name: /Plantillas/ }).click()
     await page.waitForTimeout(500)
-    await expect(page.getByText('No hay plantillas disponibles todavía.')).toBeVisible()
+    // Contenido propio, no el de rutinas: son colecciones distintas de la misma
+    // entidad, separadas por la marca `isTemplate`.
+    await expect(page.getByRole('link', { name: 'Torso · Plantilla base' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Full body · Principiante' })).toHaveCount(0)
 
     // Desafios y rachas estan vacias a proposito y lo dicen. La prueba fija que
     // NO vuelvan a pintar datos de ejemplo: eso hacia creer que la funcion

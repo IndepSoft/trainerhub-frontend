@@ -1,14 +1,15 @@
 import type { Routine } from '../types/training.types'
 
 /**
- * Rutinas simuladas.
+ * Rutinas simuladas, ya en la estructura de bloques.
  *
- * Estaban en el cuerpo de `Trainings.tsx`, junto a la disposicion de la pagina.
+ * Ya no llevan `durationMinutes`: se calcula con `estimateRoutineMinutes`. Un
+ * dato derivado que se almacena miente en cuanto alguien edita un bloque y
+ * olvida actualizarlo.
  *
- * Ya no llevan `levelColor`: el color es decision de la vista, no del dato.
- * Ademas la clase se aplicaba con `hover:${routine.levelColor}`, interpolacion
- * que Tailwind no puede ver al compilar, asi que esa clase nunca llego a
- * generarse -comprobado sobre el CSS del build- y el hover no hacia nada.
+ * Tampoco llevan `levelColor`, que ademas se aplicaba con
+ * `hover:${routine.levelColor}`: interpolacion que Tailwind no ve al compilar,
+ * asi que esa clase nunca llego a generarse y el hover no hacia nada.
  *
  * TODO: sustituir por un `RoutineRepository` -puerto en `shared/domain/ports`,
  * adaptador en `shared/infrastructure`- cuando exista el esquema. `useRoutines`
@@ -17,25 +18,186 @@ import type { Routine } from '../types/training.types'
 export const routinesMock: Routine[] = [
   {
     id: 'routine-1',
-    title: 'Rutina Principiante - Cuerpo Completo',
-    description: 'Rutina ideal para comenzar con ejercicios básicos',
+    title: 'Full body · Principiante',
+    description: 'Base de fuerza con los patrones fundamentales.',
     level: 'Principiante',
-    durationMinutes: 45,
-    exercises: [
-      { id: 'exercise-1', name: 'Sentadillas', prescription: '3x12' },
-      { id: 'exercise-2', name: 'Flexiones', prescription: '3x8' },
-      { id: 'exercise-3', name: 'Plancha', prescription: '3x30 seg' },
+    isTemplate: false,
+    blocks: [
+      {
+        id: 'block-1-1',
+        method: 'simple',
+        restAfterSeconds: 90,
+        exercises: [
+          {
+            id: 'prescribed-1-1',
+            exerciseId: 'sentadilla-barra',
+            sets: 3,
+            reps: '8-10',
+            rir: 3,
+            restSeconds: 90,
+          },
+        ],
+      },
+      {
+        id: 'block-1-2',
+        method: 'simple',
+        restAfterSeconds: 90,
+        exercises: [
+          {
+            id: 'prescribed-1-2',
+            exerciseId: 'press-banca-barra',
+            sets: 3,
+            reps: '8-10',
+            rir: 3,
+            restSeconds: 90,
+          },
+        ],
+      },
+      {
+        id: 'block-1-3',
+        method: 'simple',
+        restAfterSeconds: 90,
+        exercises: [
+          {
+            id: 'prescribed-1-3',
+            exerciseId: 'remo-barra',
+            sets: 3,
+            reps: '10-12',
+            rir: 3,
+            restSeconds: 90,
+          },
+        ],
+      },
+      {
+        id: 'block-1-4',
+        method: 'simple',
+        restAfterSeconds: 60,
+        exercises: [
+          {
+            id: 'prescribed-1-4',
+            exerciseId: 'plancha',
+            sets: 3,
+            reps: '30',
+            restSeconds: 45,
+            notes: 'Segundos, no repeticiones.',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'routine-2',
+    title: 'Empuje · Intermedio',
+    description: 'Pectoral, deltoides y tríceps con densidad alta al final.',
+    level: 'Intermedio',
+    isTemplate: false,
+    blocks: [
+      {
+        id: 'block-2-1',
+        method: 'simple',
+        restAfterSeconds: 120,
+        exercises: [
+          {
+            id: 'prescribed-2-1',
+            exerciseId: 'press-banca-barra',
+            sets: 4,
+            reps: '6-8',
+            rir: 2,
+            restSeconds: 120,
+            tempo: '3-1-1-0',
+          },
+        ],
+      },
+      {
+        id: 'block-2-2',
+        method: 'simple',
+        restAfterSeconds: 90,
+        exercises: [
+          {
+            id: 'prescribed-2-2',
+            exerciseId: 'press-militar-barra',
+            sets: 4,
+            reps: '8-10',
+            rir: 2,
+            restSeconds: 90,
+          },
+        ],
+      },
+      {
+        id: 'block-2-3',
+        method: 'superserie',
+        restAfterSeconds: 75,
+        notes: 'Sin descanso entre los dos ejercicios.',
+        exercises: [
+          {
+            id: 'prescribed-2-3',
+            exerciseId: 'press-inclinado-mancuernas',
+            sets: 3,
+            reps: '10-12',
+            rir: 1,
+            restSeconds: 0,
+          },
+          {
+            id: 'prescribed-2-4',
+            exerciseId: 'extension-triceps-polea',
+            sets: 3,
+            reps: '12-15',
+            rir: 1,
+            restSeconds: 0,
+          },
+        ],
+      },
     ],
   },
 ]
 
-/**
- * Plantillas de rutina.
- *
- * Vacio a proposito: la pestaña "Plantillas" mostraba "(1)" escrito a mano
- * aunque no existiera ninguna plantilla en el codigo. Ahora el contador sale de
- * aqui y dice la verdad.
- *
- * TODO: no hay modelo de plantillas todavia.
- */
-export const routineTemplatesMock: Routine[] = []
+/** Rutinas marcadas como reutilizables. */
+export const routineTemplatesMock: Routine[] = [
+  {
+    id: 'template-1',
+    title: 'Torso · Plantilla base',
+    description: 'Esqueleto de sesión de torso para adaptar por estudiante.',
+    level: 'Intermedio',
+    isTemplate: true,
+    blocks: [
+      {
+        id: 'block-t1-1',
+        method: 'simple',
+        restAfterSeconds: 120,
+        exercises: [
+          {
+            id: 'prescribed-t1-1',
+            exerciseId: 'press-banca-barra',
+            sets: 4,
+            reps: '6-8',
+            rir: 2,
+            restSeconds: 120,
+          },
+        ],
+      },
+      {
+        id: 'block-t1-2',
+        method: 'superserie',
+        restAfterSeconds: 90,
+        exercises: [
+          {
+            id: 'prescribed-t1-2',
+            exerciseId: 'jalon-polea',
+            sets: 3,
+            reps: '10-12',
+            rir: 2,
+            restSeconds: 0,
+          },
+          {
+            id: 'prescribed-t1-3',
+            exerciseId: 'curl-biceps-mancuernas',
+            sets: 3,
+            reps: '12',
+            rir: 1,
+            restSeconds: 0,
+          },
+        ],
+      },
+    ],
+  },
+]

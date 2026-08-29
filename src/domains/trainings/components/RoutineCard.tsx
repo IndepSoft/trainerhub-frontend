@@ -11,6 +11,14 @@ import { ArrowUpRight, Copy, Dumbbell, MoreVertical, Play } from 'lucide-react'
 import { useLongPress } from '@/shared/hooks/useLongPress'
 import { cn } from '@/shared/lib/utils'
 import { LEVEL_BADGE } from '../libs/levelBadge'
+import {
+  BLOCK_METHOD_LABELS,
+  countExercises,
+  estimateRoutineMinutes,
+  flattenPrescribedExercises,
+  formatPrescription,
+} from '../libs/routine.utils'
+import { useExerciseCatalog } from '../hooks/useExerciseCatalog'
 import type { Routine } from '../types/training.types'
 
 interface RoutineCardProps {
@@ -38,8 +46,24 @@ export function RoutineCard({ routine }: RoutineCardProps) {
     onLongPress: () => setIsMenuOpen(true),
   })
 
-  const visible = routine.exercises.slice(0, VISIBLE_EXERCISES)
-  const remaining = routine.exercises.length - visible.length
+  const { exercisesById } = useExerciseCatalog()
+
+  const prescribed = flattenPrescribedExercises(routine)
+  const visible = prescribed.slice(0, VISIBLE_EXERCISES)
+  const remaining = prescribed.length - visible.length
+
+  /*
+   * Los metodos distintos de `simple` se muestran porque una superserie cambia
+   * COMO se ejecuta la sesion, no solo su contenido, y es informacion que el
+   * entrenador busca al elegir una rutina.
+   */
+  const methods = [
+    ...new Set(
+      routine.blocks
+        .filter((block) => block.method !== 'simple')
+        .map((block) => BLOCK_METHOD_LABELS[block.method])
+    ),
+  ]
 
   return (
     <article
@@ -105,7 +129,7 @@ export function RoutineCard({ routine }: RoutineCardProps) {
             Ejercicios
           </dt>
           <dd className="metric-figures font-display text-xl font-bold text-ink">
-            {routine.exercises.length}
+            {countExercises(routine)}
           </dd>
         </div>
         <div className="px-5 py-3">
@@ -113,7 +137,7 @@ export function RoutineCard({ routine }: RoutineCardProps) {
             Duración
           </dt>
           <dd className="metric-figures font-display text-xl font-bold text-ink">
-            {routine.durationMinutes}
+            {estimateRoutineMinutes(routine)}
             <span className="ml-1 text-xs font-semibold text-ink/40">min</span>
           </dd>
         </div>
@@ -122,14 +146,13 @@ export function RoutineCard({ routine }: RoutineCardProps) {
       {/* Solo los primeros. La tarjeta es un avance, no la ficha: listarlos
           todos hacia que dos rutinas largas ocuparan la pantalla entera. */}
       <ul className="space-y-2 px-5 py-4">
-        {visible.map((exercise) => (
-          <li
-            key={exercise.id}
-            className="flex items-baseline justify-between gap-4 text-sm"
-          >
-            <span className="min-w-0 truncate text-ink/70">{exercise.name}</span>
+        {visible.map((item) => (
+          <li key={item.id} className="flex items-baseline justify-between gap-4 text-sm">
+            <span className="min-w-0 truncate text-ink/70">
+              {exercisesById.get(item.exerciseId)?.name ?? 'Ejercicio'}
+            </span>
             <span className="metric-figures shrink-0 text-ink/40">
-              {exercise.prescription}
+              {formatPrescription(item)}
             </span>
           </li>
         ))}
@@ -150,6 +173,15 @@ export function RoutineCard({ routine }: RoutineCardProps) {
         >
           {routine.level}
         </span>
+
+        {methods.map((method) => (
+          <span
+            key={method}
+            className="rounded-action border border-ember/40 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-ember-deep"
+          >
+            {method}
+          </span>
+        ))}
 
         <ArrowUpRight
           aria-hidden="true"

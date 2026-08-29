@@ -5,6 +5,15 @@ import { PageHeader } from '@/shared/components/PageHeader'
 import { cn } from '@/shared/lib/utils'
 import { useRoutine } from '../hooks/useRoutine'
 import { LEVEL_BADGE } from '../libs/levelBadge'
+import {
+  BLOCK_METHOD_LABELS,
+  countExercises,
+  countTotalSets,
+  estimateRoutineMinutes,
+  formatPrescription,
+  formatRest,
+} from '../libs/routine.utils'
+import { useExerciseCatalog } from '../hooks/useExerciseCatalog'
 
 /**
  * Ficha de una rutina. Sólo composición.
@@ -12,6 +21,7 @@ import { LEVEL_BADGE } from '../libs/levelBadge'
 export default function RoutineDetail() {
   const { routineId } = useParams<{ routineId: string }>()
   const { routine } = useRoutine(routineId)
+  const { exercisesById } = useExerciseCatalog()
 
   if (!routine) {
     return (
@@ -67,7 +77,7 @@ export default function RoutineDetail() {
               Ejercicios
             </span>
             <p className="metric-figures font-display text-4xl font-extrabold leading-none text-ink">
-              {routine.exercises.length}
+              {countExercises(routine)}
             </p>
           </div>
 
@@ -76,7 +86,7 @@ export default function RoutineDetail() {
               Duración
             </span>
             <p className="metric-figures font-display text-4xl font-extrabold leading-none text-ink">
-              {routine.durationMinutes}
+              {estimateRoutineMinutes(routine)}
               <span className="ml-1 text-xl font-bold text-ink/45">min</span>
             </p>
           </div>
@@ -98,33 +108,72 @@ export default function RoutineDetail() {
 
         <section className="px-5 py-8">
           <h2 className="mb-1 flex items-center justify-between border-b border-cobalt-tint-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-            Ejercicios
+            Bloques
             <Dumbbell className="size-4 text-cobalt" />
           </h2>
 
-          {/* Lista numerada: en una rutina el ORDEN es parte de la
-              prescripcion, y una lista sin numerar no lo comunica. Las cifras
-              van tabulares para que las prescripciones caigan en columna. */}
+          {/*
+            Se listan BLOQUES y no ejercicios sueltos. El bloque es lo que se
+            ejecuta como unidad: una superserie encadena sus ejercicios sin
+            descanso, y aplanarla en una lista numerada dice que van uno detras
+            de otro con su pausa, que es lo contrario.
+          */}
           <ol className="divide-y divide-cobalt-tint-3">
-            {routine.exercises.map((exercise, index) => (
-              <li
-                key={exercise.id}
-                className="flex items-baseline gap-4 py-4"
-              >
-                <span className="metric-figures w-6 shrink-0 text-sm font-bold text-cobalt">
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-                <span className="min-w-0 flex-1 text-ink">{exercise.name}</span>
-                <span className="metric-figures shrink-0 text-sm font-semibold text-ink/50">
-                  {exercise.prescription}
-                </span>
+            {routine.blocks.map((block, index) => (
+              <li key={block.id} className="py-5">
+                <div className="flex items-baseline gap-3">
+                  <span className="metric-figures w-6 shrink-0 text-sm font-bold text-cobalt">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+
+                  <span
+                    className={cn(
+                      'rounded-action border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]',
+                      block.method === 'simple'
+                        ? 'border-cobalt-tint-3 text-ink/45'
+                        : 'border-ember/40 text-ember-deep'
+                    )}
+                  >
+                    {BLOCK_METHOD_LABELS[block.method]}
+                  </span>
+
+                  <span className="metric-figures ms-auto shrink-0 text-xs text-ink/40">
+                    descanso {formatRest(block.restAfterSeconds)}
+                  </span>
+                </div>
+
+                <ul className="mt-3 space-y-2 ps-9">
+                  {block.exercises.map((item) => (
+                    <li
+                      key={item.id}
+                      className="flex items-baseline justify-between gap-4 text-sm"
+                    >
+                      <span className="min-w-0 flex-1 truncate text-ink">
+                        {exercisesById.get(item.exerciseId)?.name ?? 'Ejercicio'}
+                      </span>
+                      <span className="metric-figures shrink-0 font-semibold text-ink/55">
+                        {formatPrescription(item)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                {block.notes && (
+                  <p className="mt-2 ps-9 text-xs text-ink/40">{block.notes}</p>
+                )}
               </li>
             ))}
           </ol>
 
-          <p className="metric-figures mt-4 flex items-center gap-1.5 text-xs text-ink/40">
-            <Clock className="size-3.5" />
-            {routine.durationMinutes} min estimados
+          {/* Volumen y duracion, ambos derivados. Las series totales son la
+              medida que se programa: «cuantas series de pecho llevo esta
+              semana» es la pregunta real, no cuantos ejercicios hay. */}
+          <p className="metric-figures mt-5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink/40">
+            <span className="flex items-center gap-1.5">
+              <Clock className="size-3.5" />
+              {estimateRoutineMinutes(routine)} min estimados
+            </span>
+            <span>{countTotalSets(routine)} series en total</span>
           </p>
         </section>
       </div>
