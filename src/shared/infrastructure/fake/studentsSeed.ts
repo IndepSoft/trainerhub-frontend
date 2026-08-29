@@ -1,4 +1,4 @@
-import type { Student } from '../types/student.types'
+import type { Student } from '@/shared/domain/entities/student'
 
 /**
  * Estudiantes simulados.
@@ -19,7 +19,7 @@ import type { Student } from '../types/student.types'
  * adaptador en `shared/infrastructure`- cuando exista el esquema. `useStudents`
  * es el unico punto que habra que tocar.
  */
-export const studentsMock: Student[] = [
+export const studentsSeed: Student[] = [
   {
     id: 'student-1',
     firstName: 'Juan',

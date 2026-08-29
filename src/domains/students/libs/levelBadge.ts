@@ -1,4 +1,4 @@
-import type { StudentLevel } from '../types/student.types'
+import type { StudentLevel } from '@/shared/domain/entities/student'
 
 /**
  * Presentación de cada nivel.

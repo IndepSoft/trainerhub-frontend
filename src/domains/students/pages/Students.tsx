@@ -6,7 +6,7 @@ import { useStudents } from '../hooks/useStudents'
 import { Button } from '@/shared/ui/button'
 
 export default function Students() {
-  const { students } = useStudents()
+  const { students, loading } = useStudents()
 
   // TODO: sin implementar. Deben pasar a `useStudents` cuando exista el
   // repositorio, para que la pagina siga siendo solo composicion.
@@ -23,7 +23,12 @@ export default function Students() {
       <PageHeader>
         <PageHeader.Content>
           <div>
-            <PageHeader.Eyebrow>Tu equipo · {students.length}</PageHeader.Eyebrow>
+            {/* Sin el contador mientras carga: con el hook asincrono, «Tu equipo · 0»
+                aparecia un instante en cada visita y se leia como que no hay
+                nadie. */}
+            <PageHeader.Eyebrow>
+              {loading ? 'Tu equipo' : `Tu equipo · ${students.length}`}
+            </PageHeader.Eyebrow>
             <PageHeader.Title>Estudiantes</PageHeader.Title>
           </div>
           <PageHeader.Actions>

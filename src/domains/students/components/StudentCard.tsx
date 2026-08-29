@@ -13,7 +13,7 @@ import { getInitials, getShortName } from '@/shared/lib/personName'
 import { useLongPress } from '@/shared/hooks/useLongPress'
 import { cn } from '@/shared/lib/utils'
 import { LEVEL_BADGE } from '../libs/levelBadge'
-import type { Student } from '../types/student.types'
+import type { Student } from '@/shared/domain/entities/student'
 
 interface StudentCardProps {
   student: Student

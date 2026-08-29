@@ -1,5 +1,6 @@
-import { studentsMock } from '../data/students.mock'
-import type { Student } from '../types/student.types'
+import { useEffect, useState } from 'react'
+import { container } from '@/app/container'
+import type { Student } from '@/shared/domain/entities/student'
 
 interface UseStudentResult {
   student: Student | null
@@ -10,20 +11,41 @@ interface UseStudentResult {
 /**
  * Un estudiante por su identificador.
  *
- * Devuelve `null` cuando no existe, no una excepción: la ausencia es un
- * resultado válido —un enlace viejo, un identificador escrito a mano— y la
- * vista debe poder pintarla. Es la misma semántica que usan los puertos del
- * proyecto para lo ausente.
- *
- * Misma costura que el resto: cuando llegue el backend, esto llamará al
- * repositorio vía `container` y ni la página ni los componentes se enterarán.
+ * `null` cuando no existe, no una excepción: la ausencia es un resultado válido
+ * —un enlace viejo, un identificador escrito a mano— y la vista debe poder
+ * pintarla. Es la misma semántica de lo ausente que declaran los puertos.
  */
 export function useStudent(studentId: string | undefined): UseStudentResult {
-  if (!studentId) {
-    return { student: null, loading: false, error: null }
-  }
+  const [student, setStudent] = useState<Student | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const student = studentsMock.find((candidate) => candidate.id === studentId) ?? null
+  useEffect(() => {
+    if (!studentId) {
+      setStudent(null)
+      setLoading(false)
+      return
+    }
 
-  return { student, loading: false, error: null }
+    let active = true
+    setLoading(true)
+
+    container.students
+      .findById(studentId)
+      .then((result) => {
+        if (active) setStudent(result)
+      })
+      .catch((cause: unknown) => {
+        if (active) setError(cause instanceof Error ? cause.message : 'Error al cargar el estudiante')
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [studentId])
+
+  return { student, loading, error }
 }

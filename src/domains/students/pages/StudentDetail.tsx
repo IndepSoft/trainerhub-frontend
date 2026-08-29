@@ -3,6 +3,7 @@ import { ArrowLeft, Calendar, TrendingUp } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Button } from '@/shared/ui/button'
 import { PageHeader } from '@/shared/components/PageHeader'
+import { PageSkeleton } from '@/shared/components/PageSkeleton'
 import { getInitials, getShortName } from '@/shared/lib/personName'
 import { useStudent } from '../hooks/useStudent'
 import { LEVEL_BADGE } from '../libs/levelBadge'
@@ -13,7 +14,18 @@ import { cn } from '@/shared/lib/utils'
  */
 export default function StudentDetail() {
   const { studentId } = useParams<{ studentId: string }>()
-  const { student } = useStudent(studentId)
+  const { student, loading } = useStudent(studentId)
+
+  /*
+   * «Cargando» y «no existe» son estados distintos y hay que distinguirlos.
+   * Con el hook sincrono anterior daba igual; ahora lee del puerto y en el
+   * primer renderizado `student` es null porque la promesa no ha resuelto. Sin
+   * esta guarda, la ficha enseñaba «Estudiante no encontrado» durante un
+   * instante en CADA visita.
+   */
+  if (loading) {
+    return <PageSkeleton />
+  }
 
   if (!student) {
     return (

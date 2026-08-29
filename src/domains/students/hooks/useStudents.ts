@@ -1,27 +1,53 @@
-import { studentsMock } from '../data/students.mock'
-import type { Student } from '../types/student.types'
+import { useEffect, useState } from 'react'
+import { container } from '@/app/container'
+import type { Student } from '@/shared/domain/entities/student'
 
-/**
- * Única fuente de datos de estudiantes.
- *
- * Misma costura que `useDashboardSummary`: cuando llegue el backend, este hook
- * pasará a llamar al puerto vía `container` y ni la página ni los componentes
- * se enterarán.
- *
- * Devuelve `loading` y `error` desde ya, aunque hoy sean constantes, para que
- * los consumidores contemplen esos estados desde el principio y añadirlos
- * después no obligue a tocarlos.
- */
 interface UseStudentsResult {
   students: Student[]
   loading: boolean
   error: string | null
 }
 
+/**
+ * Lista de estudiantes.
+ *
+ * Lee del puerto, no de un fichero de datos simulados. Ese cambio es lo que
+ * permite que el calendario use la misma fuente sin importar nada de este
+ * dominio: si aquí siguiera leyendo el mock directamente y el calendario fuese
+ * por el puerto, habría dos caminos hacia el mismo dato, que es peor que el
+ * acoplamiento que se quería quitar.
+ *
+ * Importar `container` desde un hook de dominio es el patrón ya establecido en
+ * el proyecto —lo hacen `useLogin` y `useTrainer`—: el hook depende del puerto,
+ * y la raíz de composición es quien decide la implementación.
+ */
 export function useStudents(): UseStudentsResult {
-  return {
-    students: studentsMock,
-    loading: false,
-    error: null,
-  }
+  const [students, setStudents] = useState<Student[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    // Bandera de cancelación: si el componente se desmonta antes de que
+    // resuelva, escribir estado provocaría una advertencia y, con red real, una
+    // respuesta vieja podría pisar a una nueva.
+    let active = true
+
+    container.students
+      .findAll()
+      .then((result) => {
+        if (active) setStudents(result)
+      })
+      .catch((cause: unknown) => {
+        if (active) setError(cause instanceof Error ? cause.message : 'Error al cargar estudiantes')
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  return { students, loading, error }
 }

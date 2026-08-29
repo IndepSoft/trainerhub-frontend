@@ -22,13 +22,7 @@ import { CalendarCheck, Plus, User, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/shared/lib/utils'
 import { getShortName } from '@/shared/lib/personName'
-// TODO: acoplamiento entre dominios. El calendario necesita la lista de
-// alumnos, y hoy la pide directamente al hook de `students`. Lo correcto seria
-// un puerto compartido; se hace asi porque la alternativa que habia era PEOR:
-// este componente declaraba su propia lista escrita a mano -«María García»,
-// «Pedro Rodríguez»- que no coincidia con los alumnos reales, de modo que se
-// podian agendar sesiones con gente que no existe.
-import { useStudents } from '@/domains/students/hooks/useStudents'
+import { useSchedulableStudents } from '../hooks/useSchedulableStudents'
 import { SESSION_LOCATIONS, TIME_SLOTS } from '../data/calendarOptions'
 
 const SESSION_TYPES = [
@@ -58,7 +52,7 @@ type FieldName = 'sessionType' | 'student' | 'date' | 'time' | 'location'
  *  3. Cuatro `Card` anidadas dentro de un diálogo, que ya es un contenedor.
  */
 export function CreateSessionModal() {
-  const { students } = useStudents()
+  const { students } = useSchedulableStudents()
 
   const [isOpen, setIsOpen] = useState(false)
   const [sessionType, setSessionType] = useState('')
