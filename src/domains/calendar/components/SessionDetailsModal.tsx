@@ -1,25 +1,28 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/shared/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
-import { Badge } from '@/shared/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/ui/dialog'
+import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select'
 import { Textarea } from '@/shared/ui/textarea'
 import { Label } from '@/shared/ui/label'
-import {
-  Calendar,
-  Clock,
-  MapPin,
-  User,
-  Edit,
-  Trash2,
-  MessageSquare,
-} from 'lucide-react'
+import { Clock, MapPin, MessageSquare, Pencil, Play, Trash2, User } from 'lucide-react'
+import { toast } from 'sonner'
+import { cn } from '@/shared/lib/utils'
 import { SESSION_STATUS, SESSION_STATUS_ENTRIES } from '../libs/sessionStatus'
 import { getStudentInitials, parseLocalDateKey } from '../libs/calendar.utils'
 import type { Session, SessionStatus } from '../types/calendar.types'
-import { toast } from "sonner"
-import { useState } from "react"
 
 interface SessionDetailsModalProps {
   session: Session
@@ -28,178 +31,222 @@ interface SessionDetailsModalProps {
   onStatusChange: (sessionId: string, newStatus: string) => void
 }
 
-export function SessionDetailsModal({ session, open, onOpenChange, onStatusChange }: SessionDetailsModalProps) {
+/**
+ * Detalle de una sesión.
+ *
+ * Reescrito alrededor de una idea: lo que se hace con una sesión programada es
+ * EMPEZARLA. Antes las tres acciones eran «enviar recordatorio», «editar» y
+ * «eliminar», las tres del mismo tamaño, y no había forma de iniciar nada.
+ * Ahora «Iniciar sesión» es un botón ancho justo bajo la cabecera y el resto
+ * baja a acciones secundarias.
+ *
+ * Fuera las tres `Card` anidadas dentro del diálogo. Un diálogo YA es un
+ * contenedor; meterle tarjetas dentro es la tercera capa de caja para el mismo
+ * contenido.
+ */
+export function SessionDetailsModal({
+  session,
+  open,
+  onOpenChange,
+  onStatusChange,
+}: SessionDetailsModalProps) {
+  const navigate = useNavigate()
   const [newStatus, setNewStatus] = useState<SessionStatus>(session.status)
   const [sessionNotes, setSessionNotes] = useState(session.notes)
 
-  const handleStatusUpdate = () => {
-    if (newStatus !== session.status) {
-      onStatusChange(session.id, newStatus)
-    }
+  const status = SESSION_STATUS[session.status]
+
+  /**
+   * Una sesión cancelada no se puede empezar. Se deshabilita en vez de
+   * ocultarse: que el botón desaparezca deja al usuario buscando qué ha pasado.
+   */
+  const canStart = session.status !== 'cancelled'
+
+  const handleStart = () => {
+    onOpenChange(false)
+    navigate('/session')
   }
 
-  const handleDeleteSession = () => {
-    toast("La sesión ha sido eliminada correctamente.")
+  const handleStatusUpdate = () => {
+    if (newStatus === session.status) return
+    onStatusChange(session.id, newStatus)
+    toast.success(
+      `Sesión marcada como ${SESSION_STATUS[newStatus].label.toLowerCase()}`
+    )
+  }
+
+  const handleDelete = () => {
+    toast.success('La sesión se ha eliminado')
     onOpenChange(false)
   }
 
   const handleSendReminder = () => {
-    toast(`Se ha enviado un recordatorio a ${session.student}.`)
+    toast.success(`Recordatorio enviado a ${session.student}`)
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
-            <Avatar className="w-10 h-10">
-              <AvatarImage src={`/generic-placeholder-icon.png?height=40&width=40`} />
-              <AvatarFallback>{getStudentInitials(session.student)}</AvatarFallback>
+      <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto p-0">
+        <DialogHeader className="space-y-0 px-5 pt-5 text-left">
+          <div className="flex items-start gap-3">
+            {/* Sin AvatarImage: apuntaba a /generic-placeholder-icon.png, que no
+                existe y devolvía 404 en cada apertura. El mismo defecto se
+                corrigió ya en DayView y aquí había sobrevivido. */}
+            <Avatar className="size-11 shrink-0">
+              <AvatarFallback className="bg-cobalt-tint-2 font-semibold text-cobalt">
+                {getStudentInitials(session.student)}
+              </AvatarFallback>
             </Avatar>
-            <div>
-              <h2 className="text-xl font-bold">{session.title}</h2>
-              <p className="text-sm text-muted-foreground">{session.category}</p>
+
+            <div className="min-w-0 flex-1">
+              <DialogTitle className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
+                {session.title}
+              </DialogTitle>
+              <p className="mt-1.5 text-sm text-ink/50">{session.category}</p>
             </div>
-          </DialogTitle>
+
+            <span
+              className={cn(
+                'flex shrink-0 items-center gap-1 rounded-action px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider',
+                status.badgeClassName
+              )}
+            >
+              {status.icon}
+              {status.label}
+            </span>
+          </div>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Session Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Información de la Sesión</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-3">
-                  <Calendar className="w-5 h-5 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">
-                      {parseLocalDateKey(session.date).toLocaleDateString("es-ES", {
-                        weekday: "long",
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })}
-                    </p>
-                    <p className="text-sm text-muted-foreground">Fecha</p>
-                  </div>
-                </div>
+        <div className="px-5">
+          {/* La acción principal, ancha y arriba: es lo que se viene a hacer. */}
+          <Button
+            onClick={handleStart}
+            disabled={!canStart}
+            className="h-14 w-full gap-2 font-display text-base font-extrabold uppercase tracking-[0.14em]"
+          >
+            <Play className="size-5" />
+            Iniciar sesión
+          </Button>
 
-                <div className="flex items-center gap-3">
-                  <Clock className="w-5 h-5 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">
-                      {session.time} ({session.durationMinutes} min)
-                    </p>
-                    <p className="text-sm text-muted-foreground">Hora y duración</p>
-                  </div>
-                </div>
+          {!canStart && (
+            <p className="mt-2 text-center text-xs text-ink/45">
+              Una sesión cancelada no puede iniciarse.
+            </p>
+          )}
+        </div>
 
-                <div className="flex items-center gap-3">
-                  <MapPin className="w-5 h-5 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">{session.location}</p>
-                    <p className="text-sm text-muted-foreground">Ubicación</p>
-                  </div>
-                </div>
+        <dl className="grid grid-cols-2 divide-x divide-cobalt-tint-3 border-y border-cobalt-tint-3">
+          <div className="px-5 py-4">
+            <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">
+              Cuándo
+            </dt>
+            <dd className="metric-figures mt-1 text-sm font-semibold text-ink">
+              {session.time}
+              <span className="ml-1.5 font-normal text-ink/50">
+                {session.durationMinutes} min
+              </span>
+            </dd>
+            <dd className="mt-0.5 text-xs text-ink/45">
+              {parseLocalDateKey(session.date).toLocaleDateString('es-ES', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+              })}
+            </dd>
+          </div>
 
-                <div className="flex items-center gap-3">
-                  <User className="w-5 h-5 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">{session.student}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {session.kind === 'individual' ? 'Sesión individual' : 'Sesión grupal'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="px-5 py-4">
+            <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">
+              Dónde y con quién
+            </dt>
+            <dd className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-ink">
+              <MapPin className="size-3.5 shrink-0 text-cobalt" />
+              <span className="truncate">{session.location}</span>
+            </dd>
+            <dd className="mt-0.5 flex items-center gap-1.5 text-xs text-ink/45">
+              <User className="size-3 shrink-0" />
+              <span className="truncate">{session.student}</span>
+            </dd>
+          </div>
+        </dl>
 
-          {/* Status Management */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Estado de la Sesión</CardTitle>
-              <CardDescription>Actualiza el estado y gestiona la sesión</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">Estado actual:</span>
-                  <Badge className={SESSION_STATUS[session.status].badgeClassName}>
-                    {SESSION_STATUS[session.status].icon}
-                    <span className="ml-1">
-                      {SESSION_STATUS[session.status].label}
-                    </span>
-                  </Badge>
-                </div>
-              </div>
+        <div className="space-y-5 px-5 pb-5">
+          <div className="space-y-2">
+            <Label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
+              Estado
+            </Label>
+            <div className="flex gap-2">
+              <Select
+                value={newStatus}
+                onValueChange={(value: SessionStatus) => setNewStatus(value)}
+              >
+                <SelectTrigger className="flex-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {/* Las opciones salen de la tabla de estados: antes las
+                      etiquetas estaban escritas aquí y también en getStatusText,
+                      y podían divergir. */}
+                  {SESSION_STATUS_ENTRIES.map(([value, presentation]) => (
+                    <SelectItem key={value} value={value}>
+                      {presentation.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                onClick={handleStatusUpdate}
+                disabled={newStatus === session.status}
+              >
+                Guardar
+              </Button>
+            </div>
+          </div>
 
-              <div className="space-y-2">
-                <Label>Cambiar estado</Label>
-                <div className="flex gap-3">
-                  <Select
-                    value={newStatus}
-                    onValueChange={(value: SessionStatus) => setNewStatus(value)}
-                  >
-                    <SelectTrigger className="flex-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {/*
-                        Las opciones salen de la tabla de estados: antes las
-                        etiquetas estaban escritas aqui y tambien en
-                        getStatusText, y podian divergir.
-                      */}
-                      {SESSION_STATUS_ENTRIES.map(([status, presentation]) => (
-                        <SelectItem key={status} value={status}>
-                          {presentation.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button onClick={handleStatusUpdate} disabled={newStatus === session.status}>
-                    Actualizar
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="space-y-2">
+            <Label
+              htmlFor="session-notes"
+              className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60"
+            >
+              Notas
+            </Label>
+            <Textarea
+              id="session-notes"
+              value={sessionNotes}
+              onChange={(event) => setSessionNotes(event.target.value)}
+              placeholder="Qué trabajar, cómo llegó, qué observar"
+              rows={3}
+            />
+          </div>
 
-          {/* Notes */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Notas de la Sesión</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Notas y observaciones</Label>
-                <Textarea
-                  value={sessionNotes}
-                  onChange={(e) => setSessionNotes(e.target.value)}
-                  placeholder="Añade notas sobre la sesión..."
-                  rows={4}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Actions */}
-          <div className="flex flex-wrap gap-3">
-            <Button variant="outline" onClick={handleSendReminder} className="gap-2 bg-transparent">
-              <MessageSquare className="w-4 h-4" />
-              Enviar Recordatorio
+          {/* Secundarias, y la destructiva separada por una regla: en la versión
+              anterior «Eliminar» tenía el mismo peso que «Editar». */}
+          <div className="flex flex-wrap gap-2 border-t border-cobalt-tint-3 pt-4">
+            <Button variant="outline" onClick={handleSendReminder} className="gap-2">
+              <MessageSquare className="size-4" />
+              Recordatorio
             </Button>
-            <Button variant="outline" className="gap-2 bg-transparent">
-              <Edit className="w-4 h-4" />
-              Editar Sesión
+            <Button variant="outline" className="gap-2">
+              <Pencil className="size-4" />
+              Editar
             </Button>
-            <Button variant="destructive" onClick={handleDeleteSession} className="gap-2">
-              <Trash2 className="w-4 h-4" />
-              Eliminar Sesión
+            <Button
+              variant="ghost"
+              onClick={handleDelete}
+              className="ms-auto gap-2 text-danger hover:bg-danger-surface hover:text-danger"
+            >
+              <Trash2 className="size-4" />
+              Eliminar
             </Button>
           </div>
+
+          <p className="flex items-center gap-1.5 text-[11px] text-ink/35">
+            <Clock className="size-3" />
+            {/* TODO: ni el estado ni las notas se persisten: el cambio vive sólo
+                en memoria hasta que exista el repositorio. */}
+            Los cambios no se guardan todavía
+          </p>
         </div>
       </DialogContent>
     </Dialog>

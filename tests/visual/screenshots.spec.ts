@@ -542,3 +542,101 @@ test('capturas de las fichas nuevas', async ({ page }) => {
   await page.waitForTimeout(800)
   await page.screenshot({ path: 'tests/visual/salida/estudiante-detalle-mobile.png' })
 })
+
+/**
+ * El flujo que conecta el calendario con la sesion en vivo.
+ *
+ * Antes de esto la sesion en vivo solo se alcanzaba desde el dashboard, y una
+ * sesion del calendario no se podia empezar: el modal ofrecia recordatorio,
+ * editar y eliminar, ninguna de las cuales es lo que se hace con una sesion que
+ * empieza ahora.
+ */
+test.describe('calendario: iniciar una sesion', () => {
+  test('tocar una sesion abre el detalle y se puede iniciar', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/calendar')
+    await page.waitForTimeout(1800)
+
+    await page.locator('ol button').first().click()
+
+    const dialogo = page.getByRole('dialog')
+    await expect(dialogo).toBeVisible()
+    await page.waitForTimeout(500)
+    await page.screenshot({ path: 'tests/visual/salida/sesion-detalle-mobile.png' })
+
+    const iniciar = dialogo.getByRole('button', { name: /Iniciar sesión/ })
+    await expect(iniciar).toBeVisible()
+    await iniciar.click()
+
+    await page.waitForURL(/\/session/, { timeout: 15_000 })
+    await expect(page.getByText('Duración')).toBeVisible()
+  })
+
+  test('los avisos de confirmacion se ven', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/calendar')
+    await page.waitForTimeout(1800)
+
+    await page.locator('ol button').first().click()
+    await page.getByRole('button', { name: /Recordatorio/ }).click()
+
+    // El Toaster no estaba montado: `toast()` se llamaba y no aparecia nada.
+    await expect(page.getByText(/Recordatorio enviado a/)).toBeVisible({ timeout: 8000 })
+  })
+})
+
+/**
+ * Alta de sesion.
+ *
+ * Se comprueba la validacion porque era lo que estaba roto: solo lanzaba un
+ * `toast` y el Toaster no estaba montado, asi que enviar el formulario
+ * incompleto no producia NADA visible.
+ */
+test.describe('calendario: nueva sesion', () => {
+  test('el formulario avisa de lo que falta', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/calendar')
+    await page.waitForTimeout(1800)
+
+    await page.getByRole('button', { name: 'Nueva Sesión' }).click()
+    const dialogo = page.getByRole('dialog')
+    await expect(dialogo).toBeVisible()
+    await page.waitForTimeout(400)
+    await page.screenshot({ path: 'tests/visual/salida/nueva-sesion-mobile.png' })
+
+    await dialogo.getByRole('button', { name: /Programar sesión/ }).click()
+
+    // Aviso general y marcas junto a cada campo pendiente.
+    await expect(page.getByText(/Faltan \d+ campos por completar/)).toBeVisible({
+      timeout: 8000,
+    })
+    expect(await dialogo.getByText('Falta este campo').count()).toBeGreaterThan(2)
+  })
+
+  test('el tipo de sesion se elige con el teclado', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/calendar')
+    await page.waitForTimeout(1800)
+
+    await page.getByRole('button', { name: 'Nueva Sesión' }).click()
+    const dialogo = page.getByRole('dialog')
+
+    /*
+     * Se enfoca y se pulsa, que es lo que hace un usuario de teclado. No sirve
+     * `.check()`: el input va `sr-only` -visualmente oculto pero en el orden de
+     * tabulacion, que es justo el punto- y Playwright lo considera no
+     * accionable. Con los `<div onClick>` anteriores esto era imposible de
+     * cualquier forma: un div no recibe foco.
+     */
+    const primerTipo = dialogo.getByRole('radio').first()
+    await primerTipo.focus()
+    await expect(primerTipo).toBeFocused()
+
+    await page.keyboard.press('Space')
+    await expect(primerTipo).toBeChecked()
+  })
+})
