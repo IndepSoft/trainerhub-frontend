@@ -749,6 +749,16 @@ test.describe('reparto de secciones', () => {
     await page.waitForTimeout(500)
     await expect(page.getByText('No hay plantillas disponibles todavía.')).toBeVisible()
 
-    await page.screenshot({ path: 'tests/visual/salida/entrenamientos-desktop.png' })
+    // Desafios y rachas estan vacias a proposito y lo dicen. La prueba fija que
+    // NO vuelvan a pintar datos de ejemplo: eso hacia creer que la funcion
+    // existe.
+    await lista.getByRole('tab', { name: /Desafíos/ }).click()
+    await page.waitForTimeout(400)
+    await expect(page.getByRole('heading', { name: 'Desafíos' })).toBeVisible()
+    await page.screenshot({ path: 'tests/visual/salida/proximamente-desktop.png' })
+
+    await lista.getByRole('tab', { name: /Rachas/ }).click()
+    await page.waitForTimeout(400)
+    await expect(page.getByRole('heading', { name: 'Rachas' })).toBeVisible()
   })
 })

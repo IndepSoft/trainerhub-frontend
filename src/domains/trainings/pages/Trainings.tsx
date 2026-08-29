@@ -1,13 +1,12 @@
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Flame, Plus, Target } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { useSwipe } from '@/shared/hooks/useSwipe'
 import { RoutineCard } from '../components/RoutineCard'
 import { TrainingFilters } from '../components/TrainingFilters'
-import { PersonalizedChallenges } from '../components/PersonalizedChallenges'
-import { StreakTrackingSystem } from '../components/StreakTrackingSystem'
+import { ComingSoon } from '@/shared/components/ComingSoon'
 import { useRoutines } from '../hooks/useRoutines'
 import type { Routine } from '../types/training.types'
 
@@ -93,12 +92,26 @@ export default function Trainings() {
             />
           </TabsContent>
 
-          <TabsContent value="desafios" className="mt-4 px-4 pb-4">
-            <PersonalizedChallenges />
+          {/*
+            Desafios y rachas se vaciaron a proposito: lo que habia eran ~2000
+            lineas sobre datos simulados globales, sin ligar a ningun estudiante
+            y sin forma de asignarlos. Mostrar eso hacia creer que la funcion
+            existe. Se rehacen cuando exista el flujo de asignacion.
+          */}
+          <TabsContent value="desafios" className="mt-4">
+            <ComingSoon
+              icon={Target}
+              title="Desafíos"
+              description="Podrás crear retos personalizados y asignarlos a tus estudiantes desde su ficha."
+            />
           </TabsContent>
 
-          <TabsContent value="rachas" className="mt-4 px-4 pb-4">
-            <StreakTrackingSystem />
+          <TabsContent value="rachas" className="mt-4">
+            <ComingSoon
+              icon={Flame}
+              title="Rachas"
+              description="Podrás definir hábitos y hacer seguimiento de la constancia de cada estudiante."
+            />
           </TabsContent>
         </Tabs>
       </div>
