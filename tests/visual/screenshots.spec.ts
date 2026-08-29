@@ -339,23 +339,25 @@ test.describe('onboarding', () => {
  * dominancia del eje y la condicion de estar arriba del todo.
  */
 test.describe('gestos', () => {
-  test('deslizar cambia de pestana en progreso', async ({ page }) => {
+  /*
+   * El deslizamiento entre pestanas vive ahora en Entrenamientos: Progreso se
+   * quedo con una sola seccion -logros- cuando desafios y rachas se movieron.
+   */
+  test('deslizar cambia de pestana en entrenamientos', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await signIn(page)
-    await page.goto('/progress')
+    await page.goto('/trainings')
     await page.waitForTimeout(1500)
 
     const lista = page.getByRole('tablist').first()
     await lista.scrollIntoViewIfNeeded()
     await page.waitForTimeout(400)
-    await expect(lista.getByRole('tab', { selected: true })).toHaveText('Logros')
+    await expect(lista.getByRole('tab', { selected: true })).toContainText('Rutinas')
 
     /*
-     * El gesto se hace sobre el PANEL, no sobre la tira de pestanas. Radix
+     * El gesto se hace sobre el PANEL, no sobre la tira de pestanas: Radix
      * activa la pestana al pulsar, asi que empezar el arrastre encima de un
-     * `TabsTrigger` cambia de pestana antes de que el deslizamiento exista, y la
-     * prueba mediria otra cosa. Ademas es lo que hace un usuario: desliza sobre
-     * el contenido.
+     * `TabsTrigger` cambiaria de pestana antes de que el deslizamiento exista.
      */
     const panel = page.getByRole('tabpanel').first()
     const caja = await panel.boundingBox()
@@ -368,13 +370,13 @@ test.describe('gestos', () => {
     await page.mouse.up()
     await page.waitForTimeout(400)
 
-    await expect(lista.getByRole('tab', { selected: true })).toHaveText('Desafíos')
+    await expect(lista.getByRole('tab', { selected: true })).toContainText('Plantillas')
   })
 
   test('un desplazamiento vertical NO cambia de pestana', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await signIn(page)
-    await page.goto('/progress')
+    await page.goto('/trainings')
     await page.waitForTimeout(1500)
 
     const lista = page.getByRole('tablist').first()
@@ -390,7 +392,7 @@ test.describe('gestos', () => {
     await page.mouse.up()
     await page.waitForTimeout(400)
 
-    await expect(lista.getByRole('tab', { selected: true })).toHaveText('Logros')
+    await expect(lista.getByRole('tab', { selected: true })).toContainText('Rutinas')
   })
 
   test('tirar hacia abajo recarga el dashboard', async ({ page }) => {
@@ -707,4 +709,46 @@ test('la fila de dias sigue visible al desplazar la semana', async ({ page }) =>
   await expect(sabado).toBeInViewport()
 
   await page.screenshot({ path: 'tests/visual/salida/semana-desplazada.png' })
+})
+
+/**
+ * Reparto entre Progreso y Entrenamientos.
+ *
+ * Lo que el estudiante CONSIGUE va en Progreso; lo que el entrenador CREA para
+ * asignar va en Entrenamientos. Es una decision de producto que se toma una vez
+ * y se deshace sola en cuanto alguien vuelve a meter una pestana donde no toca.
+ */
+test.describe('reparto de secciones', () => {
+  test('progreso solo muestra logros', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/progress')
+    await page.waitForTimeout(1800)
+
+    await expect(page.getByRole('heading', { name: 'Logros' })).toBeVisible()
+
+    // Ya no hay pestanas de navegacion de pagina: con una sola seccion sobran.
+    await expect(page.getByRole('tab', { name: /Desafíos/ })).toHaveCount(0)
+    await expect(page.getByRole('tab', { name: /Rachas/ })).toHaveCount(0)
+  })
+
+  test('entrenamientos reune lo que el entrenador crea', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/trainings')
+    await page.waitForTimeout(1800)
+
+    const lista = page.getByRole('tablist').first()
+    for (const etiqueta of [/Rutinas/, /Plantillas/, /Desafíos/, /Rachas/]) {
+      await expect(lista.getByRole('tab', { name: etiqueta })).toBeVisible()
+    }
+
+    // «Plantillas» tiene contenido propio: antes cambiaba de estado y seguia
+    // pintando las rutinas, porque no habia TabsContent.
+    await lista.getByRole('tab', { name: /Plantillas/ }).click()
+    await page.waitForTimeout(500)
+    await expect(page.getByText('No hay plantillas disponibles todavía.')).toBeVisible()
+
+    await page.screenshot({ path: 'tests/visual/salida/entrenamientos-desktop.png' })
+  })
 })
