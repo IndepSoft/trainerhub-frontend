@@ -82,7 +82,7 @@ export function PersonalizedChallenges() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Target className="h-5 w-5 text-blue-600" />
+              <Target className="h-5 w-5 text-cobalt" />
               <div>
                 <p className="text-sm font-medium">Total Desafíos</p>
                 <p className="text-2xl font-bold">{stats.total}</p>
@@ -94,7 +94,7 @@ export function PersonalizedChallenges() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Clock className="h-5 w-5 text-green-600" />
+              <Clock className="h-5 w-5 text-success" />
               <div>
                 <p className="text-sm font-medium">Activos</p>
                 <p className="text-2xl font-bold">{stats.active}</p>
@@ -106,7 +106,7 @@ export function PersonalizedChallenges() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Trophy className="h-5 w-5 text-yellow-600" />
+              <Trophy className="h-5 w-5 text-warning" />
               <div>
                 <p className="text-sm font-medium">Completados</p>
                 <p className="text-2xl font-bold">{stats.completed}</p>
@@ -118,7 +118,7 @@ export function PersonalizedChallenges() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Users className="h-5 w-5 text-purple-600" />
+              <Users className="h-5 w-5 text-cobalt" />
               <div>
                 <p className="text-sm font-medium">Progreso Promedio</p>
                 <p className="text-2xl font-bold">{stats.avgProgress}%</p>

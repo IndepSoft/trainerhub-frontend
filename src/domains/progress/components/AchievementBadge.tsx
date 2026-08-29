@@ -23,19 +23,30 @@ const iconMap = {
   medal: Medal,
 }
 
-const rarityColors = {
-  common: "bg-gray-100 border-gray-300 text-gray-700",
-  rare: "bg-blue-100 border-blue-300 text-blue-700",
-  epic: "bg-purple-100 border-purple-300 text-purple-700",
-  legendary: "bg-yellow-100 border-yellow-300 text-yellow-700",
+/**
+ * Rareza del logro.
+ *
+ * Es una rampa con significado -comun, raro, epico, legendario-, asi que se
+ * expresa como una progresion y no como cuatro colores sueltos: sube desde lo
+ * neutro, pasa por Cobalt y termina en Ember. Antes iba gris, azul, morado,
+ * amarillo, donde el salto de morado a amarillo no dice «mas raro», solo dice
+ * «otro color».
+ *
+ * Que el legendario sea Ember no es casual: es el mismo naranja de la racha y de
+ * la celebracion, el color que en este sistema significa logro.
+ */
+const RARITY_COLORS: Record<string, string> = {
+  common: 'bg-ink/[0.06] border-ink/15 text-ink/60',
+  rare: 'bg-cobalt-tint border-cobalt-tint-3 text-cobalt',
+  epic: 'bg-cobalt-tint-2 border-cobalt/40 text-cobalt',
+  legendary: 'bg-ember/12 border-ember/45 text-ember-deep',
 }
 
-const categoryColors = {
-  attendance: "bg-green-50 text-green-700",
-  consistency: "bg-blue-50 text-blue-700",
-  metrics: "bg-orange-50 text-orange-700",
-  challenges: "bg-purple-50 text-purple-700",
-}
+/*
+ * Habia tambien una tabla `categoryColors` con un color por categoria de logro.
+ * Se elimina, como las de tipos de racha y de desafio: era diferenciacion
+ * decorativa que el propio nombre de la categoria ya da.
+ */
 
 // TODO: la prop `showProgress` esta declarada en AchievementBadgeProps pero no se usa.
 export function AchievementBadge({
@@ -63,7 +74,7 @@ export function AchievementBadge({
       className={cn(
         "relative transition-all duration-300 cursor-pointer hover:scale-105",
         sizeClasses[size],
-        unlocked ? rarityColors[achievement.rarity] : "bg-gray-50 border-gray-200 opacity-60",
+        unlocked ? RARITY_COLORS[achievement.rarity] : "bg-gray-50 border-gray-200 opacity-60",
         onClick && "hover:shadow-lg",
       )}
       onClick={onClick}
@@ -72,7 +83,10 @@ export function AchievementBadge({
         <div
           className={cn(
             "rounded-full p-2 mb-2",
-            unlocked ? categoryColors[achievement.category] : "bg-gray-100 text-gray-400",
+            // Desbloqueado o no: la diferencia la marca el contraste, no la
+            // categoria. Un logro bloqueado se apaga; uno conseguido usa el
+            // color estructural del sistema.
+            unlocked ? 'bg-cobalt-tint-2 text-cobalt' : 'bg-ink/[0.06] text-ink/30',
           )}
         >
           <IconComponent size={iconSizes[size]} />

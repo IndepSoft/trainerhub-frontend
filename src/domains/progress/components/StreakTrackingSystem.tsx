@@ -89,19 +89,19 @@ export function StreakTrackingSystem() {
             <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                 <StatCard
                     icon={Flame}
-                    color="text-orange-600"
+                    color="text-ember"
                     label="Total Rachas"
                     value={stats.totalStreaks}
                 />
                 <StatCard
                     icon={Flame}
-                    color="text-green-600"
+                    color="text-success"
                     label="Activas"
                     value={stats.activeStreaks}
                 />
                 <StatCard
                     icon={AlertTriangle}
-                    color="text-yellow-600"
+                    color="text-warning"
                     label="En Riesgo"
                     value={stats.atRiskStreaks}
                 />
@@ -113,13 +113,13 @@ export function StreakTrackingSystem() {
                 />
                 <StatCard
                     icon={TrendingUp}
-                    color="text-blue-600"
+                    color="text-cobalt"
                     label="Promedio"
                     value={stats.avgStreak}
                 />
                 <StatCard
                     icon={Trophy}
-                    color="text-yellow-600"
+                    color="text-warning"
                     label="Récord"
                     value={stats.longestStreak}
                 />
@@ -241,9 +241,9 @@ export function StreakTrackingSystem() {
 
             {/* Risk Alerts Summary */}
             {stats.atRiskStreaks > 0 && (
-                <Card className="border-yellow-200 bg-yellow-50">
+                <Card className="border-warning/30 bg-warning-surface">
                     <CardHeader>
-                        <CardTitle className="flex items-center space-x-2 text-yellow-800">
+                        <CardTitle className="flex items-center space-x-2 text-warning">
                             <AlertTriangle className="h-5 w-5" />
                             <span>Rachas en Riesgo</span>
                         </CardTitle>
@@ -258,7 +258,7 @@ export function StreakTrackingSystem() {
                                         className="flex items-center justify-between p-3 bg-white rounded-lg"
                                     >
                                         <div className="flex items-center space-x-3">
-                                            <Flame className="h-4 w-4 text-yellow-600" />
+                                            <Flame className="h-4 w-4 text-warning" />
                                             <div>
                                                 <p className="font-medium">{streak.studentName}</p>
                                                 <p className="text-sm text-muted-foreground">
@@ -267,7 +267,7 @@ export function StreakTrackingSystem() {
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-sm font-medium text-yellow-800">
+                                            <p className="text-sm font-medium text-warning">
                                                 {streak.riskLevel} horas restantes
                                             </p>
                                             <Button

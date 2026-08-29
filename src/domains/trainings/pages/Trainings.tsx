@@ -29,7 +29,7 @@ export default function Trainings() {
               <Copy className="h-4 w-4" />
               Plantillas
             </Button>
-            <Button className="gap-2 bg-blue-900 hover:bg-blue-800">
+            <Button className="gap-2 bg-ink hover:bg-cobalt">
               <Plus className="h-4 w-4" />
               Nueva Rutina
             </Button>

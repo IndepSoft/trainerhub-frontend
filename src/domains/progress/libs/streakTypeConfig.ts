@@ -1,35 +1,37 @@
-import type { StreakType } from '../types/streak.types';
+import type { StreakType } from '../types/streak.types'
+
+/**
+ * Presentacion de cada tipo de racha.
+ *
+ * Ya no lleva color propio. Cada tipo tenia el suyo -azul, verde, morado,
+ * naranja- elegidos sin criterio y ajenos al sistema: cuatro tintes
+ * decorativos que competian con Cobalt y Ember sin aportar informacion, porque
+ * el emoji y el nombre ya distinguen los cuatro tipos. El rediseno separa por
+ * tipografia y espaciado, no por color de fondo.
+ */
 
 export const streakTypeConfig: Record<
   StreakType,
-  { name: string; icon: string; color: string; bgColor: string; description: string }
+  { name: string; icon: string; description: string }
 > = {
   workout: {
     name: 'Entrenamiento',
     icon: '💪',
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
     description: 'Días consecutivos de entrenamiento',
   },
   nutrition: {
     name: 'Nutrición',
     icon: '🥗',
-    color: 'text-green-600',
-    bgColor: 'bg-green-50',
     description: 'Días siguiendo el plan nutricional',
   },
   weigh_in: {
     name: 'Pesaje',
     icon: '⚖️',
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50',
     description: 'Días consecutivos registrando peso',
   },
   check_in: {
     name: 'Check-in',
     icon: '📱',
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-50',
     description: 'Días consecutivos de check-in',
   },
 }

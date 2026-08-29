@@ -9,7 +9,7 @@ import type { Session, SessionStatus } from '../types/dashboard.types'
  */
 const STATUS_BADGE: Record<SessionStatus, { label: string; className: string }> = {
   programmed: { label: 'Programada', className: 'border-cobalt/30 text-cobalt' },
-  confirmed: { label: 'Confirmada', className: 'border-scale-3/40 text-scale-3' },
+  confirmed: { label: 'Confirmada', className: 'border-success/40 text-success' },
   canceled: { label: 'Cancelada', className: 'border-destructive/40 text-destructive' },
 }
 

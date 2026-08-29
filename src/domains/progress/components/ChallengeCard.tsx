@@ -49,20 +49,28 @@ interface ChallengeCardProps {
   onTogglePause?: () => void
 }
 
-const challengeTypeColors = {
-  weight_loss: "bg-red-50 text-red-700 border-red-200",
-  strength_gain: "bg-blue-50 text-blue-700 border-blue-200",
-  endurance: "bg-green-50 text-green-700 border-green-200",
-  attendance: "bg-purple-50 text-purple-700 border-purple-200",
-  habit_formation: "bg-orange-50 text-orange-700 border-orange-200",
+/**
+ * Presentacion del estado del desafio.
+ *
+ * Tokens semanticos y no colores sueltos: «activo» es un hecho, no una accion,
+ * asi que no usa la marca. «Completado» si va en Cobalt porque cerrar un desafio
+ * es el resultado deseado del flujo, y Cobalt es el color estructural del
+ * sistema.
+ */
+const STATUS_COLORS: Record<string, string> = {
+  active: 'bg-success-surface text-success',
+  completed: 'bg-cobalt-tint-2 text-cobalt',
+  failed: 'bg-danger-surface text-danger',
+  paused: 'bg-warning-surface text-warning',
 }
 
-const statusColors = {
-  active: "bg-green-100 text-green-800",
-  completed: "bg-blue-100 text-blue-800",
-  failed: "bg-red-100 text-red-800",
-  paused: "bg-yellow-100 text-yellow-800",
-}
+/*
+ * Aqui habia ademas una tabla `challengeTypeColors` con un color por tipo de
+ * desafio -rojo, azul, verde, morado, naranja-. Se elimina por el mismo motivo
+ * que la de los tipos de racha: eran cinco tintes decorativos, elegidos sin
+ * criterio y ajenos al sistema, que competian con Cobalt y Ember sin aportar
+ * informacion que el propio nombre del tipo no diera ya.
+ */
 
 // TODO: PersonalizedChallenges pasa `onUpdate` con handleUpdateProgress, pero esta
 // tarjeta nunca lo invoca: actualizar el progreso de un reto no hace nada.
@@ -81,15 +89,15 @@ export function ChallengeCard({
   const nextMilestone = challenge.milestones.find((m) => !m.achieved)
 
   return (
-    <Card className={cn("transition-all duration-200", isExpanded && "ring-2 ring-blue-200")}>
+    <Card className={cn("transition-all duration-200", isExpanded && 'ring-2 ring-cobalt-tint-3')}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center space-x-2 mb-2">
-              <Badge className={challengeTypeColors[challenge.objective.type]}>
+              <Badge className="border border-cobalt-tint-3 bg-transparent text-ink/70">
                 {challenge.objective.type.replace("_", " ")}
               </Badge>
-              <Badge variant="outline" className={statusColors[challenge.status]}>
+              <Badge variant="outline" className={STATUS_COLORS[challenge.status]}>
                 {challenge.status}
               </Badge>
             </div>
@@ -135,7 +143,7 @@ export function ChallengeCard({
             {/* Current vs Target */}
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center space-x-2">
-                <Target className="h-4 w-4 text-blue-600" />
+                <Target className="h-4 w-4 text-cobalt" />
                 <span>
                   {challenge.objective.currentValue} / {challenge.objective.target} {challenge.objective.unit}
                 </span>
@@ -163,9 +171,9 @@ export function ChallengeCard({
                 className={cn(
                   "p-2 rounded-lg text-center text-xs",
                   milestone.achieved
-                    ? "bg-green-100 text-green-800"
+                    ? 'bg-success-surface text-success'
                     : milestone.percentage <= challenge.progress
-                      ? "bg-blue-100 text-blue-800"
+                      ? 'bg-cobalt-tint-2 text-cobalt'
                       : "bg-gray-100 text-gray-600",
                 )}
               >
@@ -177,8 +185,8 @@ export function ChallengeCard({
         </div>
 
         {/* Reward */}
-        <div className="flex items-center space-x-2 p-3 bg-yellow-50 rounded-lg">
-          <Trophy className="h-4 w-4 text-yellow-600" />
+        <div className="flex items-center space-x-2 p-3 bg-warning-surface rounded-lg">
+          <Trophy className="h-4 w-4 text-warning" />
           <div className="flex-1">
             <p className="text-sm font-medium">Recompensa</p>
             <p className="text-xs text-muted-foreground">{challenge.reward.description}</p>
@@ -222,7 +230,7 @@ export function ChallengeCard({
             {nextMilestone && (
               <div>
                 <h4 className="text-sm font-medium mb-2">Próximo Hito</h4>
-                <div className="p-2 bg-blue-50 rounded-lg">
+                <div className="p-2 bg-cobalt-tint rounded-lg">
                   <p className="text-sm font-medium">{nextMilestone.title}</p>
                   <p className="text-xs text-muted-foreground">
                     Objetivo: {nextMilestone.percentage}% (

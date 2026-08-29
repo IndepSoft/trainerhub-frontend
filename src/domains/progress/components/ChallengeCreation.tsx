@@ -216,12 +216,12 @@ export function ChallengeCreation({ open, onOpenChange, onCreateChallenge }: Cha
               <div
                 className={cn(
                   "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
-                  step <= currentStep ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-600",
+                  step <= currentStep ? "bg-cobalt text-white" : "bg-gray-200 text-gray-600",
                 )}
               >
                 {step < currentStep ? <Check className="h-4 w-4" /> : step}
               </div>
-              {step < 4 && <div className={cn("w-16 h-1 mx-2", step < currentStep ? "bg-blue-600" : "bg-gray-200")} />}
+              {step < 4 && <div className={cn("w-16 h-1 mx-2", step < currentStep ? "bg-cobalt" : "bg-gray-200")} />}
             </div>
           ))}
         </div>
@@ -239,7 +239,7 @@ export function ChallengeCreation({ open, onOpenChange, onCreateChallenge }: Cha
                       key={type.id}
                       className={cn(
                         "cursor-pointer transition-all",
-                        formData.type === type.id ? "ring-2 ring-blue-500 bg-blue-50" : "hover:bg-gray-50",
+                        formData.type === type.id ? "ring-2 ring-cobalt-lift bg-cobalt-tint" : "hover:bg-gray-50",
                       )}
                       onClick={() =>
                         // La frecuencia se limpia al cambiar de tipo: la elegida antes
@@ -399,13 +399,13 @@ export function ChallengeCreation({ open, onOpenChange, onCreateChallenge }: Cha
                     key={reward.id}
                     className={cn(
                       "cursor-pointer transition-all",
-                      formData.rewardType === reward.id ? "ring-2 ring-blue-500 bg-blue-50" : "hover:bg-gray-50",
+                      formData.rewardType === reward.id ? "ring-2 ring-cobalt-lift bg-cobalt-tint" : "hover:bg-gray-50",
                     )}
                     onClick={() => setFormData({ ...formData, rewardType: reward.id })}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-center space-x-3">
-                        <Trophy className="h-5 w-5 text-yellow-600" />
+                        <Trophy className="h-5 w-5 text-warning" />
                         <div>
                           <h4 className="font-medium">{reward.name}</h4>
                           <p className="text-sm text-muted-foreground">{reward.description}</p>
@@ -490,14 +490,14 @@ export function ChallengeCreation({ open, onOpenChange, onCreateChallenge }: Cha
 
               {/* Challenge Preview */}
               {formData.studentId && (
-                <Card className="bg-blue-50 border-blue-200">
+                <Card className="bg-cobalt-tint border-cobalt-tint-3">
                   <CardHeader>
                     <CardTitle className="text-lg">Vista Previa del Desafío</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex items-center justify-between">
                       <h4 className="font-semibold">{formData.title}</h4>
-                      <Badge className="bg-blue-100 text-blue-800">Nuevo</Badge>
+                      <Badge className="bg-cobalt-tint-2 text-cobalt">Nuevo</Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">{formData.description}</p>
                     <div className="flex items-center space-x-4 text-sm">
@@ -540,7 +540,7 @@ export function ChallengeCreation({ open, onOpenChange, onCreateChallenge }: Cha
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           ) : (
-            <Button onClick={handleSubmit} disabled={!isStepValid()} className="bg-green-600 hover:bg-green-700">
+            <Button onClick={handleSubmit} disabled={!isStepValid()} className="bg-success hover:bg-success/90">
               <Check className="h-4 w-4 mr-2" />
               Crear Desafío
             </Button>

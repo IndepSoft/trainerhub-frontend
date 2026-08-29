@@ -20,22 +20,22 @@ const SUMMARY_ITEMS: {
     status: 'confirmed',
     heading: 'Confirmadas',
     description: 'Sesiones confirmadas',
-    iconClassName: 'w-5 h-5 text-green-500',
-    countClassName: 'text-2xl font-bold text-green-600',
+    iconClassName: 'w-5 h-5 text-success',
+    countClassName: 'text-2xl font-bold text-success',
   },
   {
     status: 'pending',
     heading: 'Pendientes',
     description: 'Esperando confirmación',
-    iconClassName: 'w-5 h-5 text-yellow-500',
-    countClassName: 'text-2xl font-bold text-yellow-600',
+    iconClassName: 'w-5 h-5 text-warning',
+    countClassName: 'text-2xl font-bold text-warning',
   },
   {
     status: 'cancelled',
     heading: 'Canceladas',
     description: 'Sesiones canceladas',
-    iconClassName: 'w-5 h-5 text-red-500',
-    countClassName: 'text-2xl font-bold text-red-600',
+    iconClassName: 'w-5 h-5 text-danger',
+    countClassName: 'text-2xl font-bold text-danger',
   },
 ]
 

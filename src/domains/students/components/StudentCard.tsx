@@ -27,9 +27,14 @@ import type { Student, StudentLevel } from '../types/student.types'
  * sobre la unión obliga a cubrir todos los niveles.
  */
 const LEVEL_BADGE_COLOR: Record<StudentLevel, string> = {
-  Principiante: 'bg-yellow-500',
-  Intermedio: 'bg-blue-500',
-  Avanzado: 'bg-green-500',
+  // Rampa `--scale-*`, fuera de la marca a proposito: si «Intermedio» usara
+  // Cobalt, una etiqueta de nivel se leeria como un boton primario. Unifica
+  // ademas las dos escalas que no coincidian entre dominios: aqui
+  // «Principiante» era amarillo y en el otro naranja, que ademas chocaba
+  // con Ember.
+  Principiante: 'bg-scale-1',
+  Intermedio: 'bg-scale-2',
+  Avanzado: 'bg-scale-3',
 }
 
 interface StudentCardProps {
@@ -65,7 +70,7 @@ export function StudentCard({ student }: StudentCardProps) {
             <DropdownMenuContent align="end">
               <DropdownMenuItem>Editar</DropdownMenuItem>
               <DropdownMenuItem>Duplicar</DropdownMenuItem>
-              <DropdownMenuItem className="text-red-600">
+              <DropdownMenuItem className="text-danger">
                 Eliminar
               </DropdownMenuItem>
             </DropdownMenuContent>

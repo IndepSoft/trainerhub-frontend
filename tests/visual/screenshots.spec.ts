@@ -231,3 +231,30 @@ test('la sesion en vivo cabe sin desplazamiento a 375 px', async ({ page }) => {
   expect(medida!.sobra, 'la sesion desborda en vertical').toBeLessThanOrEqual(0)
   expect(medida!.desbordeHorizontal).toBe(0)
 })
+
+/**
+ * Rutas que aun no tienen registro de diseno asignado pero cuyos colores ya
+ * pasaron a tokens. Se capturan para poder ver si el barrido rompio algo: hasta
+ * ahora no se habian mirado nunca.
+ */
+const RUTAS_SIN_REDISENAR = [
+  { nombre: 'calendario', ruta: '/calendar' },
+  { nombre: 'estudiantes', ruta: '/students' },
+  { nombre: 'entrenamientos', ruta: '/trainings' },
+] as const
+
+for (const objetivo of RUTAS_SIN_REDISENAR) {
+  test(`${objetivo.nombre} en mobile`, async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto(objetivo.ruta)
+    await page.waitForTimeout(2000)
+
+    const desborde = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth
+    )
+    expect(desborde, 'desbordamiento horizontal').toBe(0)
+
+    await page.screenshot({ path: `tests/visual/salida/${objetivo.nombre}-mobile.png` })
+  })
+}

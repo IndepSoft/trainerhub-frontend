@@ -41,13 +41,13 @@ export function StreakCounter({
         <Card
             className={cn(
                 'transition-all duration-200',
-                showDetails && 'ring-2 ring-blue-200'
+                showDetails && 'ring-2 ring-cobalt-tint-3'
             )}
         >
             <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                        <div className={cn('p-2 rounded-full', config.bgColor)}>
+                        <div className="rounded-full bg-cobalt-tint p-2">
                             <span className="text-lg">{config.icon}</span>
                         </div>
                         <div>
@@ -95,13 +95,13 @@ export function StreakCounter({
 
                 {/* Risk Alert */}
                 {showRiskAlert && streakData.streakStatus === 'at_risk' && (
-                    <div className="flex items-center space-x-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                    <div className="flex items-center space-x-2 p-3 bg-warning-surface border border-warning/30 rounded-lg">
+                        <AlertTriangle className="h-4 w-4 text-warning" />
                         <div className="flex-1">
-                            <p className="text-sm font-medium text-yellow-800">
+                            <p className="text-sm font-medium text-warning">
                                 ¡Racha en riesgo!
                             </p>
-                            <p className="text-xs text-yellow-700">
+                            <p className="text-xs text-warning">
                                 {hoursUntilRisk <= 6
                                     ? `Solo quedan ${hoursUntilRisk} horas para mantener la racha`
                                     : `${hoursUntilRisk} horas hasta que la racha esté en peligro`}
@@ -181,9 +181,9 @@ export function StreakCounter({
                                         className={cn(
                                             'flex items-center justify-between p-2 rounded-lg text-sm',
                                             milestone.achieved
-                                                ? 'bg-green-50 text-green-800'
+                                                ? 'bg-success-surface text-success'
                                                 : milestone.days <= streakData.currentStreak
-                                                    ? 'bg-blue-50 text-blue-800'
+                                                    ? 'bg-cobalt-tint text-cobalt'
                                                     : 'bg-gray-50 text-gray-600'
                                         )}
                                     >
@@ -191,7 +191,7 @@ export function StreakCounter({
                                             <div
                                                 className={cn(
                                                     'w-2 h-2 rounded-full',
-                                                    milestone.achieved ? 'bg-green-500' : 'bg-gray-300'
+                                                    milestone.achieved ? 'bg-success-surface0' : 'bg-gray-300'
                                                 )}
                                             />
                                             <span className="font-medium">{milestone.title}</span>

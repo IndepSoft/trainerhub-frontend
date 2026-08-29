@@ -38,7 +38,7 @@ const TREND_SIGNS: Record<MetricTrend, string> = {
  * significado del azul, que en este sistema es estructura.
  */
 const TREND_COLORS: Record<MetricTrend, string> = {
-  up: 'text-scale-3',
+  up: 'text-success',
   down: 'text-destructive',
   same: 'text-ink/40',
 }

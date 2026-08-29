@@ -41,6 +41,17 @@
     --cobalt-tint-2: 220 90% 42% / 0.12;
     --cobalt-tint-3: 220 90% 42% / 0.24;
 
+    /* Estados semanticos. Son un tercer grupo, distinto de la marca y de la
+       escala de dificultad: «confirmada» no es una accion ni un nivel, es un
+       hecho. Sin estos tokens, los verdes y amarillos de estado acababan
+       escritos a mano en cada tabla de configuracion. `--destructive` ya
+       existia y hace de tercer estado. */
+    --success: 142 71% 36%;
+    --success-surface: 142 71% 36% / 0.12;
+    --warning: 38 92% 42%;
+    --warning-surface: 38 92% 42% / 0.14;
+    --destructive-surface: 0 84% 60% / 0.12;
+
     /* Escala de dificultad, DELIBERADAMENTE fuera de la marca: si
        «Intermedio» usara Cobalt, una etiqueta de nivel se leeria como un
        boton primario. Unifica ademas las dos escalas que no coincidian

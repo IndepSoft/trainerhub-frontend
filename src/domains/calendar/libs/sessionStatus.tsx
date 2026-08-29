@@ -25,20 +25,20 @@ interface SessionStatusPresentation {
 export const SESSION_STATUS: Record<SessionStatus, SessionStatusPresentation> = {
   confirmed: {
     label: 'Confirmada',
-    slotClassName: 'bg-green-100 text-green-800 border-green-200',
-    badgeClassName: 'bg-green-100 text-green-800',
+    slotClassName: 'bg-success-surface text-success border-success/30',
+    badgeClassName: 'bg-success-surface text-success',
     icon: <CheckCircle className="w-3 h-3" />,
   },
   pending: {
     label: 'Pendiente',
-    slotClassName: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    badgeClassName: 'bg-yellow-100 text-yellow-800',
+    slotClassName: 'bg-warning-surface text-warning border-warning/30',
+    badgeClassName: 'bg-warning-surface text-warning',
     icon: <AlertCircle className="w-3 h-3" />,
   },
   cancelled: {
     label: 'Cancelada',
-    slotClassName: 'bg-red-100 text-red-800 border-red-200',
-    badgeClassName: 'bg-red-100 text-red-800',
+    slotClassName: 'bg-danger-surface text-danger border-danger/30',
+    badgeClassName: 'bg-danger-surface text-danger',
     icon: <XCircle className="w-3 h-3" />,
   },
 }

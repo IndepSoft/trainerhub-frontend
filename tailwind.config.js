@@ -55,6 +55,19 @@ export default {
         },
         ink: 'hsl(var(--ink))',
         bone: 'hsl(var(--bone))',
+        // Estados semanticos: un hecho, no una accion ni un nivel.
+        success: {
+          DEFAULT: 'hsl(var(--success))',
+          surface: 'hsl(var(--success-surface))',
+        },
+        warning: {
+          DEFAULT: 'hsl(var(--warning))',
+          surface: 'hsl(var(--warning-surface))',
+        },
+        danger: {
+          DEFAULT: 'hsl(var(--destructive))',
+          surface: 'hsl(var(--destructive-surface))',
+        },
         // Escala de dificultad, fuera de la marca a proposito.
         scale: {
           1: 'hsl(var(--scale-1))',

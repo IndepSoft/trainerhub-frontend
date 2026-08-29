@@ -34,7 +34,7 @@ export function InputWithIcon({
       )}
       <Input
         {...props}
-        className={cn(paddingClass, error && 'border-red-500', className)}
+        className={cn(paddingClass, error && 'border-danger', className)}
         disabled={loading || props.disabled}
       />
     </div>
