@@ -174,3 +174,60 @@ test('la barra inferior encaja a 375 px', async ({ page }) => {
     expect(pestana.etiquetaDesborda, `«${pestana.texto}» desborda su pestana`).toBe(false)
   }
 })
+
+/**
+ * Capturas del pie de las pantallas que se revisaron antes de que existiera el
+ * helper de desplazamiento interno.
+ *
+ * `fullPage: true` no ve nada por debajo del pliegue en este layout, asi que
+ * dashboard y sesion en vivo se dieron por buenas mirando solo su mitad
+ * superior. Esto cierra ese hueco.
+ */
+const RUTAS_A_REVISAR = [
+  { nombre: 'dashboard', ruta: '/dashboard' },
+  { nombre: 'sesion', ruta: '/session' },
+] as const
+
+for (const objetivo of RUTAS_A_REVISAR) {
+  for (const viewport of VIEWPORTS) {
+    test(`${objetivo.nombre} desplazado en ${viewport.name}`, async ({ page }) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height })
+      await signIn(page)
+      await page.goto(objetivo.ruta)
+      await page.waitForTimeout(2000)
+      await scrollInnerContainerToBottom(page)
+      await page.screenshot({
+        path: `tests/visual/salida/${objetivo.nombre}-abajo-${viewport.name}.png`,
+      })
+    })
+  }
+}
+
+/**
+ * La sesion en vivo tiene que caber sin desplazamiento a 375 px.
+ *
+ * No es una preferencia estetica: si hay que desplazarse para ver el
+ * cronometro, la pantalla no cumple su unica funcion. Llego a desbordar 104 px
+ * cuando se anadio la barra inferior, y por eso la ruta pasa a pantalla
+ * completa. Esta prueba existe para que no vuelva a pasar en silencio.
+ */
+test('la sesion en vivo cabe sin desplazamiento a 375 px', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await signIn(page)
+  await page.goto('/session')
+  await page.waitForTimeout(2000)
+
+  const medida = await page.evaluate(() => {
+    const scroller = document.querySelector('.overflow-auto')
+    if (!scroller) return null
+    return {
+      sobra: scroller.scrollHeight - scroller.clientHeight,
+      desbordeHorizontal:
+        document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    }
+  })
+
+  expect(medida).not.toBeNull()
+  expect(medida!.sobra, 'la sesion desborda en vertical').toBeLessThanOrEqual(0)
+  expect(medida!.desbordeHorizontal).toBe(0)
+})

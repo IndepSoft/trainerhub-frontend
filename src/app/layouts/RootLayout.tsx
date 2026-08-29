@@ -19,17 +19,26 @@ export default function RootLayout() {
   const { trainer, loading } = useTrainer(user?.id)
 
   /*
-   * Rutas a pantalla completa, sin barra lateral ni superior. La celebracion
-   * entra aqui porque el registro agresivo depende de ocupar la pantalla
-   * entera: con la navegacion alrededor, el bloque diagonal se lee como un
-   * banner dentro de la aplicacion y no como un momento.
+   * Rutas a pantalla completa, sin barra lateral, superior ni inferior.
+   *
+   * - La celebracion, porque el registro agresivo depende de ocupar la pantalla
+   *   entera: con la navegacion alrededor, el bloque diagonal se lee como un
+   *   banner dentro de la aplicacion y no como un momento.
+   * - La sesion en vivo, por dos razones. Medida: a 375 px su contenido son
+   *   615 px en un hueco de 511, asi que habia que desplazarse para ver el
+   *   cronometro, que es el motivo entero de la pantalla. Quitar las barras
+   *   superior e inferior devuelve unos 120 px y cabe. Y de producto: una
+   *   sesion en marcha es un modo enfocado; ofrecer la navegacion completa
+   *   invita a salirse por error de algo que esta corriendo.
    */
-  const hideNavRoutes = ['/authentication', '/progress/celebracion']
+  const hideNavRoutes = ['/authentication', '/progress/celebracion', '/session']
   const shouldHideNav = hideNavRoutes.includes(location.pathname)
 
   if (shouldHideNav) {
+    // Columna flex y no un div suelto: las paginas a pantalla completa declaran
+    // `flex-1` en su raiz, que sin un padre flex no reparte nada.
     return (
-      <div className="h-dvh w-dvw">
+      <div className="flex h-dvh w-dvw flex-col overflow-hidden">
         <Outlet />
       </div>
     )
