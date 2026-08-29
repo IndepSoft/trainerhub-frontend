@@ -2,9 +2,14 @@ import { IndicatorList } from '../components/IndicatorList'
 import { UpcomingSessions } from '../components/UpcomingSessions'
 import { RecentActivity } from '../components/RecentActivity'
 import { useDashboardSummary } from '../hooks/useDashboardSummary'
+import { usePullToRefresh } from '@/shared/hooks/usePullToRefresh'
+import { PullToRefreshIndicator } from '@/shared/components/PullToRefreshIndicator'
 
 export default function Dashboard() {
-  const { summary } = useDashboardSummary()
+  const { summary, refresh } = useDashboardSummary()
+  const { pullDistance, isRefreshing, willRefresh, handlers } = usePullToRefresh({
+    onRefresh: refresh,
+  })
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
@@ -22,7 +27,16 @@ export default function Dashboard() {
 
       {/* Contenedor de scroll de la pagina. Es un div y no un <main>: el
           landmark ya lo pinta SidebarInset desde RootLayout. */}
-      <div className="flex-1 overflow-auto">
+      {/* Los manejadores van en el contenedor de desplazamiento, no en la
+          pagina: el hook necesita leer su `scrollTop` para saber si esta arriba
+          del todo, y solo entonces activar el gesto. */}
+      <div className="flex-1 overflow-auto" {...handlers}>
+        <PullToRefreshIndicator
+          pullDistance={pullDistance}
+          isRefreshing={isRefreshing}
+          willRefresh={willRefresh}
+        />
+
         <IndicatorList indicators={summary.indicators} />
 
         <div className="flex flex-col gap-10 px-5 py-8 lg:flex-row lg:gap-12">

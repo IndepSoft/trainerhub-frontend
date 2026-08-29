@@ -1,6 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { useState } from 'react'
 import { MetricBlock } from '@/shared/components/MetricBlock'
+import { useSwipe } from '@/shared/hooks/useSwipe'
 import { GamificationHeader } from '../components/GamificationHeader'
 import { MilestonePath } from '../components/MilestonePath'
 import { useGamificationProfile } from '../hooks/useGamificationProfile'
@@ -15,6 +16,27 @@ export default function Progress() {
   const [activeTab, setActiveTab] = useState('achievements')
   const { overview } = useProgressOverview()
   const { profile, levelCompletion, experienceToNextLevel } = useGamificationProfile()
+
+  /*
+   * Deslizar entre pestanas. El orden vive aqui, junto a los `TabsTrigger`, para
+   * que anadir una pestana no obligue a acordarse de tocar dos sitios.
+   */
+  const TAB_ORDER = ['achievements', 'challenges', 'streaks'] as const
+
+  const moveTab = (offset: number) => {
+    const current = TAB_ORDER.indexOf(activeTab as (typeof TAB_ORDER)[number])
+    const next = current + offset
+    // Sin envolver por los extremos: en la ultima pestana, deslizar hacia la
+    // izquierda no debe devolver a la primera. Un carrusel circular en una
+    // navegacion de tres desorienta mas de lo que ayuda.
+    if (next < 0 || next >= TAB_ORDER.length) return
+    setActiveTab(TAB_ORDER[next])
+  }
+
+  const { handlers: swipeHandlers } = useSwipe({
+    onSwipeLeft: () => moveTab(1),
+    onSwipeRight: () => moveTab(-1),
+  })
 
   return (
     // Misma estructura de scroll que el resto de paginas: la cabecera queda
@@ -75,7 +97,7 @@ export default function Progress() {
             <h2 className="text-lg font-semibold leading-none tracking-tight">
               Seguimiento de Progreso
             </h2>
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <Tabs value={activeTab} onValueChange={setActiveTab} {...swipeHandlers}>
               {/* Tres pestanas y no cinco. «Resumen» sobraba desde que existe el
                   sendero, y «Analisis» solo mostraba un cartel de «proximamente».
                   Con tres caben a 125 px cada una a 375 px, sin desplazamiento. */}

@@ -310,3 +310,85 @@ test.describe('onboarding', () => {
     expect(page.url()).toContain('/dashboard')
   })
 })
+
+/**
+ * Gestos.
+ *
+ * Se ejercitan con eventos de puntero reales -no llamando a los manejadores-
+ * porque lo que puede romperse es justo la traduccion del gesto: umbrales,
+ * dominancia del eje y la condicion de estar arriba del todo.
+ */
+test.describe('gestos', () => {
+  test('deslizar cambia de pestana en progreso', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/progress')
+    await page.waitForTimeout(1500)
+
+    const lista = page.getByRole('tablist').first()
+    await lista.scrollIntoViewIfNeeded()
+    await page.waitForTimeout(400)
+    await expect(lista.getByRole('tab', { selected: true })).toHaveText('Logros')
+
+    /*
+     * El gesto se hace sobre el PANEL, no sobre la tira de pestanas. Radix
+     * activa la pestana al pulsar, asi que empezar el arrastre encima de un
+     * `TabsTrigger` cambia de pestana antes de que el deslizamiento exista, y la
+     * prueba mediria otra cosa. Ademas es lo que hace un usuario: desliza sobre
+     * el contenido.
+     */
+    const panel = page.getByRole('tabpanel').first()
+    const caja = await panel.boundingBox()
+    expect(caja).not.toBeNull()
+
+    const y = caja!.y + 30
+    await page.mouse.move(caja!.x + caja!.width - 20, y)
+    await page.mouse.down()
+    await page.mouse.move(caja!.x + 20, y + 5, { steps: 8 })
+    await page.mouse.up()
+    await page.waitForTimeout(400)
+
+    await expect(lista.getByRole('tab', { selected: true })).toHaveText('Desafíos')
+  })
+
+  test('un desplazamiento vertical NO cambia de pestana', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/progress')
+    await page.waitForTimeout(1500)
+
+    const lista = page.getByRole('tablist').first()
+    await lista.scrollIntoViewIfNeeded()
+    await page.waitForTimeout(400)
+    const caja = await lista.boundingBox()
+
+    // Vertical con algo de inclinacion: es como se desplaza con el pulgar, y no
+    // debe contar como cambio de pestana.
+    await page.mouse.move(caja!.x + caja!.width / 2, caja!.y + caja!.height + 20)
+    await page.mouse.down()
+    await page.mouse.move(caja!.x + caja!.width / 2 - 70, caja!.y + caja!.height + 220, { steps: 8 })
+    await page.mouse.up()
+    await page.waitForTimeout(400)
+
+    await expect(lista.getByRole('tab', { selected: true })).toHaveText('Logros')
+  })
+
+  test('tirar hacia abajo recarga el dashboard', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.waitForTimeout(1500)
+
+    await page.mouse.move(187, 220)
+    await page.mouse.down()
+    await page.mouse.move(187, 480, { steps: 10 })
+
+    // A mitad del gesto el indicador ya debe estar visible.
+    await expect(page.getByText('Suelta para actualizar')).toBeAttached()
+
+    await page.mouse.up()
+    await page.waitForTimeout(900)
+
+    // Y despues debe desaparecer: la recarga termino.
+    await expect(page.getByText('Actualizando')).toHaveCount(0)
+  })
+})
