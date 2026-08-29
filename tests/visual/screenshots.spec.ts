@@ -392,3 +392,29 @@ test.describe('gestos', () => {
     await expect(page.getByText('Actualizando')).toHaveCount(0)
   })
 })
+
+/**
+ * Esqueleto de carga.
+ *
+ * Se retrasa a proposito el fragmento de la ruta para que el respaldo de
+ * Suspense se quede en pantalla el tiempo suficiente. Sin ese retraso el
+ * esqueleto vive unos milisegundos y no hay forma de comprobar que existe ni de
+ * mirarlo.
+ */
+test('el esqueleto se muestra mientras carga la ruta', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await signIn(page)
+
+  await page.route('**/Progress*', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 2500))
+    await route.continue()
+  })
+
+  await page.goto('/progress', { waitUntil: 'commit' })
+  await page.waitForTimeout(900)
+
+  const cargando = page.getByText('Cargando', { exact: true })
+  await expect(cargando).toBeAttached()
+
+  await page.screenshot({ path: 'tests/visual/salida/esqueleto-mobile.png' })
+})

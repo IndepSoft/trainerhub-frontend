@@ -15,6 +15,8 @@ import {
 } from '@/shared/ui/dropdown-menu'
 import { Clock, Copy, Dumbbell, MoreVertical, Play } from 'lucide-react'
 import type { Routine, TrainingLevel } from '../types/training.types'
+import { useState } from 'react'
+import { useLongPress } from '@/shared/hooks/useLongPress'
 
 /**
  * Color de cada nivel.
@@ -39,15 +41,25 @@ interface RoutineCardProps {
 }
 
 export function RoutineCard({ routine }: RoutineCardProps) {
+  /*
+   * El menu se controla desde fuera para que la pulsacion larga pueda abrirlo.
+   * Sin estado propio, `DropdownMenu` solo responde a su disparador, y en movil
+   * eso obliga a acertar en un boton de 44 px cuando la tarjeta entera mide 300.
+   */
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const { handlers: longPressHandlers } = useLongPress({
+    onLongPress: () => setIsMenuOpen(true),
+  })
+
   return (
-    <Card className="hover:shadow-lg transition-shadow">
+    <Card className="hover:shadow-lg transition-shadow" {...longPressHandlers}>
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="space-y-1 flex-1">
             <CardTitle className="text-xl">{routine.title}</CardTitle>
             <CardDescription>{routine.description}</CardDescription>
           </div>
-          <DropdownMenu>
+          <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon">
                 <MoreVertical className="h-4 w-4" />
