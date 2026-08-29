@@ -640,3 +640,21 @@ test.describe('calendario: nueva sesion', () => {
     await expect(primerTipo).toBeChecked()
   })
 })
+
+/**
+ * Vista semanal. Solo existe desde `md`: en movil el modo esta forzado a dia
+ * porque ocho columnas a 375 px dejan 33 px por columna.
+ */
+test('vista semanal en desktop', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await signIn(page)
+  await page.goto('/calendar')
+  await page.waitForTimeout(2000)
+
+  const desborde = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth
+  )
+  expect(desborde, 'desbordamiento horizontal').toBe(0)
+
+  await page.screenshot({ path: 'tests/visual/salida/semana-desktop.png' })
+})
