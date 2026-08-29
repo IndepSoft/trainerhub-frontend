@@ -465,3 +465,77 @@ test('la navegacion con transicion llega a su destino', async ({ page }) => {
   await page.waitForTimeout(600)
   await expect(page.getByRole('heading', { name: 'Progreso', level: 1 })).toBeVisible()
 })
+
+/**
+ * Tarjetas navegables.
+ *
+ * El patron de enlace estirado tiene un fallo caracteristico: el enlace cubre la
+ * tarjeta entera y se come el boton del menu. Estas pruebas comprueban las dos
+ * mitades, porque arreglar una suele romper la otra.
+ */
+test.describe('tarjeta de estudiante', () => {
+  test('tocar la tarjeta abre la ficha', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/students')
+    await page.waitForTimeout(1500)
+
+    const tarjeta = page.getByRole('link', { name: 'Juan Pérez' })
+    await tarjeta.scrollIntoViewIfNeeded()
+
+    // Se pulsa lejos del nombre, abajo a la derecha de la tarjeta: si el enlace
+    // no estuviera estirado, ahi no habria nada que pulsar.
+    const caja = await tarjeta.locator('xpath=ancestor::*[contains(@class,"rounded-xl")][1]').boundingBox()
+    expect(caja).not.toBeNull()
+    await page.mouse.click(caja!.x + caja!.width - 60, caja!.y + caja!.height - 30)
+
+    await page.waitForURL(/\/students\/.+/, { timeout: 15_000 })
+    await expect(page.getByRole('heading', { name: 'Juan Pérez' })).toBeVisible()
+  })
+
+  test('el menu de acciones sigue siendo pulsable', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/students')
+    await page.waitForTimeout(1500)
+
+    await page.getByRole('button', { name: 'Acciones para Juan Pérez' }).click()
+    await expect(page.getByRole('menuitem', { name: 'Ver ficha' })).toBeVisible()
+
+    // Y no ha navegado: el enlace estirado no se ha tragado el toque.
+    expect(page.url()).toContain('/students')
+    expect(page.url()).not.toMatch(/\/students\/.+/)
+  })
+})
+
+test('la tarjeta de rutina abre su ficha', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await signIn(page)
+  await page.goto('/trainings')
+  await page.waitForTimeout(1500)
+
+  const enlace = page.getByRole('link').filter({ hasText: /.+/ }).nth(0)
+  const titulo = await page
+    .locator('h3 a[href^="/trainings/"]')
+    .first()
+    .textContent()
+
+  await page.locator('h3 a[href^="/trainings/"]').first().click()
+  await page.waitForURL(/\/trainings\/.+/, { timeout: 15_000 })
+  await expect(page.getByRole('heading', { level: 1 })).toContainText(titulo!.trim())
+
+  // Y las capturas del detalle, que es pantalla nueva.
+  await page.screenshot({ path: 'tests/visual/salida/rutina-detalle-mobile.png' })
+  expect(enlace).toBeDefined()
+})
+
+test('capturas de las fichas nuevas', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await signIn(page)
+  await page.goto('/students')
+  await page.waitForTimeout(1200)
+  await page.locator('h3 a[href^="/students/"]').first().click()
+  await page.waitForURL(/\/students\/.+/, { timeout: 15_000 })
+  await page.waitForTimeout(800)
+  await page.screenshot({ path: 'tests/visual/salida/estudiante-detalle-mobile.png' })
+})
