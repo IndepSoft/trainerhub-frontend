@@ -1,4 +1,4 @@
-import { test, type Page } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 /**
  * Capturas de revision del rediseno en los tres anchos del brief.
@@ -105,3 +105,72 @@ for (const viewport of VIEWPORTS) {
     })
   })
 }
+
+/**
+ * Punto de ruptura de la navegacion.
+ *
+ * A 375 px debe haber barra inferior y no barra lateral; a 768 y 1440, al reves.
+ * El brief pide comprobar exactamente estos tres anchos.
+ */
+for (const viewport of VIEWPORTS) {
+  test(`navegacion en ${viewport.name}`, async ({ page }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height })
+    await signIn(page)
+    await page.waitForTimeout(1200)
+
+    const bottomBar = page.getByRole('navigation', { name: 'Navegación principal' })
+    const expectsBottomBar = viewport.width < 768
+
+    if (expectsBottomBar) {
+      await expect(bottomBar).toBeVisible()
+    } else {
+      await expect(bottomBar).toBeHidden()
+    }
+
+    await page.screenshot({
+      path: `tests/visual/salida/navegacion-${viewport.name}.png`,
+    })
+  })
+}
+
+/**
+ * Objetivo tactil y encaje de las etiquetas en la barra inferior.
+ *
+ * A 375 px, cinco destinos dejan 75 px por pestana. «Entrenamientos» tiene
+ * catorce caracteres y es la que va justa: si la etiqueta desborda su caja, se
+ * recorta o pisa a la vecina, y eso no se ve leyendo clases de Tailwind. La
+ * regla 1.6 exige ademas 44 px de objetivo tactil.
+ */
+test('la barra inferior encaja a 375 px', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await signIn(page)
+  await page.waitForTimeout(1200)
+
+  const medidas = await page.evaluate(() => {
+    const bar = document.querySelector('nav[aria-label="Navegación principal"]')
+    if (!bar) return null
+    return {
+      desbordeDePagina:
+        document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      pestanas: [...bar.querySelectorAll('a')].map((link) => {
+        const box = link.getBoundingClientRect()
+        const label = link.querySelector('span:last-of-type') as HTMLElement | null
+        return {
+          texto: link.textContent?.trim() ?? '',
+          ancho: Math.round(box.width),
+          alto: Math.round(box.height),
+          etiquetaDesborda: label ? label.scrollWidth > label.clientWidth + 1 : false,
+        }
+      }),
+    }
+  })
+
+  expect(medidas).not.toBeNull()
+  expect(medidas!.desbordeDePagina).toBe(0)
+  expect(medidas!.pestanas).toHaveLength(5)
+
+  for (const pestana of medidas!.pestanas) {
+    expect(pestana.alto, `alto de «${pestana.texto}»`).toBeGreaterThanOrEqual(44)
+    expect(pestana.etiquetaDesborda, `«${pestana.texto}» desborda su pestana`).toBe(false)
+  }
+})

@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { AppSidebar } from '@/shared/components/navigation/AppSidebar'
 import { AppNavbar } from '@/shared/components/navigation/AppNavbar'
+import { BottomTabBar } from '@/shared/components/navigation/BottomTabBar'
 import { SidebarInset } from '@/shared/ui/sidebar'
 import { useAuth } from '@/auth/hooks/useAuth'
 import { useTrainer } from '@/app/hooks/useTrainer'
@@ -44,6 +45,12 @@ export default function RootLayout() {
         <div className="p-4 flex-1 flex flex-col overflow-hidden min-h-0">
           <Outlet />
         </div>
+
+        {/* Ultimo hijo de la columna y no `fixed`: asi ocupa su sitio en el
+            reparto flex y el contenedor de desplazamiento se encoge solo. Con
+            `fixed` habria que compensar con relleno inferior en cada pagina, y
+            cualquiera que se olvidara dejaria contenido tapado. */}
+        <BottomTabBar />
       </SidebarInset>
     </div>
   )

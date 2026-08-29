@@ -16,6 +16,9 @@ export default defineConfig({
     command: 'npm run dev -- --port 5178 --strictPort',
     url: 'http://localhost:5178',
     reuseExistingServer: true,
-    timeout: 120_000,
+    // Vite tarda mas de dos minutos en el primer arranque tras cambiar
+    // dependencias, porque vuelve a preoptimizar. 120 s se quedaban cortos y
+    // la suite fallaba con «Timed out waiting from config.webServer».
+    timeout: 240_000,
   },
 })

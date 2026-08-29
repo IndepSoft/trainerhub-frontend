@@ -19,7 +19,6 @@ export interface NavigationItem {
   requiresAuth?: boolean // para ProtectedRoute
   guestOnly?: boolean // para GuestRoute
   showInSidebar?: boolean
-  showInNavbar?: boolean
   showInMobile?: boolean
   children?: NavigationItem[]
 }
@@ -32,7 +31,6 @@ export const navigationConfig: NavigationItem[] = [
     icon: Home,
     requiresAuth: true,
     showInSidebar: true,
-    showInNavbar: false,
     showInMobile: true,
   },
   {
@@ -42,7 +40,6 @@ export const navigationConfig: NavigationItem[] = [
     icon: Users,
     requiresAuth: true,
     showInSidebar: true,
-    showInNavbar: false,
     showInMobile: true,
   },
   {
@@ -52,7 +49,6 @@ export const navigationConfig: NavigationItem[] = [
     icon: Dumbbell,
     requiresAuth: true,
     showInSidebar: true,
-    showInNavbar: false,
     showInMobile: true,
   },
   {
@@ -62,7 +58,6 @@ export const navigationConfig: NavigationItem[] = [
     icon: Calendar,
     requiresAuth: true,
     showInSidebar: true,
-    showInNavbar: false,
     showInMobile: true,
   },
   {
@@ -72,7 +67,6 @@ export const navigationConfig: NavigationItem[] = [
     icon: Award,
     requiresAuth: true,
     showInSidebar: true,
-    showInNavbar: false,
     showInMobile: true,
   },
   {
@@ -82,7 +76,6 @@ export const navigationConfig: NavigationItem[] = [
     icon: BarChart3,
     requiresAuth: true,
     showInSidebar: true,
-    showInNavbar: false,
     showInMobile: false,
   },
   {
@@ -92,8 +85,10 @@ export const navigationConfig: NavigationItem[] = [
     icon: Settings,
     requiresAuth: true,
     showInSidebar: true,
-    showInNavbar: false,
-    showInMobile: true,
+    // Fuera de la barra inferior: cinco destinos es el maximo antes de que la
+    // etiqueta deje de caber a 375 px, y este es el menos frecuente. Ademas
+    // `/settings` sigue sin ruta registrada (deuda conocida).
+    showInMobile: false,
   },
 
   // Rutas de guest (sin auth)
@@ -103,7 +98,6 @@ export const navigationConfig: NavigationItem[] = [
     href: '/authentication',
     guestOnly: true, // ← Solo para GuestRoute
     showInSidebar: false,
-    showInNavbar: false,
     showInMobile: false,
   },
   {
@@ -112,7 +106,6 @@ export const navigationConfig: NavigationItem[] = [
     href: '/login',
     guestOnly: true, // ← Solo para GuestRoute
     showInSidebar: false,
-    showInNavbar: false,
     showInMobile: false,
   },
 ]
@@ -121,9 +114,7 @@ export const navigationConfig: NavigationItem[] = [
 export const getSidebarRoutes = () =>
   navigationConfig.filter((item) => item.showInSidebar && item.requiresAuth)
 
-export const getNavbarRoutes = () =>
-  navigationConfig.filter((item) => item.showInNavbar && item.requiresAuth)
-
+/** Destinos de la barra inferior en movil. Maximo cinco. */
 export const getMobileRoutes = () =>
   navigationConfig.filter((item) => item.showInMobile && item.requiresAuth)
 
