@@ -1,10 +1,22 @@
 import type { Achievement } from "../types/achievement.types";
 
+/**
+ * Catalogo de logros.
+ *
+ * Nombres y descripciones en castellano, como el resto de la interfaz: estaban
+ * en ingles y se mostraban tal cual al usuario, contra la convencion del
+ * proyecto -interfaz en castellano, codigo en ingles-. Los identificadores y las
+ * categorias siguen en ingles, que es codigo.
+ *
+ * TODO: la traduccion es literal. Producto deberia revisar el tono: un logro es
+ * copy de marca y «Guerrero del Mes» admite mejores versiones.
+ */
+
 export const predefinedAchievements: Achievement[] = [
   {
     id: "perfect-week",
-    name: "Perfect Week",
-    description: "Complete 7 consecutive workout days",
+    name: "Semana Perfecta",
+    description: "Entrena 7 días seguidos",
     icon: "trophy",
     category: "attendance",
     rarity: "common",
@@ -13,8 +25,8 @@ export const predefinedAchievements: Achievement[] = [
   },
   {
     id: "monthly-warrior",
-    name: "Monthly Warrior",
-    description: "Complete 20+ workouts in a month",
+    name: "Guerrero del Mes",
+    description: "Completa más de 20 sesiones en un mes",
     icon: "medal",
     category: "attendance",
     rarity: "rare",
@@ -22,8 +34,8 @@ export const predefinedAchievements: Achievement[] = [
   },
   {
     id: "never-miss-monday",
-    name: "Never Miss Monday",
-    description: "Train 4 consecutive Mondays",
+    name: "Todos los Lunes",
+    description: "Entrena 4 lunes seguidos",
     icon: "star",
     category: "attendance",
     rarity: "common",
@@ -32,8 +44,8 @@ export const predefinedAchievements: Achievement[] = [
   },
   {
     id: "early-bird",
-    name: "Early Bird",
-    description: "Complete 10 morning sessions before 8 AM",
+    name: "Madrugador",
+    description: "Completa 10 sesiones antes de las 8:00",
     icon: "award",
     category: "attendance",
     rarity: "rare",
@@ -43,8 +55,8 @@ export const predefinedAchievements: Achievement[] = [
   // Consistency Achievements
   {
     id: "habit-former",
-    name: "Habit Former",
-    description: "Maintain a 21-day workout streak",
+    name: "Hábito Formado",
+    description: "Mantén una racha de 21 días",
     icon: "flame",
     category: "consistency",
     rarity: "rare",
@@ -53,8 +65,8 @@ export const predefinedAchievements: Achievement[] = [
   },
   {
     id: "unstoppable",
-    name: "Unstoppable",
-    description: "Achieve a 50-day workout streak",
+    name: "Imparable",
+    description: "Alcanza una racha de 50 días",
     icon: "flame",
     category: "consistency",
     rarity: "epic",
@@ -62,8 +74,8 @@ export const predefinedAchievements: Achievement[] = [
   },
   {
     id: "legend",
-    name: "Legend",
-    description: "Reach a 100-day workout streak",
+    name: "Leyenda",
+    description: "Llega a una racha de 100 días",
     icon: "flame",
     category: "consistency",
     rarity: "legendary",
@@ -71,8 +83,8 @@ export const predefinedAchievements: Achievement[] = [
   },
   {
     id: "iron-will",
-    name: "Iron Will",
-    description: "Complete 90% of assigned workouts",
+    name: "Voluntad de Hierro",
+    description: "Completa el 90 % de las sesiones asignadas",
     icon: "target",
     category: "consistency",
     rarity: "epic",
@@ -82,8 +94,8 @@ export const predefinedAchievements: Achievement[] = [
   // Metrics Achievements
   {
     id: "first-steps",
-    name: "First Steps",
-    description: "Complete initial body measurements",
+    name: "Primeros Pasos",
+    description: "Registra tus medidas iniciales",
     icon: "star",
     category: "metrics",
     rarity: "common",
@@ -92,8 +104,8 @@ export const predefinedAchievements: Achievement[] = [
   },
   {
     id: "progress-tracker",
-    name: "Progress Tracker",
-    description: "Upload 10 progress photos",
+    name: "Seguimiento Visual",
+    description: "Sube 10 fotos de progreso",
     icon: "target",
     category: "metrics",
     rarity: "common",
@@ -101,8 +113,8 @@ export const predefinedAchievements: Achievement[] = [
   },
   {
     id: "transformer",
-    name: "Transformer",
-    description: "Lose 5kg/10lbs from starting weight",
+    name: "Transformación",
+    description: "Baja 5 kg desde tu peso inicial",
     icon: "trophy",
     category: "metrics",
     rarity: "epic",
@@ -110,8 +122,8 @@ export const predefinedAchievements: Achievement[] = [
   },
   {
     id: "strength-seeker",
-    name: "Strength Seeker",
-    description: "Increase max weight by 25%",
+    name: "Más Fuerte",
+    description: "Sube un 25 % tu peso máximo",
     icon: "medal",
     category: "metrics",
     rarity: "rare",
@@ -121,8 +133,8 @@ export const predefinedAchievements: Achievement[] = [
   // Challenge Achievements
   {
     id: "challenge-accepted",
-    name: "Challenge Accepted",
-    description: "Complete your first personal challenge",
+    name: "Desafío Aceptado",
+    description: "Completa tu primer desafío personal",
     icon: "award",
     category: "challenges",
     rarity: "common",
@@ -130,8 +142,8 @@ export const predefinedAchievements: Achievement[] = [
   },
   {
     id: "overachiever",
-    name: "Overachiever",
-    description: "Complete challenge before deadline",
+    name: "Antes de Tiempo",
+    description: "Completa un desafío antes de la fecha límite",
     icon: "star",
     category: "challenges",
     rarity: "rare",
@@ -139,8 +151,8 @@ export const predefinedAchievements: Achievement[] = [
   },
   {
     id: "challenge-master",
-    name: "Challenge Master",
-    description: "Complete 5 different challenges",
+    name: "Maestro de Desafíos",
+    description: "Completa 5 desafíos distintos",
     icon: "trophy",
     category: "challenges",
     rarity: "epic",
@@ -148,8 +160,8 @@ export const predefinedAchievements: Achievement[] = [
   },
   {
     id: "goal-crusher",
-    name: "Goal Crusher",
-    description: "Exceed challenge target by 20%",
+    name: "Meta Superada",
+    description: "Supera el objetivo de un desafío en un 20 %",
     icon: "target",
     category: "challenges",
     rarity: "legendary",
