@@ -1,10 +1,11 @@
-import { Outlet, useLocation } from 'react-router-dom'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { AppSidebar } from '@/shared/components/navigation/AppSidebar'
 import { AppNavbar } from '@/shared/components/navigation/AppNavbar'
 import { BottomTabBar } from '@/shared/components/navigation/BottomTabBar'
 import { SidebarInset } from '@/shared/ui/sidebar'
 import { useAuth } from '@/auth/hooks/useAuth'
 import { useTrainer } from '@/app/hooks/useTrainer'
+import { hasSeenOnboarding } from '@/domains/onboarding/hooks/useOnboarding'
 
 export default function RootLayout() {
   const location = useLocation()
@@ -31,8 +32,38 @@ export default function RootLayout() {
    *   sesion en marcha es un modo enfocado; ofrecer la navegacion completa
    *   invita a salirse por error de algo que esta corriendo.
    */
-  const hideNavRoutes = ['/authentication', '/progress/celebracion', '/session']
+  const hideNavRoutes = [
+    '/authentication',
+    '/progress/celebracion',
+    '/session',
+    '/onboarding',
+  ]
   const shouldHideNav = hideNavRoutes.includes(location.pathname)
+
+  /*
+   * El onboarding se muestra una vez, en la primera sesion del dispositivo. Se
+   * decide aqui porque RootLayout es el unico punto por el que pasan todas las
+   * rutas autenticadas; ponerlo en cada pagina seria repetirlo seis veces.
+   *
+   * La guardia NO se aplica en `/authentication`, y el motivo no es teorico:
+   * `useLogin` hace `setUser` y despues `navigate('/dashboard')`. Entre esas dos
+   * lineas hay un renderizado en el que ya hay usuario pero la ruta sigue siendo
+   * `/authentication`; sin esta exclusion la guardia disparaba ahi, el
+   * `navigate` posterior la deshacia, y las dos navegaciones se pisaban en
+   * bucle dejando la pantalla en blanco.
+   *
+   * `replace` a proposito: sin el, el boton de atras devolveria al onboarding
+   * ya completado.
+   */
+  const rutasSinGuardiaDeOnboarding = ['/authentication', '/onboarding']
+  const necesitaOnboarding =
+    user !== null &&
+    !rutasSinGuardiaDeOnboarding.includes(location.pathname) &&
+    !hasSeenOnboarding()
+
+  if (necesitaOnboarding) {
+    return <Navigate to="/onboarding" replace />
+  }
 
   if (shouldHideNav) {
     // Columna flex y no un div suelto: las paginas a pantalla completa declaran

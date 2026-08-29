@@ -17,6 +17,10 @@ const VIEWPORTS = [
 // caracteres o mas de contrasena entra. Ver src/app/container.ts.
 async function signIn(page: Page): Promise<void> {
   await page.goto('/authentication')
+  // Se marca el onboarding como visto: cada prueba arranca con almacenamiento
+  // limpio, y sin esto RootLayout redirigiria a /onboarding en todas. Las
+  // pruebas del propio onboarding lo borran a proposito.
+  await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
   await page.getByPlaceholder('tu@email.com').fill('entrenador@indepsoft.com')
   await page.locator('input[type=password]').fill('desarrollo123')
   await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click()
@@ -258,3 +262,51 @@ for (const objetivo of RUTAS_SIN_REDISENAR) {
     await page.screenshot({ path: `tests/visual/salida/${objetivo.nombre}-mobile.png` })
   })
 }
+
+/**
+ * Onboarding: se muestra en la primera sesion del dispositivo y no vuelve.
+ */
+test.describe('onboarding', () => {
+  async function signInSinOnboarding(page: Page): Promise<void> {
+    await page.goto('/authentication')
+    await page.evaluate(() => window.localStorage.removeItem('trainerhub.onboarding.visto'))
+    await page.getByPlaceholder('tu@email.com').fill('entrenador@indepsoft.com')
+    await page.locator('input[type=password]').fill('desarrollo123')
+    await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click()
+  }
+
+  for (const viewport of VIEWPORTS) {
+    test(`aparece en la primera sesion en ${viewport.name}`, async ({ page }) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height })
+      await signInSinOnboarding(page)
+      await page.waitForURL(/\/onboarding/, { timeout: 20_000 })
+      await page.waitForTimeout(800)
+
+      const desborde = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth
+      )
+      expect(desborde, 'desbordamiento horizontal').toBe(0)
+
+      await page.screenshot({ path: `tests/visual/salida/onboarding-${viewport.name}.png` })
+    })
+  }
+
+  test('avanza, se completa y no vuelve a salir', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signInSinOnboarding(page)
+    await page.waitForURL(/\/onboarding/, { timeout: 20_000 })
+
+    // Cuatro pasos: tres «Siguiente» y un «Empezar».
+    for (let paso = 0; paso < 3; paso++) {
+      await page.getByRole('button', { name: 'Siguiente' }).click()
+      await page.waitForTimeout(250)
+    }
+    await page.getByRole('button', { name: 'Empezar' }).click()
+    await page.waitForURL(/\/dashboard/, { timeout: 20_000 })
+
+    // Recargar no debe devolver al onboarding: por eso se guarda la preferencia.
+    await page.reload()
+    await page.waitForTimeout(1500)
+    expect(page.url()).toContain('/dashboard')
+  })
+})
