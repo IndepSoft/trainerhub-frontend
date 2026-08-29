@@ -1,42 +1,21 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { SESSION_STATUS } from '../libs/sessionStatus'
 import type { SessionStatus } from '../types/calendar.types'
 
 /**
  * Resumen de sesiones por estado.
  *
- * Eran tres bloques Card practicamente identicos, copiados y pegados, con el
- * icono, el color y el texto cambiados a mano en cada uno. Ahora es una tabla
- * mas un map: añadir un estado no toca el JSX.
+ * Tres bloques separados por reglas de 1 px, no tres tarjetas: es el mismo
+ * patrón que los indicadores del dashboard y de reportes, y el que hace que las
+ * cifras de las tres caigan en la misma línea y se comparen de un vistazo.
  */
 const SUMMARY_ITEMS: {
   status: SessionStatus
   heading: string
-  description: string
-  iconClassName: string
-  countClassName: string
+  className: string
 }[] = [
-  {
-    status: 'confirmed',
-    heading: 'Confirmadas',
-    description: 'Sesiones confirmadas',
-    iconClassName: 'w-5 h-5 text-success',
-    countClassName: 'text-2xl font-bold text-success',
-  },
-  {
-    status: 'pending',
-    heading: 'Pendientes',
-    description: 'Esperando confirmación',
-    iconClassName: 'w-5 h-5 text-warning',
-    countClassName: 'text-2xl font-bold text-warning',
-  },
-  {
-    status: 'cancelled',
-    heading: 'Canceladas',
-    description: 'Sesiones canceladas',
-    iconClassName: 'w-5 h-5 text-danger',
-    countClassName: 'text-2xl font-bold text-danger',
-  },
+  { status: 'confirmed', heading: 'Confirmadas', className: 'text-success' },
+  { status: 'pending', heading: 'Pendientes', className: 'text-warning' },
+  { status: 'cancelled', heading: 'Canceladas', className: 'text-danger' },
 ]
 
 interface SessionSummaryProps {
@@ -45,24 +24,22 @@ interface SessionSummaryProps {
 
 export function SessionSummary({ countByStatus }: SessionSummaryProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-3 divide-x divide-cobalt-tint-3 border-y border-cobalt-tint-3">
       {SUMMARY_ITEMS.map((item) => (
-        <Card key={item.status}>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <span className={item.iconClassName}>
-                {SESSION_STATUS[item.status].icon}
-              </span>
+        <div key={item.status} className="flex flex-col gap-2 px-4 py-5 sm:px-5">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/50 sm:text-[11px]">
               {item.heading}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={item.countClassName}>
-              {countByStatus[item.status]}
-            </div>
-            <p className="text-sm text-muted-foreground">{item.description}</p>
-          </CardContent>
-        </Card>
+            </span>
+            <span className={item.className}>{SESSION_STATUS[item.status].icon}</span>
+          </div>
+
+          <p
+            className={`metric-figures font-display text-3xl font-extrabold leading-none ${item.className}`}
+          >
+            {countByStatus[item.status]}
+          </p>
+        </div>
       ))}
     </div>
   )

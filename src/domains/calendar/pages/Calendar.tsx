@@ -1,4 +1,3 @@
-import { Card, CardContent, CardHeader } from '@/shared/ui/card'
 import {
   Select,
   SelectContent,
@@ -79,9 +78,13 @@ export default function Calendar() {
           admite uno por documento- ademas de confundir a los lectores de
           pantalla. */}
       <div className="flex-1 overflow-auto">
-        <div className="ps-4 pe-4 pb-4 pt-4 max-w-8xl mx-auto space-y-6">
-          <Card>
-            <CardHeader className="pb-4">
+        <div className="max-w-8xl mx-auto space-y-6 pb-4">
+          {/* Sin envoltura <Card>, por el mismo motivo que en Reportes y
+              Progreso: su relleno se sumaba al de la pagina y al de cada tramo
+              horario, y dejaba el bloque de una sesion en 173 px a 375 px de
+              ancho. La pagina ya es el marco. */}
+          <section className="space-y-4">
+            <div className="px-4">
               <CalendarNavigation
                 viewMode={viewMode}
                 currentDate={currentDate}
@@ -90,23 +93,22 @@ export default function Calendar() {
                 onNext={goToNext}
                 onToday={goToToday}
               />
-            </CardHeader>
-            <CardContent>
-              {viewMode === 'week' ? (
-                <WeekView
-                  weekDates={weekDates}
-                  getSessionsAt={getSessionsAt}
-                  onSelectSession={selectSession}
-                />
-              ) : (
-                <DayView
-                  date={currentDate}
-                  getSessionsAt={getSessionsAt}
-                  onSelectSession={selectSession}
-                />
-              )}
-            </CardContent>
-          </Card>
+            </div>
+
+            {viewMode === 'week' ? (
+              <WeekView
+                weekDates={weekDates}
+                getSessionsAt={getSessionsAt}
+                onSelectSession={selectSession}
+              />
+            ) : (
+              <DayView
+                date={currentDate}
+                getSessionsAt={getSessionsAt}
+                onSelectSession={selectSession}
+              />
+            )}
+          </section>
 
           <SessionSummary countByStatus={countByStatus} />
         </div>
