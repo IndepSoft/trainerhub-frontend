@@ -9,6 +9,7 @@ import { StreakTrackingSystem } from '../components/StreakTrackingSystem'
 import { PersonalizedChallenges } from '../components/PersonalizedChallenges'
 import { AchievementSystem } from '../components/AchievementSystem'
 import { useProgressOverview } from '../hooks/useProgressOverview'
+import { PageHeader } from '@/shared/components/PageHeader'
 
 export default function Progress() {
   // La pestana inicial es «Logros» porque «Resumen» ya no existe: el sendero
@@ -43,17 +44,13 @@ export default function Progress() {
     // fija y solo desplaza <main>. Antes era un `space-y-6` suelto y la pagina
     // scrolleaba entera, cabecera incluida.
     <div className="flex flex-col flex-1 overflow-hidden bg-bone">
-      {/* Sin `PageHeader`: en el registro de gamificacion la cabecera es la
-          racha y el nivel, que el brief exige visibles siempre. Va `sticky`
-          dentro del contenedor de desplazamiento, mas abajo. */}
-      <header className="shrink-0 px-5 pt-6 pb-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/45">
-          Tu evolución
-        </p>
-        <h1 className="font-display text-4xl font-extrabold uppercase leading-none tracking-tight text-ink">
-          Progreso
-        </h1>
-      </header>
+      {/* La cabecera de verdad de esta seccion es la racha y el nivel, que el
+          brief exige visibles siempre; va `sticky` dentro del contenedor de
+          desplazamiento, mas abajo. Esta solo nombra la pagina. */}
+      <PageHeader className="pb-4">
+        <PageHeader.Eyebrow>Tu evolución</PageHeader.Eyebrow>
+        <PageHeader.Title>Progreso</PageHeader.Title>
+      </PageHeader>
 
       {/* Contenedor de scroll de la pagina. Es un div y no un <main> a
           proposito: el landmark <main> ya lo pinta SidebarInset desde

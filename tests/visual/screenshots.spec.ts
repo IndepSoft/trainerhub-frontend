@@ -245,6 +245,7 @@ const RUTAS_SIN_REDISENAR = [
   { nombre: 'calendario', ruta: '/calendar' },
   { nombre: 'estudiantes', ruta: '/students' },
   { nombre: 'entrenamientos', ruta: '/trainings' },
+  { nombre: 'reportes', ruta: '/reports' },
 ] as const
 
 for (const objetivo of RUTAS_SIN_REDISENAR) {

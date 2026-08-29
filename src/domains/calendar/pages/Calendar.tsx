@@ -44,14 +44,12 @@ export default function Calendar() {
     // fija y solo desplaza <main>. Antes esta pagina era un `space-y-6` suelto,
     // asi que scrolleaba entera dentro del layout y su cabecera se iba con el
     // contenido.
-    <div className="flex flex-col flex-1 overflow-hidden">
+    <div className="flex flex-col flex-1 overflow-hidden bg-bone">
       <PageHeader>
         <PageHeader.Content>
           <div>
-            <PageHeader.Title>Agenda y Programación</PageHeader.Title>
-            <p className="text-sm text-gray-600 mt-1">
-              Gestiona tus sesiones y citas
-            </p>
+            <PageHeader.Eyebrow>Tus sesiones</PageHeader.Eyebrow>
+            <PageHeader.Title>Agenda</PageHeader.Title>
           </div>
           <PageHeader.Actions>
             {/* El selector solo aparece cuando hay algo que elegir: en movil el

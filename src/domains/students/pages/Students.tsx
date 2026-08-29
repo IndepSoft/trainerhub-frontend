@@ -19,14 +19,12 @@ export default function Students() {
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    <div className="flex flex-col flex-1 overflow-hidden bg-bone">
       <PageHeader>
         <PageHeader.Content>
           <div>
+            <PageHeader.Eyebrow>Tu equipo · {students.length}</PageHeader.Eyebrow>
             <PageHeader.Title>Estudiantes</PageHeader.Title>
-            <p className="text-sm text-gray-600 mt-1">
-              Gestiona tus estudiantes y su progreso ({students.length})
-            </p>
           </div>
           <PageHeader.Actions>
             <Button variant="outline" onClick={handleInviteStudent}>

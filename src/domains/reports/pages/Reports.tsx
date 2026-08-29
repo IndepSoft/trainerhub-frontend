@@ -64,14 +64,12 @@ export default function Reports() {
   const [activeTab, setActiveTab] = useState('summary')
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    <div className="flex flex-col flex-1 overflow-hidden bg-bone">
       <PageHeader>
         <PageHeader.Content>
           <div>
-            <PageHeader.Title>Reportes y Análisis</PageHeader.Title>
-            <p className="text-sm text-gray-600 mt-1">
-              Insights y métricas de tu negocio
-            </p>
+            <PageHeader.Eyebrow>Tu negocio</PageHeader.Eyebrow>
+            <PageHeader.Title>Reportes</PageHeader.Title>
           </div>
         </PageHeader.Content>
       </PageHeader>
@@ -81,7 +79,7 @@ export default function Reports() {
           RootLayout, y anidar uno dentro de otro es HTML invalido -solo se
           admite uno por documento- ademas de confundir a los lectores de
           pantalla. */}
-      <div className="mt-8 flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto">
         <div className="ps-4 pe-4 pb-4 max-w-8xl mx-auto space-y-6">
           <div className="grid grid-cols-1 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3 sm:grid-cols-2 sm:divide-x lg:grid-cols-4">
             {indicatorsVal.map((indicator) => (

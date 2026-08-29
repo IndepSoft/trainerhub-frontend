@@ -14,15 +14,12 @@ export default function Trainings() {
   const [activeTab, setActiveTab] = useState('mis-rutinas')
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    <div className="flex flex-col flex-1 overflow-hidden bg-bone">
       <PageHeader>
         <PageHeader.Content>
           <div>
-            <PageHeader.Title>Rutinas y Entrenamientos</PageHeader.Title>
-            <p className="text-sm text-gray-600 mt-1">
-              Crea, gestiona y asigna rutinas personalizadas para tus
-              estudiantes
-            </p>
+            <PageHeader.Eyebrow>Lo que asignas</PageHeader.Eyebrow>
+            <PageHeader.Title>Rutinas</PageHeader.Title>
           </div>
           <PageHeader.Actions>
             <Button variant="outline" className="gap-2">

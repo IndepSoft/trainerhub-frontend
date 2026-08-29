@@ -4,6 +4,7 @@ import { RecentActivity } from '../components/RecentActivity'
 import { useDashboardSummary } from '../hooks/useDashboardSummary'
 import { usePullToRefresh } from '@/shared/hooks/usePullToRefresh'
 import { PullToRefreshIndicator } from '@/shared/components/PullToRefreshIndicator'
+import { PageHeader } from '@/shared/components/PageHeader'
 
 export default function Dashboard() {
   const { summary, refresh } = useDashboardSummary()
@@ -13,17 +14,10 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
-      {/* Cabecera propia y no `PageHeader`: el registro sobrio quiere el titulo
-          en Condensed y una regla, no la caja blanca con borde inferior que
-          usan las demas paginas. Se unificara cuando les toque el rediseno. */}
-      <header className="shrink-0 px-5 pt-6 pb-5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/45">
-          Tu actividad
-        </p>
-        <h1 className="font-display text-4xl font-extrabold uppercase leading-none tracking-tight text-ink">
-          Dashboard
-        </h1>
-      </header>
+      <PageHeader>
+        <PageHeader.Eyebrow>Tu actividad</PageHeader.Eyebrow>
+        <PageHeader.Title>Dashboard</PageHeader.Title>
+      </PageHeader>
 
       {/* Contenedor de scroll de la pagina. Es un div y no un <main>: el
           landmark ya lo pinta SidebarInset desde RootLayout. */}
