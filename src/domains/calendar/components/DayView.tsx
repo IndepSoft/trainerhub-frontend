@@ -1,68 +1,56 @@
 import { TIME_SLOTS } from '../data/calendarOptions'
+import { SessionLane } from './SessionLane'
 import { SessionCard } from './SessionCard'
-import { cn } from '@/shared/lib/utils'
 import type { Session } from '../types/calendar.types'
+
+/** Alto de cada tramo de 30 minutos en la vista de día. */
+const SLOT_HEIGHT = 64
 
 interface DayViewProps {
   date: Date
-  getSessionsAt: (date: Date, time: string) => Session[]
+  getSessionsOfDay: (date: Date) => Session[]
   onSelectSession: (session: Session) => void
 }
 
 /**
  * Vista de día.
  *
- * Los tramos vacíos ocupan una sola línea fina. Antes cada uno era un bloque
- * con el mismo peso que uno ocupado y el texto «Sin sesiones programadas», así
- * que un día con dos sesiones exigía recorrer catorce bloques casi idénticos
- * para encontrarlas. Lo que se busca en una agenda es lo que SÍ hay.
+ * La hora va en una columna fija y estrecha: sólo tiene que caber «08:00», y
+ * darle el mismo ancho que al contenido era regalarle sitio a una etiqueta.
  *
- * La hora va en cifras tabulares y ancho fijo: sin eso, «9:00» y «11:30» no
- * alinean y la columna deja de leerse como una escala de tiempo.
+ * Las sesiones se colocan sobre la escala, no dentro de un tramo, así que una
+ * de 60 minutos ocupa el doble de alto que una de 30 y una que empieza a y
+ * cuarto arranca a y cuarto. Ver `SessionLane`.
  */
-export function DayView({ date, getSessionsAt, onSelectSession }: DayViewProps) {
+export function DayView({ date, getSessionsOfDay, onSelectSession }: DayViewProps) {
   return (
-    <ol className="divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3">
-      {TIME_SLOTS.map((time) => {
-        const sessions = getSessionsAt(date, time)
-        const isEmpty = sessions.length === 0
-
-        return (
-          <li
+    <div className="flex border-y border-cobalt-tint-3">
+      <div className="w-14 shrink-0 border-e border-cobalt-tint-3">
+        {TIME_SLOTS.map((time) => (
+          <div
             key={time}
-            className={cn('flex gap-3 px-4', isEmpty ? 'py-2' : 'py-4')}
+            className="metric-figures flex items-start justify-end pe-2 pt-1 text-[11px] font-semibold tabular-nums text-ink/35"
+            style={{ height: SLOT_HEIGHT }}
           >
-            <span
-              className={cn(
-                'metric-figures w-11 shrink-0 pt-0.5 text-sm font-semibold tabular-nums',
-                isEmpty ? 'text-ink/25' : 'text-cobalt'
-              )}
-            >
-              {time}
-            </span>
+            {/* Sólo se rotula la hora en punto. Con las veintisiete etiquetas, la
+                columna es una lista de números y deja de leerse como una escala. */}
+            {time.endsWith(':00') ? time : ''}
+          </div>
+        ))}
+      </div>
 
-            {isEmpty ? (
-              // Una regla en vez de una frase: comunica «libre» sin gastar una
-              // linea de texto por cada tramo vacio del dia.
-              <span aria-hidden="true" className="mt-2.5 h-px flex-1 bg-cobalt-tint-2" />
-            ) : (
-              // `min-w-0` obligatorio: `flex-1` da `flex-basis: 0`, pero el
-              // `min-width: auto` por defecto impide encoger por debajo del
-              // contenido. Sin esto el bloque de sesion medía 366 px dentro de un
-              // hueco de 277 y se salia por la derecha.
-              <div className="min-w-0 flex-1 space-y-2">
-                {sessions.map((session) => (
-                  <SessionCard
-                    key={session.id}
-                    session={session}
-                    onSelect={onSelectSession}
-                  />
-                ))}
-              </div>
-            )}
-          </li>
-        )
-      })}
-    </ol>
+      <SessionLane
+        className="flex-1"
+        sessions={getSessionsOfDay(date)}
+        slotHeight={SLOT_HEIGHT}
+        renderSession={(session, isCompact) => (
+          <SessionCard
+            session={session}
+            onSelect={onSelectSession}
+            variant={isCompact ? 'compact' : 'full'}
+          />
+        )}
+      />
+    </div>
   )
 }

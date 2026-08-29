@@ -5,105 +5,128 @@ import { SESSION_STATUS } from '../libs/sessionStatus'
 import { cn } from '@/shared/lib/utils'
 import type { Session } from '../types/calendar.types'
 
+export type SessionCardVariant = 'full' | 'compact'
+
 interface SessionCardProps {
   session: Session
   onSelect: (session: Session) => void
+  /**
+   * `compact` es la MISMA tarjeta a escala reducida, no otro componente: misma
+   * superficie, mismo canto, misma cuña de estado y la misma respuesta al pasar.
+   * Se usa en la rejilla semanal y en las sesiones cortas de la vista de día,
+   * donde el alto disponible no da para la versión completa.
+   */
+  variant?: SessionCardVariant
 }
 
 /**
  * Tarjeta de sesión.
  *
  * Sigue la estética de la tarjeta de estudiante: superficie blanca, borde del
- * sistema, cuña diagonal, título en Condensed, rejilla de datos separada por
- * reglas e insignias de contorno.
+ * sistema, cuña diagonal, título en Condensed y datos separados por reglas.
  *
- * La diferencia con aquella es deliberada: la cuña toma el COLOR DEL ESTADO en
- * vez de Ember. Al pasar de bloque teñido a tarjeta blanca se perdía el «verde
- * = confirmada» que se leía sin llegar a leer el texto, y en una agenda ese
- * vistazo es justamente lo que se usa. La cuña lo devuelve sin volver a teñir
- * la tarjeta entera.
+ * La cuña toma el COLOR DEL ESTADO en vez de Ember, y es deliberado: al pasar de
+ * bloque teñido a tarjeta blanca se perdía el «verde = confirmada» que se leía
+ * sin llegar a leer el texto, y en una agenda ese vistazo es lo que se usa.
  *
- * Es un `<button>` y no una tarjeta con enlace estirado porque abre un diálogo,
- * no navega: no hay URL a la que apuntar.
+ * Ocupa todo el alto que le da su contenedor, porque quien decide su tamaño es
+ * la escala de tiempo: una sesión de 60 minutos mide el doble que una de 30.
  */
-export function SessionCard({ session, onSelect }: SessionCardProps) {
+export function SessionCard({ session, onSelect, variant = 'full' }: SessionCardProps) {
   const status = SESSION_STATUS[session.status]
+  const statusTextClassName = status.outlineBadgeClassName.split(' ')[1]
+  const isCompact = variant === 'compact'
 
   return (
     <button
       type="button"
       onClick={() => onSelect(session)}
-      className="group relative isolate w-full overflow-hidden rounded-block border border-cobalt-tint-3 bg-white text-left transition-colors hover:border-cobalt/40"
+      /*
+       * Nombre accesible explicito. Sin el, el nombre lo componia el contenido
+       * de la tarjeta y un lector de pantalla leia de corrido titulo, estado,
+       * tipo, duracion y lugar como una sola frase. Asi dice lo que hace falta
+       * para decidir si abrirla, y en el orden en que se decide.
+       */
+      aria-label={`${session.title}. ${status.label}. ${session.time}, ${session.durationMinutes} minutos`}
+      className={cn(
+        'group relative isolate flex h-full w-full flex-col overflow-hidden rounded-block border border-cobalt-tint-3 bg-white text-left transition-colors hover:border-cobalt/40',
+        isCompact ? 'p-2' : 'p-3'
+      )}
     >
-      <div
+      <span
         aria-hidden="true"
         className={cn(
-          'absolute inset-x-[-15%] top-[18%] -z-10 h-14 transition-transform duration-300 group-hover:-translate-y-0.5',
+          'absolute inset-x-[-20%] -z-10 transition-transform duration-300 group-hover:-translate-y-0.5',
+          // Anclada en pixeles al TITULO, no en porcentaje: la tarjeta mide lo
+          // que dure la sesion, asi que un porcentaje la mueve segun la duracion
+          // y en una sesion larga acababa cortando a la altura de las insignias.
+          // «Confirmada» quedaba en verde sobre verde.
+          isCompact ? 'top-1.5 h-6' : 'top-2 h-9',
           status.accentClassName
         )}
-        style={{ clipPath: 'polygon(0 42%, 100% 0, 100% 58%, 0 100%)' }}
+        style={{ clipPath: 'polygon(0 40%, 100% 0, 100% 60%, 0 100%)' }}
       />
 
-      <div className="flex items-start justify-between gap-2 p-3 pb-0">
-        {/*
-          El AvatarImage apuntaba a /generic-placeholder-icon.png, que no existe
-          en public/ y devolvia 404 en cada sesion pintada. Se deja solo el
-          fallback con las iniciales hasta que haya fotos reales.
-        */}
-        <Avatar className="size-9 shrink-0">
-          <AvatarFallback className="bg-cobalt-tint-2 text-[11px] font-bold text-cobalt">
-            {getStudentInitials(session.student)}
-          </AvatarFallback>
-        </Avatar>
+      <div className="flex items-center gap-1.5">
+        {isCompact ? (
+          <span className={cn('shrink-0', statusTextClassName)}>{status.icon}</span>
+        ) : (
+          <Avatar className="size-8 shrink-0">
+            <AvatarFallback className="bg-cobalt-tint-2 text-[10px] font-bold text-cobalt">
+              {getStudentInitials(session.student)}
+            </AvatarFallback>
+          </Avatar>
+        )}
 
-        <span className={cn('shrink-0', status.outlineBadgeClassName.split(' ')[1])}>
-          {status.icon}
-        </span>
-      </div>
-
-      <h4 className="mt-2 px-3 font-display text-base font-bold uppercase leading-[1.05] tracking-tight text-ink">
-        {session.title}
-      </h4>
-
-      <div className="mt-2 flex flex-wrap gap-1.5 px-3 pb-3">
         <span
           className={cn(
-            'rounded-action border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em]',
-            status.outlineBadgeClassName
+            'min-w-0 flex-1 truncate font-display font-bold uppercase leading-tight tracking-tight text-ink',
+            isCompact ? 'text-xs' : 'text-sm'
           )}
         >
-          {status.label}
+          {isCompact ? session.student : session.title}
         </span>
-        <span className="rounded-action border border-cobalt-tint-3 px-2 py-0.5 text-[10px] uppercase tracking-wider text-ink/50">
-          {session.kind === 'individual' ? 'Individual' : 'Grupal'}
-        </span>
+
+        {!isCompact && (
+          <span className={cn('shrink-0', statusTextClassName)}>{status.icon}</span>
+        )}
       </div>
 
-      {/* `min-w-0` en las dos celdas: sin el, un lugar largo empuja la rejilla
-          por encima del ancho disponible. Ya paso en esta misma vista. */}
-      <dl className="grid grid-cols-2 divide-x divide-cobalt-tint-3 border-t border-cobalt-tint-3">
-        <div className="min-w-0 px-3 py-2">
-          <dt className="text-[9px] font-semibold uppercase tracking-[0.14em] text-ink/40">
-            Duración
-          </dt>
-          <dd className="metric-figures truncate text-sm font-semibold text-ink">
-            {session.durationMinutes} min
-          </dd>
-        </div>
-        {/* `pe-8` reserva el hueco de la flecha, que va posicionada sobre esta
-            celda: sin el, se solapaba con el nombre del lugar. */}
-        <div className="min-w-0 px-3 py-2 pe-8">
-          <dt className="text-[9px] font-semibold uppercase tracking-[0.14em] text-ink/40">
-            Lugar
-          </dt>
-          <dd className="truncate text-sm text-ink/70">{session.location}</dd>
-        </div>
-      </dl>
+      {isCompact ? (
+        <span className="mt-0.5 truncate text-[10px] uppercase tracking-wider text-ink/45">
+          {session.category}
+        </span>
+      ) : (
+        <>
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            <span
+              className={cn(
+                'rounded-action border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em]',
+                status.outlineBadgeClassName
+              )}
+            >
+              {status.label}
+            </span>
+            <span className="rounded-action border border-cobalt-tint-3 px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-ink/50">
+              {session.kind === 'individual' ? 'Individual' : 'Grupal'}
+            </span>
+          </div>
 
-      <ArrowUpRight
-        aria-hidden="true"
-        className="absolute bottom-2.5 right-2.5 size-4 text-ink/20 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-ember"
-      />
+          {/* `mt-auto` empuja los datos al pie: la tarjeta ocupa el alto que le
+              da la duracion, y sin esto una sesion larga dejaba un hueco debajo
+              del titulo en vez de repartirse. */}
+          <p className="metric-figures mt-auto flex min-w-0 items-center gap-2 pe-5 text-[11px] text-ink/55">
+            <span className="shrink-0">{session.durationMinutes} min</span>
+            <span className="text-ink/20">·</span>
+            <span className="truncate">{session.location}</span>
+          </p>
+
+          <ArrowUpRight
+            aria-hidden="true"
+            className="absolute bottom-2 right-2 size-3.5 text-ink/20 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-ember"
+          />
+        </>
+      )}
     </button>
   )
 }

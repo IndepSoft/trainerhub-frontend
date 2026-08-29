@@ -27,7 +27,8 @@ interface UseCalendarResult {
   goToPrevious: () => void
   goToNext: () => void
   selectSession: (session: Session | null) => void
-  getSessionsAt: (date: Date, time: string) => Session[]
+  /** Todas las sesiones de un dia. La colocacion en la escala la calcula la vista. */
+  getSessionsOfDay: (date: Date) => Session[]
 }
 
 /**
@@ -59,14 +60,14 @@ export function useCalendar(): UseCalendarResult {
   /**
    * Índice de sesiones por `fecha|hora`.
    *
-   * Antes cada celda de la rejilla recorría el array entero: siete días por
-   * veintisiete tramos son 189 recorridos completos en cada render. Con el
-   * índice, cada celda es una consulta directa.
+   * Indexado por DIA y no por tramo: una sesion ya no pertenece a un tramo,
+   * ocupa un intervalo que puede cruzar varios. La vista recibe las sesiones
+   * del dia y calcula la colocacion con `placeSessions`.
    */
-  const sessionsBySlot = useMemo(() => {
+  const sessionsByDay = useMemo(() => {
     const index = new Map<string, Session[]>()
     for (const session of sessions) {
-      const key = `${session.date}|${session.time}`
+      const key = session.date
       const slot = index.get(key)
       if (slot) {
         slot.push(session)
@@ -89,8 +90,8 @@ export function useCalendar(): UseCalendarResult {
     return counts
   }, [sessions])
 
-  const getSessionsAt = (date: Date, time: string): Session[] =>
-    sessionsBySlot.get(`${toLocalDateKey(date)}|${time}`) ?? []
+  const getSessionsOfDay = (date: Date): Session[] =>
+    sessionsByDay.get(toLocalDateKey(date)) ?? []
 
   const moveBy = (days: number) => setCurrentDate(addDays(currentDate, days))
   const step = viewMode === 'week' ? 7 : 1
@@ -108,6 +109,6 @@ export function useCalendar(): UseCalendarResult {
     goToPrevious: () => moveBy(-step),
     goToNext: () => moveBy(step),
     selectSession: setSelectedSession,
-    getSessionsAt,
+    getSessionsOfDay,
   }
 }

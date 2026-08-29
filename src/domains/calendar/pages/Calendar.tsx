@@ -29,7 +29,7 @@ export default function Calendar() {
     goToPrevious,
     goToNext,
     selectSession,
-    getSessionsAt,
+    getSessionsOfDay,
   } = useCalendar()
 
   // TODO: sin implementar. Solo muestra un aviso; el estado de la sesion no
@@ -98,13 +98,13 @@ export default function Calendar() {
             {viewMode === 'week' ? (
               <WeekView
                 weekDates={weekDates}
-                getSessionsAt={getSessionsAt}
+                getSessionsOfDay={getSessionsOfDay}
                 onSelectSession={selectSession}
               />
             ) : (
               <DayView
                 date={currentDate}
-                getSessionsAt={getSessionsAt}
+                getSessionsOfDay={getSessionsOfDay}
                 onSelectSession={selectSession}
               />
             )}
