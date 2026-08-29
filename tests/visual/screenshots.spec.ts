@@ -418,3 +418,49 @@ test('el esqueleto se muestra mientras carga la ruta', async ({ page }) => {
 
   await page.screenshot({ path: 'tests/visual/salida/esqueleto-mobile.png' })
 })
+
+/**
+ * Placas de logro: conseguidas y bloqueadas conviviendo.
+ *
+ * Se captura la rejilla entera porque el valor del diseno esta en el contraste
+ * entre placas grabadas y placas en blanco; una sola no dice nada.
+ */
+test('placas de logro', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await signIn(page)
+  await page.goto('/progress')
+  await page.waitForTimeout(2000)
+
+  const placa = page.getByRole('button', { name: /Conseguido/ }).first()
+  await placa.scrollIntoViewIfNeeded()
+  await page.waitForTimeout(500)
+
+  await expect(placa).toBeVisible()
+  await page.screenshot({ path: 'tests/visual/salida/placas-mobile.png' })
+})
+
+/**
+ * Transiciones de vista.
+ *
+ * No se comprueba «que se vea bonito» -no es comprobable- sino lo que si puede
+ * romperse: que la navegacion con `viewTransition` llegue a su destino. Una
+ * transicion que se queda a medias deja la pantalla congelada, y eso es peor que
+ * no tenerla.
+ */
+test('la navegacion con transicion llega a su destino', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await signIn(page)
+  await page.waitForTimeout(1200)
+
+  await page.getByRole('link', { name: /Estudiantes/ }).click()
+  await page.waitForURL(/\/students/, { timeout: 15_000 })
+  await page.waitForTimeout(600)
+
+  // La pagina destino debe estar realmente pintada, no congelada a mitad.
+  await expect(page.getByRole('heading', { name: 'Estudiantes' })).toBeVisible()
+
+  await page.getByRole('link', { name: /Progreso/ }).click()
+  await page.waitForURL(/\/progress/, { timeout: 15_000 })
+  await page.waitForTimeout(600)
+  await expect(page.getByRole('heading', { name: 'Progreso', level: 1 })).toBeVisible()
+})

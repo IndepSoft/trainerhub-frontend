@@ -33,6 +33,9 @@ export function BottomTabBar() {
           <li key={route.id} className="flex-1">
             <NavLink
               to={route.href}
+              // Pide al navegador una transicion de vista en la navegacion.
+              // Donde la API no existe, react-router navega igual sin animar.
+              viewTransition
               className={({ isActive }) =>
                 cn(
                   // 56 px de alto: por encima del objetivo tactil de 44 px que

@@ -71,6 +71,7 @@ export function NavItem({
       to={to}
       className={baseClasses}
       onClick={onClick}
+      viewTransition
       aria-current={isActive ? 'page' : undefined}
     >
       {content}

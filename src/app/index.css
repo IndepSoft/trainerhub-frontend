@@ -159,3 +159,42 @@
     font-feature-settings: 'tnum';
   }
 }
+
+/*
+ * Transiciones entre vistas.
+ *
+ * Usan la View Transitions API del navegador a traves de react-router. Donde no
+ * existe -Firefox hoy- la navegacion ocurre igual, al instante y sin animacion:
+ * el navegador ignora estas reglas y `viewTransition` degrada solo. No hace
+ * falta detectar soporte.
+ *
+ * El movimiento es corto y vertical, no un deslizamiento lateral: el lateral
+ * sugiere jerarquia -atras y adelante-, y estas rutas son hermanas.
+ *
+ * Todo el bloque va dentro de `prefers-reduced-motion: no-preference`. Sin la
+ * consulta, la animacion se aplicaria a quien pidio que no hubiera movimiento,
+ * y una transicion de pagina completa es de las que peor sientan.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: 130ms cubic-bezier(0.4, 0, 1, 1) both salida-de-vista;
+  }
+
+  ::view-transition-new(root) {
+    animation: 190ms cubic-bezier(0, 0, 0.2, 1) 40ms both entrada-de-vista;
+  }
+
+  @keyframes salida-de-vista {
+    to {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+  }
+
+  @keyframes entrada-de-vista {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+}
