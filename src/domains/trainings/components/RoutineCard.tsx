@@ -72,14 +72,33 @@ export function RoutineCard({ routine }: RoutineCardProps) {
     >
       <div
         aria-hidden="true"
-        className="absolute inset-x-[-15%] top-[13%] -z-10 h-[5.5rem] bg-ember/10 transition-transform duration-300 group-hover:-translate-y-0.5"
+        className={cn(
+          'absolute inset-x-[-15%] top-[13%] -z-10 h-[5.5rem] transition-transform duration-300 group-hover:-translate-y-0.5',
+          // La plantilla lleva la cuna mas marcada: la diferencia se lee antes
+          // de llegar a leer el rotulo.
+          routine.isTemplate ? 'bg-ember/25' : 'bg-ember/10'
+        )}
         style={{ clipPath: 'polygon(0 40%, 100% 0, 100% 60%, 0 100%)' }}
       />
 
       <div className="flex items-start justify-between gap-3 p-5 pb-0">
-        <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-ink/45">
-          <Dumbbell className="size-3.5" />
-          Rutina
+        {/*
+          El rotulo distingue plantilla de rutina. Sin el, las dos pestanas
+          pintaban tarjetas identicas y no habia forma de saber que era cada
+          cosa: la unica diferencia vivia en que pestana estabas.
+        */}
+        <span
+          className={cn(
+            'flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em]',
+            routine.isTemplate ? 'text-ember-deep' : 'text-ink/45'
+          )}
+        >
+          {routine.isTemplate ? (
+            <Copy className="size-3.5" />
+          ) : (
+            <Dumbbell className="size-3.5" />
+          )}
+          {routine.isTemplate ? 'Plantilla' : 'Rutina'}
         </span>
 
         {/* `relative z-10` para quedar por encima del enlace estirado.

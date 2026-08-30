@@ -149,10 +149,10 @@ export const routinesMock: Routine[] = [
       },
     ],
   },
-]
 
-/** Rutinas marcadas como reutilizables. */
-export const routineTemplatesMock: Routine[] = [
+  // Las plantillas van en la MISMA coleccion, distinguidas por `isTemplate`.
+  // Tenerlas en un array aparte hacia que el flag fuese decorativo: se podia
+  // marcar `isTemplate: true` en la lista de rutinas y no pasaba nada.
   {
     id: 'template-1',
     title: 'Torso · Plantilla base',

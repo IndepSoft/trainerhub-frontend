@@ -757,6 +757,12 @@ test.describe('reparto de secciones', () => {
     await expect(page.getByRole('link', { name: 'Torso · Plantilla base' })).toBeVisible()
     await expect(page.getByRole('link', { name: 'Full body · Principiante' })).toHaveCount(0)
 
+    // Y la tarjeta DICE que es plantilla. Sin rotulo, las dos pestanas pintaban
+    // tarjetas identicas y la unica diferencia era en cual estabas.
+    await expect(page.getByText('Plantilla', { exact: true })).toBeVisible()
+
+    await page.screenshot({ path: 'tests/visual/salida/plantillas-desktop.png' })
+
     // Desafios y rachas estan vacias a proposito y lo dicen. La prueba fija que
     // NO vuelvan a pintar datos de ejemplo: eso hacia creer que la funcion
     // existe.
