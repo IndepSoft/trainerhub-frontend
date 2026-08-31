@@ -1,4 +1,5 @@
-import { CalendarRange } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { ArrowUpRight, CalendarRange } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import { LEVEL_BADGE } from '../libs/levelBadge'
 import { countDeloadWeeks, countPlanSessions } from '../libs/plan.utils'
@@ -12,12 +13,12 @@ interface PlanCardProps {
 /**
  * Tarjeta de plan, en el mismo registro editorial que la de rutina.
  *
- * NO ES NAVEGABLE, y por eso no lleva flecha de destino ni enlace estirado: no
- * existe todavía una ficha de plan. Una tarjeta que se comporta como un enlace y
- * no lleva a ningún sitio es peor que una que no lo aparenta.
+ * Lleva al formulario de edición, que por ahora ES la vista de un plan: no hay
+ * ficha de sólo lectura. Cuando la haya, el enlace apuntará a ella y la edición
+ * pasará a ser una acción de dentro.
  *
- * TODO: falta la ficha de plan y falta poder crearlo. Esta vista sólo lee lo
- * que el modelo ya describe.
+ * El enlace es estirado —`after:absolute after:inset-0`— para que toda la
+ * tarjeta sea el objetivo táctil y no sólo el título, igual que en la de rutina.
  */
 export function PlanCard({ plan }: PlanCardProps) {
   const { objectivesById, splitsById } = useTrainingCatalog()
@@ -27,10 +28,10 @@ export function PlanCard({ plan }: PlanCardProps) {
   const deloadWeeks = countDeloadWeeks(plan)
 
   return (
-    <article className="relative isolate flex flex-col overflow-hidden rounded-block border border-cobalt-tint-3 bg-white">
+    <article className="group relative isolate flex flex-col overflow-hidden rounded-block border border-cobalt-tint-3 bg-white transition-colors hover:border-cobalt/40 focus-within:border-cobalt">
       <div
         aria-hidden="true"
-        className="absolute inset-x-[-15%] top-[13%] -z-10 h-[5.5rem] bg-cobalt-tint-2"
+        className="absolute inset-x-[-15%] top-[13%] -z-10 h-[5.5rem] bg-cobalt-tint-2 transition-transform duration-300 group-hover:-translate-y-0.5"
         style={{ clipPath: 'polygon(0 40%, 100% 0, 100% 60%, 0 100%)' }}
       />
 
@@ -42,7 +43,12 @@ export function PlanCard({ plan }: PlanCardProps) {
       </div>
 
       <h3 className="mt-2 px-5 font-display text-[1.75rem] font-extrabold uppercase leading-[0.94] tracking-tight text-ink">
-        {plan.title}
+        <Link
+          to={`/trainings/plans/${plan.id}/edit`}
+          className="outline-none after:absolute after:inset-0 focus-visible:underline"
+        >
+          {plan.title}
+        </Link>
       </h3>
 
       <p className="mt-2 px-5 text-sm text-ink/50">{plan.description}</p>
@@ -107,6 +113,11 @@ export function PlanCard({ plan }: PlanCardProps) {
         >
           {plan.level}
         </span>
+
+        <ArrowUpRight
+          aria-hidden="true"
+          className="ms-auto size-5 text-ink/25 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-ember"
+        />
       </div>
     </article>
   )

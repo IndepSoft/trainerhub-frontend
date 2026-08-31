@@ -1,0 +1,178 @@
+import { useMemo, type FormEvent } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { AlertCircle, ArrowLeft, CalendarPlus } from 'lucide-react'
+import { Button } from '@/shared/ui/button'
+import { PageHeader } from '@/shared/components/PageHeader'
+import { usePlan } from '../hooks/usePlans'
+import { usePlanDraft } from '../hooks/usePlanDraft'
+import { useRoutines } from '../hooks/useRoutines'
+import { usePlansStore } from '../stores/plansStore'
+import { PlanIdentityFields } from '../components/PlanIdentityFields'
+import { PlanWeekEditor } from '../components/PlanWeekEditor'
+import { PlanDraftSummary } from '../components/PlanDraftSummary'
+
+/**
+ * Crear y editar un plan. Sólo composición.
+ *
+ * Una sola página para las dos cosas, igual que `RoutineForm`: la ruta decide.
+ * `/trainings/plans/new` no trae `planId` y `/trainings/plans/:planId/edit` sí.
+ *
+ * Sin ficha de plan todavía: la tarjeta de la lista lleva directamente aquí,
+ * porque este formulario ES, por ahora, la vista de un plan.
+ */
+export default function PlanForm() {
+  const navigate = useNavigate()
+  const { planId } = useParams<{ planId: string }>()
+  const { plan } = usePlan(planId)
+  const { routines } = useRoutines()
+  const createPlan = usePlansStore((state) => state.createPlan)
+  const updatePlan = usePlansStore((state) => state.updatePlan)
+
+  const isEditing = planId !== undefined
+
+  const {
+    draft,
+    errors,
+    preview,
+    canRemoveWeek,
+    update,
+    setLevel,
+    addWeek,
+    removeWeek,
+    toggleDeload,
+    setDayRoutine,
+    submit,
+  } = usePlanDraft(plan)
+
+  // Alfabético, para que elegir la rutina de un día no sea buscar en el orden
+  // en que se crearon.
+  const sortedRoutines = useMemo(
+    () => [...routines].sort((left, right) => left.title.localeCompare(right.title, 'es')),
+    [routines]
+  )
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    const data = submit()
+    if (data === null) return
+
+    if (planId === undefined) {
+      createPlan(data)
+    } else {
+      updatePlan(planId, data)
+    }
+
+    // No hay ficha de plan a la que ir: se vuelve a la lista de planes. Con la
+    // pestaña en la URL, se aterriza viendo lo que se acaba de guardar.
+    navigate('/trainings?tab=planes')
+  }
+
+  if (isEditing && plan === null) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-bone px-6 text-center">
+        <p className="font-display text-2xl font-extrabold uppercase text-ink">
+          Plan no encontrado
+        </p>
+        <p className="text-sm text-ink/50">
+          El enlace puede haber caducado o el plan ya no existe.
+        </p>
+        <Button asChild variant="outline">
+          <Link to="/trainings">Volver a entrenamientos</Link>
+        </Button>
+      </div>
+    )
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden bg-bone">
+      <PageHeader>
+        <Link
+          to="/trainings?tab=planes"
+          className="-ms-2 mb-3 inline-flex h-11 items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/45 transition-colors hover:text-cobalt"
+        >
+          <ArrowLeft className="size-4" />
+          Entrenamientos
+        </Link>
+
+        <PageHeader.Content>
+          <div className="min-w-0">
+            <PageHeader.Eyebrow>Lo que asignas</PageHeader.Eyebrow>
+            <PageHeader.Title>{isEditing ? 'Editar plan' : 'Nuevo plan'}</PageHeader.Title>
+          </div>
+
+          <PageHeader.Actions>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate('/trainings?tab=planes')}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit">{isEditing ? 'Guardar cambios' : 'Guardar plan'}</Button>
+          </PageHeader.Actions>
+        </PageHeader.Content>
+      </PageHeader>
+
+      <div className="flex-1 overflow-auto">
+        <PlanDraftSummary plan={preview} />
+
+        <div className="space-y-6 px-5 py-6">
+          {errors.weeks !== undefined && (
+            <p
+              role="alert"
+              className="flex items-start gap-2 rounded-block border border-danger/40 bg-danger-surface px-4 py-3 text-sm text-danger"
+            >
+              <AlertCircle className="mt-0.5 size-4 shrink-0" />
+              {errors.weeks}
+            </p>
+          )}
+
+          <PlanIdentityFields
+            draft={draft}
+            errors={errors}
+            onChange={update}
+            onLevelChange={setLevel}
+          />
+
+          <div>
+            <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
+              Microciclos
+            </h2>
+
+            {routines.length === 0 ? (
+              <p className="rounded-block border border-cobalt-tint-3 bg-white px-4 py-6 text-center text-sm text-ink/45">
+                Todavía no hay rutinas que asignar. Crea una primero y vuelve.
+              </p>
+            ) : (
+              <ul className="space-y-4">
+                {draft.weeks.map((week, index) => (
+                  <li key={week.id}>
+                    <PlanWeekEditor
+                      week={week}
+                      position={index + 1}
+                      routines={sortedRoutines}
+                      canRemove={canRemoveWeek}
+                      onRemove={() => removeWeek(week.id)}
+                      onToggleDeload={() => toggleDeload(week.id)}
+                      onChangeDay={(dayOfWeek, routineId) =>
+                        setDayRoutine(week.id, dayOfWeek, routineId)
+                      }
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {/* Añadir una semana copia la anterior: en un mesociclo la
+                estructura se repite. Ver `libs/planDraft.ts`. */}
+            <Button type="button" variant="outline" className="mt-4 w-full gap-2" onClick={addWeek}>
+              <CalendarPlus className="size-4" />
+              Añadir semana
+            </Button>
+          </div>
+        </div>
+      </div>
+    </form>
+  )
+}

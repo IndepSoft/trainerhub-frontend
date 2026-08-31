@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Flame, Library, Plus, Target } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
@@ -29,6 +28,38 @@ const TAB_ORDER = ['rutinas', 'planes', 'desafios', 'rachas'] as const
 type TabValue = (typeof TAB_ORDER)[number]
 
 /**
+ * La pestaña activa vive en la URL, no en el estado del componente.
+ *
+ * Así `/trainings?tab=planes` es enlazable, que es lo que permite que al guardar
+ * un plan se vuelva a la lista de planes y no a la de rutinas: antes se creaba
+ * un plan y el usuario aterrizaba donde no podía verlo.
+ */
+function isTabValue(value: string | null): value is TabValue {
+  return TAB_ORDER.some((tab) => tab === value)
+}
+
+interface PrimaryAction {
+  label: string
+  to: string
+}
+
+/**
+ * La acción primaria sigue a la pestaña: en Planes crea un plan, y en el resto
+ * crea una rutina.
+ *
+ * Desafíos y rachas se quedan con la de rutina en vez de desaparecer. Ofrecer
+ * «Nuevo desafío» sería mentir —esa función no existe todavía— y quitar el botón
+ * haría saltar la cabecera al cambiar de pestaña, que se nota más que la
+ * incoherencia de tener a mano la acción principal de la sección.
+ */
+const PRIMARY_ACTION: Record<TabValue, PrimaryAction> = {
+  rutinas: { label: 'Nueva Rutina', to: '/trainings/new' },
+  planes: { label: 'Nuevo Plan', to: '/trainings/plans/new' },
+  desafios: { label: 'Nueva Rutina', to: '/trainings/new' },
+  rachas: { label: 'Nueva Rutina', to: '/trainings/new' },
+}
+
+/**
  * Lo que el entrenador crea para asignar.
  *
  * Desafíos y rachas viven aquí y no en Progreso desde que se aclaró el flujo:
@@ -39,7 +70,14 @@ type TabValue = (typeof TAB_ORDER)[number]
 export default function Trainings() {
   const { routines } = useRoutines()
   const { plans } = usePlans()
-  const [activeTab, setActiveTab] = useState<TabValue>('rutinas')
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const requestedTab = searchParams.get('tab')
+  const activeTab: TabValue = isTabValue(requestedTab) ? requestedTab : 'rutinas'
+
+  // `replace` para que cambiar de pestaña no llene el historial: el boton de
+  // volver debe salir de Entrenamientos, no recorrer las cuatro pestañas.
+  const setActiveTab = (tab: TabValue) => setSearchParams({ tab }, { replace: true })
 
   const moveTab = (offset: number) => {
     const next = TAB_ORDER.indexOf(activeTab) + offset
@@ -73,9 +111,9 @@ export default function Trainings() {
               </Link>
             </Button>
             <Button asChild className="gap-2">
-              <Link to="/trainings/new">
+              <Link to={PRIMARY_ACTION[activeTab].to}>
                 <Plus className="h-4 w-4" />
-                Nueva Rutina
+                {PRIMARY_ACTION[activeTab].label}
               </Link>
             </Button>
           </PageHeader.Actions>
@@ -85,7 +123,9 @@ export default function Trainings() {
       <div className="flex-1 overflow-auto">
         <Tabs
           value={activeTab}
-          onValueChange={(value) => setActiveTab(value as TabValue)}
+          onValueChange={(value) => {
+            if (isTabValue(value)) setActiveTab(value)
+          }}
           {...swipeHandlers}
         >
           <div className="px-4 pt-1">

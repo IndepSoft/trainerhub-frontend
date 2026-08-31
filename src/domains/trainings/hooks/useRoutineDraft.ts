@@ -1,11 +1,11 @@
 import { useCallback, useMemo, useState } from 'react'
-import { useRoutinesStore } from '../stores/routinesStore'
 import {
   createBlockDraft,
   createEmptyRoutineDraft,
   createExerciseDraft,
   hasErrors,
   toRoutineData,
+  toRoutineDraft,
   toRoutinePreview,
   validateRoutineDraft,
 } from '../libs/routineDraft'
@@ -15,7 +15,7 @@ import type {
   RoutineDraft,
   RoutineDraftErrors,
 } from '../types/routineDraft.types'
-import { toBlockDraft } from '../libs/blockLibrary'
+import { copyBlockToDraft } from '../libs/blockLibrary'
 import type { Block, Routine, TrainingLevel } from '../types/training.types'
 
 interface UseRoutineDraftResult {
@@ -41,8 +41,8 @@ interface UseRoutineDraftResult {
     exerciseId: string,
     changes: PrescribedExerciseDraftChanges
   ) => void
-  /** Guarda si el borrador es válido. Devuelve `null` cuando no lo es. */
-  submit: () => Routine | null
+  /** Los datos listos para guardar, o `null` si el borrador no es válido. */
+  submit: () => Omit<Routine, 'id'> | null
 }
 
 /**
@@ -62,10 +62,10 @@ interface UseRoutineDraftResult {
  * pulsación, para que el aviso desaparezca en cuanto se corrige y no al
  * siguiente envío.
  */
-export function useRoutineDraft(): UseRoutineDraftResult {
-  const createRoutine = useRoutinesStore((state) => state.createRoutine)
-
-  const [draft, setDraft] = useState<RoutineDraft>(createEmptyRoutineDraft)
+export function useRoutineDraft(initial: Routine | null): UseRoutineDraftResult {
+  const [draft, setDraft] = useState<RoutineDraft>(() =>
+    initial === null ? createEmptyRoutineDraft() : toRoutineDraft(initial)
+  )
   const [wasSubmitted, setWasSubmitted] = useState(false)
 
   const errors = useMemo(
@@ -92,9 +92,9 @@ export function useRoutineDraft(): UseRoutineDraftResult {
   }, [])
 
   const insertBlock = useCallback((block: Block) => {
-    // `toBlockDraft` genera identificadores nuevos: lo insertado no comparte
-    // nada con la entrada de la biblioteca. Ver `SavedBlock`.
-    setDraft((current) => ({ ...current, blocks: [...current.blocks, toBlockDraft(block)] }))
+    // `copyBlockToDraft` genera identificadores nuevos: lo insertado no
+    // comparte nada con la entrada de la biblioteca. Ver `SavedBlock`.
+    setDraft((current) => ({ ...current, blocks: [...current.blocks, copyBlockToDraft(block)] }))
   }, [])
 
   const removeBlock = useCallback((blockId: string) => {
@@ -157,14 +157,20 @@ export function useRoutineDraft(): UseRoutineDraftResult {
     []
   )
 
-  const submit = useCallback((): Routine | null => {
+  /*
+   * Devuelve los datos y NO guarda. Quien llama decide si es un alta o una
+   * actualizacion, que es lo unico que distingue crear de editar: asi el mismo
+   * formulario sirve para las dos cosas sin una condicion dentro. Mismo patron
+   * que `useExerciseDraft`.
+   */
+  const submit = useCallback((): Omit<Routine, 'id'> | null => {
     setWasSubmitted(true)
 
     const validation = validateRoutineDraft(draft)
     if (hasErrors(validation)) return null
 
-    return createRoutine(toRoutineData(draft))
-  }, [draft, createRoutine])
+    return toRoutineData(draft)
+  }, [draft])
 
   return {
     draft,

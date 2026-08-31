@@ -23,7 +23,7 @@ conserva el fichero con otro propósito: traspaso rodante entre sesiones.
 
 | Rama | Commit | Estado |
 |---|---|---|
-| `feature/redesign-ui` | `e129486` | **rama activa**, ⚠️ **5 commits sin subir** |
+| `feature/redesign-ui` | el tip | **rama activa** |
 | `develop` | `1492aed` en origin | 32 commits por detrás de la rama activa |
 | `main` | `91d0fd8` | 90 commits por detrás; PR abierto sin fusionar |
 | `feature/pwa-adaptation` | `23d110c` | fusionada en `develop` (PR #6): se puede borrar |
@@ -34,7 +34,7 @@ conserva el fichero con otro propósito: traspaso rodante entre sesiones.
 punto viejo.
 
 Estado verificado el 31 de agosto, ejecutado y no supuesto: `npm run lint`
-limpio, `tsc -b` en verde, **64 pruebas de Playwright en verde**.
+limpio, `tsc -b` en verde, **72 pruebas de Playwright en verde**.
 
 ---
 
@@ -63,7 +63,7 @@ así que entra `FakeAuthAdapter`, no Supabase:
 
 Es el punto donde más se equivocaba la versión anterior de este documento.
 
-- `tests/visual/screenshots.spec.ts`: **64 pruebas**. Muchas están
+- `tests/visual/screenshots.spec.ts`: **72 pruebas**. Muchas están
   parametrizadas por tres anchos —375, 768 y 1440— desde la constante
   `VIEWPORTS`.
 - Se lanzan con `npx playwright test`. **No hay script `test` en
@@ -73,9 +73,11 @@ Es el punto donde más se equivocaba la versión anterior de este documento.
   de dos minutos en el primer arranque tras cambiar dependencias.
 - **No están en CI.** `.github/workflows/ci.yml` corre `npm ci`, `npm run lint`
   y `npm run build`, y sube `dist/` como artefacto. Nada más.
-- Nacieron como capturas de revisión que «no afirman nada», pero varias ya
-  afirman: desbordamiento horizontal cero, pestañas de 44 px, y que la pestaña
-  de plantillas muestre plantillas y no rutinas.
+- Nacieron como capturas de revisión que «no afirman nada», pero la mayoría ya
+  afirma: desbordamiento horizontal cero, controles de 44 px, contenedores por
+  encima de 280, que la duración que muestra un formulario sea la que se guarda,
+  y que un bloque insertado desde la biblioteca sea una copia y no una
+  referencia.
 
 ---
 
@@ -212,6 +214,13 @@ fija y la rejilla gana campo de visión.
    había forma de añadir el decimosexto.
 4. **Biblioteca de bloques** (`e129486`). Guardar un bloque con un gesto y
    volver a insertarlo, copiando.
+5. **Edición de rutinas y planes completos.** `RoutineForm` y `PlanForm` sirven
+   para alta y edición: la ruta decide, y `submit` devuelve datos sin
+   identificador para que quien llama elija si crea o actualiza. La acción
+   primaria de la cabecera sigue a la pestaña —«Nueva Rutina» / «Nuevo Plan»— y
+   la pestaña activa pasó a vivir en la URL, que es lo que permite volver a
+   `/trainings?tab=planes` tras guardar un plan en vez de aterrizar donde no se
+   ve lo que acabas de crear.
 
 ---
 
@@ -270,8 +279,11 @@ componentes de filtros, que no filtran nada—; autenticación incompleta
 —`AuthPort` no expone `signUp`, así que «Crear cuenta» no da de alta a nadie, y
 recuperar contraseña tampoco existe—; y copy pendiente de producto.
 
-**Sigue sin haber edición de rutinas.** Se crean y se leen; el botón «Editar» de
-la tarjeta no está conectado.
+**Rutinas y planes se crean y se editan.** Lo que sigue sin conectar es «Usar en
+una sesión» y «Eliminar», que dependen del flujo de asignación.
+
+**No hay ficha de plan.** La tarjeta lleva directamente a su formulario de
+edición, que por ahora ES la vista de un plan.
 
 **`navigation.config.ts` sigue declarando `/settings` y `/login` sin ruta
 registrada.** `/reports` se resolvió en el paso 5 de la adaptación móvil.
@@ -294,7 +306,7 @@ todavía si merece `manualChunks`.
 4. **La lista de especialidades del registro es una propuesta**, no un dato
    validado. Lleva su `TODO`.
 5. **Meter Playwright en CI**, y con ello un script `test` en `package.json`.
-   Con 64 pruebas que ya afirman cosas, dejarlas fuera de CI es desperdiciarlas.
+   Con 72 pruebas que ya afirman cosas, dejarlas fuera de CI es desperdiciarlas.
 6. **La progresión del mesociclo**, arriba. Es el rediseño más grande pendiente.
-7. **Edición de rutinas**, que es lo siguiente que va a pedir cualquiera que
-   pruebe la creación.
+7. **Ficha de plan** de sólo lectura, y con ella la asignación a un estudiante,
+   que es lo que da sentido a todo lo construido.

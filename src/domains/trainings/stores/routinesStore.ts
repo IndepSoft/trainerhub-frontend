@@ -6,6 +6,8 @@ interface RoutinesState {
   routines: Routine[]
   /** Guarda una rutina nueva y devuelve la ya identificada. */
   createRoutine: (data: Omit<Routine, 'id'>) => Routine
+  /** Reemplaza el contenido de una rutina, conservando su identificador. */
+  updateRoutine: (routineId: string, data: Omit<Routine, 'id'>) => void
 }
 
 /**
@@ -50,5 +52,17 @@ export const useRoutinesStore = create<RoutinesState>((set) => ({
     // buscarla debajo de las cuatro de ejemplo.
     set((state) => ({ routines: [routine, ...state.routines] }))
     return routine
+  },
+
+  /*
+   * Se conserva la posición en la lista: una rutina editada no debe saltar al
+   * principio, porque el orden es el de creación y editarla no la crea de nuevo.
+   */
+  updateRoutine: (routineId, data) => {
+    set((state) => ({
+      routines: state.routines.map((routine) =>
+        routine.id === routineId ? { id: routineId, ...data } : routine
+      ),
+    }))
   },
 }))

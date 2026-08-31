@@ -62,6 +62,12 @@ async function elegirDelDesplegable(
   await expect(disparador).toContainText(nombre)
 }
 
+/** «6 min» → 6. La cifra del resumen, sea cual sea el texto que la rodea. */
+function extraerMinutos(texto: string): number {
+  const encontrado = texto.match(/(\d+)\s*min/)
+  return encontrado === null ? Number.NaN : Number(encontrado[1])
+}
+
 /**
  * Desplaza el contenedor interno hasta abajo.
  *
@@ -822,12 +828,6 @@ test.describe('reparto de secciones', () => {
  * duración que el entrenador ve mientras escribe sea la que queda guardada.
  */
 test.describe('creacion de rutinas', () => {
-  /** «6 min» → 6. La cifra del resumen, sea cual sea el texto que la rodea. */
-  function extraerMinutos(texto: string): number {
-    const encontrado = texto.match(/(\d+)\s*min/)
-    return encontrado === null ? Number.NaN : Number(encontrado[1])
-  }
-
   async function elegirEjercicio(page: Page, indice: number, nombre: string): Promise<void> {
     await elegirDelDesplegable(page, desplegables(page, 'Ejercicio').nth(indice), nombre)
   }
@@ -1233,5 +1233,194 @@ test.describe('biblioteca de bloques', () => {
     // las rutinas guardan copias.
     await page.getByRole('button', { name: 'Eliminar Mi bloque de pierna' }).click()
     await expect(page.getByRole('heading', { name: 'Sin bloques guardados' })).toBeVisible()
+  })
+})
+
+/**
+ * Edicion de rutinas.
+ *
+ * El mismo formulario que las crea, con el borrador cargado desde la rutina. La
+ * ruta es lo unico que distingue una cosa de la otra.
+ */
+test.describe('edicion de rutinas', () => {
+  test('el formulario abre con la rutina cargada y guarda sobre ella', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/trainings/routine-2/edit')
+
+    await expect(page.getByRole('heading', { name: 'Editar rutina' })).toBeVisible()
+    await expect(page.getByLabel('Nombre')).toHaveValue('Empuje · Intermedio')
+    // Tres bloques y cuatro ejercicios, ya elegidos.
+    await expect(page.getByRole('heading', { name: 'Bloque', level: 3 })).toHaveCount(3)
+    await expect(desplegables(page, 'Ejercicio')).toHaveCount(4)
+    await expect(desplegables(page, 'Ejercicio').first()).toContainText('Press de banca con barra')
+
+    const minutosAntes = extraerMinutos(await page.locator('dl').first().innerText())
+
+    await page.getByLabel('Nombre').fill('Empuje · Intermedio (revisado)')
+    // Mas series: la duracion estimada tiene que subir.
+    await page.getByLabel('Series').first().fill('6')
+    const minutosDespues = extraerMinutos(await page.locator('dl').first().innerText())
+    expect(minutosDespues).toBeGreaterThan(minutosAntes)
+
+    await page.getByRole('button', { name: 'Guardar cambios' }).click()
+
+    /*
+     * Vuelve a la ficha de LA MISMA rutina: editar conserva el identificador.
+     * Si se hubiera creado una nueva, la URL traeria otro.
+     */
+    await page.waitForURL(/\/trainings\/routine-2$/)
+    await expect(page.getByRole('heading', { name: 'Empuje · Intermedio (revisado)' })).toBeVisible()
+
+    const minutosEnFicha = extraerMinutos(await page.locator('main').innerText())
+    expect(minutosEnFicha).toBe(minutosDespues)
+
+    // Y no se ha duplicado: siguen siendo tres rutinas.
+    await page.getByRole('link', { name: 'Rutinas' }).first().click()
+    await expect(page.getByRole('tab', { name: /Rutinas/ })).toContainText('(3)')
+  })
+
+  test('editar una rutina que no existe no revienta', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/trainings/no-existe/edit')
+
+    await expect(page.getByText('Rutina no encontrada')).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Volver a rutinas' })).toBeVisible()
+  })
+
+  test('se llega a editar desde la ficha', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/trainings/routine-1')
+
+    await page.getByRole('link', { name: 'Editar' }).click()
+    await expect(page.getByRole('heading', { name: 'Editar rutina' })).toBeVisible()
+    await expect(page.getByLabel('Nombre')).toHaveValue('Full body · Principiante')
+  })
+})
+
+/**
+ * Planes: crear y editar.
+ *
+ * Estaban modelados y solo se leian. Un plan es un mesociclo, asi que el
+ * formulario se organiza por semanas y cada semana por sus siete dias.
+ */
+test.describe('planes', () => {
+  test('la accion primaria sigue a la pestana', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/trainings')
+
+    // Sin acotar a la cabecera: hay varios `<header>` en la pagina -el de la
+    // aplicacion y el de la seccion- y el enlace es unico de todos modos.
+    await expect(page.getByRole('link', { name: 'Nueva Rutina' })).toBeVisible()
+
+    await page.getByRole('tab', { name: /Planes/ }).click()
+    await expect(page.getByRole('link', { name: 'Nuevo Plan' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Nueva Rutina' })).toHaveCount(0)
+
+    // La pestana viaja en la URL, asi que es enlazable.
+    await expect(page).toHaveURL(/tab=planes/)
+  })
+
+  test('un plan nuevo se crea y aparece en su pestana', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/trainings?tab=planes')
+
+    await page.getByRole('link', { name: 'Nuevo Plan' }).click()
+    await expect(page.getByRole('heading', { name: 'Nuevo plan' })).toBeVisible()
+
+    await page.getByLabel('Nombre').fill('Hipertrofia · 4 semanas')
+    await elegirDelDesplegable(page, desplegables(page, 'Objetivo'), 'Hipertrofia')
+    await elegirDelDesplegable(page, desplegables(page, 'División'), 'Torso / Pierna')
+
+    // La division dice cuantas sesiones asume, sin imponerlas: es distinta de
+    // la frecuencia con la que se toca cada musculo.
+    await expect(page.getByText('Asume 4 sesiones por semana.')).toBeVisible()
+
+    await elegirDelDesplegable(page, desplegables(page, 'lunes'), 'Empuje · Intermedio')
+    await elegirDelDesplegable(page, desplegables(page, 'miércoles'), 'Full body · Principiante')
+
+    const resumen = page.locator('dl').first()
+    await expect(resumen).toContainText('2')
+
+    /*
+     * Anadir una semana COPIA la anterior: en un mesociclo la estructura se
+     * repite, y arrancar en blanco obligaria a reelegir las mismas rutinas.
+     */
+    await page.getByRole('button', { name: 'Añadir semana' }).click()
+    await expect(page.getByRole('heading', { name: 'Semana', level: 3 })).toHaveCount(2)
+    await expect(desplegables(page, 'lunes').nth(1)).toContainText('Empuje · Intermedio')
+
+    await page.getByRole('button', { name: 'Guardar plan' }).click()
+
+    // Se vuelve a la pestana de planes, no a la de rutinas: se aterriza viendo
+    // lo que se acaba de guardar.
+    await page.waitForURL(/tab=planes/)
+    await expect(page.getByRole('heading', { name: 'Hipertrofia · 4 semanas' })).toBeVisible()
+    await expect(page.getByRole('tab', { name: /Planes/ })).toContainText('(2)')
+  })
+
+  test('un plan sin ninguna rutina asignada no se guarda', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/trainings/plans/new')
+
+    await page.getByRole('button', { name: 'Guardar plan' }).click()
+
+    await expect(page.getByText('Ponle un nombre al plan.')).toBeVisible()
+    await expect(page.getByRole('alert')).toContainText('Asigna al menos una rutina')
+    expect(page.url()).toContain('/trainings/plans/new')
+  })
+
+  test('editar un plan carga sus semanas', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/trainings/plans/plan-1/edit')
+
+    await expect(page.getByRole('heading', { name: 'Editar plan' })).toBeVisible()
+    await expect(page.getByLabel('Nombre')).toHaveValue('Base de fuerza · 4 semanas')
+    await expect(page.getByRole('heading', { name: 'Semana', level: 3 })).toHaveCount(4)
+    await expect(desplegables(page, 'Objetivo')).toContainText('Acondicionamiento general')
+
+    // La cuarta semana viene marcada como descarga, y el formulario dice la
+    // verdad sobre lo que eso hace hoy.
+    await expect(page.getByRole('button', { name: 'Descarga', pressed: true })).toHaveCount(1)
+    await expect(page.getByText('no reduce el volumen por sí solo')).toBeVisible()
+  })
+
+  test('el formulario de plan cumple las reglas de 375 px', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/trainings/plans/plan-1/edit')
+    await page.waitForTimeout(1200)
+
+    const medidas = await page.evaluate(() => {
+      const caja = (elemento: Element) => elemento.getBoundingClientRect()
+
+      return {
+        desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        contenedoresEstrechos: [
+          ...document.querySelectorAll('section, article, [class*="rounded-block"]'),
+        ]
+          .map((elemento) => caja(elemento).width)
+          .filter((ancho) => ancho > 0 && ancho < 280).length,
+        controlesPequenos: [...document.querySelectorAll('button, input, textarea')]
+          .map(caja)
+          .filter((rect) => rect.height > 0 && rect.height < 44).length,
+        etiquetasHuerfanas: [...document.querySelectorAll('label[for]')].filter(
+          (etiqueta) => document.getElementById(etiqueta.getAttribute('for') ?? '') === null
+        ).length,
+      }
+    })
+
+    expect(medidas.desborde, 'desbordamiento horizontal').toBe(0)
+    expect(medidas.contenedoresEstrechos, 'contenedores bajo 280 px').toBe(0)
+    expect(medidas.controlesPequenos, 'controles bajo 44 px').toBe(0)
+    expect(medidas.etiquetasHuerfanas, 'etiquetas sin control').toBe(0)
+
+    await page.screenshot({ path: 'tests/visual/salida/plan-mobile.png' })
   })
 })

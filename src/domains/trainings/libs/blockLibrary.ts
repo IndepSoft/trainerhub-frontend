@@ -1,6 +1,7 @@
 import type { Block, Exercise } from '../types/training.types'
 import type { BlockDraft } from '../types/routineDraft.types'
 import { BLOCK_METHOD_LABELS } from './routine.utils'
+import { toBlockDraft } from './routineDraft'
 import { describeNames } from './catalogUsage'
 
 /**
@@ -8,31 +9,26 @@ import { describeNames } from './catalogUsage'
  */
 
 /**
- * Un bloque de la biblioteca convertido en bloque del borrador.
+ * Un bloque de la biblioteca, listo para insertarlo en una rutina.
  *
- * AQUÍ ES DONDE OCURRE LA COPIA. Cada identificador se genera de nuevo —el del
- * bloque y el de cada ejercicio prescrito—, así que lo insertado no comparte
- * nada con la entrada guardada. Reutilizarlos habría creado un vínculo
- * invisible: dos rutinas con el mismo `id` de bloque, y el primer intento de
- * editar una de ellas buscando por identificador tocando a las dos.
+ * AQUÍ ES DONDE OCURRE LA COPIA, y es lo único que separa esta función de
+ * `toBlockDraft`: cada identificador se genera de nuevo —el del bloque y el de
+ * cada ejercicio prescrito—, así que lo insertado no comparte nada con la
+ * entrada guardada. Reutilizarlos habría creado un vínculo invisible: dos
+ * rutinas con el mismo `id` de bloque, y el primer intento de editar una de
+ * ellas buscando por identificador tocando a las dos.
  *
- * Los números vuelven a texto porque el borrador tiene la forma del formulario,
- * no la de la entidad.
+ * Editar una rutina, en cambio, usa `toBlockDraft` y CONSERVA los
+ * identificadores: ahí no se está copiando nada, se está abriendo lo que ya
+ * existe.
  */
-export function toBlockDraft(block: Block): BlockDraft {
+export function copyBlockToDraft(block: Block): BlockDraft {
+  const draft = toBlockDraft(block)
+
   return {
+    ...draft,
     id: crypto.randomUUID(),
-    method: block.method,
-    restAfterSeconds: String(block.restAfterSeconds),
-    notes: block.notes ?? '',
-    exercises: block.exercises.map((exercise) => ({
-      id: crypto.randomUUID(),
-      exerciseId: exercise.exerciseId,
-      sets: String(exercise.sets),
-      reps: exercise.reps,
-      rir: exercise.rir === undefined ? '' : String(exercise.rir),
-      restSeconds: String(exercise.restSeconds),
-    })),
+    exercises: draft.exercises.map((exercise) => ({ ...exercise, id: crypto.randomUUID() })),
   }
 }
 

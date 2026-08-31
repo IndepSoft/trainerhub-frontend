@@ -89,7 +89,8 @@ export function RoutineCard({ routine }: RoutineCardProps) {
         </span>
 
         {/* `relative z-10` para quedar por encima del enlace estirado.
-            TODO: ninguna de las cinco acciones esta conectada. */}
+            TODO: siguen sin conectar «Usar en una sesion», «Vista previa» y
+            «Eliminar». Ver rutina y Editar si funcionan. */}
         <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
           <DropdownMenuTrigger asChild>
             <button
@@ -114,7 +115,9 @@ export function RoutineCard({ routine }: RoutineCardProps) {
               Vista previa
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Editar</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => navigate(`/trainings/${routine.id}/edit`)}>
+              Editar
+            </DropdownMenuItem>
             <DropdownMenuItem className="text-danger">Eliminar</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

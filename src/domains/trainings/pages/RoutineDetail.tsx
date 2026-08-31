@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Clock, Copy, Dumbbell, Play } from 'lucide-react'
+import { ArrowLeft, Clock, Copy, Dumbbell, Pencil } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { cn } from '@/shared/lib/utils'
@@ -57,10 +57,14 @@ export default function RoutineDetail() {
           </div>
 
           <PageHeader.Actions>
-            {/* TODO: ninguna de las dos acciones esta conectada. */}
-            <Button variant="outline" className="gap-2">
-              <Play className="size-4" />
-              Vista previa
+            {/* TODO: «Usar en una sesion» sigue sin conectar; falta el flujo de
+                asignacion. «Vista previa» se quito: no aportaba nada que la
+                propia ficha no muestre ya. */}
+            <Button asChild variant="outline" className="gap-2">
+              <Link to={`/trainings/${routine.id}/edit`}>
+                <Pencil className="size-4" />
+                Editar
+              </Link>
             </Button>
             <Button className="gap-2">
               <Copy className="size-4" />

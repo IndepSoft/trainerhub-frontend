@@ -74,6 +74,44 @@ export function createEmptyRoutineDraft(): RoutineDraft {
 }
 
 /**
+ * Un bloque existente, como borrador. CONSERVA los identificadores.
+ *
+ * Editar no es copiar: se está abriendo lo que ya existe, y regenerar los
+ * identificadores dejaría una rutina con el mismo contenido y otras claves
+ * internas. Hoy no lo notaría nadie —nada externo apunta a un bloque— pero es
+ * la clase de detalle que rompe lo primero que quiera comparar dos versiones.
+ *
+ * La biblioteca sí copia, y para eso tiene `copyBlockToDraft`.
+ */
+export function toBlockDraft(block: Block): BlockDraft {
+  return {
+    id: block.id,
+    method: block.method,
+    restAfterSeconds: String(block.restAfterSeconds),
+    notes: block.notes ?? '',
+    exercises: block.exercises.map((exercise) => ({
+      id: exercise.id,
+      exerciseId: exercise.exerciseId,
+      sets: String(exercise.sets),
+      reps: exercise.reps,
+      // Ausente y cero son cosas distintas, y el texto vacío es el ausente.
+      rir: exercise.rir === undefined ? '' : String(exercise.rir),
+      restSeconds: String(exercise.restSeconds),
+    })),
+  }
+}
+
+/** Una rutina existente, como borrador, para editarla. */
+export function toRoutineDraft(routine: Routine): RoutineDraft {
+  return {
+    title: routine.title,
+    description: routine.description,
+    level: routine.level,
+    blocks: routine.blocks.map(toBlockDraft),
+  }
+}
+
+/**
  * Texto a entero, tolerante.
  *
  * Devuelve 0 ante cualquier cosa que no sea un entero: el resumen en vivo tiene

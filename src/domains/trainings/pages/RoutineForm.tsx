@@ -1,11 +1,13 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { AlertCircle, ArrowLeft, Library, Plus } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { useTrainingCatalog } from '../hooks/useTrainingCatalog'
+import { useRoutine } from '../hooks/useRoutine'
 import { useRoutineDraft } from '../hooks/useRoutineDraft'
 import { useBlockLibrary } from '../hooks/useBlockLibrary'
+import { useRoutinesStore } from '../stores/routinesStore'
 import { canSaveBlockDraft } from '../libs/blockLibrary'
 import { BlockEditor } from '../components/BlockEditor'
 import { SavedBlockPicker } from '../components/SavedBlockPicker'
@@ -14,21 +16,34 @@ import { RoutineIdentityFields } from '../components/RoutineIdentityFields'
 import type { BlockDraft } from '../types/routineDraft.types'
 
 /**
- * Creación de una rutina. Sólo composición.
+ * Crear y editar una rutina. Sólo composición.
+ *
+ * UNA SOLA PÁGINA PARA LAS DOS COSAS. La ruta es la que decide: `/trainings/new`
+ * no trae `routineId` y `/trainings/:routineId/edit` sí. Lo único que cambia
+ * entre crear y editar es de dónde sale el borrador inicial y qué se llama al
+ * guardar; todo lo demás —bloques, validación, resumen en vivo, biblioteca— es
+ * idéntico, y tenerlo en dos ficheros habría sido duplicarlo entero para que se
+ * separaran al primer cambio.
  *
  * Toda la página va dentro de un `<form>`, cabecera incluida, para que el botón
  * de guardar sea un `submit` de verdad: así funciona la tecla Intro y el
- * navegador anuncia el formulario como tal. Poner el botón fuera y llamar al
- * manejador a mano habría dejado un formulario que sólo se envía con el ratón.
+ * navegador anuncia el formulario como tal.
  *
  * El resumen va arriba y no al final: la duración estimada es la cifra que
  * decide si una sesión cabe en el hueco de la agenda, y verla cambiar mientras
  * se añaden bloques es justo lo que evita descubrir al guardar que la sesión
  * dura hora y media.
  */
-export default function RoutineCreate() {
+export default function RoutineForm() {
   const navigate = useNavigate()
+  const { routineId } = useParams<{ routineId: string }>()
+  const { routine } = useRoutine(routineId)
   const { exercises } = useTrainingCatalog()
+  const createRoutine = useRoutinesStore((state) => state.createRoutine)
+  const updateRoutine = useRoutinesStore((state) => state.updateRoutine)
+
+  const isEditing = routineId !== undefined
+
   const {
     draft,
     errors,
@@ -45,7 +60,7 @@ export default function RoutineCreate() {
     removeExercise,
     updateExercise,
     submit,
-  } = useRoutineDraft()
+  } = useRoutineDraft(routine)
   const { savedBlocks, saveFromDraft } = useBlockLibrary()
 
   const [isPickerOpen, setIsPickerOpen] = useState(false)
@@ -70,34 +85,67 @@ export default function RoutineCreate() {
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    const created = submit()
-    if (created === null) return
+    const data = submit()
+    if (data === null) return
 
-    navigate(`/trainings/${created.id}`)
+    if (routineId === undefined) {
+      const created = createRoutine(data)
+      navigate(`/trainings/${created.id}`)
+      return
+    }
+
+    updateRoutine(routineId, data)
+    navigate(`/trainings/${routineId}`)
+  }
+
+  /*
+   * Editar algo que no existe. Pasa con un enlace viejo o con un identificador
+   * escrito a mano, y es un resultado valido: la vista tiene que poder pintarlo
+   * en vez de reventar. El hook del borrador ya se ha llamado arriba -no puede
+   * ir despues de un retorno- y da igual, porque este camino no lo usa.
+   */
+  if (isEditing && routine === null) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-bone px-6 text-center">
+        <p className="font-display text-2xl font-extrabold uppercase text-ink">
+          Rutina no encontrada
+        </p>
+        <p className="text-sm text-ink/50">
+          El enlace puede haber caducado o la rutina ya no existe.
+        </p>
+        <Button asChild variant="outline">
+          <Link to="/trainings">Volver a rutinas</Link>
+        </Button>
+      </div>
+    )
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden bg-bone">
       <PageHeader>
         <Link
-          to="/trainings"
+          to={isEditing ? `/trainings/${routineId}` : '/trainings'}
           className="-ms-2 mb-3 inline-flex h-11 items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/45 transition-colors hover:text-cobalt"
         >
           <ArrowLeft className="size-4" />
-          Rutinas
+          {isEditing ? 'Volver a la ficha' : 'Rutinas'}
         </Link>
 
         <PageHeader.Content>
           <div className="min-w-0">
             <PageHeader.Eyebrow>Lo que asignas</PageHeader.Eyebrow>
-            <PageHeader.Title>Nueva rutina</PageHeader.Title>
+            <PageHeader.Title>{isEditing ? 'Editar rutina' : 'Nueva rutina'}</PageHeader.Title>
           </div>
 
           <PageHeader.Actions>
-            <Button type="button" variant="outline" onClick={() => navigate('/trainings')}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate(isEditing ? `/trainings/${routineId}` : '/trainings')}
+            >
               Cancelar
             </Button>
-            <Button type="submit">Guardar rutina</Button>
+            <Button type="submit">{isEditing ? 'Guardar cambios' : 'Guardar rutina'}</Button>
           </PageHeader.Actions>
         </PageHeader.Content>
       </PageHeader>
