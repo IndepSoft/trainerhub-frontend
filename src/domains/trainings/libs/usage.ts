@@ -1,15 +1,19 @@
-import type { Exercise, Routine } from '../types/training.types'
+import type { Exercise, Routine, TrainingPlan } from '../types/training.types'
 import { flattenPrescribedExercises } from './routine.utils'
 
 /**
- * Quién está usando una entrada del catálogo. Funciones puras, sin React.
+ * Quién está usando qué. Funciones puras, sin React.
  *
- * Existen porque una rutina guarda `exerciseId`, no una copia del ejercicio.
- * Esa referencia es lo correcto —si «Press de banca con barra» cambia de
- * nombre, cambia en todas partes— pero tiene la contrapartida de siempre:
- * borrar la entrada deja la referencia colgando. Las vistas degradan bien
- * («Ejercicio» en vez del nombre), y aun así romper una rutina en silencio no
- * es aceptable, así que el borrado se bloquea y se dice quién lo impide.
+ * Existen porque el dominio referencia por identificador en tres sitios: una
+ * rutina guarda `exerciseId`, un ejercicio guarda `equipmentId` y un plan guarda
+ * `routineId`. Esa referencia es lo correcto —si «Press de banca con barra»
+ * cambia de nombre, cambia en todas partes— pero tiene la contrapartida de
+ * siempre: borrar la entrada deja la referencia colgando. Las vistas degradan
+ * bien, y aun así romper algo en silencio no es aceptable, así que el borrado se
+ * bloquea y se dice quién lo impide.
+ *
+ * Los bloques guardados NO aparecen aquí, y es coherente: se copian al
+ * insertarlos, así que nadie depende de ellos. Ver `SavedBlock`.
  */
 
 /** Rutinas que prescriben este ejercicio, sin repetir. */
@@ -18,6 +22,13 @@ export function findRoutinesUsingExercise(routines: Routine[], exerciseId: strin
     flattenPrescribedExercises(routine).some(
       (prescribed) => prescribed.exerciseId === exerciseId
     )
+  )
+}
+
+/** Planes que programan esta rutina en alguno de sus días. */
+export function findPlansUsingRoutine(plans: TrainingPlan[], routineId: string): TrainingPlan[] {
+  return plans.filter((plan) =>
+    plan.weeks.some((week) => week.days.some((day) => day.routineId === routineId))
   )
 }
 

@@ -1356,10 +1356,14 @@ test.describe('planes', () => {
 
     await page.getByRole('button', { name: 'Guardar plan' }).click()
 
-    // Se vuelve a la pestana de planes, no a la de rutinas: se aterriza viendo
-    // lo que se acaba de guardar.
-    await page.waitForURL(/tab=planes/)
+    // Se aterriza en la FICHA del plan recien creado, no en la lista: es donde
+    // se comprueba que ha quedado como se queria.
+    await page.waitForURL(/\/trainings\/plans\/(?!new)[\w-]+$/)
     await expect(page.getByRole('heading', { name: 'Hipertrofia · 4 semanas' })).toBeVisible()
+
+    // Y desde la ficha se vuelve a la lista, con el contador ya en dos.
+    await page.getByRole('link', { name: 'Planes' }).first().click()
+    await page.waitForURL(/tab=planes/)
     await expect(page.getByRole('tab', { name: /Planes/ })).toContainText('(2)')
   })
 
@@ -1422,5 +1426,160 @@ test.describe('planes', () => {
     expect(medidas.etiquetasHuerfanas, 'etiquetas sin control').toBe(0)
 
     await page.screenshot({ path: 'tests/visual/salida/plan-mobile.png' })
+  })
+})
+
+/**
+ * Ficha de plan.
+ *
+ * La tarjeta llevaba directamente al formulario, y consultar un mesociclo
+ * -que se hace a diario- obligaba a leer entre desplegables.
+ */
+test.describe('ficha de plan', () => {
+  test('la tarjeta lleva a la ficha, y la ficha a la rutina de cada dia', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/trainings?tab=planes')
+
+    await page.getByRole('link', { name: 'Base de fuerza · 4 semanas' }).click()
+    await page.waitForURL(/\/trainings\/plans\/plan-1$/)
+
+    // Las cifras salen del dato, con las mismas funciones que la tarjeta.
+    const resumen = page.locator('dl').first()
+    await expect(resumen).toContainText('11')
+
+    // Las cuatro semanas, con sus siete dias cada una y los descansos a la
+    // vista: ocultar los huecos haria que «lunes, miercoles y viernes» y «tres
+    // dias seguidos» se vieran igual.
+    await expect(page.locator('ol > li')).toHaveCount(4)
+    await expect(page.locator('ol > li').first().locator('ul > li')).toHaveCount(7)
+    await expect(page.getByText('Descanso').first()).toBeVisible()
+
+    // La cuarta semana esta marcada como descarga.
+    await expect(page.getByText('Descarga').first()).toBeVisible()
+
+    // Y cada dia con rutina lleva a su ficha.
+    await page.getByRole('link', { name: 'Full body · Principiante' }).first().click()
+    await page.waitForURL(/\/trainings\/routine-1$/)
+  })
+
+  test('la ficha de plan cumple las reglas de 375 px', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/trainings/plans/plan-1')
+    await page.waitForTimeout(1200)
+
+    const medidas = await page.evaluate(() => {
+      const caja = (elemento: Element) => elemento.getBoundingClientRect()
+
+      return {
+        desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        contenedoresEstrechos: [
+          ...document.querySelectorAll('section, article, [class*="rounded-block"]'),
+        ]
+          .map((elemento) => caja(elemento).width)
+          .filter((ancho) => ancho > 0 && ancho < 280).length,
+        controlesPequenos: [...document.querySelectorAll('button, a, input, textarea')]
+          .map(caja)
+          .filter((rect) => rect.height > 0 && rect.height < 44).length,
+        /*
+         * El nombre de la rutina no puede truncarse: es el dato que se viene a
+         * leer. Con el sangrado de escritorio se quedaba en 99 px cuando
+         * necesita 136.
+         */
+        nombresTruncados: [...document.querySelectorAll('ol li ul li a')].filter(
+          (enlace) => enlace.scrollWidth > enlace.clientWidth + 1
+        ).length,
+      }
+    })
+
+    expect(medidas.desborde, 'desbordamiento horizontal').toBe(0)
+    expect(medidas.contenedoresEstrechos, 'contenedores bajo 280 px').toBe(0)
+    expect(medidas.controlesPequenos, 'controles bajo 44 px').toBe(0)
+    expect(medidas.nombresTruncados, 'nombres de rutina truncados').toBe(0)
+
+    await page.screenshot({ path: 'tests/visual/salida/plan-ficha-mobile.png' })
+  })
+
+  test('una ficha de plan que no existe no revienta', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/trainings/plans/no-existe')
+
+    await expect(page.getByText('Plan no encontrado')).toBeVisible()
+  })
+})
+
+/**
+ * Borrado de rutinas y planes.
+ *
+ * La asimetria es intencionada: un plan guarda `routineId`, asi que borrar una
+ * rutina programada dejaria el mesociclo apuntando al vacio. Nada apunta a un
+ * plan, asi que un plan siempre se puede borrar.
+ */
+test.describe('borrado', () => {
+  test('no deja borrar una rutina que algun plan programa', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/trainings/routine-1')
+
+    await page.getByRole('button', { name: 'Eliminar' }).click()
+
+    const dialogo = page.getByRole('dialog')
+    await expect(dialogo).toContainText('No se puede eliminar')
+    // Dice QUIEN lo impide, y con el verbo en singular.
+    await expect(dialogo).toContainText('La programa el plan Base de fuerza · 4 semanas')
+    // Y no ofrece borrar: solo cerrar.
+    await expect(dialogo.getByRole('button', { name: 'Eliminar' })).toHaveCount(0)
+    await expect(dialogo.getByRole('button', { name: 'Entendido' })).toBeVisible()
+  })
+
+  test('borra una rutina que no programa nadie, tras confirmar', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/trainings/routine-3')
+
+    await page.getByRole('button', { name: 'Eliminar' }).click()
+
+    const dialogo = page.getByRole('dialog')
+    await expect(dialogo).toContainText('¿Eliminar la rutina?')
+    await expect(dialogo).toContainText('no se puede deshacer')
+
+    // Se puede echar atras: cancelar no borra.
+    await dialogo.getByRole('button', { name: 'Cancelar' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(page.getByRole('heading', { name: 'Torso · Empuje y tracción' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Eliminar' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Eliminar' }).click()
+
+    // Se sale de la ficha, que ya no existe, y el contador baja.
+    await page.waitForURL(/\/trainings$/)
+    await expect(page.getByRole('tab', { name: /Rutinas/ })).toContainText('(2)')
+  })
+
+  test('un plan siempre se puede borrar', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/trainings/plans/plan-1')
+
+    await page.getByRole('button', { name: 'Eliminar' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Eliminar' }).click()
+
+    await page.waitForURL(/tab=planes/)
+    await expect(page.getByText('Aún no has creado ningún plan.')).toBeVisible()
+
+    /*
+     * Y la rutina que ese plan programaba pasa a poder borrarse: la regla mira
+     * el estado de ahora, no una foto de cuando se cargo la pagina.
+     *
+     * Se navega POR LA INTERFAZ: los almacenes viven en memoria, asi que un
+     * `page.goto` recargaria la aplicacion y resucitaria el plan recien
+     * borrado, con lo que la prueba comprobaria lo contrario de lo que dice.
+     */
+    await page.getByRole('tab', { name: /Rutinas/ }).click()
+    await page.getByRole('link', { name: 'Full body · Principiante' }).click()
+    await page.getByRole('button', { name: 'Eliminar' }).click()
+    await expect(page.getByRole('dialog')).toContainText('¿Eliminar la rutina?')
   })
 })

@@ -6,6 +6,7 @@ interface PlansState {
   plans: TrainingPlan[]
   createPlan: (data: Omit<TrainingPlan, 'id'>) => TrainingPlan
   updatePlan: (planId: string, data: Omit<TrainingPlan, 'id'>) => void
+  deletePlan: (planId: string) => void
 }
 
 /**
@@ -31,5 +32,9 @@ export const usePlansStore = create<PlansState>((set) => ({
     set((state) => ({
       plans: state.plans.map((plan) => (plan.id === planId ? { id: planId, ...data } : plan)),
     }))
+  },
+
+  deletePlan: (planId) => {
+    set((state) => ({ plans: state.plans.filter((plan) => plan.id !== planId) }))
   },
 }))

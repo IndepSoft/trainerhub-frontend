@@ -2,7 +2,7 @@ import type { Block, Exercise } from '../types/training.types'
 import type { BlockDraft } from '../types/routineDraft.types'
 import { BLOCK_METHOD_LABELS } from './routine.utils'
 import { toBlockDraft } from './routineDraft'
-import { describeNames } from './catalogUsage'
+import { describeNames } from './usage'
 
 /**
  * La biblioteca de bloques: copiar y nombrar. Funciones puras.

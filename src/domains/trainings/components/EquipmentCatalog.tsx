@@ -12,7 +12,7 @@ import {
 } from '@/shared/ui/select'
 import { useTrainingCatalog } from '../hooks/useTrainingCatalog'
 import { useCatalogEditor } from '../hooks/useCatalogEditor'
-import { findExercisesUsingEquipment } from '../libs/catalogUsage'
+import { findExercisesUsingEquipment } from '../libs/usage'
 import type { Equipment } from '../types/catalog.types'
 import type { EquipmentDraft } from '../types/catalogDraft.types'
 

@@ -1,5 +1,6 @@
-import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Clock, Copy, Dumbbell, Pencil } from 'lucide-react'
+import { useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { ArrowLeft, Clock, Copy, Dumbbell, Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { cn } from '@/shared/lib/utils'
@@ -14,14 +15,26 @@ import {
   formatRest,
 } from '../libs/routine.utils'
 import { useTrainingCatalog } from '../hooks/useTrainingCatalog'
+import { useTrainingDeletion } from '../hooks/useTrainingDeletion'
+import { ConfirmDeleteDialog } from '../components/ConfirmDeleteDialog'
 
 /**
  * Ficha de una rutina. Sólo composición.
  */
 export default function RoutineDetail() {
+  const navigate = useNavigate()
   const { routineId } = useParams<{ routineId: string }>()
   const { routine } = useRoutine(routineId)
   const { exercisesById } = useTrainingCatalog()
+  const { routineDeletionBlocker, deleteRoutine } = useTrainingDeletion()
+
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  /*
+   * El motivo del bloqueo se calcula al ABRIR el dialogo y no al confirmar: asi
+   * el dialogo puede explicar por que no se va a poder en vez de preguntar algo
+   * que ya se sabe que no tiene respuesta.
+   */
+  const [blockedReason, setBlockedReason] = useState<string | undefined>(undefined)
 
   if (!routine) {
     return (
@@ -60,6 +73,18 @@ export default function RoutineDetail() {
             {/* TODO: «Usar en una sesion» sigue sin conectar; falta el flujo de
                 asignacion. «Vista previa» se quito: no aportaba nada que la
                 propia ficha no muestre ya. */}
+            <Button
+              type="button"
+              variant="outline"
+              className="gap-2 text-danger"
+              onClick={() => {
+                setBlockedReason(routineDeletionBlocker(routine.id))
+                setIsDeleteOpen(true)
+              }}
+            >
+              <Trash2 className="size-4" />
+              Eliminar
+            </Button>
             <Button asChild variant="outline" className="gap-2">
               <Link to={`/trainings/${routine.id}/edit`}>
                 <Pencil className="size-4" />
@@ -181,6 +206,19 @@ export default function RoutineDetail() {
           </p>
         </section>
       </div>
+
+      <ConfirmDeleteDialog
+        open={isDeleteOpen}
+        name={routine.title}
+        kind="la rutina"
+        blockedReason={blockedReason}
+        onOpenChange={setIsDeleteOpen}
+        onConfirm={() => {
+          const result = deleteRoutine(routine.id)
+          if (result.deleted) navigate('/trainings')
+          else setBlockedReason(result.reason)
+        }}
+      />
     </div>
   )
 }

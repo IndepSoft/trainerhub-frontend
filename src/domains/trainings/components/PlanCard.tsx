@@ -13,9 +13,7 @@ interface PlanCardProps {
 /**
  * Tarjeta de plan, en el mismo registro editorial que la de rutina.
  *
- * Lleva al formulario de edición, que por ahora ES la vista de un plan: no hay
- * ficha de sólo lectura. Cuando la haya, el enlace apuntará a ella y la edición
- * pasará a ser una acción de dentro.
+ * Lleva a la ficha del plan, donde se lee; editar es una acción de dentro.
  *
  * El enlace es estirado —`after:absolute after:inset-0`— para que toda la
  * tarjeta sea el objetivo táctil y no sólo el título, igual que en la de rutina.
@@ -44,7 +42,7 @@ export function PlanCard({ plan }: PlanCardProps) {
 
       <h3 className="mt-2 px-5 font-display text-[1.75rem] font-extrabold uppercase leading-[0.94] tracking-tight text-ink">
         <Link
-          to={`/trainings/plans/${plan.id}/edit`}
+          to={`/trainings/plans/${plan.id}`}
           className="outline-none after:absolute after:inset-0 focus-visible:underline"
         >
           {plan.title}

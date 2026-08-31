@@ -19,6 +19,8 @@ import {
   formatPrescription,
 } from '../libs/routine.utils'
 import { useTrainingCatalog } from '../hooks/useTrainingCatalog'
+import { useTrainingDeletion } from '../hooks/useTrainingDeletion'
+import { ConfirmDeleteDialog } from './ConfirmDeleteDialog'
 import type { Routine } from '../types/training.types'
 
 interface RoutineCardProps {
@@ -47,6 +49,10 @@ export function RoutineCard({ routine }: RoutineCardProps) {
   })
 
   const { exercisesById } = useTrainingCatalog()
+  const { routineDeletionBlocker, deleteRoutine } = useTrainingDeletion()
+
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [blockedReason, setBlockedReason] = useState<string | undefined>(undefined)
 
   const prescribed = flattenPrescribedExercises(routine)
   const visible = prescribed.slice(0, VISIBLE_EXERCISES)
@@ -89,8 +95,7 @@ export function RoutineCard({ routine }: RoutineCardProps) {
         </span>
 
         {/* `relative z-10` para quedar por encima del enlace estirado.
-            TODO: siguen sin conectar «Usar en una sesion», «Vista previa» y
-            «Eliminar». Ver rutina y Editar si funcionan. */}
+            TODO: «Usar en una sesion» y «Vista previa» siguen sin conectar. */}
         <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
           <DropdownMenuTrigger asChild>
             <button
@@ -118,7 +123,22 @@ export function RoutineCard({ routine }: RoutineCardProps) {
             <DropdownMenuItem onSelect={() => navigate(`/trainings/${routine.id}/edit`)}>
               Editar
             </DropdownMenuItem>
-            <DropdownMenuItem className="text-danger">Eliminar</DropdownMenuItem>
+            {/*
+              `preventDefault` para que el menu no se cierre antes de abrir el
+              dialogo: al cerrarse, Radix devuelve el foco al disparador y el
+              dialogo naciente se lo encuentra ya movido.
+            */}
+            <DropdownMenuItem
+              className="text-danger"
+              onSelect={(event) => {
+                event.preventDefault()
+                setBlockedReason(routineDeletionBlocker(routine.id))
+                setIsMenuOpen(false)
+                setIsDeleteOpen(true)
+              }}
+            >
+              Eliminar
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -197,6 +217,19 @@ export function RoutineCard({ routine }: RoutineCardProps) {
           className="ms-auto size-5 text-ink/25 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-ember"
         />
       </div>
+
+      <ConfirmDeleteDialog
+        open={isDeleteOpen}
+        name={routine.title}
+        kind="la rutina"
+        blockedReason={blockedReason}
+        onOpenChange={setIsDeleteOpen}
+        onConfirm={() => {
+          const result = deleteRoutine(routine.id)
+          if (result.deleted) setIsDeleteOpen(false)
+          else setBlockedReason(result.reason)
+        }}
+      />
     </article>
   )
 }

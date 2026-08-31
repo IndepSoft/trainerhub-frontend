@@ -6,7 +6,7 @@ import { Label } from '@/shared/ui/label'
 import { useTrainingCatalog } from '../hooks/useTrainingCatalog'
 import { useCatalogEditor } from '../hooks/useCatalogEditor'
 import { useRoutines } from '../hooks/useRoutines'
-import { findRoutinesUsingExercise } from '../libs/catalogUsage'
+import { findRoutinesUsingExercise } from '../libs/usage'
 import { ExerciseFormDialog } from './ExerciseFormDialog'
 import type { Exercise } from '../types/training.types'
 

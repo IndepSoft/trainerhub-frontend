@@ -5,18 +5,10 @@ import {
   describeNames,
   findExercisesUsingEquipment,
   findRoutinesUsingExercise,
-} from '../libs/catalogUsage'
+} from '../libs/usage'
 import type { Exercise } from '../types/training.types'
 import type { Equipment } from '../types/catalog.types'
-
-/**
- * Resultado de un borrado.
- *
- * No es un booleano: cuando no se puede borrar, el motivo forma parte de la
- * respuesta. Devolver `false` a secas obligaría a la vista a volver a calcular
- * por qué, que es justo la lógica que no debe vivir ahí.
- */
-export type DeletionResult = { deleted: true } | { deleted: false; reason: string }
+import type { DeletionResult } from '../types/deletion.types'
 
 interface UseCatalogEditorResult {
   createExercise: (data: Omit<Exercise, 'id'>) => void
@@ -59,11 +51,11 @@ export function useCatalogEditor(): UseCatalogEditorResult {
       const enUso = findRoutinesUsingExercise(routines, exerciseId)
 
       if (enUso.length > 0) {
+        // El verbo concuerda tambien, no solo el articulo.
+        const sujeto = enUso.length === 1 ? 'Lo usa la rutina' : 'Lo usan las rutinas'
         return {
           deleted: false,
-          reason: `Lo usan ${enUso.length === 1 ? 'la rutina' : 'las rutinas'} ${describeNames(
-            enUso.map((routine) => routine.title)
-          )}.`,
+          reason: `${sujeto} ${describeNames(enUso.map((routine) => routine.title))}.`,
         }
       }
 
@@ -78,11 +70,10 @@ export function useCatalogEditor(): UseCatalogEditorResult {
       const enUso = findExercisesUsingEquipment(exercises, equipmentId)
 
       if (enUso.length > 0) {
+        const sujeto = enUso.length === 1 ? 'Lo usa el ejercicio' : 'Lo usan los ejercicios'
         return {
           deleted: false,
-          reason: `Lo usan ${enUso.length === 1 ? 'el ejercicio' : 'los ejercicios'} ${describeNames(
-            enUso.map((exercise) => exercise.name)
-          )}.`,
+          reason: `${sujeto} ${describeNames(enUso.map((exercise) => exercise.name))}.`,
         }
       }
 

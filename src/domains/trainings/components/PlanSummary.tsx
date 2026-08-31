@@ -1,19 +1,21 @@
 import { countDeloadWeeks, countPlanSessions } from '../libs/plan.utils'
 import type { TrainingPlan } from '../types/training.types'
 
-interface PlanDraftSummaryProps {
-  /** El plan tal y como quedaría si se guardase ahora. */
+interface PlanSummaryProps {
   plan: TrainingPlan
 }
 
 /**
- * Lo que el plan mide mientras se escribe. Sólo presentación.
+ * Lo que mide un plan. Sólo presentación.
  *
- * Las cifras son DERIVADAS, con las mismas funciones que usa la tarjeta. Es lo
- * que garantiza que las sesiones que el entrenador cuenta aquí sean las que
- * verá después en la lista.
+ * La usan la ficha y el formulario, y por eso ya no se llama `PlanDraftSummary`:
+ * recibe un plan, le da igual si está guardado o a medio escribir. Que sea la
+ * misma pieza es lo que garantiza que las cifras que el entrenador ve mientras
+ * escribe sean exactamente las que verá después.
+ *
+ * Las cifras son DERIVADAS, con las mismas funciones que usa la tarjeta.
  */
-export function PlanDraftSummary({ plan }: PlanDraftSummaryProps) {
+export function PlanSummary({ plan }: PlanSummaryProps) {
   const deloadWeeks = countDeloadWeeks(plan)
 
   return (

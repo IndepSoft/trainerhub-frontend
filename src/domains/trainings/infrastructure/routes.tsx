@@ -6,6 +6,7 @@ import type { RouteObject } from 'react-router-dom'
 const Trainings = lazy(() => import('@/domains/trainings/pages/Trainings'))
 const RoutineForm = lazy(() => import('@/domains/trainings/pages/RoutineForm'))
 const PlanForm = lazy(() => import('@/domains/trainings/pages/PlanForm'))
+const PlanDetail = lazy(() => import('@/domains/trainings/pages/PlanDetail'))
 const TrainingCatalog = lazy(() => import('@/domains/trainings/pages/TrainingCatalog'))
 const RoutineDetail = lazy(() => import('@/domains/trainings/pages/RoutineDetail'))
 
@@ -35,6 +36,10 @@ export const trainingsRoutes: RouteObject[] = [
   {
     path: '/trainings/plans/new',
     element: withSuspense(withProtectedRoute(<PlanForm />)),
+  },
+  {
+    path: '/trainings/plans/:planId',
+    element: withSuspense(withProtectedRoute(<PlanDetail />)),
   },
   {
     path: '/trainings/plans/:planId/edit',

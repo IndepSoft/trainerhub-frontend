@@ -8,6 +8,7 @@ interface RoutinesState {
   createRoutine: (data: Omit<Routine, 'id'>) => Routine
   /** Reemplaza el contenido de una rutina, conservando su identificador. */
   updateRoutine: (routineId: string, data: Omit<Routine, 'id'>) => void
+  deleteRoutine: (routineId: string) => void
 }
 
 /**
@@ -64,5 +65,9 @@ export const useRoutinesStore = create<RoutinesState>((set) => ({
         routine.id === routineId ? { id: routineId, ...data } : routine
       ),
     }))
+  },
+
+  deleteRoutine: (routineId) => {
+    set((state) => ({ routines: state.routines.filter((routine) => routine.id !== routineId) }))
   },
 }))

@@ -9,7 +9,7 @@ import { useRoutines } from '../hooks/useRoutines'
 import { usePlansStore } from '../stores/plansStore'
 import { PlanIdentityFields } from '../components/PlanIdentityFields'
 import { PlanWeekEditor } from '../components/PlanWeekEditor'
-import { PlanDraftSummary } from '../components/PlanDraftSummary'
+import { PlanSummary } from '../components/PlanSummary'
 
 /**
  * Crear y editar un plan. Sólo composición.
@@ -17,8 +17,9 @@ import { PlanDraftSummary } from '../components/PlanDraftSummary'
  * Una sola página para las dos cosas, igual que `RoutineForm`: la ruta decide.
  * `/trainings/plans/new` no trae `planId` y `/trainings/plans/:planId/edit` sí.
  *
- * Sin ficha de plan todavía: la tarjeta de la lista lleva directamente aquí,
- * porque este formulario ES, por ahora, la vista de un plan.
+ * Al guardar se vuelve a donde se estaba: a la ficha del plan si se editaba, y
+ * a la lista de planes si se acaba de crear —ahí no hay ficha a la que ir hasta
+ * que el plan existe—.
  */
 export default function PlanForm() {
   const navigate = useNavigate()
@@ -58,14 +59,13 @@ export default function PlanForm() {
     if (data === null) return
 
     if (planId === undefined) {
-      createPlan(data)
-    } else {
-      updatePlan(planId, data)
+      const created = createPlan(data)
+      navigate(`/trainings/plans/${created.id}`)
+      return
     }
 
-    // No hay ficha de plan a la que ir: se vuelve a la lista de planes. Con la
-    // pestaña en la URL, se aterriza viendo lo que se acaba de guardar.
-    navigate('/trainings?tab=planes')
+    updatePlan(planId, data)
+    navigate(`/trainings/plans/${planId}`)
   }
 
   if (isEditing && plan === null) {
@@ -88,11 +88,11 @@ export default function PlanForm() {
     <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden bg-bone">
       <PageHeader>
         <Link
-          to="/trainings?tab=planes"
+          to={isEditing ? `/trainings/plans/${planId}` : '/trainings?tab=planes'}
           className="-ms-2 mb-3 inline-flex h-11 items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/45 transition-colors hover:text-cobalt"
         >
           <ArrowLeft className="size-4" />
-          Entrenamientos
+          {isEditing ? 'Volver a la ficha' : 'Planes'}
         </Link>
 
         <PageHeader.Content>
@@ -105,7 +105,9 @@ export default function PlanForm() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate('/trainings?tab=planes')}
+              onClick={() =>
+                navigate(isEditing ? `/trainings/plans/${planId}` : '/trainings?tab=planes')
+              }
             >
               Cancelar
             </Button>
@@ -115,7 +117,7 @@ export default function PlanForm() {
       </PageHeader>
 
       <div className="flex-1 overflow-auto">
-        <PlanDraftSummary plan={preview} />
+        <PlanSummary plan={preview} />
 
         <div className="space-y-6 px-5 py-6">
           {errors.weeks !== undefined && (
