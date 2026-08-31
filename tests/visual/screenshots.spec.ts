@@ -28,6 +28,41 @@ async function signIn(page: Page): Promise<void> {
 }
 
 /**
+ * Los disparadores de un desplegable, por el nombre de su etiqueta.
+ *
+ * NO se usa `getByLabel`. Radix renderiza, junto al boton visible, un `<select>`
+ * nativo oculto para que el control participe en el formulario, y la etiqueta
+ * alcanza a los DOS: con dos ejercicios en pantalla, `getByLabel('Ejercicio')`
+ * resolvia a cuatro elementos, asi que `nth(1)` era el select oculto de la
+ * primera fila y no el disparador de la segunda. Hacer clic en un `<select>`
+ * oculto no abre nada ni da error, que es lo que hacia el fallo tan dificil de
+ * leer.
+ *
+ * El nativo no tiene nombre accesible, asi que filtrar por rol y nombre deja
+ * exactamente uno por control.
+ */
+function desplegables(page: Page, etiqueta: string): Locator {
+  return page.getByRole('combobox', { name: etiqueta, exact: true })
+}
+
+/**
+ * Elige un valor de un desplegable de Radix.
+ *
+ * Las opciones se buscan DENTRO del `listbox`, por el mismo motivo: los
+ * `<option>` del select nativo tambien tienen `role=option`. La comprobacion
+ * final existe para que, si algo vuelve a torcerse, el fallo diga donde.
+ */
+async function elegirDelDesplegable(
+  page: Page,
+  disparador: Locator,
+  nombre: string
+): Promise<void> {
+  await disparador.click()
+  await page.getByRole('listbox').getByRole('option', { name: nombre, exact: true }).click()
+  await expect(disparador).toContainText(nombre)
+}
+
+/**
  * Desplaza el contenedor interno hasta abajo.
  *
  * `fullPage: true` no sirve en este layout: el desplazamiento vive en un div con
@@ -793,41 +828,6 @@ test.describe('creacion de rutinas', () => {
     return encontrado === null ? Number.NaN : Number(encontrado[1])
   }
 
-  /**
-   * Los disparadores de un desplegable, por el nombre de su etiqueta.
-   *
-   * NO se usa `getByLabel`. Radix renderiza, junto al boton visible, un
-   * `<select>` nativo oculto para que el control participe en el formulario, y
-   * la etiqueta alcanza a los DOS: con dos ejercicios en pantalla,
-   * `getByLabel('Ejercicio')` resolvia a cuatro elementos, asi que `nth(1)` era
-   * el select oculto de la primera fila y no el disparador de la segunda.
-   * Hacer clic en un `<select>` oculto no abre nada ni da error, que es lo que
-   * hacia el fallo tan dificil de leer.
-   *
-   * El nativo no tiene nombre accesible, asi que filtrar por rol y nombre deja
-   * exactamente uno por fila.
-   */
-  function desplegables(page: Page, etiqueta: string): Locator {
-    return page.getByRole('combobox', { name: etiqueta, exact: true })
-  }
-
-  /**
-   * Elige un valor de un desplegable de Radix.
-   *
-   * Las opciones se buscan DENTRO del `listbox`, por el mismo motivo: los
-   * `<option>` del select nativo tambien tienen `role=option`. La comprobacion
-   * final existe para que, si algo vuelve a torcerse, el fallo diga donde.
-   */
-  async function elegirDelDesplegable(
-    page: Page,
-    disparador: Locator,
-    nombre: string
-  ): Promise<void> {
-    await disparador.click()
-    await page.getByRole('listbox').getByRole('option', { name: nombre, exact: true }).click()
-    await expect(disparador).toContainText(nombre)
-  }
-
   async function elegirEjercicio(page: Page, indice: number, nombre: string): Promise<void> {
     await elegirDelDesplegable(page, desplegables(page, 'Ejercicio').nth(indice), nombre)
   }
@@ -982,4 +982,164 @@ test('los planes se ven desde entrenamientos', async ({ page }) => {
   expect(desborde, 'desbordamiento horizontal').toBe(0)
 
   await page.screenshot({ path: 'tests/visual/salida/planes-mobile.png' })
+})
+
+/**
+ * Catálogo del entrenamiento.
+ *
+ * Es lo que desbloquea la pantalla de creación: sin esto, componer una rutina
+ * ofrecía quince ejercicios fijos y no había forma de prescribir la máquina que
+ * sí hay en el gimnasio.
+ */
+test.describe('catalogo del entrenamiento', () => {
+  const EJERCICIO_NUEVO = 'Prensa de piernas a 45 grados'
+
+  async function abrirCatalogo(page: Page): Promise<void> {
+    await page.goto('/trainings')
+    await page.getByRole('link', { name: 'Catálogo' }).click()
+    await expect(page.getByRole('heading', { name: 'Catálogo', level: 1 })).toBeVisible()
+  }
+
+  test('un ejercicio nuevo queda disponible al componer una rutina', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await abrirCatalogo(page)
+
+    await page.getByRole('button', { name: 'Nuevo ejercicio' }).click()
+
+    const dialogo = page.getByRole('dialog')
+    await expect(dialogo).toBeVisible()
+
+    await dialogo.getByLabel('Nombre').fill(EJERCICIO_NUEVO)
+    await elegirDelDesplegable(page, desplegables(page, 'Equipamiento'), 'Máquina guiada')
+    await elegirDelDesplegable(
+      page,
+      desplegables(page, 'Patrón de movimiento'),
+      'Dominante de rodilla'
+    )
+    await elegirDelDesplegable(page, desplegables(page, 'Grupo muscular principal'), 'Cuádriceps')
+
+    // El principal NO se ofrece como secundario: contaria dos veces al repartir
+    // volumen y en la ficha se leeria repetido.
+    await expect(dialogo.getByRole('button', { name: 'Cuádriceps' })).toHaveCount(0)
+    await dialogo.getByRole('button', { name: 'Glúteo' }).click()
+
+    await dialogo.getByRole('button', { name: 'Añadir al catálogo' }).click()
+
+    // El dialogo se cierra de verdad: si se quedara montado, dejaria el <body>
+    // con `pointer-events: none` y la pagina inservible por detras.
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(page.getByText(EJERCICIO_NUEVO)).toBeVisible()
+
+    await page.screenshot({ path: 'tests/visual/salida/catalogo-desktop.png' })
+
+    /*
+     * Y AHORA LO QUE IMPORTA: el ejercicio nuevo se puede prescribir.
+     *
+     * Esta es la prueba de que el catalogo desbloquea algo, y no solo de que
+     * guarda una fila en una lista.
+     *
+     * Se navega POR LA INTERFAZ y no con `page.goto`. El catalogo vive en
+     * memoria mientras dura la sesion -esta anotado en `catalogStore`-, asi que
+     * una carga completa de pagina lo devolveria a su semilla y el ejercicio
+     * recien creado desapareceria. Es la limitacion declarada, no un defecto,
+     * pero la prueba tiene que respetarla o estaria comprobando otra cosa.
+     */
+    await page.getByRole('link', { name: 'Entrenamientos' }).first().click()
+    await page.getByRole('link', { name: 'Nueva Rutina' }).click()
+    await expect(page.getByRole('heading', { name: 'Nueva rutina' })).toBeVisible()
+
+    await desplegables(page, 'Ejercicio').first().click()
+    await expect(
+      page.getByRole('listbox').getByRole('option', { name: EJERCICIO_NUEVO, exact: true })
+    ).toBeVisible()
+  })
+
+  test('no deja borrar un ejercicio que alguna rutina prescribe', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await abrirCatalogo(page)
+
+    const enUso = 'Press de banca con barra'
+    await page.getByRole('button', { name: `Eliminar ${enUso}` }).click()
+
+    /*
+     * Se bloquea y se dice quien lo impide. La rutina guarda `exerciseId`, no
+     * una copia: borrar la entrada dejaria la referencia colgando y romperia la
+     * rutina en silencio. La vista degrada -pinta «Ejercicio»- pero eso no es
+     * excusa para permitirlo.
+     */
+    await expect(page.getByRole('alert')).toContainText('No se puede borrar')
+    await expect(page.getByRole('alert')).toContainText('Full body · Principiante')
+    await expect(page.getByText(enUso).first()).toBeVisible()
+  })
+
+  test('el catalogo cumple las reglas de 375 px', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await abrirCatalogo(page)
+
+    const lista = page.getByRole('tablist').first()
+
+    for (const pestana of ['Ejercicios', 'Equipamiento', 'Referencia']) {
+      await lista.getByRole('tab', { name: pestana }).click()
+      await page.waitForTimeout(400)
+
+      const medidas = await page.evaluate(() => {
+        const caja = (elemento: Element) => elemento.getBoundingClientRect()
+
+        return {
+          desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          contenedoresEstrechos: [
+            ...document.querySelectorAll('section, article, [class*="rounded-block"]'),
+          ]
+            .map((elemento) => caja(elemento).width)
+            .filter((ancho) => ancho > 0 && ancho < 280).length,
+          controlesPequenos: [
+            ...document.querySelectorAll('button, [role=tab], input, textarea'),
+          ]
+            .map(caja)
+            .filter((rect) => rect.height > 0 && rect.height < 44).length,
+          etiquetasHuerfanas: [...document.querySelectorAll('label[for]')].filter(
+            (etiqueta) => document.getElementById(etiqueta.getAttribute('for') ?? '') === null
+          ).length,
+        }
+      })
+
+      expect(medidas.desborde, `desbordamiento en ${pestana}`).toBe(0)
+      expect(medidas.contenedoresEstrechos, `contenedores bajo 280 px en ${pestana}`).toBe(0)
+      expect(medidas.controlesPequenos, `controles bajo 44 px en ${pestana}`).toBe(0)
+      expect(medidas.etiquetasHuerfanas, `etiquetas sin control en ${pestana}`).toBe(0)
+    }
+
+    await page.screenshot({ path: 'tests/visual/salida/catalogo-mobile.png' })
+  })
+
+  test('el material se edita en la fila y se protege igual', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await abrirCatalogo(page)
+
+    await page.getByRole('tab', { name: 'Equipamiento' }).click()
+
+    // Alta.
+    await page.getByLabel('Nuevo material').fill('Prensa de piernas')
+    await page.getByRole('button', { name: 'Añadir' }).click()
+    await expect(page.getByText('Prensa de piernas')).toBeVisible()
+
+    // Edicion en la propia fila: son dos campos, y abrir una ventana para dos
+    // campos hace lento lo que deberia ser instantaneo.
+    await page.getByRole('button', { name: 'Editar Prensa de piernas' }).click()
+    await page.getByLabel('Nombre de Prensa de piernas').fill('Prensa horizontal')
+    await page.getByRole('button', { name: 'Guardar cambios' }).click()
+    await expect(page.getByText('Prensa horizontal')).toBeVisible()
+
+    // Recien creado no lo usa nadie, asi que se puede borrar.
+    await page.getByRole('button', { name: 'Eliminar Prensa horizontal' }).click()
+    await expect(page.getByText('Prensa horizontal')).toHaveCount(0)
+
+    // Pero la barra si la usan ejercicios, y ese borrado se bloquea.
+    await page.getByRole('button', { name: 'Eliminar Barra' }).click()
+    await expect(page.getByRole('alert')).toContainText('No se puede borrar «Barra»')
+  })
 })

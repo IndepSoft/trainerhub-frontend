@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Flame, Plus, Target } from 'lucide-react'
+import { Flame, Library, Plus, Target } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { PageHeader } from '@/shared/components/PageHeader'
@@ -63,8 +63,15 @@ export default function Trainings() {
             <PageHeader.Title>Entrenamientos</PageHeader.Title>
           </div>
           <PageHeader.Actions>
-            {/* Una sola accion primaria. El boton «Plantillas» de antes
-                duplicaba lo que ya hace su pestaña. */}
+            {/* El catalogo es secundario y va en `outline`: se entra a el de vez
+                en cuando -para dar de alta un ejercicio que falta-, mientras que
+                crear una rutina es lo que se hace a diario. */}
+            <Button asChild variant="outline" className="gap-2">
+              <Link to="/trainings/catalog">
+                <Library className="h-4 w-4" />
+                Catálogo
+              </Link>
+            </Button>
             <Button asChild className="gap-2">
               <Link to="/trainings/new">
                 <Plus className="h-4 w-4" />

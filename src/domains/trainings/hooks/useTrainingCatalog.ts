@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
-import { exercisesMock } from '../data/exercises.mock'
+import { useCatalogStore } from '../stores/catalogStore'
 import {
-  EQUIPMENT,
   MOVEMENT_PATTERNS,
   MUSCLE_GROUPS,
   TRAINING_OBJECTIVES,
@@ -18,6 +17,8 @@ import type {
 
 interface UseTrainingCatalogResult {
   exercises: Exercise[]
+  /** Material, editable por el entrenador. */
+  equipment: Equipment[]
   /** Índice por id: una rutina guarda referencias, no copias. */
   exercisesById: Map<string, Exercise>
   muscleGroupsById: Map<string, MuscleGroup>
@@ -45,20 +46,29 @@ function indexById<T extends { id: string }>(items: T[]): Map<string, T> {
  * en nombre. Buscar con `find` en cada ejercicio de cada bloque convierte el
  * pintado de una rutina en un recorrido cuadrático.
  *
+ * Ejercicios y equipamiento vienen del almacén, que admite altas y ediciones;
+ * las otras cuatro tablas se sirven tal cual desde los datos, porque son
+ * vocabulario del sistema y no se editan. La diferencia está razonada en
+ * `stores/catalogStore.ts`.
+ *
  * Misma costura que el resto: cuando llegue el backend, esto llamará al puerto
  * vía `container` y ni la página ni los componentes se enterarán.
  */
 export function useTrainingCatalog(): UseTrainingCatalogResult {
+  const exercises = useCatalogStore((state) => state.exercises)
+  const equipment = useCatalogStore((state) => state.equipment)
+
   return useMemo(
     () => ({
-      exercises: exercisesMock,
-      exercisesById: indexById(exercisesMock),
+      exercises,
+      equipment,
+      exercisesById: indexById(exercises),
       muscleGroupsById: indexById(MUSCLE_GROUPS),
-      equipmentById: indexById(EQUIPMENT),
+      equipmentById: indexById(equipment),
       movementPatternsById: indexById(MOVEMENT_PATTERNS),
       objectivesById: indexById(TRAINING_OBJECTIVES),
       splitsById: indexById(TRAINING_SPLITS),
     }),
-    []
+    [exercises, equipment]
   )
 }
