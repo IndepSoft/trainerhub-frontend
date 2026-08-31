@@ -15,7 +15,8 @@ import type {
   RoutineDraft,
   RoutineDraftErrors,
 } from '../types/routineDraft.types'
-import type { Routine, TrainingLevel } from '../types/training.types'
+import { toBlockDraft } from '../libs/blockLibrary'
+import type { Block, Routine, TrainingLevel } from '../types/training.types'
 
 interface UseRoutineDraftResult {
   draft: RoutineDraft
@@ -29,6 +30,8 @@ interface UseRoutineDraftResult {
   setDescription: (description: string) => void
   setLevel: (level: TrainingLevel) => void
   addBlock: () => void
+  /** Añade una COPIA de un bloque guardado, con identificadores nuevos. */
+  insertBlock: (block: Block) => void
   removeBlock: (blockId: string) => void
   updateBlock: (blockId: string, changes: BlockDraftChanges) => void
   addExercise: (blockId: string) => void
@@ -86,6 +89,12 @@ export function useRoutineDraft(): UseRoutineDraftResult {
 
   const addBlock = useCallback(() => {
     setDraft((current) => ({ ...current, blocks: [...current.blocks, createBlockDraft()] }))
+  }, [])
+
+  const insertBlock = useCallback((block: Block) => {
+    // `toBlockDraft` genera identificadores nuevos: lo insertado no comparte
+    // nada con la entrada de la biblioteca. Ver `SavedBlock`.
+    setDraft((current) => ({ ...current, blocks: [...current.blocks, toBlockDraft(block)] }))
   }, [])
 
   const removeBlock = useCallback((blockId: string) => {
@@ -166,6 +175,7 @@ export function useRoutineDraft(): UseRoutineDraftResult {
     setDescription,
     setLevel,
     addBlock,
+    insertBlock,
     removeBlock,
     updateBlock,
     addExercise,

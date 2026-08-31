@@ -116,7 +116,8 @@ function toPrescribedExercise(draft: PrescribedExerciseDraft): PrescribedExercis
   }
 }
 
-function toBlock(draft: BlockDraft): Block {
+/** Un bloque del borrador, ya como entidad. Lo usa tambien la biblioteca. */
+export function toBlock(draft: BlockDraft): Block {
   return {
     id: draft.id,
     method: draft.method,

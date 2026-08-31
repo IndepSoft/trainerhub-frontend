@@ -1,5 +1,5 @@
 import { useId } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { BookmarkPlus, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
@@ -32,8 +32,11 @@ interface BlockEditorProps {
   position: number
   catalog: Exercise[]
   canRemove: boolean
+  /** Falso mientras el bloque no tenga todos sus ejercicios elegidos. */
+  canSaveToLibrary: boolean
   onChange: (changes: BlockDraftChanges) => void
   onRemove: () => void
+  onSaveToLibrary: () => void
   onAddExercise: () => void
   onRemoveExercise: (exerciseId: string) => void
   onChangeExercise: (exerciseId: string, changes: PrescribedExerciseDraftChanges) => void
@@ -53,8 +56,10 @@ export function BlockEditor({
   position,
   catalog,
   canRemove,
+  canSaveToLibrary,
   onChange,
   onRemove,
+  onSaveToLibrary,
   onAddExercise,
   onRemoveExercise,
   onChangeExercise,
@@ -77,16 +82,34 @@ export function BlockEditor({
           Bloque
         </h3>
 
-        {canRemove && (
+        <div className="ms-auto flex shrink-0 items-center">
+          {/*
+            Guardar en la biblioteca es un gesto, no un tramite: no pregunta el
+            nombre, que se deriva del contenido y se puede cambiar despues. Se
+            apaga mientras el bloque no tenga sus ejercicios elegidos, porque
+            una entrada a medio rellenar no ahorra trabajo a nadie.
+          */}
           <button
             type="button"
-            onClick={onRemove}
-            aria-label={`Eliminar el bloque ${position}`}
-            className="ms-auto inline-flex size-11 shrink-0 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-danger-surface hover:text-danger"
+            onClick={onSaveToLibrary}
+            disabled={!canSaveToLibrary}
+            aria-label={`Guardar el bloque ${position} en la biblioteca`}
+            className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-cobalt-tint hover:text-cobalt disabled:pointer-events-none disabled:opacity-40"
           >
-            <Trash2 className="size-4" />
+            <BookmarkPlus className="size-4" />
           </button>
-        )}
+
+          {canRemove && (
+            <button
+              type="button"
+              onClick={onRemove}
+              aria-label={`Eliminar el bloque ${position}`}
+              className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-danger-surface hover:text-danger"
+            >
+              <Trash2 className="size-4" />
+            </button>
+          )}
+        </div>
       </header>
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">

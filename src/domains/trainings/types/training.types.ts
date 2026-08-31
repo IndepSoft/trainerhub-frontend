@@ -90,6 +90,35 @@ export interface Routine {
   blocks: Block[]
 }
 
+/**
+ * Un bloque guardado para reutilizarlo.
+ *
+ * SE COPIA AL INSERTAR, NO SE REFERENCIA. Es la decisión de fondo de la
+ * biblioteca, y va al revés que el ejercicio: el ejercicio se referencia por
+ * identificador —si cambia de nombre, cambia en todas partes—, y el bloque se
+ * copia.
+ *
+ * El motivo es lo que pasaría si no. Si una rutina apuntara a la entrada de la
+ * biblioteca, editarla cambiaría en silencio el programa que un estudiante está
+ * haciendo esta semana. En una aplicación de entrenamiento eso no es un detalle
+ * de consistencia: es tocarle la planificación a alguien sin que nadie se
+ * entere. Duplicar bloques, en cambio, no cuesta nada.
+ *
+ * La regla que ordena las dos: **se referencia el vocabulario, se copia la
+ * decisión.** Un ejercicio es vocabulario; un bloque es una decisión tomada en
+ * un momento para una persona.
+ *
+ * Consecuencia buscada: borrar una entrada de la biblioteca no rompe ninguna
+ * rutina, porque ninguna depende de ella. Por eso, y a diferencia del catálogo
+ * de ejercicios, este borrado no necesita protección.
+ */
+export interface SavedBlock {
+  id: string
+  /** Se genera del contenido al guardar y se puede renombrar después. */
+  name: string
+  block: Block
+}
+
 /** Un día del microciclo. Sin rutina asignada es descanso. */
 export interface PlanDay {
   /** 1 = lunes … 7 = domingo. */

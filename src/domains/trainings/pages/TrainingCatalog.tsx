@@ -6,9 +6,10 @@ import { PageHeader } from '@/shared/components/PageHeader'
 import { useSwipe } from '@/shared/hooks/useSwipe'
 import { ExerciseCatalog } from '../components/ExerciseCatalog'
 import { EquipmentCatalog } from '../components/EquipmentCatalog'
+import { BlockLibrary } from '../components/BlockLibrary'
 import { ReferenceCatalog } from '../components/ReferenceCatalog'
 
-const TAB_ORDER = ['ejercicios', 'equipamiento', 'referencia'] as const
+const TAB_ORDER = ['ejercicios', 'equipamiento', 'bloques', 'referencia'] as const
 type TabValue = (typeof TAB_ORDER)[number]
 
 /**
@@ -20,8 +21,9 @@ type TabValue = (typeof TAB_ORDER)[number]
  * destinos, y el menú lateral declara dos rutas que ni siquiera existen; añadir
  * una octava entrada habría empeorado las dos cosas.
  *
- * Las tres pestañas están ordenadas por quién manda sobre el dato: los dos
- * primeros catálogos son del entrenador, el tercero es vocabulario del sistema.
+ * Las pestañas están ordenadas por quién manda sobre el dato: ejercicios,
+ * equipamiento y la biblioteca de bloques son del entrenador; la referencia es
+ * vocabulario del sistema y no se edita.
  */
 export default function TrainingCatalog() {
   const [activeTab, setActiveTab] = useState<TabValue>('ejercicios')
@@ -59,9 +61,10 @@ export default function TrainingCatalog() {
           {...swipeHandlers}
         >
           <div className="px-4 pt-1">
-            <TabsList className="w-full md:grid md:grid-cols-3">
+            <TabsList className="w-full md:grid md:grid-cols-4">
               <TabsTrigger value="ejercicios">Ejercicios</TabsTrigger>
               <TabsTrigger value="equipamiento">Equipamiento</TabsTrigger>
+              <TabsTrigger value="bloques">Bloques</TabsTrigger>
               <TabsTrigger value="referencia">Referencia</TabsTrigger>
             </TabsList>
           </div>
@@ -72,6 +75,10 @@ export default function TrainingCatalog() {
 
           <TabsContent value="equipamiento" className="mt-4">
             <EquipmentCatalog />
+          </TabsContent>
+
+          <TabsContent value="bloques" className="mt-4">
+            <BlockLibrary />
           </TabsContent>
 
           <TabsContent value="referencia" className="mt-4">

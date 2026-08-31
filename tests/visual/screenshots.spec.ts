@@ -1081,7 +1081,7 @@ test.describe('catalogo del entrenamiento', () => {
 
     const lista = page.getByRole('tablist').first()
 
-    for (const pestana of ['Ejercicios', 'Equipamiento', 'Referencia']) {
+    for (const pestana of ['Ejercicios', 'Equipamiento', 'Bloques', 'Referencia']) {
       await lista.getByRole('tab', { name: pestana }).click()
       await page.waitForTimeout(400)
 
@@ -1141,5 +1141,97 @@ test.describe('catalogo del entrenamiento', () => {
     // Pero la barra si la usan ejercicios, y ese borrado se bloquea.
     await page.getByRole('button', { name: 'Eliminar Barra' }).click()
     await expect(page.getByRole('alert')).toContainText('No se puede borrar «Barra»')
+  })
+})
+
+/**
+ * Biblioteca de bloques.
+ *
+ * Resuelve la duplicacion que de verdad duele -volver a teclear la misma
+ * superserie- sin crear el problema que resolveria peor: si la rutina apuntara
+ * a la entrada guardada, editarla cambiaria en silencio el programa que alguien
+ * esta haciendo esta semana.
+ */
+test.describe('biblioteca de bloques', () => {
+  async function componerBloque(page: Page, ejercicio: string): Promise<void> {
+    await page.goto('/trainings/new')
+    await page.getByLabel('Nombre').fill('Torso · Empuje pesado')
+    await elegirDelDesplegable(page, desplegables(page, 'Ejercicio').first(), ejercicio)
+  }
+
+  test('un bloque guardado se vuelve a insertar como copia', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await componerBloque(page, 'Press de banca con barra')
+
+    // El boton esta apagado mientras el bloque no tenga su ejercicio elegido,
+    // asi que llegados aqui ya tiene que poder pulsarse.
+    await page.getByRole('button', { name: /Guardar el bloque 1 en la biblioteca/ }).click()
+    await expect(page.getByText(/guardado en la biblioteca/)).toBeVisible()
+
+    await page.getByRole('button', { name: 'Insertar guardado' }).click()
+    const dialogo = page.getByRole('dialog')
+    await expect(dialogo).toBeVisible()
+    await dialogo.getByRole('button', { name: /Serie simple/ }).click()
+
+    // Dos bloques, y el insertado trae el ejercicio ya puesto.
+    await expect(page.getByRole('heading', { name: 'Bloque', level: 3 })).toHaveCount(2)
+    await expect(desplegables(page, 'Ejercicio')).toHaveCount(2)
+    await expect(desplegables(page, 'Ejercicio').nth(1)).toContainText('Press de banca con barra')
+  })
+
+  test('editar lo insertado no toca la entrada guardada', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await componerBloque(page, 'Press de banca con barra')
+
+    await page.getByRole('button', { name: /Guardar el bloque 1 en la biblioteca/ }).click()
+    await page.getByRole('button', { name: 'Insertar guardado' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: /Serie simple/ }).click()
+
+    // Se cambia la prescripcion del bloque INSERTADO.
+    await page.getByLabel('Repeticiones').nth(1).fill('5')
+
+    /*
+     * Y la entrada guardada sigue diciendo 8-10. Si la rutina referenciara la
+     * entrada en vez de copiarla, aqui pondria 5: seria haberle cambiado el
+     * programa a todo el que use ese bloque, sin avisar.
+     *
+     * Se navega por la interfaz: el almacen vive en memoria y `page.goto`
+     * lo devolveria a su semilla, que en esta biblioteca es estar vacia.
+     */
+    await page.getByRole('link', { name: 'Rutinas' }).first().click()
+    await page.getByRole('link', { name: 'Catálogo' }).click()
+    await page.getByRole('tab', { name: 'Bloques' }).click()
+
+    await expect(page.getByText('Serie simple · Press de banca con barra')).toBeVisible()
+    await expect(page.getByText('3 × 8-10', { exact: true })).toBeVisible()
+    await expect(page.getByText('3 × 5', { exact: true })).toHaveCount(0)
+  })
+
+  test('la entrada guardada se renombra y se borra sin romper nada', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await componerBloque(page, 'Sentadilla con barra')
+    await page.getByRole('button', { name: /Guardar el bloque 1 en la biblioteca/ }).click()
+
+    await page.getByRole('link', { name: 'Rutinas' }).first().click()
+    await page.getByRole('link', { name: 'Catálogo' }).click()
+    await page.getByRole('tab', { name: 'Bloques' }).click()
+
+    // El nombre sale del contenido: guardar no pregunta, para no convertir un
+    // gesto en un tramite.
+    const generado = 'Serie simple · Sentadilla con barra'
+    await expect(page.getByText(generado)).toBeVisible()
+
+    await page.getByRole('button', { name: `Renombrar ${generado}` }).click()
+    await page.getByLabel(`Nombre de ${generado}`).fill('Mi bloque de pierna')
+    await page.getByRole('button', { name: 'Guardar el nombre' }).click()
+    await expect(page.getByText('Mi bloque de pierna')).toBeVisible()
+
+    // Borrar una entrada no necesita proteccion: nadie depende de ella, porque
+    // las rutinas guardan copias.
+    await page.getByRole('button', { name: 'Eliminar Mi bloque de pierna' }).click()
+    await expect(page.getByRole('heading', { name: 'Sin bloques guardados' })).toBeVisible()
   })
 })

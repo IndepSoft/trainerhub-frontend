@@ -1,13 +1,17 @@
-import { useMemo, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { AlertCircle, ArrowLeft, Plus } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Library, Plus } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { useTrainingCatalog } from '../hooks/useTrainingCatalog'
 import { useRoutineDraft } from '../hooks/useRoutineDraft'
+import { useBlockLibrary } from '../hooks/useBlockLibrary'
+import { canSaveBlockDraft } from '../libs/blockLibrary'
 import { BlockEditor } from '../components/BlockEditor'
+import { SavedBlockPicker } from '../components/SavedBlockPicker'
 import { RoutineDraftSummary } from '../components/RoutineDraftSummary'
 import { RoutineIdentityFields } from '../components/RoutineIdentityFields'
+import type { BlockDraft } from '../types/routineDraft.types'
 
 /**
  * Creación de una rutina. Sólo composición.
@@ -34,6 +38,7 @@ export default function RoutineCreate() {
     setDescription,
     setLevel,
     addBlock,
+    insertBlock,
     removeBlock,
     updateBlock,
     addExercise,
@@ -41,6 +46,10 @@ export default function RoutineCreate() {
     updateExercise,
     submit,
   } = useRoutineDraft()
+  const { savedBlocks, saveFromDraft } = useBlockLibrary()
+
+  const [isPickerOpen, setIsPickerOpen] = useState(false)
+  const [lastSavedName, setLastSavedName] = useState<string | null>(null)
 
   // Alfabético y con la intercalación del castellano, que es la que coloca la
   // eñe donde un hispanohablante la busca.
@@ -48,6 +57,15 @@ export default function RoutineCreate() {
     () => [...exercises].sort((left, right) => left.name.localeCompare(right.name, 'es')),
     [exercises]
   )
+
+  /*
+   * El nombre lo genera la biblioteca a partir del contenido, asi que la pagina
+   * lo lee del resultado en vez de componerlo por su cuenta: dos sitios
+   * generando el mismo nombre se separan al primer cambio de formato.
+   */
+  const handleSaveToLibrary = (block: BlockDraft) => {
+    setLastSavedName(saveFromDraft(block).name)
+  }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -126,8 +144,10 @@ export default function RoutineCreate() {
                     position={index + 1}
                     catalog={catalog}
                     canRemove={canRemoveBlock}
+                    canSaveToLibrary={canSaveBlockDraft(block)}
                     onChange={(changes) => updateBlock(block.id, changes)}
                     onRemove={() => removeBlock(block.id)}
+                    onSaveToLibrary={() => handleSaveToLibrary(block)}
                     onAddExercise={() => addExercise(block.id)}
                     onRemoveExercise={(exerciseId) => removeExercise(block.id, exerciseId)}
                     onChangeExercise={(exerciseId, changes) =>
@@ -138,13 +158,40 @@ export default function RoutineCreate() {
               ))}
             </ul>
 
-            <Button type="button" variant="outline" className="mt-4 w-full gap-2" onClick={addBlock}>
-              <Plus className="size-4" />
-              Añadir bloque
-            </Button>
+            {/* `aria-live` y no `role="alert"`: es una confirmacion de algo que
+                el usuario acaba de pedir, no un aviso que interrumpa. */}
+            <p aria-live="polite" className="mt-3 min-h-5 text-sm text-cobalt">
+              {lastSavedName !== null && `«${lastSavedName}» guardado en la biblioteca.`}
+            </p>
+
+            <div className="mt-1 flex flex-col gap-2 sm:flex-row">
+              <Button type="button" variant="outline" className="flex-1 gap-2" onClick={addBlock}>
+                <Plus className="size-4" />
+                Añadir bloque
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1 gap-2"
+                onClick={() => setIsPickerOpen(true)}
+              >
+                <Library className="size-4" />
+                Insertar guardado
+              </Button>
+            </div>
           </div>
         </div>
       </div>
+
+      <SavedBlockPicker
+        open={isPickerOpen}
+        savedBlocks={savedBlocks}
+        onOpenChange={setIsPickerOpen}
+        onInsert={(savedBlock) => {
+          insertBlock(savedBlock.block)
+          setIsPickerOpen(false)
+        }}
+      />
     </form>
   )
 }
