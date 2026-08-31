@@ -5,6 +5,8 @@ import { SupabaseTrainerRepository } from '@/shared/infrastructure/supabase/Supa
 import { FakeAuthAdapter } from '@/shared/infrastructure/fake/FakeAuthAdapter'
 import type { StudentRepository } from '@/shared/domain/ports/StudentRepository'
 import { FakeStudentRepository } from '@/shared/infrastructure/fake/FakeStudentRepository'
+import type { RoutineRepository } from '@/shared/domain/ports/RoutineRepository'
+import { FakeRoutineRepository } from '@/shared/infrastructure/fake/FakeRoutineRepository'
 
 /**
  * Raíz de composición.
@@ -20,6 +22,7 @@ export interface Container {
   auth: AuthPort
   trainers: TrainerRepository
   students: StudentRepository
+  routines: RoutineRepository
 }
 
 /**
@@ -43,7 +46,8 @@ function createAuthenticationAdapter(): AuthPort {
 export const container: Container = {
   auth: createAuthenticationAdapter(),
   trainers: new SupabaseTrainerRepository(),
-  // TODO: sustituir por el repositorio real cuando exista la tabla. Es el
-  // unico adaptador falso que sigue activo en produccion.
+  // TODO: sustituir por los repositorios reales cuando existan las tablas. Son
+  // los unicos adaptadores falsos que siguen activos en produccion.
   students: new FakeStudentRepository(),
+  routines: new FakeRoutineRepository(),
 }

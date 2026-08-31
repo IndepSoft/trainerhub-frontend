@@ -4,16 +4,17 @@ import { AlertCircle, ArrowLeft, Library, Plus } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { useTrainingCatalog } from '../hooks/useTrainingCatalog'
-import { useRoutine } from '../hooks/useRoutine'
+import { useRoutine } from '../hooks/useRoutines'
 import { useRoutineDraft } from '../hooks/useRoutineDraft'
 import { useBlockLibrary } from '../hooks/useBlockLibrary'
-import { useRoutinesStore } from '../stores/routinesStore'
+import { useRoutineActions } from '../hooks/useRoutineActions'
 import { canSaveBlockDraft } from '../libs/blockLibrary'
 import { BlockEditor } from '../components/BlockEditor'
 import { SavedBlockPicker } from '../components/SavedBlockPicker'
 import { RoutineDraftSummary } from '../components/RoutineDraftSummary'
 import { RoutineIdentityFields } from '../components/RoutineIdentityFields'
 import type { BlockDraft } from '../types/routineDraft.types'
+import type { Routine } from '@/shared/domain/entities/routine'
 
 /**
  * Crear y editar una rutina. Sólo composición.
@@ -35,14 +36,55 @@ import type { BlockDraft } from '../types/routineDraft.types'
  * dura hora y media.
  */
 export default function RoutineForm() {
-  const navigate = useNavigate()
   const { routineId } = useParams<{ routineId: string }>()
-  const { routine } = useRoutine(routineId)
-  const { exercises } = useTrainingCatalog()
-  const createRoutine = useRoutinesStore((state) => state.createRoutine)
-  const updateRoutine = useRoutinesStore((state) => state.updateRoutine)
+  const { routine, loading } = useRoutine(routineId)
 
   const isEditing = routineId !== undefined
+
+  // Mientras carga no se pinta nada. `routine === null` no significa «no
+  // existe» hasta que `loading` es falso, o toda edicion parpadearia en «no
+  // encontrada» antes de cargarse.
+  if (isEditing && loading) return null
+
+  if (isEditing && routine === null) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-bone px-6 text-center">
+        <p className="font-display text-2xl font-extrabold uppercase text-ink">
+          Rutina no encontrada
+        </p>
+        <p className="text-sm text-ink/50">
+          El enlace puede haber caducado o la rutina ya no existe.
+        </p>
+        <Button asChild variant="outline">
+          <Link to="/trainings">Volver a rutinas</Link>
+        </Button>
+      </div>
+    )
+  }
+
+  /*
+   * `key` para que el borrador se inicialice CON la rutina ya cargada.
+   *
+   * `useRoutineDraft` toma su estado inicial una sola vez, y la rutina llega
+   * despues del primer render porque el puerto es asincrono. Sin separar los
+   * campos en su propio componente montado por clave, editar abriria siempre un
+   * formulario vacio.
+   */
+  return <RoutineFormFields key={routine?.id ?? 'nueva'} routine={routine} />
+}
+
+interface RoutineFormFieldsProps {
+  /** La rutina que se edita, o `null` para dar una de alta. */
+  routine: Routine | null
+}
+
+function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
+  const navigate = useNavigate()
+  const { exercises } = useTrainingCatalog()
+  const { createRoutine, updateRoutine } = useRoutineActions()
+
+  const routineId = routine?.id
+  const isEditing = routine !== null
 
   const {
     draft,
@@ -82,42 +124,20 @@ export default function RoutineForm() {
     setLastSavedName(saveFromDraft(block).name)
   }
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     const data = submit()
     if (data === null) return
 
     if (routineId === undefined) {
-      const created = createRoutine(data)
+      const created = await createRoutine(data)
       navigate(`/trainings/${created.id}`)
       return
     }
 
-    updateRoutine(routineId, data)
+    await updateRoutine(routineId, data)
     navigate(`/trainings/${routineId}`)
-  }
-
-  /*
-   * Editar algo que no existe. Pasa con un enlace viejo o con un identificador
-   * escrito a mano, y es un resultado valido: la vista tiene que poder pintarlo
-   * en vez de reventar. El hook del borrador ya se ha llamado arriba -no puede
-   * ir despues de un retorno- y da igual, porque este camino no lo usa.
-   */
-  if (isEditing && routine === null) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-bone px-6 text-center">
-        <p className="font-display text-2xl font-extrabold uppercase text-ink">
-          Rutina no encontrada
-        </p>
-        <p className="text-sm text-ink/50">
-          El enlace puede haber caducado o la rutina ya no existe.
-        </p>
-        <Button asChild variant="outline">
-          <Link to="/trainings">Volver a rutinas</Link>
-        </Button>
-      </div>
-    )
   }
 
   return (

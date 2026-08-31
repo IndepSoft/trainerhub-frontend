@@ -55,10 +55,14 @@ function desplegables(page: Page, etiqueta: string): Locator {
 async function elegirDelDesplegable(
   page: Page,
   disparador: Locator,
-  nombre: string
+  nombre: string,
+  // Por defecto exacto, para que «Rutinas» no case con «Rutinas (3)». Las
+  // opciones que traen mas texto dentro -el alumno lleva ademas su nivel-
+  // piden coincidencia parcial.
+  exact = true
 ): Promise<void> {
   await disparador.click()
-  await page.getByRole('listbox').getByRole('option', { name: nombre, exact: true }).click()
+  await page.getByRole('listbox').getByRole('option', { name: nombre, exact }).click()
   await expect(disparador).toContainText(nombre)
 }
 
@@ -1581,5 +1585,85 @@ test.describe('borrado', () => {
     await page.getByRole('link', { name: 'Full body · Principiante' }).click()
     await page.getByRole('button', { name: 'Eliminar' }).click()
     await expect(page.getByRole('dialog')).toContainText('¿Eliminar la rutina?')
+  })
+})
+
+/**
+ * «Usar en una sesion»: el flujo que une entrenamientos con la agenda.
+ *
+ * Es lo que hizo que `Routine` subiera a `shared/domain/entities`: la sesion
+ * guarda `routineId`, asi que dos dominios necesitan la entidad y ninguno puede
+ * importar del otro. La agenda la lee por el mismo puerto que trainings.
+ */
+test.describe('usar una rutina en una sesion', () => {
+  test('desde la ficha se llega a la agenda con la rutina puesta', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/trainings/routine-2')
+
+    await page.getByRole('link', { name: 'Usar en una sesión' }).click()
+
+    // El dialogo de alta se abre solo, ya con la rutina elegida.
+    const dialogo = page.getByRole('dialog')
+    await expect(dialogo).toBeVisible()
+    await expect(desplegables(page, 'Rutina')).toContainText('Empuje · Intermedio')
+
+    /*
+     * Y el parametro desaparece de la URL: recargar o volver atras no debe
+     * reabrir el formulario, ni la direccion quedarse diciendo algo que ya no
+     * es cierto.
+     */
+    await expect(page).toHaveURL(/\/calendar$/)
+  })
+
+  test('la sesion agendada existe y enlaza a su rutina', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/trainings/routine-2')
+    await page.getByRole('link', { name: 'Usar en una sesión' }).click()
+
+    const dialogo = page.getByRole('dialog')
+    await dialogo.getByText('Entrenamiento personal').click()
+    // El desplegable muestra el nombre corto -«Maria G.»-, no el completo.
+    await elegirDelDesplegable(page, desplegables(page, 'Alumno'), 'María', false)
+    /*
+     * El dia de hoy, por su NOMBRE ACCESIBLE completo.
+     *
+     * Buscarlo por el numero no vale: la rejilla incluye los dias de relleno del
+     * mes anterior, asi que un «31» puede ser el del mes pasado -deshabilitado,
+     * porque no se agenda en el pasado- y el clic se queda esperando para
+     * siempre a un boton que nunca se habilita.
+     */
+    const hoy = new Date().toLocaleDateString('es-ES', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
+    await dialogo.getByRole('button', { name: hoy }).click()
+    await elegirDelDesplegable(page, desplegables(page, 'Hora'), '11:00')
+    await elegirDelDesplegable(page, desplegables(page, 'Ubicación'), 'Gimnasio Principal')
+
+    await dialogo.getByRole('button', { name: 'Programar sesión' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    /*
+     * La sesion EXISTE en la agenda. Antes el formulario solo lanzaba un aviso y
+     * no dejaba nada detras, asi que este flujo habria terminado en nada.
+     */
+    /*
+     * Se busca por NOMBRE ACCESIBLE: en la vista semanal la tarjeta es compacta
+     * y muestra el alumno, no el titulo, pero su `aria-label` si lo lleva. Es
+     * ademas lo que oye quien no ve la pantalla.
+     */
+    const agendada = page.getByLabel(/Empuje · Intermedio/).first()
+    await expect(agendada).toBeVisible()
+
+    // Y su ficha enlaza a la rutina que ejecuta.
+    await agendada.click()
+    const detalle = page.getByRole('dialog')
+    await expect(detalle.getByRole('link', { name: 'Empuje · Intermedio' })).toBeVisible()
+    await detalle.getByRole('link', { name: 'Empuje · Intermedio' }).click()
+    await page.waitForURL(/\/trainings\/routine-2$/)
   })
 })

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/shared/ui/button'
 import {
   Dialog,
@@ -17,7 +17,8 @@ import {
 } from '@/shared/ui/select'
 import { Textarea } from '@/shared/ui/textarea'
 import { Label } from '@/shared/ui/label'
-import { Clock, MapPin, MessageSquare, Pencil, Play, Trash2, User } from 'lucide-react'
+import { ArrowUpRight, Clock, MapPin, MessageSquare, Pencil, Play, Trash2, User } from 'lucide-react'
+import { useSchedulableRoutines } from '../hooks/useSchedulableRoutines'
 import { toast } from 'sonner'
 import { cn } from '@/shared/lib/utils'
 import { SESSION_STATUS, SESSION_STATUS_ENTRIES } from '../libs/sessionStatus'
@@ -53,6 +54,14 @@ export function SessionDetailsModal({
   const navigate = useNavigate()
   const [newStatus, setNewStatus] = useState<SessionStatus>(session.status)
   const [sessionNotes, setSessionNotes] = useState(session.notes)
+
+  /*
+   * La rutina se resuelve por el puerto, igual que los alumnos. La sesion guarda
+   * el identificador y no el nombre: si el entrenador corrige la rutina, esta
+   * ficha lo refleja sin tener que tocar la sesion.
+   */
+  const { routines } = useSchedulableRoutines()
+  const routine = routines.find((candidate) => candidate.id === session.routineId)
 
   const status = SESSION_STATUS[session.status]
 
@@ -203,6 +212,21 @@ export function SessionDetailsModal({
               </Button>
             </div>
           </div>
+
+          {routine !== undefined && (
+            <div className="space-y-2">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
+                Rutina
+              </span>
+              <Link
+                to={`/trainings/${routine.id}`}
+                className="flex min-h-11 items-center justify-between gap-3 rounded-block border border-cobalt-tint-3 px-4 text-sm text-ink transition-colors hover:border-cobalt/40 hover:text-cobalt"
+              >
+                {routine.title}
+                <ArrowUpRight aria-hidden="true" className="size-4 shrink-0 text-ink/30" />
+              </Link>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label

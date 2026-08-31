@@ -95,7 +95,7 @@ export function RoutineCard({ routine }: RoutineCardProps) {
         </span>
 
         {/* `relative z-10` para quedar por encima del enlace estirado.
-            TODO: «Usar en una sesion» y «Vista previa» siguen sin conectar. */}
+            TODO: «Vista previa» sigue sin conectar. */}
         <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
           <DropdownMenuTrigger asChild>
             <button
@@ -111,7 +111,9 @@ export function RoutineCard({ routine }: RoutineCardProps) {
               <Dumbbell className="me-2 size-4" />
               Ver rutina
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={() => navigate(`/calendar?routine=${routine.id}`)}
+            >
               <Copy className="me-2 size-4" />
               Usar en una sesión
             </DropdownMenuItem>
@@ -225,9 +227,10 @@ export function RoutineCard({ routine }: RoutineCardProps) {
         blockedReason={blockedReason}
         onOpenChange={setIsDeleteOpen}
         onConfirm={() => {
-          const result = deleteRoutine(routine.id)
-          if (result.deleted) setIsDeleteOpen(false)
-          else setBlockedReason(result.reason)
+          void deleteRoutine(routine.id).then((result) => {
+            if (result.deleted) setIsDeleteOpen(false)
+            else setBlockedReason(result.reason)
+          })
         }}
       />
     </article>

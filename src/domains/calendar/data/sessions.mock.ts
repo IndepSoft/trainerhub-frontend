@@ -32,6 +32,7 @@ export const sessionsMock: Session[] = [
     location: 'Gimnasio Principal',
     status: 'confirmed',
     notes: 'Enfoque en tren superior',
+    routineId: 'routine-2',
   },
   {
     id: 'session-2',
@@ -45,6 +46,7 @@ export const sessionsMock: Session[] = [
     location: 'Sala de Evaluación',
     status: 'pending',
     notes: 'Primera sesión, mediciones corporales',
+    routineId: null,
   },
   {
     id: 'session-3',
@@ -58,6 +60,7 @@ export const sessionsMock: Session[] = [
     location: 'Sala Grupal',
     status: 'confirmed',
     notes: 'Máximo 8 personas',
+    routineId: null,
   },
   {
     id: 'session-4',
@@ -71,6 +74,7 @@ export const sessionsMock: Session[] = [
     location: 'Oficina',
     status: 'confirmed',
     notes: 'Revisión de progreso mensual',
+    routineId: null,
   },
   {
     id: 'session-5',
@@ -84,5 +88,6 @@ export const sessionsMock: Session[] = [
     location: 'Gimnasio Principal',
     status: 'cancelled',
     notes: 'Cancelado por el cliente',
+    routineId: null,
   },
 ]

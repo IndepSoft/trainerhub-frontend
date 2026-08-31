@@ -23,6 +23,9 @@ import { toast } from 'sonner'
 import { cn } from '@/shared/lib/utils'
 import { getShortName } from '@/shared/lib/personName'
 import { useSchedulableStudents } from '../hooks/useSchedulableStudents'
+import { useSchedulableRoutines } from '../hooks/useSchedulableRoutines'
+import { useSessionsStore } from '../stores/sessionsStore'
+import { toLocalDateKey } from '../libs/calendar.utils'
 import { SESSION_LOCATIONS, TIME_SLOTS } from '../data/calendarOptions'
 
 const SESSION_TYPES = [
@@ -38,6 +41,15 @@ const DURATIONS = ['30', '45', '60', '90'] as const
 type FieldName = 'sessionType' | 'student' | 'date' | 'time' | 'location'
 
 /**
+ * Valor del desplegable cuando la sesión no ejecuta ninguna rutina.
+ *
+ * No puede ser la cadena vacía: Radix la reserva para «sin seleccionar» y lanza
+ * si un `SelectItem` la usa. Y «sin rutina» es una elección de verdad —una
+ * evaluación inicial no ejecuta ninguna—, no la ausencia de elección.
+ */
+const NO_ROUTINE = 'sin-rutina'
+
+/**
  * Alta de una sesión.
  *
  * Reescrito por tres motivos, no sólo por estética:
@@ -51,10 +63,41 @@ type FieldName = 'sessionType' | 'student' | 'date' | 'time' | 'location'
  *     además marca los campos que faltan junto a ellos.
  *  3. Cuatro `Card` anidadas dentro de un diálogo, que ya es un contenedor.
  */
-export function CreateSessionModal() {
-  const { students } = useSchedulableStudents()
+interface CreateSessionModalProps {
+  /**
+   * Rutina con la que abrir el formulario ya elegida.
+   *
+   * Es lo que hace posible «Usar en una sesión»: la ficha de la rutina navega a
+   * la agenda con su identificador, y el alta arranca con esa rutina puesta.
+   */
+  preselectedRoutineId?: string
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}
 
-  const [isOpen, setIsOpen] = useState(false)
+/**
+ * `open`/`onOpenChange` son opcionales: el diálogo se gobierna solo cuando nadie
+ * se lo pide, y lo cede cuando la página necesita abrirlo —al llegar con una
+ * rutina en la URL—. Obligar siempre al control externo habría hecho que la
+ * página cargara con estado que no le importa.
+ */
+export function CreateSessionModal({
+  preselectedRoutineId,
+  open,
+  onOpenChange,
+}: CreateSessionModalProps = {}) {
+  const { students } = useSchedulableStudents()
+  const { routines } = useSchedulableRoutines()
+  const createSession = useSessionsStore((state) => state.createSession)
+
+  const [isSelfOpen, setIsSelfOpen] = useState(false)
+  const isOpen = open ?? isSelfOpen
+  const setIsOpen = (next: boolean) => {
+    setIsSelfOpen(next)
+    onOpenChange?.(next)
+  }
+
+  const [routineId, setRoutineId] = useState(preselectedRoutineId ?? NO_ROUTINE)
   const [sessionType, setSessionType] = useState('')
   const [studentId, setStudentId] = useState('')
   const [date, setDate] = useState<Date>()
@@ -67,6 +110,7 @@ export function CreateSessionModal() {
   const isGroupSession = sessionType === 'group'
 
   const resetForm = () => {
+    setRoutineId(NO_ROUTINE)
     setSessionType('')
     setStudentId('')
     setDate(undefined)
@@ -101,7 +145,29 @@ export function CreateSessionModal() {
       ? 'la clase grupal'
       : getShortName(student?.firstName, student?.lastName)
 
-    // TODO: no persiste. Cuando exista el repositorio, aqui va la llamada.
+    const routine = routines.find((candidate) => candidate.id === routineId)
+    const category =
+      SESSION_TYPES.find((candidate) => candidate.value === sessionType)?.label ?? 'Sesión'
+
+    createSession({
+      // El titulo lo pone la rutina cuando la hay: es lo que se lee en la
+      // agenda, y «Full body · Principiante — Maria» dice mas que «Entrenamiento
+      // personal — Maria».
+      title: `${routine?.title ?? category} - ${quien}`,
+      student: isGroupSession ? 'Clase grupal' : `${student?.firstName ?? ''} ${student?.lastName ?? ''}`.trim(),
+      kind: isGroupSession ? 'group' : 'individual',
+      category,
+      date: toLocalDateKey(date!),
+      time,
+      durationMinutes: Number(duration),
+      location,
+      // Recien creada esta pendiente, no confirmada: confirmarla es un acto
+      // aparte y fingirlo aqui vaciaria de sentido el estado.
+      status: 'pending',
+      notes,
+      routineId: routineId === NO_ROUTINE ? null : routineId,
+    })
+
     toast.success(
       `Sesión con ${quien} el ${date!.toLocaleDateString('es-ES')} a las ${time}`
     )
@@ -180,13 +246,17 @@ export function CreateSessionModal() {
           {sessionType && !isGroupSession && (
             <div className="space-y-2">
               <div className="flex items-baseline justify-between gap-3">
-                <Label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
+                <Label
+                  htmlFor="new-session-student"
+                  className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60"
+                >
                   Alumno
                 </Label>
                 {fieldError('student')}
               </div>
               <Select value={studentId} onValueChange={setStudentId}>
                 <SelectTrigger
+                  id="new-session-student"
                   className={cn('w-full', missing.includes('student') && 'border-danger')}
                 >
                   <SelectValue placeholder="Elige un alumno" />
@@ -204,9 +274,12 @@ export function CreateSessionModal() {
 
           <div className="space-y-2">
             <div className="flex items-baseline justify-between gap-3">
-              <Label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
+              {/* `<span>` y no `<Label>`: no hay un control unico al que
+                  apuntar -detras hay una rejilla de dias- y una etiqueta sin
+                  asociar es peor que ninguna. */}
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
                 Fecha
-              </Label>
+              </span>
               {fieldError('date')}
             </div>
             <div
@@ -232,13 +305,17 @@ export function CreateSessionModal() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <div className="flex items-baseline justify-between gap-2">
-                <Label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
+                <Label
+                  htmlFor="new-session-time"
+                  className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60"
+                >
                   Hora
                 </Label>
                 {fieldError('time')}
               </div>
               <Select value={time} onValueChange={setTime}>
                 <SelectTrigger
+                  id="new-session-time"
                   className={cn('w-full', missing.includes('time') && 'border-danger')}
                 >
                   <SelectValue placeholder="--:--" />
@@ -254,11 +331,14 @@ export function CreateSessionModal() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
+              <Label
+                htmlFor="new-session-duration"
+                className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60"
+              >
                 Duración
               </Label>
               <Select value={duration} onValueChange={setDuration}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger id="new-session-duration" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -272,15 +352,46 @@ export function CreateSessionModal() {
             </div>
           </div>
 
+          {/*
+            La rutina es OPCIONAL: una evaluacion inicial o una charla de
+            seguimiento no ejecutan ninguna, y obligar a elegir una convertiria
+            «ninguna» en un valor que hay que buscar.
+          */}
+          <div className="space-y-2">
+            <Label
+              htmlFor="new-session-routine"
+              className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60"
+            >
+              Rutina
+            </Label>
+            <Select value={routineId} onValueChange={setRoutineId}>
+              <SelectTrigger id="new-session-routine" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_ROUTINE}>Sin rutina</SelectItem>
+                {routines.map((candidate) => (
+                  <SelectItem key={candidate.id} value={candidate.id}>
+                    {candidate.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="space-y-2">
             <div className="flex items-baseline justify-between gap-3">
-              <Label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
+              <Label
+                htmlFor="new-session-location"
+                className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60"
+              >
                 Ubicación
               </Label>
               {fieldError('location')}
             </div>
             <Select value={location} onValueChange={setLocation}>
               <SelectTrigger
+                id="new-session-location"
                 className={cn('w-full', missing.includes('location') && 'border-danger')}
               >
                 <SelectValue placeholder="Elige una ubicación" />

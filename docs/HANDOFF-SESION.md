@@ -112,6 +112,14 @@ módulos que ya no existen. Para leer errores de verdad, abrir pestaña nueva.
 viewport con `resize_window`, las mediciones salen mal. Devolverlo a `desktop`
 al terminar.
 
+**Y el panel ESCALA la página, así que `getBoundingClientRect` miente.** Medido:
+un control de 44 px devolvía 41,8 —factor 0,95—, lo que hace parecer que
+incumple el objetivo táctil cuando no lo incumple. Para medir alturas y anchos
+en el panel hay que usar `offsetHeight` / `offsetWidth`, que son de disposición
+y no llevan la escala; `getBoundingClientRect` sólo es fiable en Playwright, que
+fija un viewport real. Comprobarlo es una división:
+`rect.height / offsetHeight`.
+
 **`git mv` falla en Windows con «Permission denied»** por bloqueos de fichero de
 procesos node. La alternativa que funciona es `cp -r` + `rm -rf`; git lo detecta
 igual como renombrado.
@@ -214,7 +222,16 @@ fija y la rejilla gana campo de visión.
    había forma de añadir el decimosexto.
 4. **Biblioteca de bloques** (`e129486`). Guardar un bloque con un gesto y
    volver a insertarlo, copiando.
-5. **Edición de rutinas y planes completos.** `RoutineForm` y `PlanForm` sirven
+5. **Ficha de plan y borrado con integridad.** La tarjeta lleva a una ficha que
+   se lee; editar es una acción de dentro. Una rutina que algún plan programa no
+   se puede borrar, y el diálogo dice quién lo impide.
+6. **`Routine` sube a `shared/domain/entities` y nace `RoutineRepository`.** Se
+   cumplió la condición que este documento dejaba escrita: la agenda cuelga una
+   rutina de una sesión, así que la entidad cruza a un segundo dominio. Los dos
+   la leen por el puerto, vía `container`, y ninguno importa del otro —igual que
+   con los alumnos—. El almacén de zustand desaparece; su sitio lo ocupa
+   `FakeRoutineRepository`.
+7. **Edición de rutinas y planes completos.** `RoutineForm` y `PlanForm` sirven
    para alta y edición: la ruta decide, y `submit` devuelve datos sin
    identificador para que quien llama elija si crea o actualiza. La acción
    primaria de la cabecera sigue a la pestaña —«Nueva Rutina» / «Nuevo Plan»— y
@@ -255,12 +272,15 @@ crearlos.
 No existen `RoutineRepository`, `SessionRepository` ni `DashboardRepository`; los
 ficheros `*.mock.ts` los esperan con un `TODO` que nombra la costura.
 
-**Tres almacenes de zustand en `trainings`, y ninguno es un puerto**:
-`routinesStore`, `catalogStore` y `blockLibraryStore`. La decisión está razonada
-en el primero: una entidad sube a `shared/domain` cuando la necesitan DOS
-dominios —así lo dice `shared/domain/entities/student.ts`— y `Routine` hoy sólo
-la usa `trainings`. El día que la agenda cuelgue una rutina de una sesión, la
-entidad cruza, el puerto nace y estos almacenes son su adaptador falso.
+**Cuatro puertos**: `AuthPort`, `TrainerRepository`, `StudentRepository` y
+`RoutineRepository`. Este último nació cuando la agenda pasó a colgar rutinas de
+sus sesiones; el criterio —una entidad sube cuando la necesitan DOS dominios—
+está escrito en `shared/domain/entities/student.ts`.
+
+**Siguen en zustand, y siguen sin ser puertos**: `catalogStore` y
+`blockLibraryStore` en `trainings`, y `plansStore` y `sessionsStore` en sus
+dominios. Ninguna de esas entidades cruza todavía. El día que la ficha de un
+estudiante liste sus sesiones, `Session` cruza y nace `SessionRepository`.
 
 ⚠️ **Todo lo creado vive sólo en memoria.** Al recargar la página vuelven las
 semillas: la rutina creada, el ejercicio dado de alta y la biblioteca entera
@@ -308,5 +328,6 @@ todavía si merece `manualChunks`.
 5. **Meter Playwright en CI**, y con ello un script `test` en `package.json`.
    Con 72 pruebas que ya afirman cosas, dejarlas fuera de CI es desperdiciarlas.
 6. **La progresión del mesociclo**, arriba. Es el rediseño más grande pendiente.
-7. **Ficha de plan** de sólo lectura, y con ella la asignación a un estudiante,
-   que es lo que da sentido a todo lo construido.
+7. **La asignación a un estudiante**, que es lo que da sentido a todo lo
+   construido: hoy una sesión guarda el nombre del alumno como texto, no una
+   referencia, y ni la rutina ni el plan se asignan a nadie.

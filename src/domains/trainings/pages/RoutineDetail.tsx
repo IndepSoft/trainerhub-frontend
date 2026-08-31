@@ -4,7 +4,7 @@ import { ArrowLeft, Clock, Copy, Dumbbell, Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { cn } from '@/shared/lib/utils'
-import { useRoutine } from '../hooks/useRoutine'
+import { useRoutine } from '../hooks/useRoutines'
 import { LEVEL_BADGE } from '../libs/levelBadge'
 import {
   BLOCK_METHOD_LABELS,
@@ -24,7 +24,7 @@ import { ConfirmDeleteDialog } from '../components/ConfirmDeleteDialog'
 export default function RoutineDetail() {
   const navigate = useNavigate()
   const { routineId } = useParams<{ routineId: string }>()
-  const { routine } = useRoutine(routineId)
+  const { routine, loading } = useRoutine(routineId)
   const { exercisesById } = useTrainingCatalog()
   const { routineDeletionBlocker, deleteRoutine } = useTrainingDeletion()
 
@@ -35,6 +35,10 @@ export default function RoutineDetail() {
    * que ya se sabe que no tiene respuesta.
    */
   const [blockedReason, setBlockedReason] = useState<string | undefined>(undefined)
+
+  // Mientras carga no se pinta nada: `routine === null` no significa «no
+  // existe» hasta que `loading` es falso.
+  if (loading) return null
 
   if (!routine) {
     return (
@@ -70,9 +74,9 @@ export default function RoutineDetail() {
           </div>
 
           <PageHeader.Actions>
-            {/* TODO: «Usar en una sesion» sigue sin conectar; falta el flujo de
-                asignacion. «Vista previa» se quito: no aportaba nada que la
-                propia ficha no muestre ya. */}
+            {/* «Usar en una sesion» navega a la agenda con la rutina en la
+                URL: esta ficha no puede abrir el dialogo de la agenda, que vive
+                en otro dominio, pero si decirle con que llegar. */}
             <Button
               type="button"
               variant="outline"
@@ -91,9 +95,11 @@ export default function RoutineDetail() {
                 Editar
               </Link>
             </Button>
-            <Button className="gap-2">
-              <Copy className="size-4" />
-              Usar en una sesión
+            <Button asChild className="gap-2">
+              <Link to={`/calendar?routine=${routine.id}`}>
+                <Copy className="size-4" />
+                Usar en una sesión
+              </Link>
             </Button>
           </PageHeader.Actions>
         </PageHeader.Content>
@@ -214,9 +220,10 @@ export default function RoutineDetail() {
         blockedReason={blockedReason}
         onOpenChange={setIsDeleteOpen}
         onConfirm={() => {
-          const result = deleteRoutine(routine.id)
-          if (result.deleted) navigate('/trainings')
-          else setBlockedReason(result.reason)
+          void deleteRoutine(routine.id).then((result) => {
+            if (result.deleted) navigate('/trainings')
+            else setBlockedReason(result.reason)
+          })
         }}
       />
     </div>

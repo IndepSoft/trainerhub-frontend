@@ -5,6 +5,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { toast } from 'sonner'
 import { CreateSessionModal } from '../components/CreateSessionModal'
@@ -17,6 +19,33 @@ import { useCalendar } from '../hooks/useCalendar'
 import type { CalendarViewMode } from '../types/calendar.types'
 
 export default function Calendar() {
+  /*
+   * «Usar en una sesion» llega aqui como `/calendar?routine=<id>`: la ficha de
+   * la rutina no abre ningun dialogo por su cuenta -no puede, vive en otro
+   * dominio-, sino que navega a la agenda diciendo con que rutina.
+   *
+   * El parametro se limpia al abrir para que recargar o volver atras no reabra
+   * el formulario, y para que la URL no se quede diciendo algo que ya no es.
+   */
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  /*
+   * La rutina se COPIA a estado en vez de leerse de la URL en cada render. Al
+   * limpiar el parametro, leerla de la URL la habria dejado en `null` en el
+   * render siguiente, cambiando la `key` del formulario y remontandolo justo
+   * despues de haberlo abierto: el dialogo aparecia sin la rutina puesta.
+   */
+  const [preselectedRoutineId, setPreselectedRoutineId] = useState<string | undefined>(undefined)
+
+  useEffect(() => {
+    const requested = searchParams.get('routine')
+    if (requested === null) return
+
+    setPreselectedRoutineId(requested)
+    setIsCreateOpen(true)
+    setSearchParams({}, { replace: true })
+  }, [searchParams, setSearchParams])
+
   const {
     currentDate,
     weekDates,
@@ -69,7 +98,14 @@ export default function Calendar() {
                 </SelectContent>
               </Select>
             )}
-            <CreateSessionModal />
+            {/* `key` para que el formulario se monte de nuevo con la rutina ya
+                elegida: su estado inicial se toma una sola vez. */}
+            <CreateSessionModal
+              key={preselectedRoutineId ?? 'sin-rutina'}
+              preselectedRoutineId={preselectedRoutineId}
+              open={isCreateOpen}
+              onOpenChange={setIsCreateOpen}
+            />
           </PageHeader.Actions>
         </PageHeader.Content>
 

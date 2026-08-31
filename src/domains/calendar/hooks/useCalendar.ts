@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useIsMobile } from '@/shared/hooks/useIsMobile'
-import { sessionsMock } from '../data/sessions.mock'
+import { useSessionsStore } from '../stores/sessionsStore'
 import { addDays, getWeekDates, toLocalDateKey } from '../libs/calendar.utils'
 import type {
   CalendarViewMode,
@@ -44,6 +44,9 @@ interface UseCalendarResult {
  */
 export function useCalendar(): UseCalendarResult {
   const isMobile = useIsMobile()
+  // Del almacen y no del modulo de datos: una sesion recien agendada tiene que
+  // aparecer en la agenda sin recargar.
+  const sessions = useSessionsStore((state) => state.sessions)
   const [currentDate, setCurrentDate] = useState(new Date())
   const [preferredViewMode, setPreferredViewMode] = useState<CalendarViewMode>('week')
   const [selectedSession, setSelectedSession] = useState<Session | null>(null)
@@ -53,7 +56,6 @@ export function useCalendar(): UseCalendarResult {
   // en la diaria.
   const viewMode: CalendarViewMode = isMobile ? 'day' : preferredViewMode
 
-  const sessions = sessionsMock
 
   const weekDates = useMemo(() => getWeekDates(currentDate), [currentDate])
 

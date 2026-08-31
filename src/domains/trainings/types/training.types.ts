@@ -1,3 +1,5 @@
+import type { Block, TrainingLevel } from '@/shared/domain/entities/routine'
+
 /**
  * Entidades del dominio de entrenamientos.
  *
@@ -8,9 +10,20 @@
  *
  * Los catálogos se referencian por identificador, nunca se copian: si mañana
  * «Polea» cambia de nombre, cambia en un sitio.
+ *
+ * LA RUTINA Y LO QUE LA COMPONE YA NO VIVEN AQUÍ. Subieron a
+ * `shared/domain/entities/routine.ts` cuando la agenda pasó a poder colgar una
+ * rutina de una sesión: dos dominios la necesitan, y el criterio del proyecto
+ * —escrito en `student.ts`— es que entonces sube. Se reexportan desde aquí para
+ * que el dominio siga teniendo un solo sitio donde mirar sus tipos.
  */
-
-export type TrainingLevel = 'Principiante' | 'Intermedio' | 'Avanzado'
+export type {
+  Block,
+  BlockMethod,
+  PrescribedExercise,
+  Routine,
+  TrainingLevel,
+} from '@/shared/domain/entities/routine'
 
 /**
  * Un ejercicio del catálogo.
@@ -31,63 +44,6 @@ export interface Exercise {
   /** Los que acompañan. Sirven para categorizar y para repartir el volumen. */
   secondaryMuscleGroupIds: string[]
   instructions: string[]
-}
-
-/**
- * Un ejercicio con su prescripción dentro de un bloque.
- *
- * `rir` es opcional porque no toda prescripción lo lleva: en trabajo técnico o
- * de movilidad, dejar repeticiones en reserva no significa nada. Que sea
- * opcional obliga a la vista a contemplar su ausencia en vez de pintar un cero
- * que se leería como «al fallo».
- */
-export interface PrescribedExercise {
-  id: string
-  exerciseId: string
-  sets: number
-  /** Repeticiones por serie. Un rango se escribe «8-10». */
-  reps: string
-  /** Repeticiones en reserva. 0 es al fallo; ausente es «no aplica». */
-  rir?: number
-  restSeconds: number
-  /** Cadencia en cuatro tiempos, «3-1-1-0». Opcional. */
-  tempo?: string
-  notes?: string
-}
-
-/**
- * Cómo se ejecutan los ejercicios de un bloque.
- *
- * `simple` es el caso de un solo ejercicio; existe para que la rutina contenga
- * SIEMPRE bloques y no una lista mezclada de dos tipos. Convertir un ejercicio
- * suelto en superserie pasa a ser cambiar este campo, y no reemplazar el nodo
- * por otro de otra forma.
- */
-export type BlockMethod = 'simple' | 'superserie' | 'triserie' | 'circuito'
-
-export interface Block {
-  id: string
-  method: BlockMethod
-  exercises: PrescribedExercise[]
-  /** Descanso al terminar la ronda completa del bloque. */
-  restAfterSeconds: number
-  notes?: string
-}
-
-/**
- * Una rutina es una SESIÓN de entrenamiento.
- *
- * No lleva duración almacenada: se calcula a partir de series, repeticiones,
- * tempo y descansos. Un dato derivado que se guarda es un dato que miente en
- * cuanto alguien edita un bloque y olvida actualizarlo, que es exactamente lo
- * que pasaba antes con `durationMinutes`.
- */
-export interface Routine {
-  id: string
-  title: string
-  description: string
-  level: TrainingLevel
-  blocks: Block[]
 }
 
 /**

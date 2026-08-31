@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { useCatalogStore } from '../stores/catalogStore'
-import { useRoutinesStore } from '../stores/routinesStore'
+import { useRoutines } from './useRoutines'
 import {
   describeNames,
   findExercisesUsingEquipment,
@@ -34,7 +34,7 @@ interface UseCatalogEditorResult {
  */
 export function useCatalogEditor(): UseCatalogEditorResult {
   const catalog = useCatalogStore()
-  const routines = useRoutinesStore((state) => state.routines)
+  const { routines } = useRoutines()
 
   const {
     exercises,

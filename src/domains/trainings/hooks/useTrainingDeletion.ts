@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { useRoutinesStore } from '../stores/routinesStore'
+import { container } from '@/app/container'
 import { usePlansStore } from '../stores/plansStore'
 import { describeNames, findPlansUsingRoutine } from '../libs/usage'
 import type { DeletionResult } from '../types/deletion.types'
@@ -13,7 +13,7 @@ interface UseTrainingDeletionResult {
    * algo que ya se sabe que no tiene respuesta.
    */
   routineDeletionBlocker: (routineId: string) => string | undefined
-  deleteRoutine: (routineId: string) => DeletionResult
+  deleteRoutine: (routineId: string) => Promise<DeletionResult>
   deletePlan: (planId: string) => DeletionResult
 }
 
@@ -35,7 +35,7 @@ interface UseTrainingDeletionResult {
 export function useTrainingDeletion(): UseTrainingDeletionResult {
   const plans = usePlansStore((state) => state.plans)
   const removePlan = usePlansStore((state) => state.deletePlan)
-  const removeRoutine = useRoutinesStore((state) => state.deleteRoutine)
+
 
   const routineDeletionBlocker = useCallback(
     (routineId: string): string | undefined => {
@@ -52,16 +52,16 @@ export function useTrainingDeletion(): UseTrainingDeletionResult {
   )
 
   const deleteRoutine = useCallback(
-    (routineId: string): DeletionResult => {
+    async (routineId: string): Promise<DeletionResult> => {
       // Se vuelve a comprobar aquí y no se confía en que la vista lo haya hecho:
       // entre abrir el diálogo y confirmar puede haberse creado un plan.
       const reason = routineDeletionBlocker(routineId)
       if (reason !== undefined) return { deleted: false, reason }
 
-      removeRoutine(routineId)
+      await container.routines.remove(routineId)
       return { deleted: true }
     },
-    [routineDeletionBlocker, removeRoutine]
+    [routineDeletionBlocker]
   )
 
   const deletePlan = useCallback(

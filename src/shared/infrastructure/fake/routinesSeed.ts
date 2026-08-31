@@ -1,4 +1,4 @@
-import type { Routine } from '../types/training.types'
+import type { Routine } from '@/shared/domain/entities/routine'
 
 /**
  * Rutinas simuladas, ya en la estructura de bloques.
@@ -11,15 +11,15 @@ import type { Routine } from '../types/training.types'
  * `hover:${routine.levelColor}`: interpolacion que Tailwind no ve al compilar,
  * asi que esa clase nunca llego a generarse y el hover no hacia nada.
  *
- * Ya no se lee desde los hooks: es la SEMILLA de `stores/routinesStore.ts`, que
- * es quien sirve la coleccion y admite altas. Leerla directamente desde un hook
- * dejaba la lista sin enterarse de las rutinas creadas en la sesion.
+ * Vive junto a `FakeRoutineRepository` y no dentro del dominio `trainings`, por
+ * el mismo motivo que `studentsSeed`: los datos de prueba de una entidad
+ * compartida pertenecen a su implementacion falsa. Si se quedaran en el dominio,
+ * la infraestructura compartida tendria que importar de el, que es el mismo
+ * acoplamiento al reves.
  *
- * TODO: sustituir por el repositorio cuando exista el esquema. El puerto no
- * nace en `shared/domain/ports` hasta que `Routine` cruce a un segundo dominio
- * -hoy solo la usa `trainings`-; el porque esta razonado en el almacen.
+ * TODO: sustituir por el adaptador real cuando exista el esquema.
  */
-export const routinesMock: Routine[] = [
+export const routinesSeed: Routine[] = [
   {
     id: 'routine-1',
     title: 'Full body · Principiante',
