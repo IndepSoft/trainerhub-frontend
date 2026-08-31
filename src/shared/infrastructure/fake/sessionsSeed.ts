@@ -1,5 +1,4 @@
-import { addDays, toLocalDateKey } from '../libs/calendar.utils'
-import type { Session } from '../types/calendar.types'
+import type { Session } from '@/shared/domain/entities/session'
 
 /**
  * Sesiones simuladas de la agenda.
@@ -11,19 +10,36 @@ import type { Session } from '../types/calendar.types'
  * salía siempre vacía, asi que no habia forma de ver si la vista funcionaba sin
  * navegar dos años atrás.
  *
- * TODO: sustituir por un `SessionRepository` -puerto en `shared/domain/ports`,
- * adaptador en `shared/infrastructure`- cuando exista el esquema. `useCalendar`
- * es el único punto que habrá que tocar.
+ * Los alumnos se referencian por IDENTIFICADOR. Antes se guardaba su nombre en
+ * texto, y el dato ya estaba corrompido: aqui ponia «María García» y «Ana
+ * Martínez» cuando en `studentsSeed` estan «María Gómez» y «Ana Torres». Nadie
+ * lo noto porque nada obligaba a que coincidieran.
+ *
+ * TODO: sustituir por el adaptador real cuando exista el esquema.
  */
-const today = new Date()
-const TODAY = toLocalDateKey(today)
-const TOMORROW = toLocalDateKey(addDays(today, 1))
+/**
+ * Clave de fecha local, `YYYY-MM-DD`.
+ *
+ * Se calcula aqui y no con `toLocalDateKey` del calendario: la infraestructura
+ * compartida no puede importar de un dominio. Son tres lineas y evitan que la
+ * semilla ate `shared` a `calendar`.
+ */
+function toDateKey(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 
-export const sessionsMock: Session[] = [
+const today = new Date()
+const TODAY = toDateKey(today)
+const TOMORROW = toDateKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1))
+
+export const sessionsSeed: Session[] = [
   {
     id: 'session-1',
-    title: 'Entrenamiento Personal - María García',
-    student: 'María García',
+    title: 'Entrenamiento Personal',
+    studentId: 'student-2',
     kind: 'individual',
     category: 'Entrenamiento Personal',
     date: TODAY,
@@ -36,8 +52,8 @@ export const sessionsMock: Session[] = [
   },
   {
     id: 'session-2',
-    title: 'Evaluación Inicial - Carlos López',
-    student: 'Carlos López',
+    title: 'Evaluación Inicial',
+    studentId: 'student-3',
     kind: 'individual',
     category: 'Evaluación',
     date: TODAY,
@@ -50,8 +66,8 @@ export const sessionsMock: Session[] = [
   },
   {
     id: 'session-3',
-    title: 'Clase Grupal - HIIT',
-    student: 'Grupo HIIT',
+    title: 'Clase Grupal',
+    studentId: null,
     kind: 'group',
     category: 'Entrenamiento Grupal',
     date: TODAY,
@@ -64,8 +80,8 @@ export const sessionsMock: Session[] = [
   },
   {
     id: 'session-4',
-    title: 'Seguimiento - Ana Martínez',
-    student: 'Ana Martínez',
+    title: 'Seguimiento',
+    studentId: 'student-4',
     kind: 'individual',
     category: 'Seguimiento',
     date: TOMORROW,
@@ -78,8 +94,8 @@ export const sessionsMock: Session[] = [
   },
   {
     id: 'session-5',
-    title: 'Entrenamiento Personal - Pedro Rodríguez',
-    student: 'Pedro Rodríguez',
+    title: 'Entrenamiento Personal',
+    studentId: 'student-1',
     kind: 'individual',
     category: 'Entrenamiento Personal',
     date: TOMORROW,

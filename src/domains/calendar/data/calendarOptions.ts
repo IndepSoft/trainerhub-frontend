@@ -1,26 +1,13 @@
 /**
  * Opciones fijas de la agenda.
  *
- * `TIME_SLOTS` estaba duplicado literalmente -los mismos 27 tramos- en
- * Calendar.tsx y en CreateSessionModal.tsx. Dos copias que habria que recordar
- * mantener a la vez.
+ * Los tramos y las ubicaciones SUBIERON a `shared/domain/entities/session.ts`
+ * cuando la ficha del estudiante paso a agendar tambien: son vocabulario de la
+ * sesion, no de esta vista. Se reexportan con el nombre que ya usaba el dominio.
  */
-export const TIME_SLOTS: string[] = [
-  '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-  '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
-  '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30',
-  '20:00', '20:30', '21:00',
-]
+export { SESSION_LOCATIONS } from '@/shared/domain/entities/session'
+export { SESSION_TIME_SLOTS as TIME_SLOTS } from '@/shared/domain/entities/session'
 
 export const WEEK_DAY_LABELS: string[] = [
   'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom',
-]
-
-export const SESSION_LOCATIONS: string[] = [
-  'Gimnasio Principal',
-  'Sala Grupal',
-  'Sala de Evaluación',
-  'Oficina',
-  'Exterior',
-  'Online',
 ]

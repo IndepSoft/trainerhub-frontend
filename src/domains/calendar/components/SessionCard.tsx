@@ -9,6 +9,14 @@ export type SessionCardVariant = 'full' | 'compact'
 
 interface SessionCardProps {
   session: Session
+  /**
+   * El nombre del alumno, ya resuelto por quien compone.
+   *
+   * No lo resuelve la tarjeta: habria que consultar el puerto de alumnos una vez
+   * POR TARJETA, y una semana con veinte sesiones son veinte consultas para el
+   * mismo dato.
+   */
+  studentName: string
   onSelect: (session: Session) => void
   /**
    * `compact` es la MISMA tarjeta a escala reducida, no otro componente: misma
@@ -32,7 +40,12 @@ interface SessionCardProps {
  * Ocupa todo el alto que le da su contenedor, porque quien decide su tamaño es
  * la escala de tiempo: una sesión de 60 minutos mide el doble que una de 30.
  */
-export function SessionCard({ session, onSelect, variant = 'full' }: SessionCardProps) {
+export function SessionCard({
+  session,
+  studentName,
+  onSelect,
+  variant = 'full',
+}: SessionCardProps) {
   const status = SESSION_STATUS[session.status]
   const statusTextClassName = status.outlineBadgeClassName.split(' ')[1]
   const isCompact = variant === 'compact'
@@ -47,7 +60,7 @@ export function SessionCard({ session, onSelect, variant = 'full' }: SessionCard
        * tipo, duracion y lugar como una sola frase. Asi dice lo que hace falta
        * para decidir si abrirla, y en el orden en que se decide.
        */
-      aria-label={`${session.title}. ${status.label}. ${session.time}, ${session.durationMinutes} minutos`}
+      aria-label={`${session.title}. ${studentName}. ${status.label}. ${session.time}, ${session.durationMinutes} minutos`}
       className={cn(
         'group relative isolate flex h-full w-full flex-col overflow-hidden rounded-block border border-cobalt-tint-3 bg-white text-left transition-colors hover:border-cobalt/40',
         isCompact ? 'p-2' : 'p-3'
@@ -73,7 +86,7 @@ export function SessionCard({ session, onSelect, variant = 'full' }: SessionCard
         ) : (
           <Avatar className="size-8 shrink-0">
             <AvatarFallback className="bg-cobalt-tint-2 text-[10px] font-bold text-cobalt">
-              {getStudentInitials(session.student)}
+              {getStudentInitials(studentName)}
             </AvatarFallback>
           </Avatar>
         )}
@@ -84,7 +97,7 @@ export function SessionCard({ session, onSelect, variant = 'full' }: SessionCard
             isCompact ? 'text-xs' : 'text-sm'
           )}
         >
-          {isCompact ? session.student : session.title}
+          {isCompact ? studentName : session.title}
         </span>
 
         {!isCompact && (

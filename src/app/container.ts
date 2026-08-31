@@ -7,6 +7,8 @@ import type { StudentRepository } from '@/shared/domain/ports/StudentRepository'
 import { FakeStudentRepository } from '@/shared/infrastructure/fake/FakeStudentRepository'
 import type { RoutineRepository } from '@/shared/domain/ports/RoutineRepository'
 import { FakeRoutineRepository } from '@/shared/infrastructure/fake/FakeRoutineRepository'
+import type { SessionRepository } from '@/shared/domain/ports/SessionRepository'
+import { FakeSessionRepository } from '@/shared/infrastructure/fake/FakeSessionRepository'
 
 /**
  * Raíz de composición.
@@ -23,6 +25,7 @@ export interface Container {
   trainers: TrainerRepository
   students: StudentRepository
   routines: RoutineRepository
+  sessions: SessionRepository
 }
 
 /**
@@ -50,4 +53,5 @@ export const container: Container = {
   // los unicos adaptadores falsos que siguen activos en produccion.
   students: new FakeStudentRepository(),
   routines: new FakeRoutineRepository(),
+  sessions: new FakeSessionRepository(),
 }

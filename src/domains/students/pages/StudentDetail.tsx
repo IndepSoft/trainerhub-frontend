@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, Calendar, TrendingUp } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
@@ -6,6 +7,8 @@ import { PageHeader } from '@/shared/components/PageHeader'
 import { PageSkeleton } from '@/shared/components/PageSkeleton'
 import { getInitials, getShortName } from '@/shared/lib/personName'
 import { useStudent } from '../hooks/useStudent'
+import { StudentSessions } from '../components/StudentSessions'
+import { ScheduleSessionDialog } from '../components/ScheduleSessionDialog'
 import { LEVEL_BADGE } from '../libs/levelBadge'
 import { cn } from '@/shared/lib/utils'
 
@@ -13,6 +16,7 @@ import { cn } from '@/shared/lib/utils'
  * Ficha de un estudiante. Sólo composición.
  */
 export default function StudentDetail() {
+  const [isScheduleOpen, setIsScheduleOpen] = useState(false)
   const { studentId } = useParams<{ studentId: string }>()
   const { student, loading } = useStudent(studentId)
 
@@ -74,12 +78,12 @@ export default function StudentDetail() {
           </div>
 
           <PageHeader.Actions>
-            {/* TODO: ninguna de las dos acciones esta conectada. */}
+            {/* TODO: «Ver progreso» sigue sin conectar. */}
             <Button variant="outline" className="gap-2">
               <TrendingUp className="size-4" />
               Ver progreso
             </Button>
-            <Button className="gap-2">
+            <Button className="gap-2" onClick={() => setIsScheduleOpen(true)}>
               <Calendar className="size-4" />
               Agendar sesión
             </Button>
@@ -109,7 +113,15 @@ export default function StudentDetail() {
             ))}
           </div>
         </section>
+
+        <StudentSessions student={student} />
       </div>
+
+      <ScheduleSessionDialog
+        student={student}
+        open={isScheduleOpen}
+        onOpenChange={setIsScheduleOpen}
+      />
     </div>
   )
 }

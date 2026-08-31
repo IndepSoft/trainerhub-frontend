@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useIsMobile } from '@/shared/hooks/useIsMobile'
-import { useSessionsStore } from '../stores/sessionsStore'
+import { container } from '@/app/container'
 import { addDays, getWeekDates, toLocalDateKey } from '../libs/calendar.utils'
 import type {
   CalendarViewMode,
@@ -44,9 +44,31 @@ interface UseCalendarResult {
  */
 export function useCalendar(): UseCalendarResult {
   const isMobile = useIsMobile()
-  // Del almacen y no del modulo de datos: una sesion recien agendada tiene que
-  // aparecer en la agenda sin recargar.
-  const sessions = useSessionsStore((state) => state.sessions)
+  /*
+   * Del PUERTO, y suscrito a sus cambios: una sesion agendada desde la ficha de
+   * un estudiante -otro dominio- tiene que aparecer aqui sin recargar. Es lo
+   * que hace que «se refleje en el calendario» no dependa de que las dos
+   * pantallas compartan estado, sino de que compartan origen.
+   */
+  const [sessions, setSessions] = useState<Session[]>([])
+
+  useEffect(() => {
+    let active = true
+
+    const load = () => {
+      container.sessions.findAll().then((result) => {
+        if (active) setSessions(result)
+      })
+    }
+
+    load()
+    const unsubscribe = container.sessions.onChange(load)
+
+    return () => {
+      active = false
+      unsubscribe()
+    }
+  }, [])
   const [currentDate, setCurrentDate] = useState(new Date())
   const [preferredViewMode, setPreferredViewMode] = useState<CalendarViewMode>('week')
   const [selectedSession, setSelectedSession] = useState<Session | null>(null)

@@ -1,6 +1,8 @@
 import { TIME_SLOTS } from '../data/calendarOptions'
 import { SessionLane } from './SessionLane'
 import { SessionCard } from './SessionCard'
+import type { Student } from '@/shared/domain/entities/student'
+import { resolveSessionStudentName } from '../libs/sessionStudent'
 import type { Session } from '../types/calendar.types'
 
 /** Alto de cada tramo de 30 minutos en la vista de día. */
@@ -10,6 +12,8 @@ interface DayViewProps {
   date: Date
   getSessionsOfDay: (date: Date) => Session[]
   onSelectSession: (session: Session) => void
+  /** Alumnos indexados, para resolver el nombre de cada sesion una sola vez. */
+  studentsById: Map<string, Student>
 }
 
 /**
@@ -22,7 +26,12 @@ interface DayViewProps {
  * de 60 minutos ocupa el doble de alto que una de 30 y una que empieza a y
  * cuarto arranca a y cuarto. Ver `SessionLane`.
  */
-export function DayView({ date, getSessionsOfDay, onSelectSession }: DayViewProps) {
+export function DayView({
+  date,
+  getSessionsOfDay,
+  onSelectSession,
+  studentsById,
+}: DayViewProps) {
   return (
     <div className="flex border-y border-cobalt-tint-3">
       <div className="w-14 shrink-0 border-e border-cobalt-tint-3">
@@ -45,6 +54,7 @@ export function DayView({ date, getSessionsOfDay, onSelectSession }: DayViewProp
         slotHeight={SLOT_HEIGHT}
         renderSession={(session, isCompact) => (
           <SessionCard
+            studentName={resolveSessionStudentName(session, studentsById)}
             session={session}
             onSelect={onSelectSession}
             variant={isCompact ? 'compact' : 'full'}

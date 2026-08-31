@@ -24,7 +24,7 @@ import { cn } from '@/shared/lib/utils'
 import { getShortName } from '@/shared/lib/personName'
 import { useSchedulableStudents } from '../hooks/useSchedulableStudents'
 import { useSchedulableRoutines } from '../hooks/useSchedulableRoutines'
-import { useSessionsStore } from '../stores/sessionsStore'
+import { container } from '@/app/container'
 import { toLocalDateKey } from '../libs/calendar.utils'
 import { SESSION_LOCATIONS, TIME_SLOTS } from '../data/calendarOptions'
 
@@ -88,7 +88,6 @@ export function CreateSessionModal({
 }: CreateSessionModalProps = {}) {
   const { students } = useSchedulableStudents()
   const { routines } = useSchedulableRoutines()
-  const createSession = useSessionsStore((state) => state.createSession)
 
   const [isSelfOpen, setIsSelfOpen] = useState(false)
   const isOpen = open ?? isSelfOpen
@@ -149,12 +148,13 @@ export function CreateSessionModal({
     const category =
       SESSION_TYPES.find((candidate) => candidate.value === sessionType)?.label ?? 'Sesión'
 
-    createSession({
+    void container.sessions.create({
       // El titulo lo pone la rutina cuando la hay: es lo que se lee en la
-      // agenda, y «Full body · Principiante — Maria» dice mas que «Entrenamiento
-      // personal — Maria».
-      title: `${routine?.title ?? category} - ${quien}`,
-      student: isGroupSession ? 'Clase grupal' : `${student?.firstName ?? ''} ${student?.lastName ?? ''}`.trim(),
+      // agenda, y «Full body · Principiante» dice mas que «Entrenamiento
+      // personal». NO lleva el nombre del alumno dentro: eso se resuelve desde
+      // `studentId`, y meterlo aqui seria una copia que envejece.
+      title: routine?.title ?? category,
+      studentId: isGroupSession ? null : studentId,
       kind: isGroupSession ? 'group' : 'individual',
       category,
       date: toLocalDateKey(date!),

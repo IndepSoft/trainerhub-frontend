@@ -5,7 +5,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { toast } from 'sonner'
@@ -16,6 +16,7 @@ import { WeekView } from '../components/WeekView'
 import { DayView } from '../components/DayView'
 import { SessionSummary } from '../components/SessionSummary'
 import { useCalendar } from '../hooks/useCalendar'
+import { useSchedulableStudents } from '../hooks/useSchedulableStudents'
 import type { CalendarViewMode } from '../types/calendar.types'
 
 export default function Calendar() {
@@ -45,6 +46,18 @@ export default function Calendar() {
     setIsCreateOpen(true)
     setSearchParams({}, { replace: true })
   }, [searchParams, setSearchParams])
+
+  const { students } = useSchedulableStudents()
+
+  /*
+   * Los alumnos se indexan UNA vez para toda la pagina. La sesion guarda el
+   * identificador, no el nombre, y resolverlo dentro de cada tarjeta habria
+   * significado una consulta por tarjeta para el mismo dato.
+   */
+  const studentsById = useMemo(
+    () => new Map(students.map((student) => [student.id, student])),
+    [students]
+  )
 
   const {
     currentDate,
@@ -141,12 +154,14 @@ export default function Calendar() {
                 weekDates={weekDates}
                 getSessionsOfDay={getSessionsOfDay}
                 onSelectSession={selectSession}
+              studentsById={studentsById}
               />
             ) : (
               <DayView
                 date={currentDate}
                 getSessionsOfDay={getSessionsOfDay}
                 onSelectSession={selectSession}
+              studentsById={studentsById}
               />
             )}
           </section>

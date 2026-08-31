@@ -1667,3 +1667,120 @@ test.describe('usar una rutina en una sesion', () => {
     await page.waitForURL(/\/trainings\/routine-2$/)
   })
 })
+
+/**
+ * Asignar sesiones a un alumno desde su ficha.
+ *
+ * Es lo que hizo que `Session` subiera a `shared/domain/entities`: la necesitan
+ * `calendar` y `students`. Y lo que obligo a que el alumno se guarde por
+ * IDENTIFICADOR: con el nombre en texto no habia forma de preguntar «que tiene
+ * Maria esta semana» sin comparar cadenas.
+ */
+test.describe('sesiones del alumno', () => {
+  test('la ficha lista las sesiones de ese alumno y solo esas', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students/student-2')
+
+    await expect(page.getByRole('heading', { name: 'Sesiones' })).toBeVisible()
+    await expect(page.getByText('Entrenamiento Personal')).toBeVisible()
+    await expect(page.getByText('Gimnasio Principal')).toBeVisible()
+
+    /*
+     * Y NO las de otros. La semilla decia «María García» donde el padron dice
+     * «María Gómez», asi que con el nombre en texto esta sesion no era de nadie:
+     * ahora lo es de `student-2` porque lo dice su identificador.
+     */
+    await expect(page.getByText('Evaluación Inicial')).toHaveCount(0)
+  })
+
+  test('un alumno sin sesiones lo dice, y no finge una lista vacia', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/students/student-5')
+
+    // `student-5` no existe en la semilla: la ficha degrada, no revienta.
+    await expect(page.getByText('Estudiante no encontrado')).toBeVisible()
+  })
+
+  test('lo agendado desde la ficha aparece en el calendario', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students/student-3')
+
+    // `.first()` porque el disparador y el envio del dialogo comparten
+    // etiqueta, que en pantalla se lee bien -uno abre y el otro confirma- pero
+    // deja dos coincidencias.
+    await page.getByRole('button', { name: 'Agendar sesión' }).first().click()
+
+    const dialogo = page.getByRole('dialog')
+    await expect(dialogo).toContainText('Carlos López')
+
+    await elegirDelDesplegable(page, desplegables(page, 'Rutina'), 'Full body · Principiante')
+
+    const hoy = new Date().toLocaleDateString('es-ES', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
+    await dialogo.getByRole('button', { name: hoy }).click()
+    await elegirDelDesplegable(page, desplegables(page, 'Hora'), '18:30')
+    await elegirDelDesplegable(page, desplegables(page, 'Ubicación'), 'Sala Grupal')
+
+    await dialogo.getByRole('button', { name: 'Agendar sesión' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    // Aparece en la lista del alumno sin recargar.
+    await expect(page.getByText('Sala Grupal')).toBeVisible()
+
+    /*
+     * Y EN EL CALENDARIO, que es lo que se pedia. No comparten estado: comparten
+     * ORIGEN. Los dos dominios leen del mismo puerto y estan suscritos a sus
+     * cambios, asi que ninguno tiene que saber del otro.
+     *
+     * Se navega por la interfaz: los adaptadores falsos viven en memoria y un
+     * `page.goto` recargaria la aplicacion perdiendo lo recien agendado.
+     */
+    await page.getByRole('link', { name: 'Ver la agenda completa' }).click()
+    await page.waitForURL(/\/calendar$/)
+
+    // La tarjeta compacta muestra el alumno; su nombre accesible, el titulo.
+    const agendada = page.getByLabel(/Full body · Principiante/).first()
+    await expect(agendada).toBeVisible()
+    await expect(agendada).toContainText('Carlos López')
+  })
+
+  test('la ficha del alumno cumple las reglas de 375 px', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/students/student-2')
+    await page.waitForTimeout(1200)
+
+    const medidas = await page.evaluate(() => {
+      const caja = (elemento: Element) => elemento.getBoundingClientRect()
+
+      return {
+        desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        contenedoresEstrechos: [
+          ...document.querySelectorAll('section, article, [class*="rounded-block"]'),
+        ]
+          .map((elemento) => caja(elemento).width)
+          .filter((ancho) => ancho > 0 && ancho < 280).length,
+        controlesPequenos: [...document.querySelectorAll('button, a, input, textarea')]
+          .map(caja)
+          .filter((rect) => rect.height > 0 && rect.height < 44).length,
+        etiquetasHuerfanas: [...document.querySelectorAll('label[for]')].filter(
+          (etiqueta) => document.getElementById(etiqueta.getAttribute('for') ?? '') === null
+        ).length,
+      }
+    })
+
+    expect(medidas.desborde, 'desbordamiento horizontal').toBe(0)
+    expect(medidas.contenedoresEstrechos, 'contenedores bajo 280 px').toBe(0)
+    expect(medidas.controlesPequenos, 'controles bajo 44 px').toBe(0)
+    expect(medidas.etiquetasHuerfanas, 'etiquetas sin control').toBe(0)
+
+    await page.screenshot({ path: 'tests/visual/salida/alumno-sesiones-mobile.png' })
+  })
+})

@@ -3,6 +3,8 @@ import { isToday, toLocalDateKey } from '../libs/calendar.utils'
 import { SessionLane } from './SessionLane'
 import { SessionCard } from './SessionCard'
 import { cn } from '@/shared/lib/utils'
+import type { Student } from '@/shared/domain/entities/student'
+import { resolveSessionStudentName } from '../libs/sessionStudent'
 import type { Session } from '../types/calendar.types'
 
 /** Alto de cada tramo de 30 minutos en la rejilla semanal. */
@@ -12,6 +14,8 @@ interface WeekViewProps {
   weekDates: Date[]
   getSessionsOfDay: (date: Date) => Session[]
   onSelectSession: (session: Session) => void
+  /** Alumnos indexados, para resolver el nombre de cada sesion una sola vez. */
+  studentsById: Map<string, Student>
 }
 
 /**
@@ -25,7 +29,12 @@ interface WeekViewProps {
  * Las sesiones se colocan sobre la escala y cruzan los tramos que ocupen, en
  * vez de vivir dentro de una celda. Ver `SessionLane`.
  */
-export function WeekView({ weekDates, getSessionsOfDay, onSelectSession }: WeekViewProps) {
+export function WeekView({
+  weekDates,
+  getSessionsOfDay,
+  onSelectSession,
+  studentsById,
+}: WeekViewProps) {
   return (
     <div className="border-y border-cobalt-tint-3">
       {/* Pegada arriba del contenedor de scroll: al desplazar la rejilla, saber
@@ -73,7 +82,12 @@ export function WeekView({ weekDates, getSessionsOfDay, onSelectSession }: WeekV
             sessions={getSessionsOfDay(date)}
             slotHeight={SLOT_HEIGHT}
             renderSession={(session) => (
-              <SessionCard session={session} onSelect={onSelectSession} variant="compact" />
+              <SessionCard
+                session={session}
+                studentName={resolveSessionStudentName(session, studentsById)}
+                onSelect={onSelectSession}
+                variant="compact"
+              />
             )}
           />
         ))}

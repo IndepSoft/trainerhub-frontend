@@ -231,7 +231,14 @@ fija y la rejilla gana campo de visión.
    la leen por el puerto, vía `container`, y ninguno importa del otro —igual que
    con los alumnos—. El almacén de zustand desaparece; su sitio lo ocupa
    `FakeRoutineRepository`.
-7. **Edición de rutinas y planes completos.** `RoutineForm` y `PlanForm` sirven
+7. **`Session` sube a `shared/domain/entities` y nace `SessionRepository`.** La
+   ficha del estudiante lista y agenda sus sesiones, así que la entidad cruza a
+   `students`. El alumno pasa a guardarse por IDENTIFICADOR: era su nombre en
+   texto, y el dato ya estaba corrompido —las sesiones decían «María García» y
+   «Ana Martínez» cuando en el padrón estaban «María Gómez» y «Ana Torres»—.
+   Lo agendado en la ficha aparece en el calendario y al revés, sin que ninguno
+   de los dos dominios sepa del otro: comparten origen, no estado.
+8. **Edición de rutinas y planes completos.** `RoutineForm` y `PlanForm` sirven
    para alta y edición: la ruta decide, y `submit` devuelve datos sin
    identificador para que quien llama elija si crea o actualiza. La acción
    primaria de la cabecera sigue a la pestaña —«Nueva Rutina» / «Nuevo Plan»— y
@@ -272,15 +279,20 @@ crearlos.
 No existen `RoutineRepository`, `SessionRepository` ni `DashboardRepository`; los
 ficheros `*.mock.ts` los esperan con un `TODO` que nombra la costura.
 
-**Cuatro puertos**: `AuthPort`, `TrainerRepository`, `StudentRepository` y
-`RoutineRepository`. Este último nació cuando la agenda pasó a colgar rutinas de
-sus sesiones; el criterio —una entidad sube cuando la necesitan DOS dominios—
-está escrito en `shared/domain/entities/student.ts`.
+**Cinco puertos**: `AuthPort`, `TrainerRepository`, `StudentRepository`,
+`RoutineRepository` y `SessionRepository`. Los dos últimos nacieron al cumplirse
+su condición: la agenda cuelga rutinas de sus sesiones, y la ficha del estudiante
+lista y agenda las suyas. El criterio —una entidad sube cuando la necesitan DOS
+dominios— está escrito en `shared/domain/entities/student.ts`.
 
 **Siguen en zustand, y siguen sin ser puertos**: `catalogStore` y
-`blockLibraryStore` en `trainings`, y `plansStore` y `sessionsStore` en sus
-dominios. Ninguna de esas entidades cruza todavía. El día que la ficha de un
-estudiante liste sus sesiones, `Session` cruza y nace `SessionRepository`.
+`blockLibraryStore` en `trainings`, y `plansStore`. Ninguna de esas entidades
+cruza todavía.
+
+**Cada dominio tiene su propio hook sobre el puerto compartido** en vez de
+importar del vecino: `useSchedulableStudents` y `useSchedulableRoutines` en
+`calendar`, `useStudentSessions` y `useAssignableRoutines` en `students`. Se
+repite la forma a propósito; lo que no se repite es el origen del dato.
 
 ⚠️ **Todo lo creado vive sólo en memoria.** Al recargar la página vuelven las
 semillas: la rutina creada, el ejercicio dado de alta y la biblioteca entera

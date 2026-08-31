@@ -19,6 +19,8 @@ import { Textarea } from '@/shared/ui/textarea'
 import { Label } from '@/shared/ui/label'
 import { ArrowUpRight, Clock, MapPin, MessageSquare, Pencil, Play, Trash2, User } from 'lucide-react'
 import { useSchedulableRoutines } from '../hooks/useSchedulableRoutines'
+import { useSchedulableStudents } from '../hooks/useSchedulableStudents'
+import { resolveSessionStudentName } from '../libs/sessionStudent'
 import { toast } from 'sonner'
 import { cn } from '@/shared/lib/utils'
 import { SESSION_STATUS, SESSION_STATUS_ENTRIES } from '../libs/sessionStatus'
@@ -61,6 +63,17 @@ export function SessionDetailsModal({
    * ficha lo refleja sin tener que tocar la sesion.
    */
   const { routines } = useSchedulableRoutines()
+
+  /*
+   * El nombre se resuelve desde `studentId`, con la misma funcion que usan la
+   * tarjeta y la celda semanal: si las tres lo compusieran por su cuenta, se
+   * separarian en cuanto cambiara el caso del alumno borrado.
+   */
+  const { students } = useSchedulableStudents()
+  const studentName = resolveSessionStudentName(
+    session,
+    new Map(students.map((student) => [student.id, student]))
+  )
   const routine = routines.find((candidate) => candidate.id === session.routineId)
 
   const status = SESSION_STATUS[session.status]
@@ -90,7 +103,7 @@ export function SessionDetailsModal({
   }
 
   const handleSendReminder = () => {
-    toast.success(`Recordatorio enviado a ${session.student}`)
+    toast.success(`Recordatorio enviado a ${studentName}`)
   }
 
   return (
@@ -103,7 +116,7 @@ export function SessionDetailsModal({
                 corrigió ya en DayView y aquí había sobrevivido. */}
             <Avatar className="size-11 shrink-0">
               <AvatarFallback className="bg-cobalt-tint-2 font-semibold text-cobalt">
-                {getStudentInitials(session.student)}
+                {getStudentInitials(studentName)}
               </AvatarFallback>
             </Avatar>
 
@@ -174,7 +187,7 @@ export function SessionDetailsModal({
             </dd>
             <dd className="mt-0.5 flex items-center gap-1.5 text-xs text-ink/45">
               <User className="size-3 shrink-0" />
-              <span className="truncate">{session.student}</span>
+              <span className="truncate">{studentName}</span>
             </dd>
           </div>
         </dl>
