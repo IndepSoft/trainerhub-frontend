@@ -1,4 +1,4 @@
-# Traspaso de sesión — 30 ago 2026
+# Traspaso de sesión — 31 ago 2026
 
 Contexto **de sesión**, no de proyecto. Sirve para que la siguiente sesión
 retome el trabajo sin volver a deducirlo todo. Las reglas permanentes viven en
@@ -6,11 +6,11 @@ retome el trabajo sin volver a deducirlo todo. Las reglas permanentes viven en
 [`CAMBIOS-Y-ARQUITECTURA.md`](CAMBIOS-Y-ARQUITECTURA.md); la lista de la
 adaptación móvil, en [`PWA-SEGUIMIENTO.md`](PWA-SEGUIMIENTO.md).
 
-**Se reescribe entero cada sesión, no se parchea.** La versión anterior se
-escribió el 27 de agosto para la rama `feature/pwa-adaptation` y en dos días
-quedó desfasada en cuatro puntos: daba una ruta de proyecto que ya no existe,
-una rama activa que ya se fusionó, un «paso 4 de 6» que hoy son ocho pasos
-cerrados, y afirmaba que no había pruebas cuando hay cincuenta y dos. Un
+**Se pone al día cada sesión, y se reescribe cuando hace falta.** La versión del
+27 de agosto se escribió para la rama `feature/pwa-adaptation` y en dos días
+quedó desfasada en cuatro puntos a la vez: daba una ruta de proyecto que ya no
+existía, una rama activa que ya se había fusionado, un «paso 4 de 6» que eran
+ocho pasos cerrados, y afirmaba que no había pruebas cuando ya había decenas. Un
 traspaso caducado hace más daño que ninguno, porque se lee como si fuera cierto.
 
 Aquel documento se declaraba efímero —«cuando la adaptación a PWA esté
@@ -23,9 +23,9 @@ conserva el fichero con otro propósito: traspaso rodante entre sesiones.
 
 | Rama | Commit | Estado |
 |---|---|---|
-| `feature/redesign-ui` | `549558a` | **rama activa**, sincronizada con origin |
-| `develop` | `1492aed` en origin | 27 commits por detrás de la rama activa |
-| `main` | `91d0fd8` | 85 commits por detrás; PR abierto sin fusionar |
+| `feature/redesign-ui` | `e129486` | **rama activa**, ⚠️ **5 commits sin subir** |
+| `develop` | `1492aed` en origin | 32 commits por detrás de la rama activa |
+| `main` | `91d0fd8` | 90 commits por detrás; PR abierto sin fusionar |
 | `feature/pwa-adaptation` | `23d110c` | fusionada en `develop` (PR #6): se puede borrar |
 | `backup/supabase-test` | `d117d93` | recuperada de origin — ver «Trampas» |
 
@@ -33,8 +33,8 @@ conserva el fichero con otro propósito: traspaso rodante entre sesiones.
 `origin/develop`.** Ramificar desde ella sin un `git pull` previo parte de un
 punto viejo.
 
-Estado verificado el 30 de agosto, ejecutado y no supuesto: `npm run lint`
-limpio, `npm run build` en verde, 52 pruebas de Playwright.
+Estado verificado el 31 de agosto, ejecutado y no supuesto: `npm run lint`
+limpio, `tsc -b` en verde, **64 pruebas de Playwright en verde**.
 
 ---
 
@@ -63,9 +63,9 @@ así que entra `FakeAuthAdapter`, no Supabase:
 
 Es el punto donde más se equivocaba la versión anterior de este documento.
 
-- `tests/visual/screenshots.spec.ts`: **52 pruebas**, 53 aserciones. Son 30
-  bloques `test()`, la mayoría parametrizados por tres anchos —375, 768 y
-  1440— desde la constante `VIEWPORTS`.
+- `tests/visual/screenshots.spec.ts`: **64 pruebas**. Muchas están
+  parametrizadas por tres anchos —375, 768 y 1440— desde la constante
+  `VIEWPORTS`.
 - Se lanzan con `npx playwright test`. **No hay script `test` en
   `package.json`**; `--list` funciona sin levantar el servidor.
 - `playwright.config.ts` arranca el servidor solo y reutiliza el que ya esté
@@ -114,6 +114,16 @@ al terminar.
 procesos node. La alternativa que funciona es `cp -r` + `rm -rf`; git lo detecta
 igual como renombrado.
 
+**`getByLabel` sobre un `Select` de Radix devuelve DOS elementos.** Radix pinta,
+junto al botón visible, un `<select>` nativo oculto para que el control participe
+en el formulario, y la etiqueta alcanza a los dos. Con dos desplegables
+«Ejercicio» en pantalla, `getByLabel('Ejercicio').nth(1)` era el select oculto
+del primero, no el disparador del segundo — y hacer clic en un `<select>` oculto
+no abre nada **ni da error**, así que la prueba moría mucho después buscando una
+opción que nunca apareció. Se filtra por rol y nombre: `getByRole('combobox',
+{ name, exact: true })`, que el nativo no tiene. Los ayudantes `desplegables` y
+`elegirDelDesplegable` de la suite ya lo hacen.
+
 **Los *heredoc* de bash no sirven para escribir estos documentos.** La
 herramienta envuelve el comando en comillas simples, así que cualquier comilla
 del contenido —o el propio delimitador citado— rompe el análisis sintáctico. Se
@@ -146,8 +156,20 @@ cayeron en una rama equivocada. `git branch --show-current` cuesta nada.
   *consigue*. Se vaciaron a `ComingSoon` porque las ~2000 líneas que había
   operaban sobre datos globales, sin ligar a ningún estudiante y sin forma de
   asignarlos.
-- **«Plantilla» es la marca `isTemplate`, no una colección aparte.** Costó dos
-  commits: el primero lo afirmó sin llegar a hacerlo.
+- **«Plantilla» ya no existe.** Fue una marca sin comportamiento: sólo repartía
+  la lista en dos pestañas. Como **nada se asigna a ningún estudiante**, todas
+  las rutinas eran igualmente plantillas y la distinción no distinguía. Cuando
+  exista la asignación será derivable, o se sustituirá por carpetas o favoritos.
+- **Se referencia el vocabulario, se copia la decisión.** Es la regla que ordena
+  el dominio. El ejercicio se referencia por identificador —si cambia de nombre,
+  cambia en todas partes, y por eso su borrado está protegido—. El bloque
+  guardado se **copia** al insertarlo: si se referenciara, editar la entrada de
+  la biblioteca cambiaría en silencio el programa que alguien está haciendo esta
+  semana.
+- **De los seis catálogos sólo se editan dos.** Ejercicios y equipamiento son
+  del entrenador. Grupos musculares, patrones, objetivos y divisiones son
+  vocabulario: abrirlos a texto libre rompe el filtrado en cuanto uno escribe
+  «Pecho» y otro «Pectoral».
 
 ---
 
@@ -177,22 +199,79 @@ fija y la rejilla gana campo de visión.
 
 ---
 
+## Qué hizo la sesión del 30–31 de agosto — 5 commits
+
+1. **Creación de rutinas** (`b811963`). La pantalla que faltaba. Guardar guarda
+   de verdad: la colección pasa a `stores/routinesStore.ts` y el mock queda como
+   semilla. El resumen en vivo usa las mismas funciones que la tarjeta y la
+   ficha, así que la duración que se ve al escribir es la que se guarda. De paso,
+   los planes dejan de ser inalcanzables: pasan a una pestaña.
+2. **Fuera «plantilla»** (`0023e8b`). Ver «Decisiones ya tomadas».
+3. **Catálogo** (`5b51f37`), en `/trainings/catalog`. Era un agujero abierto por
+   el commit 1: la creación de rutinas ofrecía quince ejercicios fijos y no
+   había forma de añadir el decimosexto.
+4. **Biblioteca de bloques** (`e129486`). Guardar un bloque con un gesto y
+   volver a insertarlo, copiando.
+
+---
+
+## ⚠️ La deuda que salió del análisis y NO se ha tocado
+
+**El plan no puede expresar progresión, que es su única razón de existir.**
+
+`PlanDay` sólo guarda un `routineId`, y la rutina lleva dentro toda la
+prescripción. Resultado: no hay forma de decir «la misma sesión, con más volumen
+la semana 3». Para progresar hay que duplicar la rutina entera por semana, que
+es la misma duplicación que la biblioteca de bloques resuelve un nivel más
+abajo — pero sin resolver.
+
+Ya se nota en los datos, y es medible: en `plans.mock.ts`, la semana 4 está
+marcada `isDeload: true` y **apunta a la misma rutina con la misma prescripción
+que las tres anteriores**. La descarga está rotulada y no descarga nada. Es
+exactamente la enfermedad que tenía `isTemplate`: una marca sin comportamiento.
+
+El eje que lo arreglaría es **estructura fija / dosis variable**, aplicado al par
+plan-semana: la sesión define qué ejercicios y con qué método, y la semana del
+plan define series, repeticiones y RIR. Es un rediseño del modelo de planes y se
+decidió posponerlo, no hacerlo a medias.
+
+Mientras tanto, los planes son de sólo lectura: no hay ficha de plan ni forma de
+crearlos.
+
+---
+
 ## Estado estructural, medido
 
 **Puertos: sólo tres.** `AuthPort`, `TrainerRepository` y `StudentRepository`.
-No existen `RoutineRepository`, `SessionRepository` ni `DashboardRepository`;
-nueve ficheros `*.mock.ts` los esperan con un `TODO` que nombra la costura.
+No existen `RoutineRepository`, `SessionRepository` ni `DashboardRepository`; los
+ficheros `*.mock.ts` los esperan con un `TODO` que nombra la costura.
+
+**Tres almacenes de zustand en `trainings`, y ninguno es un puerto**:
+`routinesStore`, `catalogStore` y `blockLibraryStore`. La decisión está razonada
+en el primero: una entidad sube a `shared/domain` cuando la necesitan DOS
+dominios —así lo dice `shared/domain/entities/student.ts`— y `Routine` hoy sólo
+la usa `trainings`. El día que la agenda cuelgue una rutina de una sesión, la
+entidad cruza, el puerto nace y estos almacenes son su adaptador falso.
+
+⚠️ **Todo lo creado vive sólo en memoria.** Al recargar la página vuelven las
+semillas: la rutina creada, el ejercicio dado de alta y la biblioteca entera
+desaparecen. No se persiste en `localStorage` a propósito, porque sería fingir
+un backend. Tenerlo presente al probar a mano —y en las pruebas, que navegan por
+la interfaz y no con `page.goto` justamente por esto.
 
 **`FakeStudentRepository` está activo en producción**, marcado en
 `app/container.ts`. Es el único adaptador falso que no se elimina por
 *tree-shaking*, porque no está detrás de `import.meta.env.DEV` como el de auth.
 
-**31 `TODO` en `src/`** (sin contar `shared/ui`), en cuatro familias: datos
+**37 `TODO` en `src/`** (sin contar `shared/ui`), en cuatro familias: datos
 simulados esperando repositorio; acciones declaradas y no conectadas —cinco en
 `StudentCard`, cinco en `RoutineCard`, dos en cada ficha de detalle, y los dos
 componentes de filtros, que no filtran nada—; autenticación incompleta
 —`AuthPort` no expone `signUp`, así que «Crear cuenta» no da de alta a nadie, y
 recuperar contraseña tampoco existe—; y copy pendiente de producto.
+
+**Sigue sin haber edición de rutinas.** Se crean y se leen; el botón «Editar» de
+la tarjeta no está conectado.
 
 **`navigation.config.ts` sigue declarando `/settings` y `/login` sin ruta
 registrada.** `/reports` se resolvió en el paso 5 de la adaptación móvil.
@@ -204,7 +283,8 @@ todavía si merece `manualChunks`.
 
 ## Preguntas abiertas para el usuario
 
-1. **PR a `main`**: 85 commits esperando. `main` hoy no compila —conserva
+0. **Subir los 5 commits de esta sesión.** Están sólo en esta máquina.
+1. **PR a `main`**: 90 commits esperando. `main` hoy no compila —conserva
    marcadores de conflicto y el router desconectado—, así que fusionar lo
    arreglaría.
 2. **Qué hacer con `backup/supabase-test`**: empujarla a origin o borrarla. Hoy
@@ -214,3 +294,7 @@ todavía si merece `manualChunks`.
 4. **La lista de especialidades del registro es una propuesta**, no un dato
    validado. Lleva su `TODO`.
 5. **Meter Playwright en CI**, y con ello un script `test` en `package.json`.
+   Con 64 pruebas que ya afirman cosas, dejarlas fuera de CI es desperdiciarlas.
+6. **La progresión del mesociclo**, arriba. Es el rediseño más grande pendiente.
+7. **Edición de rutinas**, que es lo siguiente que va a pedir cualquiera que
+   pruebe la creación.
