@@ -2,7 +2,8 @@ import { Link } from 'react-router-dom'
 import { Clock, MapPin } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import { useStudentSessions } from '../hooks/useStudentSessions'
-import type { Session, SessionStatus } from '@/shared/domain/entities/session'
+import { formatDateKey } from '../libs/dateKey'
+import type { SessionStatus } from '@/shared/domain/entities/session'
 import type { Student } from '@/shared/domain/entities/student'
 
 /** Presentación de cada estado. Los mismos tres que usa la agenda. */
@@ -51,7 +52,7 @@ export function StudentSessions({ student }: StudentSessionsProps) {
               <div className="min-w-0 flex-1">
                 <p className="font-semibold text-ink">{session.title}</p>
                 <p className="metric-figures mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink/45">
-                  <span>{formatSessionDate(session)}</span>
+                  <span>{formatDateKey(session.date)}</span>
                   <span className="flex items-center gap-1.5">
                     <Clock className="size-3.5" />
                     {session.time} · {session.durationMinutes} min
@@ -86,19 +87,4 @@ export function StudentSessions({ student }: StudentSessionsProps) {
       </Link>
     </section>
   )
-}
-
-/**
- * `2026-09-03` → «jueves, 3 de septiembre».
- *
- * Se construye la fecha por partes en vez de `new Date('2026-09-03')`, que ISO
- * interpreta como UTC medianoche y en un huso negativo cae en el día anterior.
- */
-function formatSessionDate(session: Session): string {
-  const [year, month, day] = session.date.split('-').map(Number)
-  return new Date(year, month - 1, day).toLocaleDateString('es-ES', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  })
 }

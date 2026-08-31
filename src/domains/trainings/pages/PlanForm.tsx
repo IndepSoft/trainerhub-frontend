@@ -6,10 +6,11 @@ import { PageHeader } from '@/shared/components/PageHeader'
 import { usePlan } from '../hooks/usePlans'
 import { usePlanDraft } from '../hooks/usePlanDraft'
 import { useRoutines } from '../hooks/useRoutines'
-import { usePlansStore } from '../stores/plansStore'
+import { usePlanActions } from '../hooks/usePlanActions'
 import { PlanIdentityFields } from '../components/PlanIdentityFields'
 import { PlanWeekEditor } from '../components/PlanWeekEditor'
 import { PlanSummary } from '../components/PlanSummary'
+import type { TrainingPlan } from '@/shared/domain/entities/plan'
 
 /**
  * Crear y editar un plan. Sólo composición.
@@ -22,14 +23,52 @@ import { PlanSummary } from '../components/PlanSummary'
  * que el plan existe—.
  */
 export default function PlanForm() {
-  const navigate = useNavigate()
   const { planId } = useParams<{ planId: string }>()
-  const { plan } = usePlan(planId)
-  const { routines } = useRoutines()
-  const createPlan = usePlansStore((state) => state.createPlan)
-  const updatePlan = usePlansStore((state) => state.updatePlan)
+  const { plan, loading } = usePlan(planId)
 
   const isEditing = planId !== undefined
+
+  // Mientras carga no se pinta nada: `plan === null` no significa «no existe»
+  // hasta que `loading` es falso.
+  if (isEditing && loading) return null
+
+  if (isEditing && plan === null) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-bone px-6 text-center">
+        <p className="font-display text-2xl font-extrabold uppercase text-ink">
+          Plan no encontrado
+        </p>
+        <p className="text-sm text-ink/50">
+          El enlace puede haber caducado o el plan ya no existe.
+        </p>
+        <Button asChild variant="outline">
+          <Link to="/trainings?tab=planes">Volver a planes</Link>
+        </Button>
+      </div>
+    )
+  }
+
+  /*
+   * `key` para que el borrador se inicialice CON el plan ya cargado. Mismo
+   * motivo que en `RoutineForm`: `usePlanDraft` toma su estado inicial una sola
+   * vez, y el plan llega despues del primer render porque el puerto es
+   * asincrono.
+   */
+  return <PlanFormFields key={plan?.id ?? 'nuevo'} plan={plan} />
+}
+
+interface PlanFormFieldsProps {
+  /** El plan que se edita, o `null` para dar uno de alta. */
+  plan: TrainingPlan | null
+}
+
+function PlanFormFields({ plan }: PlanFormFieldsProps) {
+  const navigate = useNavigate()
+  const { routines } = useRoutines()
+  const { createPlan, updatePlan } = usePlanActions()
+
+  const planId = plan?.id
+  const isEditing = plan !== null
 
   const {
     draft,
@@ -52,36 +91,20 @@ export default function PlanForm() {
     [routines]
   )
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     const data = submit()
     if (data === null) return
 
     if (planId === undefined) {
-      const created = createPlan(data)
+      const created = await createPlan(data)
       navigate(`/trainings/plans/${created.id}`)
       return
     }
 
-    updatePlan(planId, data)
+    await updatePlan(planId, data)
     navigate(`/trainings/plans/${planId}`)
-  }
-
-  if (isEditing && plan === null) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-bone px-6 text-center">
-        <p className="font-display text-2xl font-extrabold uppercase text-ink">
-          Plan no encontrado
-        </p>
-        <p className="text-sm text-ink/50">
-          El enlace puede haber caducado o el plan ya no existe.
-        </p>
-        <Button asChild variant="outline">
-          <Link to="/trainings">Volver a entrenamientos</Link>
-        </Button>
-      </div>
-    )
   }
 
   return (

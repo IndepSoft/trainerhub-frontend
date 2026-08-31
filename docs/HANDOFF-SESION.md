@@ -279,15 +279,30 @@ crearlos.
 No existen `RoutineRepository`, `SessionRepository` ni `DashboardRepository`; los
 ficheros `*.mock.ts` los esperan con un `TODO` que nombra la costura.
 
-**Cinco puertos**: `AuthPort`, `TrainerRepository`, `StudentRepository`,
-`RoutineRepository` y `SessionRepository`. Los dos últimos nacieron al cumplirse
-su condición: la agenda cuelga rutinas de sus sesiones, y la ficha del estudiante
-lista y agenda las suyas. El criterio —una entidad sube cuando la necesitan DOS
-dominios— está escrito en `shared/domain/entities/student.ts`.
+**Siete puertos**: `AuthPort`, `TrainerRepository`, `StudentRepository`,
+`RoutineRepository`, `SessionRepository`, `PlanRepository` y
+`AssignmentRepository`. Cada uno nació al cumplirse su condición —una entidad
+sube cuando la necesitan DOS dominios, según `shared/domain/entities/student.ts`—
+y no antes.
 
 **Siguen en zustand, y siguen sin ser puertos**: `catalogStore` y
-`blockLibraryStore` en `trainings`, y `plansStore`. Ninguna de esas entidades
-cruza todavía.
+`blockLibraryStore` en `trainings`. Ninguna de esas entidades cruza todavía.
+
+**ASIGNAR NO ES AGENDAR**, y son tres compromisos independientes:
+
+| | Qué dice | ¿Ocupa un hueco? |
+|---|---|---|
+| Sesión | «esto, este día a esta hora» | sí, por definición |
+| Rutina asignada | «éste es tu repertorio» | no |
+| Plan asignado | «éste es tu programa» | no |
+
+No son excluyentes: un alumno puede tener un plan y tres rutinas a la vez. Y un
+plan puede estar asignado **sin fecha de inicio**, que es un estado legítimo
+—«ya veremos cuándo empiezas»— y por eso `startDate` admite `null`.
+
+Volcar un plan a la agenda —generar sus sesiones— es una **cuarta acción, aún
+sin construir**. Es lo único que falta de la asignación masiva, y la regla de
+choques ya está lista para que su vista previa marque los conflictos.
 
 **Cada dominio tiene su propio hook sobre el puerto compartido** en vez de
 importar del vecino: `useSchedulableStudents` y `useSchedulableRoutines` en

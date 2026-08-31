@@ -25,7 +25,7 @@ import { ConfirmDeleteDialog } from '../components/ConfirmDeleteDialog'
 export default function PlanDetail() {
   const navigate = useNavigate()
   const { planId } = useParams<{ planId: string }>()
-  const { plan } = usePlan(planId)
+  const { plan, loading } = usePlan(planId)
   const { routines } = useRoutines()
   const { objectivesById, splitsById } = useTrainingCatalog()
   const { deletePlan } = useTrainingDeletion()
@@ -36,6 +36,9 @@ export default function PlanDetail() {
     () => new Map(routines.map((routine) => [routine.id, routine])),
     [routines]
   )
+
+  // `plan === null` no significa «no existe» hasta que `loading` es falso.
+  if (loading) return null
 
   if (plan === null) {
     return (
@@ -212,8 +215,7 @@ export default function PlanDetail() {
         kind="el plan"
         onOpenChange={setIsDeleteOpen}
         onConfirm={() => {
-          deletePlan(plan.id)
-          navigate('/trainings?tab=planes')
+          void deletePlan(plan.id).then(() => navigate('/trainings?tab=planes'))
         }}
       />
     </div>

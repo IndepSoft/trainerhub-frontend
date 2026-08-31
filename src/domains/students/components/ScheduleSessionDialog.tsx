@@ -28,6 +28,7 @@ import {
 import { ScheduleConflictNotice } from '@/shared/components/ScheduleConflictNotice'
 import { describeOverlap, findOverlappingSessions } from '@/shared/domain/sessionScheduling'
 import { useAssignableRoutines } from '../hooks/useAssignableRoutines'
+import { toDateKey } from '../libs/dateKey'
 import type { Session } from '@/shared/domain/entities/session'
 import type { Student } from '@/shared/domain/entities/student'
 
@@ -370,18 +371,4 @@ export function ScheduleSessionDialog({
       </DialogContent>
     </Dialog>
   )
-}
-
-/**
- * Clave de fecha local, `YYYY-MM-DD`.
- *
- * No se usa `toISOString`: convierte a UTC y desplaza al día anterior toda
- * sesión de madrugada en husos negativos, que es el defecto de zona horaria que
- * este proyecto ya arregló una vez en el calendario.
- */
-function toDateKey(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
 }

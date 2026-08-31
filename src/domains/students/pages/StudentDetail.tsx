@@ -7,6 +7,7 @@ import { PageHeader } from '@/shared/components/PageHeader'
 import { PageSkeleton } from '@/shared/components/PageSkeleton'
 import { getInitials, getShortName } from '@/shared/lib/personName'
 import { useStudent } from '../hooks/useStudent'
+import { StudentAssignments } from '../components/StudentAssignments'
 import { StudentSessions } from '../components/StudentSessions'
 import { ScheduleSessionDialog } from '../components/ScheduleSessionDialog'
 import { LEVEL_BADGE } from '../libs/levelBadge'
@@ -113,6 +114,8 @@ export default function StudentDetail() {
             ))}
           </div>
         </section>
+
+        <StudentAssignments student={student} />
 
         <StudentSessions student={student} />
       </div>

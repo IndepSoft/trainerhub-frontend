@@ -1,6 +1,6 @@
-import { useMemo } from 'react'
-import { usePlansStore } from '../stores/plansStore'
-import type { TrainingPlan } from '../types/training.types'
+import { useEffect, useState } from 'react'
+import { container } from '@/app/container'
+import type { TrainingPlan } from '@/shared/domain/entities/plan'
 
 interface UsePlansResult {
   plans: TrainingPlan[]
@@ -17,34 +17,87 @@ interface UsePlanResult {
 /**
  * Planes de entrenamiento.
  *
- * Devuelve UNA lista. Hubo una partición en propios y plantillas: la marca que
- * la sostenía ya no existe en el modelo, porque no gobernaba ningún
- * comportamiento y, sin nada asignado a ningún estudiante, todos los planes eran
- * igualmente plantillas. El razonamiento está en `types/training.types.ts`.
- *
- * Lee del almacén y no del fichero de datos simulados, que ha pasado a ser su
- * semilla: es lo que permite que un plan recién creado aparezca aquí.
+ * Lee del PUERTO, no de un almacén del dominio: la ficha del estudiante también
+ * los necesita para mostrar los que tiene asignados, así que los dos leen del
+ * mismo sitio y ninguno importa del otro. Misma costura que rutinas y sesiones.
  */
 export function usePlans(): UsePlansResult {
-  const plans = usePlansStore((state) => state.plans)
+  const [plans, setPlans] = useState<TrainingPlan[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  return { plans, loading: false, error: null }
+  useEffect(() => {
+    let active = true
+
+    const load = () => {
+      container.plans
+        .findAll()
+        .then((result) => {
+          if (active) setPlans(result)
+        })
+        .catch((cause: unknown) => {
+          if (active) setError(cause instanceof Error ? cause.message : 'Error al cargar planes')
+        })
+        .finally(() => {
+          if (active) setLoading(false)
+        })
+    }
+
+    load()
+    const unsubscribe = container.plans.onChange(load)
+
+    return () => {
+      active = false
+      unsubscribe()
+    }
+  }, [])
+
+  return { plans, loading, error }
 }
 
 /**
  * Un plan por su identificador.
  *
- * `null` cuando no existe, no una excepción: un enlace viejo es un resultado
- * válido y la vista debe poder pintarlo. Misma semántica de lo ausente que
- * declaran los puertos.
+ * `null` cuando no existe, no una excepción. Ojo: `plan === null` NO significa
+ * «no existe» hasta que `loading` es falso.
  */
 export function usePlan(planId: string | undefined): UsePlanResult {
-  const plans = usePlansStore((state) => state.plans)
+  const [plan, setPlan] = useState<TrainingPlan | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const plan = useMemo(() => {
-    if (!planId) return null
-    return plans.find((candidate) => candidate.id === planId) ?? null
-  }, [plans, planId])
+  useEffect(() => {
+    if (planId === undefined) {
+      setPlan(null)
+      setLoading(false)
+      return
+    }
 
-  return { plan, loading: false, error: null }
+    let active = true
+    setLoading(true)
+
+    const load = () => {
+      container.plans
+        .findById(planId)
+        .then((result) => {
+          if (active) setPlan(result)
+        })
+        .catch((cause: unknown) => {
+          if (active) setError(cause instanceof Error ? cause.message : 'Error al cargar el plan')
+        })
+        .finally(() => {
+          if (active) setLoading(false)
+        })
+    }
+
+    load()
+    const unsubscribe = container.plans.onChange(load)
+
+    return () => {
+      active = false
+      unsubscribe()
+    }
+  }, [planId])
+
+  return { plan, loading, error }
 }

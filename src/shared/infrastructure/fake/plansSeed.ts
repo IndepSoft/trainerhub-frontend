@@ -1,4 +1,4 @@
-import type { TrainingPlan } from '../types/training.types'
+import type { TrainingPlan } from '@/shared/domain/entities/plan'
 
 /**
  * Planes simulados.
@@ -6,9 +6,13 @@ import type { TrainingPlan } from '../types/training.types'
  * Un plan es un mesociclo: varias semanas hacia un objetivo. Las semanas son
  * microciclos, y cada día apunta a una rutina o a nada, que es descanso.
  *
- * TODO: sustituir por el repositorio cuando exista.
+ * Vive junto a `FakePlanRepository` por el mismo motivo que las otras semillas:
+ * los datos de prueba de una entidad compartida pertenecen a su implementacion
+ * falsa.
+ *
+ * TODO: sustituir por el adaptador real cuando exista el esquema.
  */
-export const plansMock: TrainingPlan[] = [
+export const plansSeed: TrainingPlan[] = [
   {
     id: 'plan-1',
     title: 'Base de fuerza · 4 semanas',

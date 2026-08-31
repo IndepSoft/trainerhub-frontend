@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { container } from '@/app/container'
-import { usePlansStore } from '../stores/plansStore'
+import { usePlans } from './usePlans'
 import { describeNames, findPlansUsingRoutine } from '../libs/usage'
 import type { DeletionResult } from '../types/deletion.types'
 
@@ -14,7 +14,7 @@ interface UseTrainingDeletionResult {
    */
   routineDeletionBlocker: (routineId: string) => string | undefined
   deleteRoutine: (routineId: string) => Promise<DeletionResult>
-  deletePlan: (planId: string) => DeletionResult
+  deletePlan: (planId: string) => Promise<DeletionResult>
 }
 
 /**
@@ -33,8 +33,7 @@ interface UseTrainingDeletionResult {
  * colecciones y ningún componente debería tener que saberlo.
  */
 export function useTrainingDeletion(): UseTrainingDeletionResult {
-  const plans = usePlansStore((state) => state.plans)
-  const removePlan = usePlansStore((state) => state.deletePlan)
+  const { plans } = usePlans()
 
 
   const routineDeletionBlocker = useCallback(
@@ -65,11 +64,11 @@ export function useTrainingDeletion(): UseTrainingDeletionResult {
   )
 
   const deletePlan = useCallback(
-    (planId: string): DeletionResult => {
-      removePlan(planId)
+    async (planId: string): Promise<DeletionResult> => {
+      await container.plans.remove(planId)
       return { deleted: true }
     },
-    [removePlan]
+    []
   )
 
   return { routineDeletionBlocker, deleteRoutine, deletePlan }

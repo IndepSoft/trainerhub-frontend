@@ -1,4 +1,4 @@
-import type { Block, TrainingLevel } from '@/shared/domain/entities/routine'
+import type { Block } from '@/shared/domain/entities/routine'
 
 /**
  * Entidades del dominio de entrenamientos.
@@ -24,6 +24,13 @@ export type {
   Routine,
   TrainingLevel,
 } from '@/shared/domain/entities/routine'
+
+/**
+ * EL PLAN TAMPOCO VIVE YA AQUÍ. Subió a `shared/domain/entities/plan.ts` cuando
+ * la ficha del estudiante paso a poder tenerlo asignado. Se reexporta para que
+ * el dominio siga teniendo un solo sitio donde mirar sus tipos.
+ */
+export type { PlanDay, PlanWeek, TrainingPlan } from '@/shared/domain/entities/plan'
 
 /**
  * Un ejercicio del catálogo.
@@ -75,48 +82,3 @@ export interface SavedBlock {
   block: Block
 }
 
-/** Un día del microciclo. Sin rutina asignada es descanso. */
-export interface PlanDay {
-  /** 1 = lunes … 7 = domingo. */
-  dayOfWeek: number
-  routineId: string | null
-}
-
-/** Una semana del plan, o microciclo. */
-export interface PlanWeek {
-  /** 1 = primera semana del mesociclo. */
-  number: number
-  days: PlanDay[]
-  /** Semana de descarga: menos volumen para asimilar lo acumulado. */
-  isDeload: boolean
-}
-
-/**
- * NO HAY MARCA DE «PLANTILLA», ni aquí ni en la rutina.
- *
- * La hubo, y no gobernaba nada: sólo repartía la lista en dos pestañas y pintaba
- * un rótulo distinto. El argumento para quitarla es que hoy **ninguna rutina y
- * ningún plan se asignan a nadie** —ni `Routine` ni `TrainingPlan` tienen un
- * campo que apunte a un estudiante—, así que todos son igualmente plantillas y
- * la distinción no distinguía. Cuando exista la asignación, «plantilla» será
- * derivable —lo que nadie usa— o se sustituirá por algo más útil, como carpetas
- * o favoritos; en ninguno de los dos casos hace falta un booleano guardado.
- */
-
-/**
- * Un plan de entrenamiento es un MESOCICLO: varias semanas hacia un objetivo.
- *
- * La frecuencia semanal es un número y no un catálogo: dice cuántas veces se
- * entrena cada músculo por microciclo, y se deriva de la división elegida, pero
- * el entrenador puede apartarse de ella.
- */
-export interface TrainingPlan {
-  id: string
-  title: string
-  description: string
-  objectiveId: string
-  splitId: string
-  weeklyFrequency: number
-  level: TrainingLevel
-  weeks: PlanWeek[]
-}

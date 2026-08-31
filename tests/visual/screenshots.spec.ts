@@ -1933,3 +1933,156 @@ test.describe('choques de horario', () => {
     await expect(dialogo.getByRole('alert')).toHaveCount(0)
   })
 })
+
+/**
+ * Asignar rutinas y planes a un estudiante.
+ *
+ * ASIGNAR NO ES AGENDAR, y esa separacion es lo que estas pruebas fijan.
+ * Asignar dice «esto es tuyo»; poner las sesiones en el calendario es otra
+ * accion, opcional. Los tres tipos -sesion, rutina, plan- son independientes y
+ * no excluyentes: lo decide el entrenador.
+ */
+test.describe('asignaciones del alumno', () => {
+  test('la ficha distingue plan de rutina, y si el plan ha empezado', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students/student-2')
+
+    await expect(page.getByRole('heading', { name: 'Asignado' })).toBeVisible()
+
+    // Un plan con fecha de inicio dice cuando empieza.
+    await expect(page.getByText('Empieza el lunes, 7 de septiembre')).toBeVisible()
+    // Y una rutina suelta, cuando se asigno: es repertorio, no algo que empiece.
+    await expect(page.getByText('Asignada el viernes, 28 de agosto')).toBeVisible()
+
+    /*
+     * Las dos conviven. No son excluyentes ni jerarquicas: un alumno puede
+     * seguir un plan y tener ademas rutinas sueltas.
+     */
+    await expect(page.getByRole('link', { name: 'Base de fuerza · 4 semanas' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Empuje · Intermedio' })).toBeVisible()
+  })
+
+  test('un plan sin fecha de inicio lo dice, en vez de fingir que ha empezado', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/students/student-3')
+
+    // Es un estado legitimo: «este es tu programa, ya veremos cuando empiezas».
+    await expect(page.getByText('Asignado, sin fecha de inicio')).toBeVisible()
+  })
+
+  test('asignar un plan NO crea ninguna sesion', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students/student-4')
+
+    /*
+     * Se cuentan FILAS y no se compara el texto de la seccion: las sesiones
+     * llegan del puerto, asi que leer el texto nada mas cargar capturaba la
+     * seccion todavia vacia y luego «cambiaba» sola.
+     */
+    const filasDeSesion = page
+      .locator('section')
+      .filter({ hasText: 'Sesiones' })
+      .locator('ul > li')
+    await expect(filasDeSesion).toHaveCount(1)
+
+    await page.getByRole('button', { name: 'Asignar' }).first().click()
+    const dialogo = page.getByRole('dialog')
+    await expect(dialogo).toContainText('Asignar no agenda nada')
+
+    await elegirDelDesplegable(page, desplegables(page, 'Plan'), 'Base de fuerza · 4 semanas')
+    await dialogo.getByRole('button', { name: 'Asignar' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    // Aparece en «Asignado»...
+    await expect(page.getByRole('link', { name: 'Base de fuerza · 4 semanas' })).toBeVisible()
+    await expect(page.getByText('Asignado, sin fecha de inicio')).toBeVisible()
+
+    /*
+     * ...y la agenda NO ha cambiado. Es la decision de fondo: asignar y agendar
+     * son dos compromisos distintos, y mezclarlos obligaria a fijar horarios
+     * para poder asignar.
+     */
+    await expect(filasDeSesion).toHaveCount(1)
+  })
+
+  test('se pueden acumular varias asignaciones, sin excluirse', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students/student-4')
+
+    await page.getByRole('button', { name: 'Asignar' }).first().click()
+    await elegirDelDesplegable(page, desplegables(page, 'Plan'), 'Base de fuerza · 4 semanas')
+    await page.getByRole('dialog').getByRole('button', { name: 'Asignar' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    // Y ahora una rutina, sin que la primera se vaya.
+    await page.getByRole('button', { name: 'Asignar' }).first().click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Rutina' }).click()
+    await elegirDelDesplegable(page, desplegables(page, 'Rutina'), 'Full body · Principiante')
+    await page.getByRole('dialog').getByRole('button', { name: 'Asignar' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    await expect(page.getByRole('link', { name: 'Base de fuerza · 4 semanas' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Full body · Principiante' })).toBeVisible()
+  })
+
+  test('quitar una asignacion no toca las sesiones ya agendadas', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students/student-2')
+
+    const filasDeSesion = page
+      .locator('section')
+      .filter({ hasText: 'Sesiones' })
+      .locator('ul > li')
+    await expect(filasDeSesion).toHaveCount(1)
+
+    await page.getByRole('button', { name: /Quitar la asignación de Empuje/ }).click()
+    await expect(page.getByRole('link', { name: 'Empuje · Intermedio' })).toHaveCount(0)
+
+    /*
+     * Las sesiones siguen. Son compromisos con fecha y hora que alguien puede
+     * haber comunicado ya: desasignar dice «esto deja de ser tuyo de aqui en
+     * adelante», no «nunca ocurrio».
+     */
+    await expect(filasDeSesion).toHaveCount(1)
+  })
+
+  test('la seccion de asignado cumple las reglas de 375 px', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/students/student-2')
+    await page.waitForTimeout(1200)
+
+    const medidas = await page.evaluate(() => {
+      const caja = (elemento: Element) => elemento.getBoundingClientRect()
+
+      return {
+        desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        contenedoresEstrechos: [
+          ...document.querySelectorAll('section, article, [class*="rounded-block"]'),
+        ]
+          .map((elemento) => caja(elemento).width)
+          .filter((ancho) => ancho > 0 && ancho < 280).length,
+        controlesPequenos: [...document.querySelectorAll('button, a, input, textarea')]
+          .map(caja)
+          .filter((rect) => rect.height > 0 && rect.height < 44).length,
+        etiquetasHuerfanas: [...document.querySelectorAll('label[for]')].filter(
+          (etiqueta) => document.getElementById(etiqueta.getAttribute('for') ?? '') === null
+        ).length,
+      }
+    })
+
+    expect(medidas.desborde, 'desbordamiento horizontal').toBe(0)
+    expect(medidas.contenedoresEstrechos, 'contenedores bajo 280 px').toBe(0)
+    expect(medidas.controlesPequenos, 'controles bajo 44 px').toBe(0)
+    expect(medidas.etiquetasHuerfanas, 'etiquetas sin control').toBe(0)
+
+    await page.screenshot({ path: 'tests/visual/salida/alumno-asignado-mobile.png' })
+  })
+})
