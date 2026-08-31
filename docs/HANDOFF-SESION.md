@@ -320,6 +320,27 @@ edición, que por ahora ES la vista de un plan.
 **`navigation.config.ts` sigue declarando `/settings` y `/login` sin ruta
 registrada.** `/reports` se resolvió en el paso 5 de la adaptación móvil.
 
+⚠️ **`shared/ui` trae ~20 clases de Tailwind 4 que aquí no generan nada.** Los
+componentes de shadcn se copiaron de una version pensada para Tailwind 4 y el
+proyecto usa la 3.4, asi que la forma con parentesis —`max-h-(--variable)`,
+`size-(--cell-size)`, `origin-(--variable)`— es sintaxis invalida y Tailwind no
+emite ninguna regla. Tambien estan muertas `shadow-xs`, `outline-hidden` y
+`field-sizing-content`, que en la 3 se llaman de otra forma o no existen.
+
+No es cosmetico en todos los casos: en `select.tsx` la clase muerta era el TOPE
+DE ALTURA del panel, asi que el desplegable de veintisiete tramos horarios crecia
+por encima de la ventana y parte de la lista quedaba inalcanzable. Comprobado en
+el navegador: `max-height` computaba a `none` y no habia ni una regla en la hoja
+de estilos que mencionara la variable.
+
+Arreglados los dos `max-h-` —`select` y `dropdown-menu`— por su consecuencia
+funcional. El resto sigue inerte y sin auditar; el sospechoso mas probable es
+`size-(--cell-size)` en `calendar.tsx`. Se encuentran con:
+
+```bash
+grep -rn "\-(\-\-\|shadow-xs\|outline-hidden\|field-sizing" src/shared/ui/
+```
+
 **El chunk `index` pesa 591 kB**, por encima del aviso de Vite. Nadie ha decidido
 todavía si merece `manualChunks`.
 

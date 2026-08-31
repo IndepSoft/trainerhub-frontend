@@ -17,6 +17,13 @@ export interface SessionRepository {
   findAll(): Promise<Session[]>
   /** Las de un alumno, ordenadas de la más próxima a la más lejana. */
   findByStudent(studentId: string): Promise<Session[]>
+  /**
+   * Las de un día, para saber qué hay ocupado antes de agendar.
+   *
+   * Acotado a propósito: con un backend real, comprobar un choque no puede
+   * significar descargar la agenda entera.
+   */
+  findByDate(date: string): Promise<Session[]>
   create(data: Omit<Session, 'id'>): Promise<Session>
   update(sessionId: string, data: Omit<Session, 'id'>): Promise<void>
   /** Avisa de que la colección ha cambiado. Devuelve la función de baja. */

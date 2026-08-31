@@ -50,6 +50,19 @@ function SelectTrigger({
   )
 }
 
+/*
+ * `max-h-[var(...)]` y no `max-h-(--var)`.
+ *
+ * La forma con parentesis es sintaxis de Tailwind 4 y este proyecto usa la 3.4,
+ * asi que la clase no generaba NINGUNA regla: comprobado en el navegador, el
+ * panel salia con `max-height: none` y no habia ni una regla en la hoja de
+ * estilos que mencionara la variable. Con veintisiete tramos horarios el
+ * desplegable crecia por encima de la ventana y parte de la lista quedaba
+ * inalcanzable.
+ *
+ * Se edita `shared/ui` a mano, que normalmente es territorio de shadcn, porque
+ * la clase venia de una version pensada para Tailwind 4 y aqui esta muerta.
+ */
 function SelectContent({
   className,
   children,
@@ -61,7 +74,7 @@ function SelectContent({
       <SelectPrimitive.Content
         data-slot="select-content"
         className={cn(
-          'bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 relative z-50 max-h-(--radix-select-content-available-height) min-w-[8rem] origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md border shadow-md',
+          'bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 relative z-50 max-h-[var(--radix-select-content-available-height)] min-w-[8rem] origin-[var(--radix-select-content-transform-origin)] overflow-x-hidden overflow-y-auto rounded-md border shadow-md',
           position === 'popper' &&
             'data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1',
           className

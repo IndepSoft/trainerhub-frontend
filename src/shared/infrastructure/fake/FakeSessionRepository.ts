@@ -26,6 +26,10 @@ export class FakeSessionRepository implements SessionRepository {
       .sort(compareByStartInstant)
   }
 
+  async findByDate(date: string): Promise<Session[]> {
+    return this.sessions.filter((session) => session.date === date).sort(compareByStartInstant)
+  }
+
   async create(data: Omit<Session, 'id'>): Promise<Session> {
     const session: Session = { id: crypto.randomUUID(), ...data }
     this.sessions = [...this.sessions, session]

@@ -62,7 +62,20 @@ async function elegirDelDesplegable(
   exact = true
 ): Promise<void> {
   await disparador.click()
-  await page.getByRole('listbox').getByRole('option', { name: nombre, exact }).click()
+
+  const opcion = page.getByRole('listbox').getByRole('option', { name: nombre, exact })
+  /*
+   * Basta con desplazarla a la vista y pulsar.
+   *
+   * Con la lista de horas -veintisiete opciones- esto expiraba con «element is
+   * outside of the viewport», y persiguiendo el fallo salio un defecto de la
+   * aplicacion, no de la prueba: el panel no tenia tope de altura porque su
+   * clase era sintaxis de Tailwind 4 en un proyecto que usa la 3. Arreglado
+   * eso, el panel cabe y la opcion se alcanza.
+   */
+  await opcion.scrollIntoViewIfNeeded()
+  await opcion.click()
+
   await expect(disparador).toContainText(nombre)
 }
 
@@ -1641,7 +1654,7 @@ test.describe('usar una rutina en una sesion', () => {
       year: 'numeric',
     })
     await dialogo.getByRole('button', { name: hoy }).click()
-    await elegirDelDesplegable(page, desplegables(page, 'Hora'), '11:00')
+    await elegirDelDesplegable(page, desplegables(page, 'Hora'), '15:00')
     await elegirDelDesplegable(page, desplegables(page, 'Ubicación'), 'Gimnasio Principal')
 
     await dialogo.getByRole('button', { name: 'Programar sesión' }).click()
@@ -1725,7 +1738,7 @@ test.describe('sesiones del alumno', () => {
       year: 'numeric',
     })
     await dialogo.getByRole('button', { name: hoy }).click()
-    await elegirDelDesplegable(page, desplegables(page, 'Hora'), '18:30')
+    await elegirDelDesplegable(page, desplegables(page, 'Hora'), '16:00')
     await elegirDelDesplegable(page, desplegables(page, 'Ubicación'), 'Sala Grupal')
 
     await dialogo.getByRole('button', { name: 'Agendar sesión' }).click()
@@ -1782,5 +1795,141 @@ test.describe('sesiones del alumno', () => {
     expect(medidas.etiquetasHuerfanas, 'etiquetas sin control').toBe(0)
 
     await page.screenshot({ path: 'tests/visual/salida/alumno-sesiones-mobile.png' })
+  })
+})
+
+/**
+ * Choques de horario.
+ *
+ * La agenda dejaba doble-reservar sin decir nada. La regla AVISA y deja decidir:
+ * hay solapes legitimos -una sesion online en paralelo, un margen aceptado- y
+ * prohibirlos en seco hace que la gente pelee con la herramienta. Lo inaceptable
+ * es doblar la agenda sin enterarse.
+ */
+test.describe('choques de horario', () => {
+  /** La semilla pone una sesion hoy a las 09:00, de 60 minutos. */
+  const HOY = new Date().toLocaleDateString('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+
+  async function abrirAgendarDesdeFicha(page: Page): Promise<Locator> {
+    await page.goto('/students/student-3')
+    await page.getByRole('button', { name: 'Agendar sesión' }).first().click()
+    const dialogo = page.getByRole('dialog')
+    await expect(dialogo).toBeVisible()
+    await dialogo.getByRole('button', { name: HOY }).click()
+    return dialogo
+  }
+
+  test('el desplegable marca los tramos ya ocupados', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    const dialogo = await abrirAgendarDesdeFicha(page)
+
+    await desplegables(page, 'Hora').click()
+
+    /*
+     * Contesta por adelantado la pregunta que el entrenador se hace de verdad
+     * -«¿cuando le meto?»- en vez de regañarle despues de elegir.
+     */
+    const listado = page.getByRole('listbox')
+    await expect(listado.getByRole('option', { name: /09:00.*ocupado/ })).toBeVisible()
+    // Y un tramo libre no dice nada.
+    await expect(listado.getByRole('option', { name: '14:00', exact: true })).toBeVisible()
+
+    await expect(dialogo).toBeVisible()
+  })
+
+  test('avisa al agendar encima, nombrando con que choca', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    const dialogo = await abrirAgendarDesdeFicha(page)
+
+    await elegirDelDesplegable(page, desplegables(page, 'Hora'), '09:00', false)
+    await elegirDelDesplegable(page, desplegables(page, 'Ubicación'), 'Sala Grupal')
+    await dialogo.getByRole('button', { name: 'Agendar sesión' }).click()
+
+    // Nombra la sesion y su tramo: «ese hueco esta ocupado» no le sirve a nadie.
+    const aviso = dialogo.getByRole('alert')
+    await expect(aviso).toContainText('Choca con')
+    await expect(aviso).toContainText('09:00–10:00')
+
+    // Y NO se ha agendado nada todavia: el dialogo sigue abierto.
+    await expect(dialogo).toBeVisible()
+  })
+
+  test('un choque a media hora tambien se detecta, no solo la misma hora', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    const dialogo = await abrirAgendarDesdeFicha(page)
+
+    /*
+     * La sesion de la semilla ocupa de 09:00 a 10:00. Empezar a las 09:30 no
+     * comparte hora de inicio y choca igual: la regla compara INTERVALOS, que es
+     * lo que hace que el fallo dificil de ver tambien salte.
+     */
+    await elegirDelDesplegable(page, desplegables(page, 'Hora'), '09:30', false)
+    await elegirDelDesplegable(page, desplegables(page, 'Ubicación'), 'Sala Grupal')
+    await dialogo.getByRole('button', { name: 'Agendar sesión' }).click()
+
+    await expect(dialogo.getByRole('alert')).toContainText('Choca con')
+  })
+
+  test('encadenar dos sesiones seguidas NO es un choque', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    const dialogo = await abrirAgendarDesdeFicha(page)
+
+    /*
+     * La semilla deja un hueco exacto: una sesion termina a las 10:00 y la
+     * siguiente empieza a las 10:30. Media hora ahi encaja tocando las dos y sin
+     * pisar ninguna, que es lo que prueba que los intervalos son medio abiertos
+     * por los DOS extremos.
+     */
+    await elegirDelDesplegable(page, desplegables(page, 'Duración'), '30 min')
+    await elegirDelDesplegable(page, desplegables(page, 'Hora'), '10:00', false)
+    await elegirDelDesplegable(page, desplegables(page, 'Ubicación'), 'Sala Grupal')
+    await dialogo.getByRole('button', { name: 'Agendar sesión' }).click()
+
+    // Se agenda sin avisar de nada.
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(page.getByText('Sala Grupal')).toBeVisible()
+  })
+
+  test('se puede agendar encima a proposito, con un segundo gesto', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    const dialogo = await abrirAgendarDesdeFicha(page)
+
+    await elegirDelDesplegable(page, desplegables(page, 'Hora'), '09:00', false)
+    await elegirDelDesplegable(page, desplegables(page, 'Ubicación'), 'Online')
+    await dialogo.getByRole('button', { name: 'Agendar sesión' }).click()
+    await expect(dialogo.getByRole('alert')).toBeVisible()
+
+    // El solape legitimo -una sesion online en paralelo- se permite tras leer
+    // con que choca.
+    await dialogo.getByRole('button', { name: 'Agendar de todos modos' }).click()
+
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(page.getByText('Online')).toBeVisible()
+  })
+
+  test('cambiar la hora retira el aviso', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    const dialogo = await abrirAgendarDesdeFicha(page)
+
+    await elegirDelDesplegable(page, desplegables(page, 'Hora'), '09:00', false)
+    await elegirDelDesplegable(page, desplegables(page, 'Ubicación'), 'Sala Grupal')
+    await dialogo.getByRole('button', { name: 'Agendar sesión' }).click()
+    await expect(dialogo.getByRole('alert')).toBeVisible()
+
+    // El aviso describe un hueco concreto: en cuanto el hueco cambia, deja de
+    // ser cierto y no puede quedarse en pantalla.
+    await elegirDelDesplegable(page, desplegables(page, 'Hora'), '15:00', false)
+    await expect(dialogo.getByRole('alert')).toHaveCount(0)
   })
 })

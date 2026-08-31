@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/shared/ui/button'
 import {
   Dialog,
@@ -26,6 +26,9 @@ import { useSchedulableStudents } from '../hooks/useSchedulableStudents'
 import { useSchedulableRoutines } from '../hooks/useSchedulableRoutines'
 import { container } from '@/app/container'
 import { toLocalDateKey } from '../libs/calendar.utils'
+import { ScheduleConflictNotice } from '@/shared/components/ScheduleConflictNotice'
+import { describeOverlap, findOverlappingSessions } from '@/shared/domain/sessionScheduling'
+import type { Session } from '@/shared/domain/entities/session'
 import { SESSION_LOCATIONS, TIME_SLOTS } from '../data/calendarOptions'
 
 const SESSION_TYPES = [
@@ -105,10 +108,35 @@ export function CreateSessionModal({
   const [location, setLocation] = useState('')
   const [notes, setNotes] = useState('')
   const [missing, setMissing] = useState<FieldName[]>([])
+  /** Con qué choca, o `null` si no choca o ya se decidió agendar igual. */
+  const [conflict, setConflict] = useState<string | null>(null)
+  /** Lo que ya hay ese día, para marcar los tramos ocupados. */
+  const [sessionsOfDay, setSessionsOfDay] = useState<Session[]>([])
+
+  // Sólo el día elegido, no la agenda entera: ver `SessionRepository.findByDate`.
+  useEffect(() => {
+    if (date === undefined) {
+      setSessionsOfDay([])
+      return
+    }
+
+    let active = true
+    container.sessions.findByDate(toLocalDateKey(date)).then((result) => {
+      if (active) setSessionsOfDay(result)
+    })
+
+    return () => {
+      active = false
+    }
+  }, [date])
+
+  /** Un choque deja de serlo en cuanto cambia alguna de las tres piezas. */
+  const forgetConflict = () => setConflict(null)
 
   const isGroupSession = sessionType === 'group'
 
   const resetForm = () => {
+    setConflict(null)
     setRoutineId(NO_ROUTINE)
     setSessionType('')
     setStudentId('')
@@ -139,6 +167,29 @@ export function CreateSessionModal({
       return
     }
 
+    /*
+     * Se relee del puerto en vez de usar `sessionsOfDay`: entre elegir la hora y
+     * pulsar puede haberse agendado algo, y la lista se cargo con la duracion de
+     * entonces. Esta es la comprobacion que vale.
+     */
+    void container.sessions.findByDate(toLocalDateKey(date!)).then((sameDay) => {
+      const choques = findOverlappingSessions(sameDay, {
+        date: toLocalDateKey(date!),
+        time,
+        durationMinutes: Number(duration),
+      })
+
+      if (choques.length > 0) {
+        setConflict(describeOverlap(choques))
+        return
+      }
+
+      scheduleSession()
+    })
+  }
+
+  /** El alta, ya sin comprobaciones: la decisión está tomada. */
+  const scheduleSession = () => {
     const student = students.find((candidate) => candidate.id === studentId)
     const quien = isGroupSession
       ? 'la clase grupal'
@@ -291,7 +342,10 @@ export function CreateSessionModal({
               <Calendar
                 mode="single"
                 selected={date}
-                onSelect={setDate}
+                onSelect={(next) => {
+                  forgetConflict()
+                  setDate(next)
+                }}
                 // No se agenda en el pasado: dejarlo permitiría crear una
                 // sesión que nace ya vencida.
                 disabled={(candidate) =>
@@ -313,19 +367,40 @@ export function CreateSessionModal({
                 </Label>
                 {fieldError('time')}
               </div>
-              <Select value={time} onValueChange={setTime}>
+              <Select
+                value={time}
+                onValueChange={(next) => {
+                  forgetConflict()
+                  setTime(next)
+                }}
+              >
                 <SelectTrigger
                   id="new-session-time"
                   className={cn('w-full', missing.includes('time') && 'border-danger')}
                 >
                   <SelectValue placeholder="--:--" />
                 </SelectTrigger>
+                {/* Los tramos ocupados se MARCAN, no se deshabilitan: avisar,
+                    no bloquear. Mismo criterio que en la ficha del alumno. */}
                 <SelectContent>
-                  {TIME_SLOTS.map((slot) => (
-                    <SelectItem key={slot} value={slot}>
-                      {slot}
-                    </SelectItem>
-                  ))}
+                  {TIME_SLOTS.map((slot) => {
+                    const ocupadoPor = findOverlappingSessions(sessionsOfDay, {
+                      date: date === undefined ? '' : toLocalDateKey(date),
+                      time: slot,
+                      durationMinutes: Number(duration),
+                    })
+
+                    return (
+                      <SelectItem key={slot} value={slot}>
+                        {slot}
+                        {ocupadoPor.length > 0 && (
+                          <span className="ms-2 text-xs text-warning">
+                            ocupado · {ocupadoPor[0].title}
+                          </span>
+                        )}
+                      </SelectItem>
+                    )
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -337,7 +412,13 @@ export function CreateSessionModal({
               >
                 Duración
               </Label>
-              <Select value={duration} onValueChange={setDuration}>
+              <Select
+                value={duration}
+                onValueChange={(next) => {
+                  forgetConflict()
+                  setDuration(next)
+                }}
+              >
                 <SelectTrigger id="new-session-duration" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
@@ -421,6 +502,10 @@ export function CreateSessionModal({
               rows={3}
             />
           </div>
+
+          {conflict !== null && (
+            <ScheduleConflictNotice message={conflict} onOverride={scheduleSession} />
+          )}
 
           <Button
             onClick={handleSubmit}

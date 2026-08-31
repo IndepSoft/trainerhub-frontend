@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent } from 'react'
+import { useEffect, useId, useState, type FormEvent } from 'react'
 import { CalendarCheck } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import {
@@ -25,7 +25,10 @@ import {
   SESSION_LOCATIONS,
   SESSION_TIME_SLOTS,
 } from '@/shared/domain/entities/session'
+import { ScheduleConflictNotice } from '@/shared/components/ScheduleConflictNotice'
+import { describeOverlap, findOverlappingSessions } from '@/shared/domain/sessionScheduling'
 import { useAssignableRoutines } from '../hooks/useAssignableRoutines'
+import type { Session } from '@/shared/domain/entities/session'
 import type { Student } from '@/shared/domain/entities/student'
 
 /** Registro de etiqueta del formulario, igual que en el resto de la aplicación. */
@@ -72,8 +75,37 @@ export function ScheduleSessionDialog({
   const [location, setLocation] = useState('')
   const [notes, setNotes] = useState('')
   const [missing, setMissing] = useState<FieldName[]>([])
+  /** Con qué choca, o `null` si no choca o ya se decidió agendar igual. */
+  const [conflict, setConflict] = useState<string | null>(null)
+  /** Lo que ya hay ese día, para marcar los tramos ocupados. */
+  const [sessionsOfDay, setSessionsOfDay] = useState<Session[]>([])
+
+  /*
+   * Se cargan las sesiones del dia elegido, no la agenda entera: `findByDate` es
+   * una consulta acotada, y con backend real comprobar un choque no puede
+   * significar descargar todo.
+   */
+  useEffect(() => {
+    if (date === undefined) {
+      setSessionsOfDay([])
+      return
+    }
+
+    let active = true
+    container.sessions.findByDate(toDateKey(date)).then((result) => {
+      if (active) setSessionsOfDay(result)
+    })
+
+    return () => {
+      active = false
+    }
+  }, [date])
+
+  /** Un choque deja de serlo en cuanto cambia alguna de las tres piezas. */
+  const forgetConflict = () => setConflict(null)
 
   const resetForm = () => {
+    setConflict(null)
     setRoutineId(NO_ROUTINE)
     setDate(undefined)
     setTime('')
@@ -94,6 +126,28 @@ export function ScheduleSessionDialog({
     setMissing(faltan)
     if (faltan.length > 0) return
 
+    /*
+     * Se relee del puerto en vez de usar `sessionsOfDay`: entre elegir la hora y
+     * pulsar puede haberse agendado algo, y ademas la lista se cargo con la
+     * duracion de entonces. Esta es la comprobacion que vale.
+     */
+    const sameDay = await container.sessions.findByDate(toDateKey(date!))
+    const choques = findOverlappingSessions(sameDay, {
+      date: toDateKey(date!),
+      time,
+      durationMinutes: Number(duration),
+    })
+
+    if (choques.length > 0) {
+      setConflict(describeOverlap(choques))
+      return
+    }
+
+    await scheduleSession()
+  }
+
+  /** El alta, ya sin comprobaciones: la decisión está tomada. */
+  const scheduleSession = async () => {
     const routine = routines.find((candidate) => candidate.id === routineId)
 
     await container.sessions.create({
@@ -177,7 +231,10 @@ export function ScheduleSessionDialog({
               <Calendar
                 mode="single"
                 selected={date}
-                onSelect={setDate}
+                onSelect={(next) => {
+                  forgetConflict()
+                  setDate(next)
+                }}
                 // No se agenda en el pasado: una sesión que nace vencida no
                 // sirve para nada.
                 disabled={(candidate) => candidate < new Date(new Date().setHours(0, 0, 0, 0))}
@@ -194,19 +251,44 @@ export function ScheduleSessionDialog({
                 </Label>
                 {fieldError('time')}
               </div>
-              <Select value={time} onValueChange={setTime}>
+              <Select
+                value={time}
+                onValueChange={(next) => {
+                  forgetConflict()
+                  setTime(next)
+                }}
+              >
                 <SelectTrigger
                   id={`${fieldId}-time`}
                   className={cn('w-full', missing.includes('time') && 'border-danger')}
                 >
                   <SelectValue placeholder="--:--" />
                 </SelectTrigger>
+                {/*
+                  Los tramos ocupados se MARCAN, no se deshabilitan: la decision
+                  sigue siendo del entrenador. Y contestan por adelantado la
+                  pregunta que de verdad se hace -«¿cuando le meto?»- en vez de
+                  regañarle despues de elegir.
+                */}
                 <SelectContent>
-                  {SESSION_TIME_SLOTS.map((slot) => (
-                    <SelectItem key={slot} value={slot}>
-                      {slot}
-                    </SelectItem>
-                  ))}
+                  {SESSION_TIME_SLOTS.map((slot) => {
+                    const ocupadoPor = findOverlappingSessions(sessionsOfDay, {
+                      date: date === undefined ? '' : toDateKey(date),
+                      time: slot,
+                      durationMinutes: Number(duration),
+                    })
+
+                    return (
+                      <SelectItem key={slot} value={slot}>
+                        {slot}
+                        {ocupadoPor.length > 0 && (
+                          <span className="ms-2 text-xs text-warning">
+                            ocupado · {ocupadoPor[0].title}
+                          </span>
+                        )}
+                      </SelectItem>
+                    )
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -215,7 +297,13 @@ export function ScheduleSessionDialog({
               <Label htmlFor={`${fieldId}-duration`} className={FIELD_LABEL}>
                 Duración
               </Label>
-              <Select value={duration} onValueChange={setDuration}>
+              <Select
+                value={duration}
+                onValueChange={(next) => {
+                  forgetConflict()
+                  setDuration(next)
+                }}
+              >
                 <SelectTrigger id={`${fieldId}-duration`} className="w-full">
                   <SelectValue />
                 </SelectTrigger>
@@ -266,6 +354,10 @@ export function ScheduleSessionDialog({
               onChange={(event) => setNotes(event.target.value)}
             />
           </div>
+
+          {conflict !== null && (
+            <ScheduleConflictNotice message={conflict} onOverride={() => void scheduleSession()} />
+          )}
 
           <Button
             type="submit"
