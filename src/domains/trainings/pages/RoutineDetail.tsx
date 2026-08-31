@@ -13,7 +13,7 @@ import {
   formatPrescription,
   formatRest,
 } from '../libs/routine.utils'
-import { useExerciseCatalog } from '../hooks/useExerciseCatalog'
+import { useTrainingCatalog } from '../hooks/useTrainingCatalog'
 
 /**
  * Ficha de una rutina. Sólo composición.
@@ -21,7 +21,7 @@ import { useExerciseCatalog } from '../hooks/useExerciseCatalog'
 export default function RoutineDetail() {
   const { routineId } = useParams<{ routineId: string }>()
   const { routine } = useRoutine(routineId)
-  const { exercisesById } = useExerciseCatalog()
+  const { exercisesById } = useTrainingCatalog()
 
   if (!routine) {
     return (

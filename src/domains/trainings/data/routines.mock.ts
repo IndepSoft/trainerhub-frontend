@@ -11,9 +11,13 @@ import type { Routine } from '../types/training.types'
  * `hover:${routine.levelColor}`: interpolacion que Tailwind no ve al compilar,
  * asi que esa clase nunca llego a generarse y el hover no hacia nada.
  *
- * TODO: sustituir por un `RoutineRepository` -puerto en `shared/domain/ports`,
- * adaptador en `shared/infrastructure`- cuando exista el esquema. `useRoutines`
- * es el unico punto que habra que tocar.
+ * Ya no se lee desde los hooks: es la SEMILLA de `stores/routinesStore.ts`, que
+ * es quien sirve la coleccion y admite altas. Leerla directamente desde un hook
+ * dejaba la lista sin enterarse de las rutinas creadas en la sesion.
+ *
+ * TODO: sustituir por el repositorio cuando exista el esquema. El puerto no
+ * nace en `shared/domain/ports` hasta que `Routine` cruce a un segundo dominio
+ * -hoy solo la usa `trainings`-; el porque esta razonado en el almacen.
  */
 export const routinesMock: Routine[] = [
   {

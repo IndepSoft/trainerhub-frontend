@@ -1,0 +1,184 @@
+import { useId } from 'react'
+import { Trash2 } from 'lucide-react'
+import { Input } from '@/shared/ui/input'
+import { Label } from '@/shared/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select'
+import type { Exercise } from '../types/training.types'
+import type {
+  PrescribedExerciseDraft,
+  PrescribedExerciseDraftChanges,
+} from '../types/routineDraft.types'
+
+/** Registro de etiqueta del formulario, igual que el de las métricas. */
+const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50'
+
+interface PrescribedExerciseFieldsProps {
+  exercise: PrescribedExerciseDraft
+  /** Catálogo completo, ya ordenado por quien compone. */
+  catalog: Exercise[]
+  /** Posición dentro del bloque, sólo para el nombre accesible del botón. */
+  position: number
+  canRemove: boolean
+  onChange: (changes: PrescribedExerciseDraftChanges) => void
+  onRemove: () => void
+}
+
+/**
+ * Un ejercicio prescrito dentro de un bloque. Sólo presentación.
+ *
+ * Cada control lleva su `<label>` apuntando a un `id` real, incluido el
+ * desplegable: `SelectTrigger` renderiza un `<button>`, que es un elemento
+ * etiquetable, así que `htmlFor` lo alcanza. Es una comprobación que este
+ * proyecto ya pagó una vez —el formulario de registro tenía etiquetas que no
+ * apuntaban a ningún control— y no conviene repetir.
+ *
+ * `useId` y no el identificador del borrador: el mismo ejercicio puede
+ * aparecer en dos sitios de la pantalla y los `id` del documento tienen que
+ * ser únicos aunque el dato sea el mismo.
+ */
+export function PrescribedExerciseFields({
+  exercise,
+  catalog,
+  position,
+  canRemove,
+  onChange,
+  onRemove,
+}: PrescribedExerciseFieldsProps) {
+  const fieldId = useId()
+
+  const exerciseFieldId = `${fieldId}-exercise`
+  const setsFieldId = `${fieldId}-sets`
+  const repsFieldId = `${fieldId}-reps`
+  const repetitionsInReserveFieldId = `${fieldId}-rir`
+  const restFieldId = `${fieldId}-rest`
+
+  return (
+    /*
+      Una fila con su regla, NO una tarjeta.
+
+      Era una tarjeta y medía 269 px a 375: la página aporta 20 px de relleno,
+      el bloque otros 16 y la tarjeta del ejercicio 16 más, así que el contenido
+      pagaba el relleno tres veces y caía bajo el mínimo de 280 de la regla 1.6.
+      Es el mismo defecto que se corrigió en Reportes y en Progreso, y la misma
+      cura: quitar el nivel de anidamiento en lugar de recortar el relleno. De
+      paso queda como la ficha de rutina, que también lista los ejercicios de un
+      bloque en filas separadas por una regla.
+    */
+    <div className="py-4">
+      <div className="flex items-end gap-2">
+        <div className="min-w-0 flex-1">
+          <Label htmlFor={exerciseFieldId} className={FIELD_LABEL}>
+            Ejercicio
+          </Label>
+          <Select
+            value={exercise.exerciseId}
+            onValueChange={(exerciseId) => onChange({ exerciseId })}
+          >
+            <SelectTrigger id={exerciseFieldId} className="mt-1.5 w-full">
+              <SelectValue placeholder="Elige del catálogo" />
+            </SelectTrigger>
+            <SelectContent>
+              {catalog.map((candidate) => (
+                <SelectItem key={candidate.id} value={candidate.id}>
+                  {candidate.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/*
+          El botón sólo aparece cuando hay más de un ejercicio. Deshabilitarlo
+          en vez de ocultarlo dejaría un control apagado sin explicación; que un
+          bloque de un solo ejercicio no ofrezca vaciarse se entiende solo.
+        */}
+        {canRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            aria-label={`Quitar el ejercicio ${position}`}
+            className="inline-flex size-11 shrink-0 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-danger-surface hover:text-danger"
+          >
+            <Trash2 className="size-4" />
+          </button>
+        )}
+      </div>
+
+      {/*
+        Dos columnas en móvil y cuatro desde `sm`. A 375 px cada campo queda en
+        unos 140 px, que para «3» o «90» sobra: el mínimo de 280 px de la regla
+        1.6 mide contenedores, no cada casilla de una rejilla de números.
+      */}
+      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div>
+          <Label htmlFor={setsFieldId} className={FIELD_LABEL}>
+            Series
+          </Label>
+          <Input
+            id={setsFieldId}
+            type="number"
+            inputMode="numeric"
+            min={1}
+            className="mt-1.5"
+            value={exercise.sets}
+            onChange={(event) => onChange({ sets: event.target.value })}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor={repsFieldId} className={FIELD_LABEL}>
+            Repeticiones
+          </Label>
+          {/* Texto y no número: «8-10» es una prescripción válida y corriente. */}
+          <Input
+            id={repsFieldId}
+            type="text"
+            className="mt-1.5"
+            placeholder="8-10"
+            value={exercise.reps}
+            onChange={(event) => onChange({ reps: event.target.value })}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor={repetitionsInReserveFieldId} className={FIELD_LABEL}>
+            RIR
+          </Label>
+          {/* Vacío es «no aplica»; 0 es «al fallo». El marcador lo dice. */}
+          <Input
+            id={repetitionsInReserveFieldId}
+            type="number"
+            inputMode="numeric"
+            min={0}
+            className="mt-1.5"
+            placeholder="No aplica"
+            value={exercise.rir}
+            onChange={(event) => onChange({ rir: event.target.value })}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor={restFieldId} className={FIELD_LABEL}>
+            Descanso (s)
+          </Label>
+          <Input
+            id={restFieldId}
+            type="number"
+            inputMode="numeric"
+            min={0}
+            step={15}
+            className="mt-1.5"
+            value={exercise.restSeconds}
+            onChange={(event) => onChange({ restSeconds: event.target.value })}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}

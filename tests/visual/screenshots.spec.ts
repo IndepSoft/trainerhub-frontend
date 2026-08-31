@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 
 /**
  * Capturas de revision del rediseno en los tres anchos del brief.
@@ -775,4 +775,210 @@ test.describe('reparto de secciones', () => {
     await page.waitForTimeout(400)
     await expect(page.getByRole('heading', { name: 'Rachas' })).toBeVisible()
   })
+})
+
+/**
+ * Creación de rutinas.
+ *
+ * La pantalla no existía: el modelo de dominio estaba escrito y no había forma
+ * de crear nada con él. Estas pruebas fijan las tres cosas que la hacen algo
+ * más que un formulario bonito: que valide, que guarde de verdad, y que la
+ * duración que el entrenador ve mientras escribe sea la que queda guardada.
+ */
+test.describe('creacion de rutinas', () => {
+  /** «6 min» → 6. La cifra del resumen, sea cual sea el texto que la rodea. */
+  function extraerMinutos(texto: string): number {
+    const encontrado = texto.match(/(\d+)\s*min/)
+    return encontrado === null ? Number.NaN : Number(encontrado[1])
+  }
+
+  /**
+   * Los disparadores de un desplegable, por el nombre de su etiqueta.
+   *
+   * NO se usa `getByLabel`. Radix renderiza, junto al boton visible, un
+   * `<select>` nativo oculto para que el control participe en el formulario, y
+   * la etiqueta alcanza a los DOS: con dos ejercicios en pantalla,
+   * `getByLabel('Ejercicio')` resolvia a cuatro elementos, asi que `nth(1)` era
+   * el select oculto de la primera fila y no el disparador de la segunda.
+   * Hacer clic en un `<select>` oculto no abre nada ni da error, que es lo que
+   * hacia el fallo tan dificil de leer.
+   *
+   * El nativo no tiene nombre accesible, asi que filtrar por rol y nombre deja
+   * exactamente uno por fila.
+   */
+  function desplegables(page: Page, etiqueta: string): Locator {
+    return page.getByRole('combobox', { name: etiqueta, exact: true })
+  }
+
+  /**
+   * Elige un valor de un desplegable de Radix.
+   *
+   * Las opciones se buscan DENTRO del `listbox`, por el mismo motivo: los
+   * `<option>` del select nativo tambien tienen `role=option`. La comprobacion
+   * final existe para que, si algo vuelve a torcerse, el fallo diga donde.
+   */
+  async function elegirDelDesplegable(
+    page: Page,
+    disparador: Locator,
+    nombre: string
+  ): Promise<void> {
+    await disparador.click()
+    await page.getByRole('listbox').getByRole('option', { name: nombre, exact: true }).click()
+    await expect(disparador).toContainText(nombre)
+  }
+
+  async function elegirEjercicio(page: Page, indice: number, nombre: string): Promise<void> {
+    await elegirDelDesplegable(page, desplegables(page, 'Ejercicio').nth(indice), nombre)
+  }
+
+  test('no guarda una rutina sin nombre ni ejercicio', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/trainings/new')
+
+    // Los errores no salen antes de intentar guardar: recibir a alguien con
+    // cuatro avisos en rojo por no haber escrito todavia nada es reprenderle
+    // por acabar de llegar.
+    await expect(page.getByRole('alert')).toHaveCount(0)
+
+    await page.getByRole('button', { name: 'Guardar rutina' }).click()
+
+    await expect(page.getByText('Ponle un nombre a la rutina.')).toBeVisible()
+    await expect(page.getByRole('alert')).toContainText('Falta elegir un ejercicio')
+    // Y sigue en el formulario: no se ha creado nada.
+    expect(page.url()).toContain('/trainings/new')
+  })
+
+  test('la duracion estimada distingue la superserie de la serie simple', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/trainings/new')
+
+    await page.getByLabel('Nombre').fill('Torso · Empuje pesado')
+    await elegirEjercicio(page, 0, 'Press de banca con barra')
+    await page.getByRole('button', { name: /Añadir ejercicio al bloque 1/ }).click()
+    await expect(desplegables(page, 'Ejercicio')).toHaveCount(2)
+    await elegirEjercicio(page, 1, 'Remo con barra')
+
+    const resumen = page.locator('dl').first()
+    const enSerieSimple = extraerMinutos(await resumen.innerText())
+
+    await elegirDelDesplegable(page, desplegables(page, 'Método'), 'Superserie')
+
+    const enSuperserie = extraerMinutos(await resumen.innerText())
+
+    /*
+     * En superserie los ejercicios se encadenan sin descanso entre ellos, asi
+     * que solo cuenta el del final de la ronda. Si esta prueba dejara de
+     * distinguirlas seria que el calculo volvio a tratar todo como series
+     * simples, que inflaba la estimacion casi al doble.
+     */
+    expect(enSerieSimple).toBeGreaterThan(enSuperserie)
+  })
+
+  test('la rutina creada se guarda con la duracion que mostraba el formulario', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/trainings')
+
+    const contadorInicial = await page.getByRole('tab', { name: /Rutinas/ }).innerText()
+
+    await page.getByRole('link', { name: 'Nueva Rutina' }).click()
+    await expect(page.getByRole('heading', { name: 'Nueva rutina' })).toBeVisible()
+
+    await page.getByLabel('Nombre').fill('Torso · Empuje pesado')
+    await page.getByLabel('Descripción').fill('Sesión de empuje con superserie final.')
+    await elegirEjercicio(page, 0, 'Press de banca con barra')
+
+    const minutosEnFormulario = extraerMinutos(await page.locator('dl').first().innerText())
+
+    await page.getByRole('button', { name: 'Guardar rutina' }).click()
+
+    // Se navega a la ficha de la rutina recien creada, que ya tiene su
+    // identificador propio.
+    await page.waitForURL(/\/trainings\/(?!new)[\w-]+/, { timeout: 10_000 })
+    await expect(page.getByRole('heading', { name: 'Torso · Empuje pesado' })).toBeVisible()
+
+    // La cifra que se veia al escribir es la que quedo guardada. Si el resumen
+    // calculara por su cuenta, aqui se separarian.
+    const minutosEnFicha = extraerMinutos(await page.locator('main').innerText())
+    expect(minutosEnFicha).toBe(minutosEnFormulario)
+
+    await page.screenshot({ path: 'tests/visual/salida/rutina-creada-mobile.png' })
+
+    // Y aparece en la lista, que es lo que un formulario que no persiste no
+    // haria: el contador de la pestana sube.
+    await page.getByRole('link', { name: 'Rutinas' }).click()
+    await expect(page.getByRole('tab', { name: /Rutinas/ })).not.toHaveText(contadorInicial)
+    await expect(page.getByRole('link', { name: 'Torso · Empuje pesado' })).toBeVisible()
+  })
+
+  test('el formulario cumple las reglas de 375 px', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/trainings/new')
+    await page.waitForTimeout(1200)
+
+    const medidas = await page.evaluate(() => {
+      const ancho = (elemento: Element) => elemento.getBoundingClientRect().width
+      const caja = (elemento: Element) => elemento.getBoundingClientRect()
+
+      return {
+        desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        contenedoresEstrechos: [
+          ...document.querySelectorAll('section, article, [class*="rounded-block"]'),
+        ]
+          .map(ancho)
+          .filter((medida) => medida > 0 && medida < 280).length,
+        controlesPequenos: [
+          ...document.querySelectorAll('button, [role=tab], input, textarea'),
+        ]
+          .map(caja)
+          .filter((rect) => rect.height > 0 && rect.height < 44).length,
+        // Toda etiqueta tiene que apuntar a un control que exista: es un fallo
+        // que este proyecto ya tuvo en el formulario de registro.
+        etiquetasHuerfanas: [...document.querySelectorAll('label[for]')].filter(
+          (etiqueta) => document.getElementById(etiqueta.getAttribute('for') ?? '') === null
+        ).length,
+      }
+    })
+
+    expect(medidas.desborde, 'desbordamiento horizontal').toBe(0)
+    expect(medidas.contenedoresEstrechos, 'contenedores por debajo de 280 px').toBe(0)
+    expect(medidas.controlesPequenos, 'controles por debajo de 44 px').toBe(0)
+    expect(medidas.etiquetasHuerfanas, 'etiquetas sin control').toBe(0)
+  })
+})
+
+/**
+ * Los planes dejan de ser inalcanzables.
+ *
+ * El modelo -mesociclo, microciclos, objetivos y divisiones- estaba escrito y
+ * no lo importaba nadie: `usePlans` y `plansMock` eran codigo muerto. Un modelo
+ * que no se ve es indistinguible de un modelo que no existe.
+ */
+test('los planes se ven desde entrenamientos', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await signIn(page)
+  await page.goto('/trainings')
+  await page.waitForTimeout(1500)
+
+  const lista = page.getByRole('tablist').first()
+  await lista.getByRole('tab', { name: /Planes/ }).click()
+  await page.waitForTimeout(500)
+
+  await expect(page.getByRole('heading', { name: 'Base de fuerza · 4 semanas' })).toBeVisible()
+  // El objetivo y la division se resuelven desde el catalogo, que era la otra
+  // mitad muerta: se guardan por identificador, no por nombre.
+  await expect(page.getByText('Acondicionamiento general')).toBeVisible()
+  await expect(page.getByText('Full body', { exact: true })).toBeVisible()
+
+  const desborde = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth
+  )
+  expect(desborde, 'desbordamiento horizontal').toBe(0)
+
+  await page.screenshot({ path: 'tests/visual/salida/planes-mobile.png' })
 })

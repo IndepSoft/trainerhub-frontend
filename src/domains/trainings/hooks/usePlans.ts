@@ -3,7 +3,6 @@ import type { TrainingPlan } from '../types/training.types'
 
 interface UsePlansResult {
   plans: TrainingPlan[]
-  templates: TrainingPlan[]
   loading: boolean
   error: string | null
 }
@@ -11,14 +10,20 @@ interface UsePlansResult {
 /**
  * Planes de entrenamiento.
  *
- * Separa los propios de las plantillas por la marca `isTemplate`, no por dos
- * colecciones distintas: son la misma entidad y guardarlas aparte es lo que hizo
- * que en rutinas hubiera dos listas con el mismo contenido.
+ * Devuelve UNA lista, no la partición en propios y plantillas que devolvía
+ * antes. El motivo es que aquí la marca `isTemplate` se lee en la tarjeta y no
+ * en la pestaña: con una sola pestaña de planes la distinción sigue estando
+ * visible, y una sexta pestaña no cabe en la barra a 375 px. La partición
+ * existía sin que nadie la consumiera —el hook entero era código muerto— y
+ * habría vuelto a separar en dos lo que es una sola entidad, que es exactamente
+ * el error que hubo que deshacer en rutinas.
+ *
+ * TODO: sustituir por el repositorio cuando exista el backend. Este hook es el
+ * único punto que habrá que tocar.
  */
 export function usePlans(): UsePlansResult {
   return {
-    plans: plansMock.filter((plan) => !plan.isTemplate),
-    templates: plansMock.filter((plan) => plan.isTemplate),
+    plans: plansMock,
     loading: false,
     error: null,
   }

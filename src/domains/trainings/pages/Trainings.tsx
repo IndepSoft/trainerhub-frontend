@@ -1,20 +1,27 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Flame, Plus, Target } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { useSwipe } from '@/shared/hooks/useSwipe'
 import { RoutineCard } from '../components/RoutineCard'
+import { PlanCard } from '../components/PlanCard'
 import { TrainingFilters } from '../components/TrainingFilters'
 import { ComingSoon } from '@/shared/components/ComingSoon'
 import { useRoutines } from '../hooks/useRoutines'
+import { usePlans } from '../hooks/usePlans'
 import type { Routine } from '../types/training.types'
 
 /**
  * Orden de las pestañas, junto a los `TabsTrigger` para que añadir una no
  * obligue a acordarse de tocar dos sitios.
+ *
+ * Los planes van tras el par de rutinas porque son el nivel de arriba: una
+ * rutina es una sesión y un plan es el mesociclo que las ordena. Desafíos y
+ * rachas cierran, que es lo que todavía no existe.
  */
-const TAB_ORDER = ['rutinas', 'plantillas', 'desafios', 'rachas'] as const
+const TAB_ORDER = ['rutinas', 'plantillas', 'planes', 'desafios', 'rachas'] as const
 type TabValue = (typeof TAB_ORDER)[number]
 
 /**
@@ -27,6 +34,7 @@ type TabValue = (typeof TAB_ORDER)[number]
  */
 export default function Trainings() {
   const { routines, templates } = useRoutines()
+  const { plans } = usePlans()
   const [activeTab, setActiveTab] = useState<TabValue>('rutinas')
 
   const moveTab = (offset: number) => {
@@ -53,9 +61,11 @@ export default function Trainings() {
           <PageHeader.Actions>
             {/* Una sola accion primaria. El boton «Plantillas» de antes
                 duplicaba lo que ya hace su pestaña. */}
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Nueva Rutina
+            <Button asChild className="gap-2">
+              <Link to="/trainings/new">
+                <Plus className="h-4 w-4" />
+                Nueva Rutina
+              </Link>
             </Button>
           </PageHeader.Actions>
         </PageHeader.Content>
@@ -68,11 +78,12 @@ export default function Trainings() {
           {...swipeHandlers}
         >
           <div className="px-4 pt-1">
-            <TabsList className="w-full md:grid md:grid-cols-4">
+            <TabsList className="w-full md:grid md:grid-cols-5">
               {/* Los contadores salen del dato: antes estaban escritos a mano y
                   «Plantillas (1)» mentia, porque no habia ninguna. */}
               <TabsTrigger value="rutinas">Rutinas ({routines.length})</TabsTrigger>
               <TabsTrigger value="plantillas">Plantillas ({templates.length})</TabsTrigger>
+              <TabsTrigger value="planes">Planes ({plans.length})</TabsTrigger>
               <TabsTrigger value="desafios">Desafíos</TabsTrigger>
               <TabsTrigger value="rachas">Rachas</TabsTrigger>
             </TabsList>
@@ -90,6 +101,26 @@ export default function Trainings() {
               routines={templates}
               emptyLabel="No hay plantillas disponibles todavía."
             />
+          </TabsContent>
+
+          {/*
+            Los planes estaban modelados y eran inalcanzables: `usePlans`,
+            `plansMock`, los objetivos y las divisiones no los importaba nadie.
+            Un modelo que no se ve es indistinguible de un modelo que no existe,
+            y borrarlo habria sido tirar el trabajo de ayer.
+          */}
+          <TabsContent value="planes" className="mt-4">
+            {plans.length === 0 ? (
+              <p className="px-4 py-10 text-center text-sm text-ink/40">
+                Aún no has creado ningún plan.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 px-4 pb-4 lg:grid-cols-2 xl:grid-cols-3">
+                {plans.map((plan) => (
+                  <PlanCard key={plan.id} plan={plan} />
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           {/*

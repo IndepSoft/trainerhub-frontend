@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { routinesMock } from '../data/routines.mock'
+import { useRoutinesStore } from '../stores/routinesStore'
 import type { Routine } from '../types/training.types'
 
 interface UseRoutinesResult {
@@ -20,18 +20,20 @@ interface UseRoutinesResult {
  * lo que la marca era decorativa y la única fuente de verdad seguía siendo en
  * qué array estaba escrita la rutina.
  *
- * Misma costura que `useStudents` y `useCalendar`: cuando llegue el backend,
- * esto llamará al puerto vía `container` y ni la página ni los componentes se
- * enterarán.
+ * Lee del almacén y ya no del fichero de datos simulados, que ha pasado a ser
+ * su semilla. Ese cambio es lo que permite que una rutina recién creada aparezca
+ * aquí: leyendo el módulo directamente, la lista nunca se habría enterado.
  */
 export function useRoutines(): UseRoutinesResult {
+  const routines = useRoutinesStore((state) => state.routines)
+
   return useMemo(
     () => ({
-      routines: routinesMock.filter((routine) => !routine.isTemplate),
-      templates: routinesMock.filter((routine) => routine.isTemplate),
+      routines: routines.filter((routine) => !routine.isTemplate),
+      templates: routines.filter((routine) => routine.isTemplate),
       loading: false,
       error: null,
     }),
-    []
+    [routines]
   )
 }

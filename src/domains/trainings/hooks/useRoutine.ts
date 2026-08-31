@@ -1,4 +1,5 @@
-import { routinesMock } from '../data/routines.mock'
+import { useMemo } from 'react'
+import { useRoutinesStore } from '../stores/routinesStore'
 import type { Routine } from '../types/training.types'
 
 interface UseRoutineResult {
@@ -13,15 +14,19 @@ interface UseRoutineResult {
  * Rutinas y plantillas son la misma entidad, asi que la busqueda es una sola.
  * Devuelve `null` cuando no existe, no una excepcion: un enlace viejo es un
  * resultado valido y la vista debe poder pintarlo.
+ *
+ * El caso «sin identificador» se resuelve DENTRO del memo y no con un retorno
+ * temprano. Antes salía antes de tiempo; no fallaba porque el hook no llamaba a
+ * ningún otro, pero dejaba una trampa armada: el primer `useMemo` que alguien
+ * añadiera arriba pasaría a ejecutarse de forma condicional.
  */
 export function useRoutine(routineId: string | undefined): UseRoutineResult {
-  if (!routineId) {
-    return { routine: null, loading: false, error: null }
-  }
+  const routines = useRoutinesStore((state) => state.routines)
 
-  // Una sola coleccion: rutinas y plantillas son la misma entidad, distinguidas
-  // por `isTemplate`. Buscar en dos arrays era el sintoma de tenerlas separadas.
-  const routine = routinesMock.find((candidate) => candidate.id === routineId) ?? null
+  const routine = useMemo(() => {
+    if (!routineId) return null
+    return routines.find((candidate) => candidate.id === routineId) ?? null
+  }, [routines, routineId])
 
   return { routine, loading: false, error: null }
 }

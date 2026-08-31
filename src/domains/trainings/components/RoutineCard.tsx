@@ -18,7 +18,7 @@ import {
   flattenPrescribedExercises,
   formatPrescription,
 } from '../libs/routine.utils'
-import { useExerciseCatalog } from '../hooks/useExerciseCatalog'
+import { useTrainingCatalog } from '../hooks/useTrainingCatalog'
 import type { Routine } from '../types/training.types'
 
 interface RoutineCardProps {
@@ -46,7 +46,7 @@ export function RoutineCard({ routine }: RoutineCardProps) {
     onLongPress: () => setIsMenuOpen(true),
   })
 
-  const { exercisesById } = useExerciseCatalog()
+  const { exercisesById } = useTrainingCatalog()
 
   const prescribed = flattenPrescribedExercises(routine)
   const visible = prescribed.slice(0, VISIBLE_EXERCISES)
