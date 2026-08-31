@@ -1,4 +1,4 @@
-import { CalendarRange, Copy } from 'lucide-react'
+import { CalendarRange } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import { LEVEL_BADGE } from '../libs/levelBadge'
 import { countDeloadWeeks, countPlanSessions } from '../libs/plan.utils'
@@ -16,11 +16,6 @@ interface PlanCardProps {
  * existe todavía una ficha de plan. Una tarjeta que se comporta como un enlace y
  * no lleva a ningún sitio es peor que una que no lo aparenta.
  *
- * La marca «Plantilla» va en la propia tarjeta y no en una pestaña aparte, al
- * revés que en rutinas. Con una sola pestaña de planes la distinción sigue
- * siendo visible, y una sexta pestaña —«plantillas de plan»— no cabría en la
- * barra a 375 px.
- *
  * TODO: falta la ficha de plan y falta poder crearlo. Esta vista sólo lee lo
  * que el modelo ya describe.
  */
@@ -35,26 +30,14 @@ export function PlanCard({ plan }: PlanCardProps) {
     <article className="relative isolate flex flex-col overflow-hidden rounded-block border border-cobalt-tint-3 bg-white">
       <div
         aria-hidden="true"
-        className={cn(
-          'absolute inset-x-[-15%] top-[13%] -z-10 h-[5.5rem]',
-          plan.isTemplate ? 'bg-ember/25' : 'bg-cobalt-tint-2'
-        )}
+        className="absolute inset-x-[-15%] top-[13%] -z-10 h-[5.5rem] bg-cobalt-tint-2"
         style={{ clipPath: 'polygon(0 40%, 100% 0, 100% 60%, 0 100%)' }}
       />
 
       <div className="p-5 pb-0">
-        <span
-          className={cn(
-            'flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em]',
-            plan.isTemplate ? 'text-ember-deep' : 'text-ink/45'
-          )}
-        >
-          {plan.isTemplate ? (
-            <Copy className="size-3.5" />
-          ) : (
-            <CalendarRange className="size-3.5" />
-          )}
-          {plan.isTemplate ? 'Plantilla de plan' : 'Plan'}
+        <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-ink/45">
+          <CalendarRange className="size-3.5" />
+          Plan
         </span>
       </div>
 

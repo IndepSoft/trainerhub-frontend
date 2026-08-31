@@ -36,7 +36,6 @@ export interface RoutineDraft {
   title: string
   description: string
   level: TrainingLevel
-  isTemplate: boolean
   blocks: BlockDraft[]
 }
 

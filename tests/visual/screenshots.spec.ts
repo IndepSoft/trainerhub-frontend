@@ -370,7 +370,7 @@ test.describe('gestos', () => {
     await page.mouse.up()
     await page.waitForTimeout(400)
 
-    await expect(lista.getByRole('tab', { selected: true })).toContainText('Plantillas')
+    await expect(lista.getByRole('tab', { selected: true })).toContainText('Planes')
   })
 
   test('un desplazamiento vertical NO cambia de pestana', async ({ page }) => {
@@ -744,24 +744,25 @@ test.describe('reparto de secciones', () => {
     await page.waitForTimeout(1800)
 
     const lista = page.getByRole('tablist').first()
-    for (const etiqueta of [/Rutinas/, /Plantillas/, /Desafíos/, /Rachas/]) {
+    for (const etiqueta of [/Rutinas/, /Planes/, /Desafíos/, /Rachas/]) {
       await expect(lista.getByRole('tab', { name: etiqueta })).toBeVisible()
     }
 
-    // «Plantillas» tiene contenido propio: antes cambiaba de estado y seguia
-    // pintando las rutinas, porque no habia TabsContent.
-    await lista.getByRole('tab', { name: /Plantillas/ }).click()
-    await page.waitForTimeout(500)
-    // Contenido propio, no el de rutinas: son colecciones distintas de la misma
-    // entidad, separadas por la marca `isTemplate`.
-    await expect(page.getByRole('link', { name: 'Torso · Plantilla base' })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Full body · Principiante' })).toHaveCount(0)
+    /*
+     * NO hay pestana de plantillas, y la prueba lo fija.
+     *
+     * La hubo, y la marca `isTemplate` que la sostenia no gobernaba ningun
+     * comportamiento: solo repartia una coleccion en dos y pintaba un rotulo
+     * distinto. Con ninguna rutina asignada a ningun estudiante, todas eran
+     * igualmente plantillas, asi que la pestana separaba una lista de si misma.
+     */
+    await expect(lista.getByRole('tab', { name: /Plantillas/ })).toHaveCount(0)
 
-    // Y la tarjeta DICE que es plantilla. Sin rotulo, las dos pestanas pintaban
-    // tarjetas identicas y la unica diferencia era en cual estabas.
-    await expect(page.getByText('Plantilla', { exact: true })).toBeVisible()
+    // Y todas las rutinas viven en una sola lista, la de Rutinas.
+    await expect(page.getByRole('link', { name: 'Full body · Principiante' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Torso · Empuje y tracción' })).toBeVisible()
 
-    await page.screenshot({ path: 'tests/visual/salida/plantillas-desktop.png' })
+    await page.screenshot({ path: 'tests/visual/salida/rutinas-desktop.png' })
 
     // Desafios y rachas estan vacias a proposito y lo dicen. La prueba fija que
     // NO vuelvan a pintar datos de ejemplo: eso hacia creer que la funcion

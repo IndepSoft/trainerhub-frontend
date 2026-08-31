@@ -11,12 +11,10 @@ interface UsePlansResult {
  * Planes de entrenamiento.
  *
  * Devuelve UNA lista, no la partición en propios y plantillas que devolvía
- * antes. El motivo es que aquí la marca `isTemplate` se lee en la tarjeta y no
- * en la pestaña: con una sola pestaña de planes la distinción sigue estando
- * visible, y una sexta pestaña no cabe en la barra a 375 px. La partición
- * existía sin que nadie la consumiera —el hook entero era código muerto— y
- * habría vuelto a separar en dos lo que es una sola entidad, que es exactamente
- * el error que hubo que deshacer en rutinas.
+ * antes. La marca que la sostenía ya no existe en el modelo: no gobernaba
+ * ningún comportamiento y, sin nada asignado a ningún estudiante, todos los
+ * planes eran igualmente plantillas. El razonamiento está en
+ * `types/training.types.ts`.
  *
  * TODO: sustituir por el repositorio cuando exista el backend. Este hook es el
  * único punto que habrá que tocar.

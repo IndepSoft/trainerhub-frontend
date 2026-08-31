@@ -17,7 +17,6 @@ export const plansMock: TrainingPlan[] = [
     splitId: 'full-body',
     weeklyFrequency: 3,
     level: 'Principiante',
-    isTemplate: false,
     weeks: [1, 2, 3].map((number) => ({
       number,
       isDeload: false,

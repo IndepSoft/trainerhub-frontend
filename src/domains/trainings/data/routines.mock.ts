@@ -25,7 +25,6 @@ export const routinesMock: Routine[] = [
     title: 'Full body · Principiante',
     description: 'Base de fuerza con los patrones fundamentales.',
     level: 'Principiante',
-    isTemplate: false,
     blocks: [
       {
         id: 'block-1-1',
@@ -94,7 +93,6 @@ export const routinesMock: Routine[] = [
     title: 'Empuje · Intermedio',
     description: 'Pectoral, deltoides y tríceps con densidad alta al final.',
     level: 'Intermedio',
-    isTemplate: false,
     blocks: [
       {
         id: 'block-2-1',
@@ -154,23 +152,19 @@ export const routinesMock: Routine[] = [
     ],
   },
 
-  // Las plantillas van en la MISMA coleccion, distinguidas por `isTemplate`.
-  // Tenerlas en un array aparte hacia que el flag fuese decorativo: se podia
-  // marcar `isTemplate: true` en la lista de rutinas y no pasaba nada.
   {
-    id: 'template-1',
-    title: 'Torso · Plantilla base',
-    description: 'Esqueleto de sesión de torso para adaptar por estudiante.',
+    id: 'routine-3',
+    title: 'Torso · Empuje y tracción',
+    description: 'Empuje pesado y una superserie de tracción para cerrar.',
     level: 'Intermedio',
-    isTemplate: true,
     blocks: [
       {
-        id: 'block-t1-1',
+        id: 'block-3-1',
         method: 'simple',
         restAfterSeconds: 120,
         exercises: [
           {
-            id: 'prescribed-t1-1',
+            id: 'prescribed-3-1',
             exerciseId: 'press-banca-barra',
             sets: 4,
             reps: '6-8',
@@ -180,12 +174,12 @@ export const routinesMock: Routine[] = [
         ],
       },
       {
-        id: 'block-t1-2',
+        id: 'block-3-2',
         method: 'superserie',
         restAfterSeconds: 90,
         exercises: [
           {
-            id: 'prescribed-t1-2',
+            id: 'prescribed-3-2',
             exerciseId: 'jalon-polea',
             sets: 3,
             reps: '10-12',
@@ -193,7 +187,7 @@ export const routinesMock: Routine[] = [
             restSeconds: 0,
           },
           {
-            id: 'prescribed-t1-3',
+            id: 'prescribed-3-3',
             exerciseId: 'curl-biceps-mancuernas',
             sets: 3,
             reps: '12',

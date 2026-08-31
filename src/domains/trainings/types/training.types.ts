@@ -88,11 +88,6 @@ export interface Routine {
   description: string
   level: TrainingLevel
   blocks: Block[]
-  /**
-   * Reutilizable. «Plantilla» es una marca, no un tipo aparte: antes había dos
-   * listas separadas que contenían lo mismo.
-   */
-  isTemplate: boolean
 }
 
 /** Un día del microciclo. Sin rutina asignada es descanso. */
@@ -112,6 +107,18 @@ export interface PlanWeek {
 }
 
 /**
+ * NO HAY MARCA DE «PLANTILLA», ni aquí ni en la rutina.
+ *
+ * La hubo, y no gobernaba nada: sólo repartía la lista en dos pestañas y pintaba
+ * un rótulo distinto. El argumento para quitarla es que hoy **ninguna rutina y
+ * ningún plan se asignan a nadie** —ni `Routine` ni `TrainingPlan` tienen un
+ * campo que apunte a un estudiante—, así que todos son igualmente plantillas y
+ * la distinción no distinguía. Cuando exista la asignación, «plantilla» será
+ * derivable —lo que nadie usa— o se sustituirá por algo más útil, como carpetas
+ * o favoritos; en ninguno de los dos casos hace falta un booleano guardado.
+ */
+
+/**
  * Un plan de entrenamiento es un MESOCICLO: varias semanas hacia un objetivo.
  *
  * La frecuencia semanal es un número y no un catálogo: dice cuántas veces se
@@ -127,5 +134,4 @@ export interface TrainingPlan {
   weeklyFrequency: number
   level: TrainingLevel
   weeks: PlanWeek[]
-  isTemplate: boolean
 }

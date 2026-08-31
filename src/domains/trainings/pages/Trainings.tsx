@@ -17,11 +17,15 @@ import type { Routine } from '../types/training.types'
  * Orden de las pestañas, junto a los `TabsTrigger` para que añadir una no
  * obligue a acordarse de tocar dos sitios.
  *
- * Los planes van tras el par de rutinas porque son el nivel de arriba: una
- * rutina es una sesión y un plan es el mesociclo que las ordena. Desafíos y
- * rachas cierran, que es lo que todavía no existe.
+ * Los planes van tras las rutinas porque son el nivel de arriba: una rutina es
+ * una sesión y un plan es el mesociclo que las ordena. Desafíos y rachas
+ * cierran, que es lo que todavía no existe.
+ *
+ * Ya no hay pestaña de plantillas. La marca `isTemplate` no gobernaba nada y,
+ * con ninguna rutina asignada a ningún estudiante, todas eran igualmente
+ * plantillas: la pestaña separaba una colección de sí misma.
  */
-const TAB_ORDER = ['rutinas', 'plantillas', 'planes', 'desafios', 'rachas'] as const
+const TAB_ORDER = ['rutinas', 'planes', 'desafios', 'rachas'] as const
 type TabValue = (typeof TAB_ORDER)[number]
 
 /**
@@ -33,7 +37,7 @@ type TabValue = (typeof TAB_ORDER)[number]
  * consigue.
  */
 export default function Trainings() {
-  const { routines, templates } = useRoutines()
+  const { routines } = useRoutines()
   const { plans } = usePlans()
   const [activeTab, setActiveTab] = useState<TabValue>('rutinas')
 
@@ -78,11 +82,10 @@ export default function Trainings() {
           {...swipeHandlers}
         >
           <div className="px-4 pt-1">
-            <TabsList className="w-full md:grid md:grid-cols-5">
+            <TabsList className="w-full md:grid md:grid-cols-4">
               {/* Los contadores salen del dato: antes estaban escritos a mano y
-                  «Plantillas (1)» mentia, porque no habia ninguna. */}
+                  mentian. */}
               <TabsTrigger value="rutinas">Rutinas ({routines.length})</TabsTrigger>
-              <TabsTrigger value="plantillas">Plantillas ({templates.length})</TabsTrigger>
               <TabsTrigger value="planes">Planes ({plans.length})</TabsTrigger>
               <TabsTrigger value="desafios">Desafíos</TabsTrigger>
               <TabsTrigger value="rachas">Rachas</TabsTrigger>
@@ -90,17 +93,10 @@ export default function Trainings() {
           </div>
 
           {/* Cada pestaña pinta lo suyo. Antes el control cambiaba de estado
-              pero no habia `TabsContent`, asi que la lista era SIEMPRE la de
-              rutinas propias y «Plantillas» no hacia nada. */}
+              pero no habia `TabsContent`, asi que la lista era SIEMPRE la
+              misma. */}
           <TabsContent value="rutinas" className="mt-4">
             <RoutineList routines={routines} emptyLabel="Aún no has creado ninguna rutina." />
-          </TabsContent>
-
-          <TabsContent value="plantillas" className="mt-4">
-            <RoutineList
-              routines={templates}
-              emptyLabel="No hay plantillas disponibles todavía."
-            />
           </TabsContent>
 
           {/*

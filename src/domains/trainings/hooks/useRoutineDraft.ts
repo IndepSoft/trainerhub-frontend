@@ -28,7 +28,6 @@ interface UseRoutineDraftResult {
   setTitle: (title: string) => void
   setDescription: (description: string) => void
   setLevel: (level: TrainingLevel) => void
-  setIsTemplate: (isTemplate: boolean) => void
   addBlock: () => void
   removeBlock: (blockId: string) => void
   updateBlock: (blockId: string, changes: BlockDraftChanges) => void
@@ -83,10 +82,6 @@ export function useRoutineDraft(): UseRoutineDraftResult {
 
   const setLevel = useCallback((level: TrainingLevel) => {
     setDraft((current) => ({ ...current, level }))
-  }, [])
-
-  const setIsTemplate = useCallback((isTemplate: boolean) => {
-    setDraft((current) => ({ ...current, isTemplate }))
   }, [])
 
   const addBlock = useCallback(() => {
@@ -170,7 +165,6 @@ export function useRoutineDraft(): UseRoutineDraftResult {
     setTitle,
     setDescription,
     setLevel,
-    setIsTemplate,
     addBlock,
     removeBlock,
     updateBlock,

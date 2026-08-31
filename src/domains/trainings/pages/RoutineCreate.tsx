@@ -33,7 +33,6 @@ export default function RoutineCreate() {
     setTitle,
     setDescription,
     setLevel,
-    setIsTemplate,
     addBlock,
     removeBlock,
     updateBlock,
@@ -108,12 +107,10 @@ export default function RoutineCreate() {
             title={draft.title}
             description={draft.description}
             level={draft.level}
-            isTemplate={draft.isTemplate}
             titleError={errors.title}
             onTitleChange={setTitle}
             onDescriptionChange={setDescription}
             onLevelChange={setLevel}
-            onIsTemplateChange={setIsTemplate}
           />
 
           <div>

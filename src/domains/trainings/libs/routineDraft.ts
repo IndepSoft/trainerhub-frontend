@@ -69,7 +69,6 @@ export function createEmptyRoutineDraft(): RoutineDraft {
     title: '',
     description: '',
     level: 'Principiante',
-    isTemplate: false,
     blocks: [createBlockDraft()],
   }
 }
@@ -143,7 +142,6 @@ export function toRoutineData(draft: RoutineDraft): Omit<Routine, 'id'> {
     title: draft.title.trim(),
     description: draft.description.trim(),
     level: draft.level,
-    isTemplate: draft.isTemplate,
     blocks: draft.blocks.map(toBlock),
   }
 }

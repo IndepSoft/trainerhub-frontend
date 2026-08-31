@@ -1,5 +1,4 @@
 import { useId } from 'react'
-import { Copy, Dumbbell, type LucideIcon } from 'lucide-react'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Textarea } from '@/shared/ui/textarea'
@@ -10,7 +9,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
-import { cn } from '@/shared/lib/utils'
 import type { TrainingLevel } from '../types/training.types'
 
 /** Registro de etiqueta del formulario, igual que el de las métricas. */
@@ -23,34 +21,24 @@ interface RoutineIdentityFieldsProps {
   title: string
   description: string
   level: TrainingLevel
-  isTemplate: boolean
   /** Mensaje bajo el título cuando la validación lo señala. */
   titleError?: string
   onTitleChange: (title: string) => void
   onDescriptionChange: (description: string) => void
   onLevelChange: (level: TrainingLevel) => void
-  onIsTemplateChange: (isTemplate: boolean) => void
 }
 
 /**
- * Lo que identifica a la rutina: nombre, descripción, nivel y si es plantilla.
- * Sólo presentación.
- *
- * «Plantilla» se elige aquí, con el mismo par de iconos y rótulos que después
- * distingue a las tarjetas en la lista. Que la decisión y su consecuencia usen
- * el mismo lenguaje visual es lo que evita la confusión que hubo cuando las dos
- * cosas se pintaban idénticas.
+ * Lo que identifica a la rutina: nombre, descripción y nivel. Sólo presentación.
  */
 export function RoutineIdentityFields({
   title,
   description,
   level,
-  isTemplate,
   titleError,
   onTitleChange,
   onDescriptionChange,
   onLevelChange,
-  onIsTemplateChange,
 }: RoutineIdentityFieldsProps) {
   const fieldId = useId()
 
@@ -101,79 +89,30 @@ export function RoutineIdentityFields({
         />
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div>
-          <Label htmlFor={levelFieldId} className={FIELD_LABEL}>
-            Nivel
-          </Label>
-          <Select
-            value={level}
-            onValueChange={(value) => onLevelChange(value as TrainingLevel)}
-          >
-            <SelectTrigger id={levelFieldId} className="mt-1.5 w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {TRAINING_LEVELS.map((candidate) => (
-                <SelectItem key={candidate} value={candidate}>
-                  {candidate}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/*
-          Dos botones con `aria-pressed` y no un `radiogroup`: un grupo de radio
-          accesible exige gestionar las flechas del teclado a mano, y con dos
-          opciones excluyentes un par de conmutadores da el mismo resultado
-          usando lo que el navegador ya sabe hacer.
-        */}
-        <div role="group" aria-label="Tipo de rutina">
-          <span className={cn('block', FIELD_LABEL)}>Tipo</span>
-          <div className="mt-1.5 grid grid-cols-2 gap-2">
-            <TypeOption
-              icon={Dumbbell}
-              label="Rutina"
-              isSelected={!isTemplate}
-              onSelect={() => onIsTemplateChange(false)}
-            />
-            <TypeOption
-              icon={Copy}
-              label="Plantilla"
-              isSelected={isTemplate}
-              onSelect={() => onIsTemplateChange(true)}
-            />
-          </div>
-        </div>
+      {/*
+        Sin conmutador «Rutina / Plantilla». La marca `isTemplate` desaparecio
+        del modelo: no gobernaba ningun comportamiento y, sin nada asignado a
+        ningun estudiante, todas las rutinas eran igualmente plantillas. Pedirle
+        al entrenador que decidiera algo que no cambiaba nada era hacerle perder
+        el tiempo en el paso mas frecuente.
+      */}
+      <div className="mt-4 sm:max-w-xs">
+        <Label htmlFor={levelFieldId} className={FIELD_LABEL}>
+          Nivel
+        </Label>
+        <Select value={level} onValueChange={(value) => onLevelChange(value as TrainingLevel)}>
+          <SelectTrigger id={levelFieldId} className="mt-1.5 w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {TRAINING_LEVELS.map((candidate) => (
+              <SelectItem key={candidate} value={candidate}>
+                {candidate}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </section>
-  )
-}
-
-interface TypeOptionProps {
-  icon: LucideIcon
-  label: string
-  isSelected: boolean
-  onSelect: () => void
-}
-
-/** Una de las dos mitades del conmutador de tipo. */
-function TypeOption({ icon: Icon, label, isSelected, onSelect }: TypeOptionProps) {
-  return (
-    <button
-      type="button"
-      aria-pressed={isSelected}
-      onClick={onSelect}
-      className={cn(
-        'inline-flex min-h-11 items-center justify-center gap-2 rounded-action border px-3 text-xs font-bold uppercase tracking-[0.12em] transition-colors',
-        isSelected
-          ? 'border-ember/50 bg-ember/10 text-ember-deep'
-          : 'border-cobalt-tint-3 text-ink/45 hover:border-cobalt/40 hover:text-ink'
-      )}
-    >
-      <Icon className="size-3.5" />
-      {label}
-    </button>
   )
 }
