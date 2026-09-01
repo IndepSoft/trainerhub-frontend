@@ -38,7 +38,14 @@ export default function RootLayout() {
     '/session',
     '/onboarding',
   ]
-  const shouldHideNav = hideNavRoutes.includes(location.pathname)
+  /*
+   * Por PREFIJO y no por igualdad: la sesion en vivo pasa a ser
+   * `/session/:sessionId`, asi que comparar la ruta entera dejaba de acertar y
+   * la pantalla enfocada recuperaba las dos barras sin que nadie lo pidiera.
+   */
+  const shouldHideNav = hideNavRoutes.some(
+    (route) => location.pathname === route || location.pathname.startsWith(`${route}/`)
+  )
 
   /*
    * El onboarding se muestra una vez, en la primera sesion del dispositivo. Se

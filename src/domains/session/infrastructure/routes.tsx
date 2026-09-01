@@ -7,7 +7,7 @@ const LiveSession = lazy(() => import('../pages/LiveSession'))
 
 export const sessionRoutes: RouteObject[] = [
   {
-    path: '/session',
+    path: '/session/:sessionId',
     element: withSuspense(withProtectedRoute(<LiveSession />)),
   },
 ]

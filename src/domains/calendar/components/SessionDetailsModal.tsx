@@ -88,7 +88,7 @@ export function SessionDetailsModal({
 
   const handleStart = () => {
     onOpenChange(false)
-    navigate('/session')
+    navigate(`/session/${session.id}`)
   }
 
   const handleStatusUpdate = () => {

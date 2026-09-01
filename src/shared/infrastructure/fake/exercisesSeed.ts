@@ -1,4 +1,4 @@
-import type { Exercise } from '../types/training.types'
+import type { Exercise } from '@/shared/domain/entities/exercise'
 
 /**
  * Catálogo de ejercicios.
@@ -7,10 +7,12 @@ import type { Exercise } from '../types/training.types'
  * «press de banca con mancuernas» son entradas distintas, porque tienen distinta
  * estabilización y distinta progresión de carga.
  *
+ * Vive junto a `FakeExerciseRepository`, como el resto de semillas.
+ *
  * TODO: pasa al backend cuando exista. Es catálogo de sistema, ampliable por el
  * entrenador con sus propios ejercicios, pero no editable en su base.
  */
-export const exercisesMock: Exercise[] = [
+export const exercisesSeed: Exercise[] = [
   {
     id: 'sentadilla-barra',
     name: 'Sentadilla con barra',

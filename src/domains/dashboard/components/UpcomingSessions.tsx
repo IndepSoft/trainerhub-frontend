@@ -32,7 +32,7 @@ export function UpcomingSessions({ sessions }: UpcomingSessionsProps) {
                   son accionables, para que el enlace signifique algo. */}
               {index === 0 ? (
                 <Link
-                  to="/session"
+                  to={`/session/${session.id}`}
                   className="block rounded-sm outline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cobalt-lift"
                 >
                   <SessionItem session={session} />

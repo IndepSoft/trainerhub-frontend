@@ -33,25 +33,10 @@ export type {
 export type { PlanDay, PlanWeek, TrainingPlan } from '@/shared/domain/entities/plan'
 
 /**
- * Un ejercicio del catálogo.
- *
- * El equipamiento forma parte del ejercicio, no del bloque: «press de banca con
- * barra» y «press de banca con mancuernas» son entradas distintas —distinta
- * estabilización, distinta progresión de carga—, y si el material colgara del
- * bloque no podría existir una superserie de barra más polea.
+ * EL EJERCICIO TAMPOCO. Subió a `shared/domain/entities/exercise.ts` cuando la
+ * sesión en vivo paso a necesitar su nombre para pintar los bloques.
  */
-export interface Exercise {
-  id: string
-  name: string
-  description?: string
-  equipmentId: string
-  movementPatternId: string
-  /** El que hace el trabajo principal. Uno solo, a propósito. */
-  primaryMuscleGroupId: string
-  /** Los que acompañan. Sirven para categorizar y para repartir el volumen. */
-  secondaryMuscleGroupIds: string[]
-  instructions: string[]
-}
+export type { Exercise } from '@/shared/domain/entities/exercise'
 
 /**
  * Un bloque guardado para reutilizarlo.

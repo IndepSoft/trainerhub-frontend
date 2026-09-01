@@ -13,6 +13,8 @@ import type { PlanRepository } from '@/shared/domain/ports/PlanRepository'
 import { FakePlanRepository } from '@/shared/infrastructure/fake/FakePlanRepository'
 import type { AssignmentRepository } from '@/shared/domain/ports/AssignmentRepository'
 import { FakeAssignmentRepository } from '@/shared/infrastructure/fake/FakeAssignmentRepository'
+import type { ExerciseRepository } from '@/shared/domain/ports/ExerciseRepository'
+import { FakeExerciseRepository } from '@/shared/infrastructure/fake/FakeExerciseRepository'
 
 /**
  * Raíz de composición.
@@ -32,6 +34,7 @@ export interface Container {
   sessions: SessionRepository
   plans: PlanRepository
   assignments: AssignmentRepository
+  exercises: ExerciseRepository
 }
 
 /**
@@ -62,4 +65,5 @@ export const container: Container = {
   sessions: new FakeSessionRepository(),
   plans: new FakePlanRepository(),
   assignments: new FakeAssignmentRepository(),
+  exercises: new FakeExerciseRepository(),
 }

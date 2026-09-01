@@ -1,15 +1,21 @@
 import type { Block, PrescribedExercise, Routine } from './entities/routine'
 
 /**
- * Cuánto dura una rutina. Funciones puras, sin React.
+ * Lo que se mide de una rutina: cuánto dura y cuánto trabajo tiene. Funciones
+ * puras, sin React.
  *
- * Vive en `shared/domain` porque es una propiedad DERIVADA de una entidad
- * compartida, y porque el generador que vuelca un plan a la agenda necesita
- * saber cuánto ocupa cada sesión para poder reservar el hueco. Dejarla en
- * `trainings` habría obligado a `students` a importar de otro dominio.
+ * Viven en `shared/domain` porque son propiedades DERIVADAS de una entidad
+ * compartida y ya las necesitan tres dominios: `trainings` para pintarlas, el
+ * generador que vuelca un plan —para reservar el hueco correcto— y la sesión en
+ * vivo, que mide el avance en series. Dejarlas en `trainings` habría obligado a
+ * los otros dos a importar de otro dominio.
  *
- * La duración no se almacena en ninguna parte: un dato derivado que se guarda
- * miente en cuanto alguien edita un bloque y olvida actualizarlo.
+ * Nada de esto se almacena: un dato derivado que se guarda miente en cuanto
+ * alguien edita un bloque y olvida actualizarlo.
+ *
+ * `countSetsByMuscleGroup` NO está aquí y es deliberado: necesita el catálogo de
+ * ejercicios para resolver el grupo muscular, y ese catálogo sólo lo tiene
+ * `trainings`.
  */
 
 /**
@@ -74,4 +80,21 @@ export function estimateRoutineMinutes(routine: Routine): number {
     0
   )
   return Math.round(seconds / 60)
+}
+
+/** Todos los ejercicios prescritos, en el orden en que se ejecutan. */
+export function flattenPrescribedExercises(routine: Routine): PrescribedExercise[] {
+  return routine.blocks.flatMap((block) => block.exercises)
+}
+
+export function countExercises(routine: Routine): number {
+  return flattenPrescribedExercises(routine).length
+}
+
+/** Series totales de la sesión. Es la medida de volumen que se programa. */
+export function countTotalSets(routine: Routine): number {
+  return flattenPrescribedExercises(routine).reduce(
+    (total, exercise) => total + exercise.sets,
+    0
+  )
 }

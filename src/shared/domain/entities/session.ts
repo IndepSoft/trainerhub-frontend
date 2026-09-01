@@ -22,6 +22,19 @@ export type SessionStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled'
 
 export type SessionKind = 'individual' | 'group'
 
+/**
+ * Qué clase de entrenamiento es. Decide con qué pantalla se ejecuta.
+ *
+ * NO se deriva de si la sesión tiene rutina. Sería más barato y sería falso: una
+ * evaluación inicial no tiene rutina y tampoco es cardio, y acabaría enseñando
+ * un mapa de GPS. Se pregunta, que son dos opciones.
+ *
+ * Tampoco se mezcla con `SessionKind`, que dice QUIÉN asiste —uno o un grupo— y
+ * es una pregunta distinta: hay clases grupales de fuerza y salidas a correr
+ * individuales.
+ */
+export type SessionModality = 'strength' | 'cardio'
+
 export interface Session {
   id: string
   /** Para qué es la sesión. No repite el nombre del alumno: eso se resuelve. */
@@ -39,6 +52,8 @@ export interface Session {
    */
   studentId: string | null
   kind: SessionKind
+  /** Fuerza en sala o cardio. Determina la pantalla de ejecución. */
+  modality: SessionModality
   category: string
   /** Fecha local en formato `YYYY-MM-DD`. Ver `toLocalDateKey`. */
   date: string

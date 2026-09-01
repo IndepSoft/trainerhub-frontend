@@ -27,8 +27,9 @@ import { useSchedulableRoutines } from '../hooks/useSchedulableRoutines'
 import { container } from '@/app/container'
 import { toLocalDateKey } from '../libs/calendar.utils'
 import { ScheduleConflictNotice } from '@/shared/components/ScheduleConflictNotice'
+import { SessionModalityPicker } from '@/shared/components/SessionModalityPicker'
 import { describeOverlap, findOverlappingSessions } from '@/shared/domain/sessionScheduling'
-import type { Session } from '@/shared/domain/entities/session'
+import type { Session, SessionModality } from '@/shared/domain/entities/session'
 import { SESSION_LOCATIONS, TIME_SLOTS } from '../data/calendarOptions'
 
 const SESSION_TYPES = [
@@ -99,6 +100,11 @@ export function CreateSessionModal({
     onOpenChange?.(next)
   }
 
+  /*
+   * Si se llega con una rutina preseleccionada -desde «Usar en una sesion»-, la
+   * modalidad es fuerza sin preguntar: se viene de una rutina de sala.
+   */
+  const [modality, setModality] = useState<SessionModality>('strength')
   const [routineId, setRoutineId] = useState(preselectedRoutineId ?? NO_ROUTINE)
   const [sessionType, setSessionType] = useState('')
   const [studentId, setStudentId] = useState('')
@@ -137,6 +143,7 @@ export function CreateSessionModal({
 
   const resetForm = () => {
     setConflict(null)
+    setModality('strength')
     setRoutineId(NO_ROUTINE)
     setSessionType('')
     setStudentId('')
@@ -207,6 +214,7 @@ export function CreateSessionModal({
       title: routine?.title ?? category,
       studentId: isGroupSession ? null : studentId,
       kind: isGroupSession ? 'group' : 'individual',
+      modality,
       category,
       date: toLocalDateKey(date!),
       time,
@@ -216,7 +224,8 @@ export function CreateSessionModal({
       // aparte y fingirlo aqui vaciaria de sentido el estado.
       status: 'pending',
       notes,
-      routineId: routineId === NO_ROUTINE ? null : routineId,
+      // Una sesion de cardio no ejecuta una rutina de sala.
+      routineId: modality === 'cardio' || routineId === NO_ROUTINE ? null : routineId,
     })
 
     toast.success(
@@ -433,11 +442,26 @@ export function CreateSessionModal({
             </div>
           </div>
 
+          <div className="space-y-2">
+            <Label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
+              Tipo de entrenamiento
+            </Label>
+            <SessionModalityPicker
+              value={modality}
+              onChange={(next) => {
+                setModality(next)
+                if (next === 'cardio') setRoutineId(NO_ROUTINE)
+              }}
+            />
+          </div>
+
           {/*
-            La rutina es OPCIONAL: una evaluacion inicial o una charla de
-            seguimiento no ejecutan ninguna, y obligar a elegir una convertiria
-            «ninguna» en un valor que hay que buscar.
+            La rutina es OPCIONAL, y solo aparece en fuerza: una evaluacion
+            inicial o una charla de seguimiento no ejecutan ninguna, y una salida
+            a correr tampoco. Obligar a elegir convertiria «ninguna» en un valor
+            que hay que buscar.
           */}
+          {modality === 'strength' && (
           <div className="space-y-2">
             <Label
               htmlFor="new-session-routine"
@@ -459,6 +483,7 @@ export function CreateSessionModal({
               </SelectContent>
             </Select>
           </div>
+          )}
 
           <div className="space-y-2">
             <div className="flex items-baseline justify-between gap-3">

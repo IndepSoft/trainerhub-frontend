@@ -20,6 +20,10 @@ export class FakeSessionRepository implements SessionRepository {
     return this.sessions
   }
 
+  async findById(sessionId: string): Promise<Session | null> {
+    return this.sessions.find((session) => session.id === sessionId) ?? null
+  }
+
   async findByStudent(studentId: string): Promise<Session[]> {
     return this.sessions
       .filter((session) => session.studentId === studentId)

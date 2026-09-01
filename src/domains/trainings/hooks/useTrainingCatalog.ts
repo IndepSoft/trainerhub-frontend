@@ -1,4 +1,5 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { container } from '@/app/container'
 import { useCatalogStore } from '../stores/catalogStore'
 import {
   MOVEMENT_PATTERNS,
@@ -55,7 +56,31 @@ function indexById<T extends { id: string }>(items: T[]): Map<string, T> {
  * vía `container` y ni la página ni los componentes se enterarán.
  */
 export function useTrainingCatalog(): UseTrainingCatalogResult {
-  const exercises = useCatalogStore((state) => state.exercises)
+  /*
+   * Los ejercicios vienen del PUERTO desde que la sesion en vivo tambien los
+   * lee; el equipamiento sigue en el almacen del dominio porque solo lo mira
+   * `trainings`. Es la misma frontera de siempre: sube lo que cruza.
+   */
+  const [exercises, setExercises] = useState<Exercise[]>([])
+
+  useEffect(() => {
+    let active = true
+
+    const load = () => {
+      container.exercises.findAll().then((result) => {
+        if (active) setExercises(result)
+      })
+    }
+
+    load()
+    const unsubscribe = container.exercises.onChange(load)
+
+    return () => {
+      active = false
+      unsubscribe()
+    }
+  }, [])
+
   const equipment = useCatalogStore((state) => state.equipment)
 
   return useMemo(

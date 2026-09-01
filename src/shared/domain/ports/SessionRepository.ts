@@ -15,6 +15,13 @@ import type { Session, SessionStatus } from '../entities/session'
  */
 export interface SessionRepository {
   findAll(): Promise<Session[]>
+  /**
+   * Una sesión por su identificador, para poder ejecutarla.
+   *
+   * `null` cuando no existe: un enlace a una sesión ya borrada es un resultado
+   * válido y la pantalla debe poder pintarlo.
+   */
+  findById(sessionId: string): Promise<Session | null>
   /** Las de un alumno, ordenadas de la más próxima a la más lejana. */
   findByStudent(studentId: string): Promise<Session[]>
   /**

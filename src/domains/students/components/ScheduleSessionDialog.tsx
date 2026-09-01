@@ -26,10 +26,11 @@ import {
   SESSION_TIME_SLOTS,
 } from '@/shared/domain/entities/session'
 import { ScheduleConflictNotice } from '@/shared/components/ScheduleConflictNotice'
+import { SessionModalityPicker } from '@/shared/components/SessionModalityPicker'
 import { describeOverlap, findOverlappingSessions } from '@/shared/domain/sessionScheduling'
 import { useAssignableRoutines } from '../hooks/useAssignableRoutines'
 import { toDateKey } from '../libs/dateKey'
-import type { Session } from '@/shared/domain/entities/session'
+import type { Session, SessionModality } from '@/shared/domain/entities/session'
 import type { Student } from '@/shared/domain/entities/student'
 
 /** Registro de etiqueta del formulario, igual que en el resto de la aplicación. */
@@ -69,6 +70,7 @@ export function ScheduleSessionDialog({
   const fieldId = useId()
   const { routines } = useAssignableRoutines()
 
+  const [modality, setModality] = useState<SessionModality>('strength')
   const [routineId, setRoutineId] = useState(NO_ROUTINE)
   const [date, setDate] = useState<Date>()
   const [time, setTime] = useState('')
@@ -107,6 +109,7 @@ export function ScheduleSessionDialog({
 
   const resetForm = () => {
     setConflict(null)
+    setModality('strength')
     setRoutineId(NO_ROUTINE)
     setDate(undefined)
     setTime('')
@@ -158,6 +161,7 @@ export function ScheduleSessionDialog({
       title: routine?.title ?? 'Sesión de entrenamiento',
       studentId: student.id,
       kind: 'individual',
+      modality,
       category: routine === undefined ? 'Entrenamiento' : 'Entrenamiento Personal',
       date: toDateKey(date!),
       time,
@@ -166,7 +170,9 @@ export function ScheduleSessionDialog({
       // Nace pendiente: confirmarla es un acto aparte.
       status: 'pending',
       notes,
-      routineId: routineId === NO_ROUTINE ? null : routineId,
+      // Una sesion de cardio no ejecuta una rutina de sala, aunque hubiera uno
+      // elegido antes de cambiar de modalidad.
+      routineId: modality === 'cardio' || routineId === NO_ROUTINE ? null : routineId,
     })
 
     resetForm()
@@ -198,6 +204,20 @@ export function ScheduleSessionDialog({
 
         <form onSubmit={handleSubmit} className="space-y-5 px-5 pb-5">
           <div className="space-y-2">
+            <span className={cn('block', FIELD_LABEL)}>Tipo de entrenamiento</span>
+            <SessionModalityPicker
+              value={modality}
+              onChange={(next) => {
+                setModality(next)
+                if (next === 'cardio') setRoutineId(NO_ROUTINE)
+              }}
+            />
+          </div>
+
+          {/* El selector de rutina solo aparece en fuerza: una salida a correr
+              no ejecuta bloques ni series. */}
+          {modality === 'strength' && (
+          <div className="space-y-2">
             <Label htmlFor={`${fieldId}-routine`} className={FIELD_LABEL}>
               Rutina
             </Label>
@@ -215,6 +235,7 @@ export function ScheduleSessionDialog({
               </SelectContent>
             </Select>
           </div>
+          )}
 
           <div className="space-y-2">
             <div className="flex items-baseline justify-between gap-3">

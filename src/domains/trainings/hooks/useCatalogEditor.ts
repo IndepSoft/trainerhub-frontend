@@ -1,5 +1,7 @@
 import { useCallback } from 'react'
+import { container } from '@/app/container'
 import { useCatalogStore } from '../stores/catalogStore'
+import { useTrainingCatalog } from './useTrainingCatalog'
 import { useRoutines } from './useRoutines'
 import {
   describeNames,
@@ -36,15 +38,19 @@ export function useCatalogEditor(): UseCatalogEditorResult {
   const catalog = useCatalogStore()
   const { routines } = useRoutines()
 
-  const {
-    exercises,
-    createExercise,
-    updateExercise,
-    deleteExercise: removeExercise,
-    createEquipment,
-    updateEquipment,
-    deleteEquipment: removeEquipment,
-  } = catalog
+  const { createEquipment, updateEquipment, deleteEquipment: removeEquipment } = catalog
+  const { exercises } = useTrainingCatalog()
+
+  const createExercise = useCallback(
+    (data: Omit<Exercise, 'id'>) => {
+      void container.exercises.create(data)
+    },
+    []
+  )
+
+  const updateExercise = useCallback((exerciseId: string, data: Omit<Exercise, 'id'>) => {
+    void container.exercises.update(exerciseId, data)
+  }, [])
 
   const deleteExercise = useCallback(
     (exerciseId: string): DeletionResult => {
@@ -59,10 +65,10 @@ export function useCatalogEditor(): UseCatalogEditorResult {
         }
       }
 
-      removeExercise(exerciseId)
+      void container.exercises.remove(exerciseId)
       return { deleted: true }
     },
-    [routines, removeExercise]
+    [routines]
   )
 
   const deleteEquipment = useCallback(

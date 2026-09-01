@@ -1,7 +1,7 @@
 import type { Routine } from './entities/routine'
 import type { Session } from './entities/session'
 import type { TrainingPlan } from './entities/plan'
-import { estimateRoutineMinutes } from './routineDuration'
+import { estimateRoutineMinutes } from './routineMetrics'
 import { findOverlappingSessions } from './sessionScheduling'
 
 /**
@@ -125,6 +125,8 @@ export function planSessions(
         title: routine?.title ?? input.plan.title,
         studentId: input.studentId,
         kind: 'individual',
+        // Un plan de mesociclo es entrenamiento de fuerza por definicion.
+        modality: 'strength',
         category: input.plan.title,
         date,
         time,

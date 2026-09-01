@@ -68,7 +68,10 @@ export function SlideToAction({
         <button
           type="button"
           onClick={onConfirm}
-          className="flex-1 text-left text-sm font-semibold uppercase tracking-[0.18em] text-white"
+          // `min-h-11`: el boton alternativo al arrastre medía 20 px de alto
+          // aunque la franja entera sea mucho más alta, asi que quien lo usa por
+          // teclado o por toque tenia un destino por debajo del objetivo tactil.
+          className="flex min-h-11 flex-1 items-center text-left text-sm font-semibold uppercase tracking-[0.18em] text-white"
         >
           <span aria-hidden="true">{label}</span>
           <span className="sr-only">{accessibleLabel}</span>

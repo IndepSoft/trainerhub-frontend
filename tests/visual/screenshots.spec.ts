@@ -108,6 +108,17 @@ function sumarDias(date: Date, dias: number): Date {
 }
 
 /**
+ * Un contador de la cabecera de la agenda, por su rotulo.
+ *
+ * Devuelve el localizador y no su texto para que las aserciones ESPEREN: el
+ * cambio de estado pasa por el puerto, asi que el contador se actualiza un
+ * instante despues de guardar.
+ */
+function contador(page: Page, rotulo: string): Locator {
+  return page.locator('main .grid > div').filter({ hasText: rotulo })
+}
+
+/**
  * Desplaza el contenedor interno hasta abajo.
  *
  * `fullPage: true` no sirve en este layout: el desplazamiento vive en un div con
@@ -307,17 +318,20 @@ for (const objetivo of RUTAS_A_REVISAR) {
 }
 
 /**
- * La sesion en vivo tiene que caber sin desplazamiento a 375 px.
+ * La sesion de CARDIO tiene que caber sin desplazamiento a 375 px.
  *
  * No es una preferencia estetica: si hay que desplazarse para ver el
  * cronometro, la pantalla no cumple su unica funcion. Llego a desbordar 104 px
  * cuando se anadio la barra inferior, y por eso la ruta pasa a pantalla
  * completa. Esta prueba existe para que no vuelva a pasar en silencio.
+ *
+ * Se dice CUAL, porque desde que hay dos modos la afirmacion solo vale para
+ * este: la de fuerza es una lista de bloques y se desplaza por definicion.
  */
-test('la sesion en vivo cabe sin desplazamiento a 375 px', async ({ page }) => {
+test('la sesion de cardio cabe sin desplazamiento a 375 px', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 })
   await signIn(page)
-  await page.goto('/session')
+  await page.goto('/session/session-4')
   await page.waitForTimeout(2000)
 
   const medida = await page.evaluate(() => {
@@ -2275,17 +2289,6 @@ test.describe('volcar un plan a la agenda', () => {
  * reflejar la semilla.
  */
 test.describe('estado de la sesion', () => {
-  /**
-   * Un contador de la cabecera de la agenda, por su rotulo.
-   *
-   * Devuelve el localizador y no su texto para que las aserciones ESPEREN: el
-   * cambio de estado pasa por el puerto, asi que el contador se actualiza un
-   * instante despues de pulsar Guardar.
-   */
-  function contador(page: Page, rotulo: string): Locator {
-    return page.locator('main .grid > div').filter({ hasText: rotulo })
-  }
-
   test('marcar una sesion como completada mueve los contadores', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
@@ -2368,5 +2371,139 @@ test.describe('estado de la sesion', () => {
     await page.getByRole('link', { name: 'Estudiantes' }).first().click()
     await page.getByRole('link', { name: 'María Gómez' }).click()
     await expect(page.getByText('Completada')).toBeVisible()
+  })
+})
+
+/**
+ * La sesion en vivo, con sus dos modos.
+ *
+ * `/session` no recibia nada y siempre pintaba la misma sesion simulada
+ * corriendo por un mapa: agendar «Full body» para Maria y pulsar iniciar te
+ * dejaba en la sesion de otra persona. Y todo lo que compone este proyecto
+ * -bloques, series, RIR- no tenia donde ejecutarse.
+ */
+test.describe('sesion en vivo', () => {
+  test('una sesion de fuerza pinta los bloques de SU rutina', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/session/session-1')
+
+    // De quien es y que ejecuta, resueltos por identificador.
+    await expect(page.getByText('María Gómez')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Empuje · Intermedio' })).toBeVisible()
+
+    // Sus bloques, con metodo y prescripcion.
+    await expect(page.getByText('Serie simple').first()).toBeVisible()
+    await expect(page.getByText('Superserie').first()).toBeVisible()
+    await expect(page.getByText('Press de banca con barra')).toBeVisible()
+    await expect(page.getByText('4 × 6-8 · RIR 2')).toBeVisible()
+
+    // Y NADA de la pantalla de carrera.
+    await expect(page.getByText('GPS')).toHaveCount(0)
+  })
+
+  test('marcar series avanza, y volver a pulsar la ultima desmarca', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/session/session-1')
+
+    const avance = page.getByRole('progressbar')
+    // El total sale de la rutina: 14 series entre sus tres bloques.
+    await expect(avance).toHaveAttribute('aria-valuemax', '14')
+    await expect(avance).toHaveAttribute('aria-valuenow', '0')
+
+    const series = page.getByRole('button', { name: /^Serie \d+ de/ })
+    await series.nth(0).click()
+    await series.nth(1).click()
+    await expect(avance).toHaveAttribute('aria-valuenow', '2')
+
+    /*
+     * Volver a pulsar la ultima marcada la desmarca: equivocarse contando series
+     * es lo mas normal del mundo y no puede costar reiniciar la sesion.
+     */
+    await series.nth(1).click()
+    await expect(avance).toHaveAttribute('aria-valuenow', '1')
+  })
+
+  test('una sesion de cardio conserva su pantalla de carrera', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/session/session-4')
+
+    await expect(page.getByRole('heading', { name: 'Carrera continua' })).toBeVisible()
+    await expect(page.getByText('GPS')).toBeVisible()
+
+    // Y ninguna casilla de serie: no ejecuta una rutina de sala.
+    await expect(page.getByRole('button', { name: /^Serie \d+ de/ })).toHaveCount(0)
+  })
+
+  test('terminar deja la sesion completada, y se ve en la agenda', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/calendar')
+    await page.waitForTimeout(1500)
+
+    await expect(contador(page, 'Completadas')).toContainText('0')
+
+    // Se entra a la sesion desde su detalle, que es el camino real.
+    await page.getByRole('button', { name: /minutos/ }).first().click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Iniciar sesión' }).click()
+    await page.waitForURL(/\/session\/[\w-]+/)
+
+    /*
+     * POR TECLADO, y no con un clic. El control es deslizar-para-confirmar: un
+     * toque NO debe confirmar, que es justo lo que protege de terminar por error
+     * una sesion en marcha. El `<button>` existe como alternativa accesible, y
+     * pulsar Intro es como se activa sin arrastrar.
+     */
+    await page.getByRole('button', { name: 'Pausar la sesión' }).press('Enter')
+    // El gesto de finalizar solo aparece en pausa, para que no compita con la
+    // accion principal.
+    await page.getByRole('button', { name: 'Finalizar la sesión' }).press('Enter')
+    await page.waitForURL(/celebracion/)
+
+    /*
+     * AQUI SE CIERRA EL BUCLE: lo que pasa en la sesion vuelve a la agenda.
+     *
+     * Se vuelve con el historial y no con `page.goto` ni con el menu: `goto`
+     * recargaria la aplicacion y devolveria la sesion a su estado de semilla, y
+     * la celebracion es una ruta a pantalla completa —sin menu— a proposito.
+     */
+    await page.goBack()
+    await page.goBack()
+    await page.waitForURL(/\/calendar$/)
+
+    await expect(contador(page, 'Completadas')).toContainText('1')
+  })
+
+  test('una sesion que no existe no revienta', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/session/no-existe')
+
+    await expect(page.getByText('Sesión no encontrada')).toBeVisible()
+  })
+
+  test('la sesion de fuerza cumple las reglas de 375 px', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/session/session-1')
+    await page.waitForTimeout(1200)
+
+    const medidas = await page.evaluate(() => {
+      const caja = (elemento: Element) => elemento.getBoundingClientRect()
+
+      return {
+        desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        controlesPequenos: [...document.querySelectorAll('button, a')]
+          .map(caja)
+          .filter((rect) => rect.height > 0 && rect.height < 44).length,
+      }
+    })
+
+    expect(medidas.desborde, 'desbordamiento horizontal').toBe(0)
+    expect(medidas.controlesPequenos, 'controles bajo 44 px').toBe(0)
+
+    await page.screenshot({ path: 'tests/visual/salida/sesion-fuerza-mobile.png' })
   })
 })
