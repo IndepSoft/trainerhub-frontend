@@ -712,3 +712,81 @@ porque empujar hacia la de entrenador haría que los alumnos se registraran mal.
 El borrador es uno solo para los dos, y los campos que no le tocan al rol elegido
 no se leen. La alternativa —una unión discriminada— obligaba a tirar lo escrito
 al cambiar de rol, que es justo lo que hace quien se equivoca y vuelve.
+
+---
+
+## 11. El muro y el ranking (1 sep 2026)
+
+### 11.1 Publica sólo quien entrena
+
+Y eso convierte el muro en un canal de anuncios en vez de en una red social. La
+diferencia no es de tono: sin publicaciones de los alumnos **no hay moderación
+que construir**, ni denuncias, ni bloqueos, ni el trabajo permanente que eso
+arrastra para siempre. Los alumnos participan con el «me gusta», que basta para
+saber si algo se ha leído.
+
+`toggleLike` es **una sola operación** y no `like`/`unlike`: el botón es uno y
+alterna, así que con dos métodos quien pulsa tendría que saber antes en qué
+estado está, y entre saberlo y llamar cabe otro toque. Así pulsar dos veces deja
+las cosas como estaban en lugar de duplicar el «me gusta».
+
+El cero no se pinta. «0» junto a un corazón se lee como un reproche, y dice lo
+mismo que no decir nada.
+
+### 11.2 `toISOString` aquí sí, y es la misma regla de antes
+
+Las fechas de la agenda tienen prohibido `toISOString` porque convierte a UTC y
+desplaza el día en husos negativos: una sesión de las 20:00 del 15 aparecía el 16.
+
+Un anuncio **no ocurre «el día 15», ocurre en un momento**. Un instante no tiene
+huso: se guarda absoluto y se pinta en la hora local de quien mira. Lo que estaba
+mal era derivar un día del calendario de un instante en UTC, no el formato.
+
+`describePostTime` tampoco reutiliza `describeTimeAgo` del panel: aquello redondea
+a días porque una sesión ocurre un día, y un anuncio de hace veinte minutos no
+puede leerse como «hoy».
+
+### 11.3 El ranking es un agregado, y por eso tiene puerto propio
+
+**Un alumno no puede leer las sesiones de sus compañeros.** Su ámbito se las
+recorta a propósito —con quién entrena el entrenador, a qué hora y dónde—, así
+que calcular la clasificación en su navegador exigiría abrírselas: romper el
+aislamiento para pintar una tabla.
+
+`RankingRepository` devuelve la clasificación **ya resuelta**, con lo justo para
+pintarla. De las sesiones de nadie cruza nada. Hay una prueba que comprueba
+exactamente eso: una alumna ve a Juan en el ranking y no ve ni una de sus
+sesiones en la agenda.
+
+**Por periodo, y la semana primero.** Un ranking por experiencia total se
+congela: quien lleva dos años gana siempre y quien entra hoy no puede alcanzarle,
+así que a las tres semanas deja de mirarlo. «Siempre» se queda detrás, donde no
+hace daño.
+
+**Sólo esfuerzo**: sesiones completadas y experiencia. Nunca peso ni grasa
+corporal. Comparar cuerpos en público hace daño a quien más habría que cuidar, y
+además no mide el trabajo de nadie: la experiencia se gana entrenando, el peso
+no. Y el crew puede apagarlo entero con `rankingEnabled`.
+
+El desempate por nombre no es decorativo: sin él, dos personas con la misma
+experiencia intercambian posiciones en cada recarga y el ranking parece moverse
+solo.
+
+### 11.4 La experiencia sube a `shared/domain`
+
+La necesitan dos dominios —el progreso de una persona y el ranking de su equipo—,
+que es el criterio de siempre. Y hay un motivo de fondo además del criterio: si
+el ranking calculara la experiencia con su propia fórmula, **dos pantallas de la
+misma aplicación dirían dos cifras distintas del mismo esfuerzo**.
+
+Se queda en `progress` lo que sólo le incumbe a una persona —nivel, racha, hitos,
+logros—; sube lo que se compara. `weekBounds` sube por lo mismo, desde las
+utilidades del panel.
+
+### 11.5 El radio de las tarjetas
+
+`--radius-action` son 999 px —píldoras, para botones e insignias— y
+`--radius-block` es cero, que es el registro editorial de esta aplicación. Usar
+`rounded-action` en superficies grandes dejaba las tarjetas del muro con forma de
+elipse. Sólo se veía mirándolo: compilaba, pasaba el lint y las clases parecían
+razonables.

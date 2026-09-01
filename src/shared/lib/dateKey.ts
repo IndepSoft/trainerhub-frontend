@@ -33,3 +33,42 @@ export function toLocalDateKey(date: Date): string {
 export function todayKey(): string {
   return toLocalDateKey(new Date())
 }
+
+/** Un tramo de fechas, ambos extremos incluidos, en claves locales. */
+export interface DateRange {
+  from: string
+  to: string
+}
+
+/**
+ * El lunes y el domingo de la semana que contiene la fecha.
+ *
+ * De lunes a domingo, como el microciclo de un plan, y no de domingo a sábado:
+ * dos definiciones distintas de «esta semana» en la misma aplicación darían dos
+ * cifras distintas para lo mismo —una en el panel y otra en el ranking—.
+ *
+ * Estaba en las utilidades del panel. Sube aquí al necesitarla también el
+ * ranking semanal, que es el mismo criterio de siempre: se comparte lo que dos
+ * dominios usan.
+ */
+export function weekBounds(date: Date): DateRange {
+  const isoWeekday = (date.getDay() + 6) % 7
+  const monday = new Date(date.getFullYear(), date.getMonth(), date.getDate() - isoWeekday)
+  const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6)
+
+  return { from: toLocalDateKey(monday), to: toLocalDateKey(sunday) }
+}
+
+/**
+ * El primer y el último día del mes que contiene la fecha.
+ *
+ * El día 0 del mes siguiente es el último del actual: el constructor normaliza
+ * solo, así que no hay que saber cuántos días tiene febrero ni si el año es
+ * bisiesto.
+ */
+export function monthBounds(date: Date): DateRange {
+  const first = new Date(date.getFullYear(), date.getMonth(), 1)
+  const last = new Date(date.getFullYear(), date.getMonth() + 1, 0)
+
+  return { from: toLocalDateKey(first), to: toLocalDateKey(last) }
+}

@@ -34,7 +34,7 @@ conserva el fichero con otro propósito: traspaso rodante entre sesiones.
 punto viejo.
 
 Estado verificado el 1 de septiembre, ejecutado y no supuesto: `npm run lint`
-limpio, `npm run build` en verde, **140 pruebas de Playwright en verde**.
+limpio, `npm run build` en verde, **145 pruebas de Playwright en verde**.
 
 ---
 
@@ -68,7 +68,7 @@ así que entra `FakeAuthAdapter`, no Supabase:
 
 Es el punto donde más se equivocaba la versión anterior de este documento.
 
-- `tests/visual/screenshots.spec.ts`: **140 pruebas**. Muchas están
+- `tests/visual/screenshots.spec.ts`: **145 pruebas**. Muchas están
   parametrizadas por tres anchos —375, 768 y 1440— desde la constante
   `VIEWPORTS`.
 - Se lanzan con `npx playwright test`. **No hay script `test` en

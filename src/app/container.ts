@@ -20,6 +20,10 @@ import type { CrewRepository } from '@/shared/domain/ports/CrewRepository'
 import { FakeCrewRepository } from '@/shared/infrastructure/fake/FakeCrewRepository'
 import type { PlatformRepository } from '@/shared/domain/ports/PlatformRepository'
 import { FakePlatformRepository } from '@/shared/infrastructure/fake/FakePlatformRepository'
+import type { CrewPostRepository } from '@/shared/domain/ports/CrewPostRepository'
+import { FakeCrewPostRepository } from '@/shared/infrastructure/fake/FakeCrewPostRepository'
+import type { RankingRepository } from '@/shared/domain/ports/RankingRepository'
+import { FakeRankingRepository } from '@/shared/infrastructure/fake/FakeRankingRepository'
 import { crewScope } from './crewScope'
 
 /**
@@ -35,6 +39,8 @@ import { crewScope } from './crewScope'
 export interface Container {
   auth: AuthPort
   crews: CrewRepository
+  crewPosts: CrewPostRepository
+  ranking: RankingRepository
   platform: PlatformRepository
   trainers: TrainerRepository
   students: StudentRepository
@@ -86,11 +92,19 @@ function createTrainerRepository(): TrainerRepository {
  */
 const fakeCrews = new FakeCrewRepository()
 const fakeStudents = new FakeStudentRepository(crewScope)
+const fakeSessions = new FakeSessionRepository(crewScope)
 const trainers = createTrainerRepository()
 
 export const container: Container = {
   auth: createAuthenticationAdapter(),
   crews: fakeCrews,
+  crewPosts: new FakeCrewPostRepository(crewScope),
+  /*
+   * El ranking recibe las clases concretas: necesita las sesiones de TODO el
+   * equipo, y el ambito de un alumno le deja ver solo las suyas. Lo que sale de
+   * aqui es un agregado, no las sesiones de nadie.
+   */
+  ranking: new FakeRankingRepository(fakeSessions, fakeStudents, crewScope),
   platform: new FakePlatformRepository(fakeCrews, fakeStudents, trainers),
   trainers,
   /*
@@ -107,7 +121,7 @@ export const container: Container = {
    */
   students: fakeStudents,
   routines: new FakeRoutineRepository(crewScope),
-  sessions: new FakeSessionRepository(crewScope),
+  sessions: fakeSessions,
   plans: new FakePlanRepository(crewScope),
   assignments: new FakeAssignmentRepository(crewScope),
   exercises: new FakeExerciseRepository(),

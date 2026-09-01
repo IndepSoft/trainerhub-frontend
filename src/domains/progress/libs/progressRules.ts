@@ -1,4 +1,7 @@
 import { toLocalDateKey } from '@/shared/lib/dateKey'
+// La experiencia vive en `shared/domain` desde que la necesita tambien el
+// ranking del equipo: dos formulas para la misma cifra darian dos numeros.
+import { completedSessions, totalExperience } from '@/shared/domain/experience'
 import type { Session } from '@/shared/domain/entities/session'
 import type { LevelProgress, Milestone, StreakStatus } from '../types/gamification.types'
 
@@ -21,16 +24,9 @@ import type { LevelProgress, Milestone, StreakStatus } from '../types/gamificati
  * ajustarlo sea cambiar una constante y no rastrear multiplicadores.
  */
 
-/**
- * Experiencia por terminar una sesión, sea del tipo que sea.
- *
- * Existe además de la de las series porque el cardio no tiene series: sin esto,
- * salir a correr una hora daría cero y la pantalla diría que no has hecho nada.
- */
-const EXPERIENCE_PER_SESSION = 20
-
-/** Experiencia por serie marcada. La unidad en la que se programa la fuerza. */
-const EXPERIENCE_PER_SET = 1
+// Se reexportan para no tocar a quien ya las importaba de aqui: la experiencia
+// subio a `shared/domain` al necesitarla tambien el ranking del equipo.
+export { completedSessions, totalExperience }
 
 /**
  * Lo que cuesta cada nivel, en experiencia.
@@ -45,26 +41,6 @@ const LEVEL_COST_INCREMENT = 50
 
 function costOfLevel(level: number): number {
   return BASE_LEVEL_COST + (level - 1) * LEVEL_COST_INCREMENT
-}
-
-/** Sólo cuentan las cerradas, y sólo las que anotaron lo que ocurrió. */
-export function completedSessions(sessions: Session[]): Session[] {
-  return sessions.filter((session) => session.status === 'completed' && session.result !== null)
-}
-
-/**
- * Experiencia total acumulada.
- *
- * Se suma sobre el historial cada vez que se pide. Con las cifras de una persona
- * —unos cientos de sesiones al año— recorrerlas es inmediato; el día que deje de
- * serlo, la suma la hace el servidor, y esta función sigue siendo la definición
- * de la regla.
- */
-export function totalExperience(sessions: Session[]): number {
-  return completedSessions(sessions).reduce((total, session) => {
-    const sets = session.result === null ? 0 : session.result.completedSets
-    return total + EXPERIENCE_PER_SESSION + sets * EXPERIENCE_PER_SET
-  }, 0)
 }
 
 /**

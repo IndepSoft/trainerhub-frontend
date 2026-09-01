@@ -274,9 +274,15 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
 - `navigation.config.ts` declara `/reports`, `/settings` y `/login`, que no
   existen como rutas.
 - `GuestRoute` está implementado pero no cableado: falta `withGuestRoute`.
-- La página del equipo tiene miembros, solicitudes y QR. **Faltan el muro de
-  anuncios con «me gusta», el ranking y los eventos.** Los criterios para cuando
-  lleguen están en CAMBIOS §9.8.
+- La página del equipo tiene miembros, solicitudes, QR, muro y ranking.
+  **Faltan los eventos.** Los entrenamientos grupales NO son una entidad nueva
+  —`Session` ya tiene `kind: 'group'`—; un evento, una carrera o una quedada, sí.
+- El muro no avisa: un anuncio nuevo no se señala en ningún sitio. Lo barato es
+  un contador en la entrada de navegación del equipo; las notificaciones push son
+  otro trabajo.
+- `CrewPost.likedBy` guarda la lista entera de quién ha dado «me gusta». Con
+  equipos de decenas da igual; con miles hay que pasar a un contador y una
+  bandera calculados en el servidor.
 - `CrewTrainer` está modelado y no se puebla: un crew tiene hoy un solo
   entrenador, su dueño.
 - La lista de administradores de plataforma es una constante en la semilla. Con

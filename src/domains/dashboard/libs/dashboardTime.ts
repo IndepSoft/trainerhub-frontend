@@ -1,4 +1,8 @@
-import { toLocalDateKey } from '@/shared/lib/dateKey'
+import { weekBounds } from '@/shared/lib/dateKey'
+
+// Se reexporta para no tocar a quien ya la importaba de aqui: subio a
+// `shared/lib` al necesitarla tambien el ranking semanal.
+export { weekBounds }
 
 /**
  * Fechas del panel. Funciones puras, sin React.
@@ -8,20 +12,6 @@ import { toLocalDateKey } from '@/shared/lib/dateKey'
  * arreglaron los dos fallos de huso que tuvo el calendario.
  */
 
-/**
- * El lunes y el domingo de la semana que contiene la fecha.
- *
- * De lunes a domingo, como el microciclo de un plan, y no de domingo a sabado:
- * dos definiciones distintas de «esta semana» en la misma aplicacion darian dos
- * cifras distintas para lo mismo.
- */
-export function weekBounds(date: Date): { from: string; to: string } {
-  const isoWeekday = (date.getDay() + 6) % 7
-  const monday = new Date(date.getFullYear(), date.getMonth(), date.getDate() - isoWeekday)
-  const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6)
-
-  return { from: toLocalDateKey(monday), to: toLocalDateKey(sunday) }
-}
 
 /**
  * «Hoy», «ayer», «hace 3 dias».

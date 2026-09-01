@@ -93,6 +93,18 @@ export class FakeSessionRepository implements SessionRepository {
     this.notify()
   }
 
+  /**
+   * Todas las sesiones de un crew, SIN el filtro del papel con el que se mira.
+   *
+   * Fuera del puerto a proposito: `inScope` recorta las de un alumno a las
+   * suyas, y eso es justo lo que protege. Esto lo usa unicamente el ranking, a
+   * quien la raiz de composicion se lo entrega, y lo que devuelve al cliente es
+   * un agregado -cuanta experiencia tiene cada uno-, nunca las sesiones.
+   */
+  allOfCrew(crewId: string): Session[] {
+    return this.sessions.filter((session) => session.crewId === crewId)
+  }
+
   onChange(listener: () => void): () => void {
     this.listeners.add(listener)
     return () => {

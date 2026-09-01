@@ -3327,3 +3327,170 @@ test.describe('plataforma', () => {
     await expect(page.getByRole('button', { name: /Copiar enlace/ })).toBeVisible()
   })
 })
+
+/**
+ * El muro y el ranking del equipo.
+ *
+ * Publica SOLO quien entrena: eso lo convierte en un canal de anuncios en vez de
+ * en una red social, y con ello desaparece la moderacion entera.
+ */
+test.describe('muro', () => {
+  test('el entrenador publica y su equipo lo ve', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/crew')
+
+    const muro = page.locator('section').filter({ hasText: 'Muro' }).first()
+    await muro.getByLabel('Escribe un anuncio para tu equipo').fill('Mañana cerramos a las 20:00.')
+    await page.getByRole('button', { name: 'Publicar' }).click()
+
+    // En cabeza: lo mas nuevo primero.
+    const anuncios = muro.getByRole('listitem')
+    await expect(anuncios.first()).toContainText('Mañana cerramos a las 20:00.')
+    await expect(anuncios.first()).toContainText('Ahora mismo')
+    // Firmado con el nombre de quien entrena, no con el del equipo.
+    await expect(anuncios.first()).toContainText('Marco Salas')
+  })
+
+  test('el «me gusta» alterna y cuenta', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/crew')
+
+    const primero = page.locator('section').filter({ hasText: 'Muro' }).first().getByRole('listitem').first()
+
+    /*
+     * El cero NO se pinta: «0» junto a un corazon se lee como un reproche, y
+     * dice lo mismo que no decir nada.
+     */
+    await expect(primero.getByRole('button', { name: 'Me gusta' })).toBeVisible()
+
+    await primero.getByRole('button', { name: 'Me gusta' }).click()
+    await expect(primero.getByRole('button', { name: 'Quitar me gusta' })).toContainText('1')
+
+    // Y vuelve atras: es un boton que alterna, no dos operaciones.
+    await primero.getByRole('button', { name: 'Quitar me gusta' }).click()
+    await expect(primero.getByRole('button', { name: 'Me gusta' })).toBeVisible()
+  })
+
+  test('un anuncio se puede borrar', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/crew')
+
+    const muro = page.locator('section').filter({ hasText: 'Muro' }).first()
+
+    /*
+     * Se comprueba que DESAPARECE ESE, no que la lista mengua.
+     *
+     * Contar antes y esperar uno menos parece equivalente y no lo es: `count()`
+     * lee al instante, asi que se ejecuta antes de que la lista termine de
+     * pintarse y compara contra un total a medio cargar. Ademas ata la prueba a
+     * cuantos anuncios trae la semilla.
+     */
+    const primero = muro.getByRole('listitem').first()
+    const texto = await primero.innerText()
+
+    await muro.getByRole('button', { name: 'Eliminar anuncio' }).first().click()
+    await expect(muro.getByRole('listitem').filter({ hasText: texto })).toHaveCount(0)
+  })
+})
+
+/**
+ * El ranking, que es un AGREGADO y no un calculo del cliente.
+ *
+ * Un alumno no puede leer las sesiones de sus companeros -su ambito se las
+ * recorta a proposito-, asi que calcular la clasificacion en el navegador
+ * exigiria romper el aislamiento para pintar una tabla.
+ */
+test.describe('ranking', () => {
+  test('el periodo cambia las cifras, y arranca en la semana', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/crew')
+
+    const ranking = page.locator('section').filter({ hasText: 'Ranking' }).first()
+
+    /*
+     * ARRANCA EN LA SEMANA, y no es un detalle: un ranking por experiencia total
+     * se congela -quien lleva dos años gana siempre- y el que entra hoy deja de
+     * mirarlo. La primera vista que ve cualquiera tiene que ser una que pueda
+     * ganar.
+     */
+    await expect(ranking.getByRole('button', { name: 'Esta semana' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+
+    /*
+     * Las cifras salen de la regla, no de un numero copiado: la semilla de
+     * `student-1` son diez sesiones cerradas y 105 series, que a 20 XP por
+     * sesion mas 1 por serie son 305 en total. En la semana en curso solo cae
+     * una parte, asi que las dos vistas TIENEN que diferir.
+     */
+    const semana = await ranking.getByRole('listitem').first().innerText()
+
+    await ranking.getByRole('button', { name: 'Siempre' }).click()
+    await expect(ranking.getByRole('listitem').first()).toContainText('305 XP')
+    await expect(ranking.getByRole('listitem').first()).toContainText('10 sesiones')
+    expect(semana).not.toContain('305 XP')
+  })
+
+  test('un alumno ve el ranking del equipo pero NO las sesiones de sus companeros', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+
+    /*
+     * Todo en la misma carga: los adaptadores falsos viven en memoria y un
+     * `page.goto` devolveria la semilla, perdiendo la solicitud y la aprobacion.
+     */
+    await page.goto('/authentication')
+    await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
+    await page.getByPlaceholder('tu@email.com').fill('companera@correo.com')
+    await page.locator('input[type=password]').fill('desarrollo123')
+    await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click()
+    await page.waitForURL(/\/progress/, { timeout: 20_000 })
+
+    await page.goto('/crew/unirse?codigo=HIERRO24')
+    await expect(page.getByRole('heading', { name: 'Solicitud enviada' })).toBeVisible()
+
+    // El entrenador la acepta, sin recargar.
+    await page.getByRole('button', { name: 'Menú de usuario' }).click()
+    await page.getByRole('menuitem', { name: 'Cerrar sesión' }).click()
+    await page.getByPlaceholder('tu@email.com').fill('entrenador@indepsoft.com')
+    await page.locator('input[type=password]').fill('desarrollo123')
+    await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click()
+    await page.waitForURL(/\/dashboard/, { timeout: 20_000 })
+
+    await page.getByRole('button', { name: /Hierro y Asfalto/ }).first().click()
+    await page.getByRole('menuitem', { name: 'Ver el equipo' }).click()
+    await page.getByRole('button', { name: /^Aceptar a / }).click()
+
+    // Y vuelve la alumna.
+    await page.getByRole('button', { name: 'Menú de usuario' }).click()
+    await page.getByRole('menuitem', { name: 'Cerrar sesión' }).click()
+    await page.getByPlaceholder('tu@email.com').fill('companera@correo.com')
+    await page.locator('input[type=password]').fill('desarrollo123')
+    await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click()
+    await page.waitForURL(/\/progress/, { timeout: 20_000 })
+
+    await page.getByRole('button', { name: /Hierro y Asfalto/ }).first().click()
+    await page.getByRole('menuitem', { name: 'Ver el equipo' }).click()
+
+    /*
+     * VE A JUAN EN EL RANKING -su experiencia es un agregado- y NO ve ninguna de
+     * sus sesiones en la agenda. Las dos cosas a la vez son justo el punto: la
+     * clasificacion cruza la frontera de privacidad porque llega ya resuelta.
+     */
+    const ranking = page.locator('section').filter({ hasText: 'Ranking' }).first()
+    await expect(ranking.getByText('Juan Pérez')).toBeVisible()
+
+    // Y no puede publicar: el muro es del entrenador.
+    await expect(page.getByLabel('Escribe un anuncio para tu equipo')).toHaveCount(0)
+
+    await page.getByRole('link', { name: 'Calendario' }).first().click()
+    // Solo la clase grupal, que es de todo el equipo por definicion.
+    await expect(page.getByRole('button', { name: /Juan Pérez.*minutos/ })).toHaveCount(0)
+  })
+})

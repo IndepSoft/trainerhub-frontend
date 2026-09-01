@@ -9,22 +9,32 @@ import { useCrewEditor } from '../hooks/useCrewEditor'
 import { useCrewMembers } from '../hooks/useCrewMembers'
 import { CrewInviteCard } from '../components/CrewInviteCard'
 import { SubscriptionNotice } from '../components/SubscriptionNotice'
+import { CrewWall } from '../components/CrewWall'
+import { CrewRanking } from '../components/CrewRanking'
 import { canEnrollMembers } from '@/shared/domain/entities/crew'
 import type { Student } from '@/shared/domain/entities/student'
 
 /**
  * La página del equipo. Sólo composición.
  *
- * Es a donde lleva el nombre del crew de la barra lateral, y de momento tiene lo
- * mínimo para que el equipo exista de verdad: quién está dentro, quién espera, y
- * el QR con el que entra la gente. El muro, el ranking y los eventos vienen
- * después; no tenía sentido pintarlos antes de que hubiera miembros.
+ * Es a donde lleva el nombre del crew de la barra lateral.
  *
- * TODO: pendientes de la sección, en este orden: muro de anuncios con «me
- * gusta», ranking por periodo y eventos.
+ * EL ORDEN ES POR URGENCIA, no por importancia. Primero lo que espera una
+ * decisión —las solicitudes—, después lo que se viene a mirar —el muro, y el
+ * ranking—, y al final lo que se consulta de vez en cuando: el padrón y el QR.
+ * Sin solicitudes pendientes, lo primero que se ve es el muro, que es lo que
+ * hace que alguien vuelva a esta pantalla.
+ *
+ * UNA SOLA COLUMNA QUE SE DESPLAZA, sin pestañas. Cuatro secciones invitan a
+ * ponerlas, y esconderían justo lo que se viene a ver: un anuncio nuevo detrás
+ * de una pestaña es un anuncio que nadie lee.
+ *
+ * TODO: faltan los eventos. Los entrenamientos grupales NO son una entidad
+ * nueva —`Session` ya tiene `kind: 'group'`—; un evento, una carrera o una
+ * quedada, sí lo es.
  */
 export default function CrewPage() {
-  const { active, loading: loadingViewer } = useViewerContext()
+  const { active, trainer, loading: loadingViewer } = useViewerContext()
   const { members, pending, loading, approve, reject } = useCrewMembers()
   const { rotateJoinToken, saving } = useCrewEditor()
 
@@ -106,6 +116,22 @@ export default function CrewPage() {
                 ))}
               </ul>
             </section>
+          )}
+
+          {/* Se firma con el nombre de quien entrena el equipo. Si su ficha
+              no está —cuenta sin perfil—, con el nombre del propio equipo: un
+              anuncio sin autor se lee como un aviso del sistema. */}
+          <CrewWall
+            isTrainer={isTrainer}
+            authorName={
+              trainer === null ? crew.name : `${trainer.firstName} ${trainer.lastName}`
+            }
+          />
+
+          {/* El equipo puede apagarlo: en un grupo de rehabilitación o de salud
+              general, comparar públicamente el esfuerzo hace daño. */}
+          {crew.rankingEnabled && (
+            <CrewRanking viewerStudentId={active.student?.id ?? null} />
           )}
 
           <section className="space-y-3" aria-labelledby="miembros-titulo">

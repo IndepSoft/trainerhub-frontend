@@ -63,7 +63,7 @@ function IntentCard({ icon, title, description, onClick }: IntentCardProps) {
       */
       aria-label={title}
       onClick={onClick}
-      className="flex min-h-11 flex-col items-start gap-2 rounded-action border border-cobalt-tint-3 p-4 text-start transition-colors hover:border-cobalt/50 hover:bg-cobalt-tint/40"
+      className="flex min-h-11 flex-col items-start gap-2 rounded-block border border-cobalt-tint-3 p-4 text-start transition-colors hover:border-cobalt/50 hover:bg-cobalt-tint/40"
     >
       <span className="text-cobalt">{icon}</span>
       <span className="font-display text-lg font-extrabold uppercase leading-none tracking-tight text-ink">

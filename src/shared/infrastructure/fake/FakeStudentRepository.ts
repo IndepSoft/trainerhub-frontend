@@ -193,10 +193,15 @@ export class FakeStudentRepository implements StudentRepository {
    * Fuera del puerto por lo mismo que `FakeCrewRepository.listAll`: cruza el
    * ambito, y solo se la entrega la raiz de composicion a la plataforma.
    */
-  countMembersOf(crewId: string): number {
+  membersOf(crewId: string): Student[] {
     return this.students.filter(
       (student) => student.crewId === crewId && isMember(student.membershipStatus)
-    ).length
+    )
+  }
+
+  /** Cuantos son. Derivado de `membersOf`, para que no puedan discrepar. */
+  countMembersOf(crewId: string): number {
+    return this.membersOf(crewId).length
   }
 
   onChange(listener: () => void): () => void {

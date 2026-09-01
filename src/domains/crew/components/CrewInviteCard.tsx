@@ -48,7 +48,7 @@ export function CrewInviteCard({ crew, onRotate, rotating }: CrewInviteCardProps
         Invitar al equipo
       </h2>
 
-      <div className="mx-auto w-full max-w-[18rem] rounded-action border border-cobalt-tint-3 bg-white p-5">
+      <div className="mx-auto w-full max-w-[18rem] rounded-block border border-cobalt-tint-3 bg-white p-5">
         <QRCodeSVG
           value={joinUrl}
           // `100%` y `viewBox`: el SVG se adapta al ancho disponible en vez de
