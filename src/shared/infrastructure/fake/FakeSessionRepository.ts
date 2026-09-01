@@ -1,5 +1,5 @@
 import type { SessionRepository } from '@/shared/domain/ports/SessionRepository'
-import type { Session } from '@/shared/domain/entities/session'
+import type { Session, SessionStatus } from '@/shared/domain/entities/session'
 import { sessionsSeed } from './sessionsSeed'
 
 /**
@@ -49,6 +49,18 @@ export class FakeSessionRepository implements SessionRepository {
     this.sessions = this.sessions.map((session) =>
       session.id === sessionId ? { id: sessionId, ...data } : session
     )
+    this.notify()
+  }
+
+  async updateStatus(sessionId: string, status: SessionStatus): Promise<void> {
+    this.sessions = this.sessions.map((session) =>
+      session.id === sessionId ? { ...session, status } : session
+    )
+    this.notify()
+  }
+
+  async remove(sessionId: string): Promise<void> {
+    this.sessions = this.sessions.filter((session) => session.id !== sessionId)
     this.notify()
   }
 

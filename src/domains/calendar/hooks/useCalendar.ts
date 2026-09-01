@@ -104,8 +104,9 @@ export function useCalendar(): UseCalendarResult {
 
   const countByStatus = useMemo(() => {
     const counts: Record<SessionStatus, number> = {
-      confirmed: 0,
       pending: 0,
+      confirmed: 0,
+      completed: 0,
       cancelled: 0,
     }
     for (const session of sessions) {

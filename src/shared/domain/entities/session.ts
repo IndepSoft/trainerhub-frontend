@@ -7,7 +7,18 @@
  * servía dejaba escrito que éste sería el día.
  */
 
-export type SessionStatus = 'confirmed' | 'pending' | 'cancelled'
+/**
+ * El ciclo de vida de una sesión.
+ *
+ * `completed` faltaba, y su ausencia era un agujero del modelo: una sesión que
+ * ya ha ocurrido no tenía dónde ir. Nacía `pending` y ahí se quedaba para
+ * siempre, así que nada de lo que el entrenador hacía podía darse por hecho.
+ *
+ * `cancelled` y `completed` son ambos finales, y distintos a propósito: una
+ * cancelada libera su hueco en la agenda —no cuenta como choque—, una completada
+ * lo ocupó de verdad.
+ */
+export type SessionStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled'
 
 export type SessionKind = 'individual' | 'group'
 

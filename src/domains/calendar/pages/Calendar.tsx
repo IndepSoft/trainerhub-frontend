@@ -8,7 +8,6 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { PageHeader } from '@/shared/components/PageHeader'
-import { toast } from 'sonner'
 import { CreateSessionModal } from '../components/CreateSessionModal'
 import { SessionDetailsModal } from '../components/SessionDetailsModal'
 import { CalendarNavigation } from '../components/CalendarNavigation'
@@ -17,7 +16,8 @@ import { DayView } from '../components/DayView'
 import { SessionSummary } from '../components/SessionSummary'
 import { useCalendar } from '../hooks/useCalendar'
 import { useSchedulableStudents } from '../hooks/useSchedulableStudents'
-import type { CalendarViewMode } from '../types/calendar.types'
+import { container } from '@/app/container'
+import type { CalendarViewMode, SessionStatus } from '../types/calendar.types'
 
 export default function Calendar() {
   /*
@@ -74,10 +74,18 @@ export default function Calendar() {
     getSessionsOfDay,
   } = useCalendar()
 
-  // TODO: sin implementar. Solo muestra un aviso; el estado de la sesion no
-  // cambia en ningun sitio. Requiere el SessionRepository.
-  const handleStatusChange = (_sessionId: string, newStatus: string) => {
-    toast(`La sesión ha sido marcada como ${newStatus}.`)
+  /*
+   * Ahora cambia de verdad. Antes lanzaba un aviso y no tocaba nada: la sesion
+   * nacia pendiente y moria pendiente, asi que los contadores de la agenda solo
+   * podian reflejar la semilla y nada de lo que hacia el entrenador podia darse
+   * por hecho.
+   */
+  const handleStatusChange = (sessionId: string, newStatus: SessionStatus) => {
+    void container.sessions.updateStatus(sessionId, newStatus)
+  }
+
+  const handleDelete = (sessionId: string) => {
+    void container.sessions.remove(sessionId)
   }
 
   return (
@@ -176,6 +184,7 @@ export default function Calendar() {
           open={!!selectedSession}
           onOpenChange={(open) => !open && selectSession(null)}
           onStatusChange={handleStatusChange}
+          onDelete={handleDelete}
         />
       )}
     </div>

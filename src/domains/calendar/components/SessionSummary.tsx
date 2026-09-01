@@ -13,8 +13,9 @@ const SUMMARY_ITEMS: {
   heading: string
   className: string
 }[] = [
-  { status: 'confirmed', heading: 'Confirmadas', className: 'text-success' },
   { status: 'pending', heading: 'Pendientes', className: 'text-warning' },
+  { status: 'confirmed', heading: 'Confirmadas', className: 'text-success' },
+  { status: 'completed', heading: 'Completadas', className: 'text-cobalt' },
   { status: 'cancelled', heading: 'Canceladas', className: 'text-danger' },
 ]
 
@@ -24,7 +25,13 @@ interface SessionSummaryProps {
 
 export function SessionSummary({ countByStatus }: SessionSummaryProps) {
   return (
-    <div className="grid grid-cols-3 divide-x divide-cobalt-tint-3 border-y border-cobalt-tint-3">
+    /*
+     * Dos por fila en movil y cuatro desde `sm`: cuatro columnas a 375 px dejan
+     * 83 px por celda, donde «Completadas» no cabe. Las reglas interiores se
+     * pintan con `divide-*` en escritorio y a mano en movil, porque `divide-x`
+     * no sabe de filas.
+     */
+    <div className="grid grid-cols-2 border-y border-cobalt-tint-3 sm:grid-cols-4 sm:divide-x sm:divide-cobalt-tint-3 [&>*:nth-child(-n+2)]:border-b [&>*:nth-child(odd)]:border-e [&>*]:border-cobalt-tint-3 sm:[&>*]:border-0">
       {SUMMARY_ITEMS.map((item) => (
         <div key={item.status} className="flex flex-col gap-2 px-4 py-5 sm:px-5">
           <div className="flex items-center justify-between gap-2">

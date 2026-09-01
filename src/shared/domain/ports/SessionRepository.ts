@@ -1,4 +1,4 @@
-import type { Session } from '../entities/session'
+import type { Session, SessionStatus } from '../entities/session'
 
 /**
  * Puerto de acceso a sesiones.
@@ -34,6 +34,9 @@ export interface SessionRepository {
   findBetween(from: string, to: string): Promise<Session[]>
   create(data: Omit<Session, 'id'>): Promise<Session>
   update(sessionId: string, data: Omit<Session, 'id'>): Promise<void>
+  /** Cambia sólo el estado. Es la operación que más se hace sobre una sesión. */
+  updateStatus(sessionId: string, status: SessionStatus): Promise<void>
+  remove(sessionId: string): Promise<void>
   /** Avisa de que la colección ha cambiado. Devuelve la función de baja. */
   onChange(listener: () => void): () => void
 }

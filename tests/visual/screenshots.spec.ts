@@ -86,6 +86,28 @@ function extraerMinutos(texto: string): number {
 }
 
 /**
+ * El proximo lunes, que es cuando empieza el plan de la semilla.
+ *
+ * Se calcula igual que en `assignmentsSeed`, y no se escribe a mano: las fechas
+ * fijas caducan solas. Esta suite ya se rompio un 1 de septiembre porque una
+ * prueba daba por hecho que el mes en curso era agosto.
+ */
+function proximoLunes(): Date {
+  const hoy = new Date()
+  const dias = ((8 - (hoy.getDay() || 7)) % 7) || 7
+  return new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + dias)
+}
+
+/** La misma forma que pinta `formatDateKey`: «lunes, 7 de septiembre». */
+function comoFecha(date: Date): string {
+  return date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
+}
+
+function sumarDias(date: Date, dias: number): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + dias)
+}
+
+/**
  * Desplaza el contenedor interno hasta abajo.
  *
  * `fullPage: true` no sirve en este layout: el desplazamiento vive en un div con
@@ -1960,9 +1982,9 @@ test.describe('asignaciones del alumno', () => {
     await expect(page.getByRole('heading', { name: 'Asignado' })).toBeVisible()
 
     // Un plan con fecha de inicio dice cuando empieza.
-    await expect(page.getByText('Empieza el lunes, 7 de septiembre')).toBeVisible()
+    await expect(page.getByText(`Empieza el ${comoFecha(proximoLunes())}`)).toBeVisible()
     // Y una rutina suelta, cuando se asigno: es repertorio, no algo que empiece.
-    await expect(page.getByText('Asignada el viernes, 28 de agosto')).toBeVisible()
+    await expect(page.getByText(/^Asignada el /)).toBeVisible()
 
     /*
      * Las dos conviven. No son excluyentes ni jerarquicas: un alumno puede
@@ -2159,10 +2181,14 @@ test.describe('volcar un plan a la agenda', () => {
      */
     await expect(dialogo.getByRole('button', { name: 'Agendar 11 sesiones' })).toBeVisible()
 
-    // La semana 1 arranca en la fecha de inicio.
-    await expect(dialogo).toContainText('lunes, 7 de septiembre · 08:00')
-    // Y la cuarta semana cae ya en octubre: la aritmetica no se queda en el mes.
-    await expect(dialogo).toContainText('jueves, 1 de octubre · 08:00')
+    /*
+     * La semana 1 arranca en la fecha de inicio, y el jueves de la cuarta cae 24
+     * dias despues. Se calcula en vez de escribirse: con fechas fijas, la prueba
+     * caduca sola en cuanto pasa el mes.
+     */
+    const inicio = proximoLunes()
+    await expect(dialogo).toContainText(`${comoFecha(inicio)} · 08:00`)
+    await expect(dialogo).toContainText(`${comoFecha(sumarDias(inicio, 24))} · 08:00`)
   })
 
   test('confirmar crea las sesiones, con la duracion de su rutina', async ({ page }) => {
@@ -2195,31 +2221,34 @@ test.describe('volcar un plan a la agenda', () => {
     await expect(page.getByText('PENDIENTE').first()).toBeVisible()
   })
 
-  test('la previa marca lo que choca con lo ya agendado', async ({ page }) => {
+  test('volcar dos veces avisa de las once colisiones, y no lo impide', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
     await page.goto('/students/student-2')
 
-    // Primero se ocupa a mano el hueco del primer dia del plan.
-    await page.getByRole('button', { name: 'Agendar sesión' }).first().click()
-    const alta = page.getByRole('dialog')
-    await alta.getByRole('button', { name: 'Go to the Next Month' }).click()
-    await alta.getByRole('button', { name: 'lunes, 7 de septiembre de 2026' }).click()
-    await elegirDelDesplegable(page, desplegables(page, 'Hora'), '08:00')
-    await elegirDelDesplegable(page, desplegables(page, 'Ubicación'), 'Online')
-    // «Agendar sesion» es el envio de la ficha del alumno; «Programar sesion»
-    // es el del formulario de la agenda, que es otro.
-    await alta.getByRole('button', { name: 'Agendar sesión' }).click()
+    // Primer volcado, sin nada que le estorbe.
+    const primero = await abrirVolcado(page)
+    await ponerHoras(page, '08:00')
+    await expect(primero).not.toContainText('en conflicto')
+    await primero.getByRole('button', { name: 'Agendar 11 sesiones' }).click()
     await expect(page.getByRole('dialog')).toHaveCount(0)
 
-    // Y ahora el volcado avisa de ese choque, sin impedirlo.
-    const dialogo = await abrirVolcado(page)
+    /*
+     * El segundo choca con el primero ENTERO. Es el caso que hoy no esta
+     * resuelto -nada impide repetir el volcado, y saldrian once sesiones mas-,
+     * asi que al menos se ve venir: la previa lo dice antes de crear nada.
+     *
+     * Se provoca asi, y no agendando a mano en la fecha de inicio, porque eso
+     * obligaba a navegar el calendario por meses y la prueba caducaba al cambiar
+     * de mes.
+     */
+    const segundo = await abrirVolcado(page)
     await ponerHoras(page, '08:00')
 
-    await expect(dialogo).toContainText('1 en conflicto')
-    await expect(dialogo.getByText(/lunes, 7 de septiembre · 08:00 · ocupado/)).toBeVisible()
+    await expect(segundo).toContainText('11 en conflicto')
+    await expect(segundo.getByText(/· ocupado/).first()).toBeVisible()
     // Avisa, no bloquea: el boton sigue disponible.
-    await expect(dialogo.getByRole('button', { name: 'Agendar 11 sesiones' })).toBeEnabled()
+    await expect(segundo.getByRole('button', { name: 'Agendar 11 sesiones' })).toBeEnabled()
   })
 
   test('un plan sin fecha de inicio no ofrece volcarse', async ({ page }) => {
@@ -2234,5 +2263,110 @@ test.describe('volcar un plan a la agenda', () => {
      */
     await expect(page.getByText('Asignado, sin fecha de inicio')).toBeVisible()
     await expect(page.getByRole('button', { name: /Volcar a la agenda/ })).toHaveCount(0)
+  })
+})
+
+/**
+ * El ciclo de vida de una sesion.
+ *
+ * `completed` faltaba en el modelo y el cambio de estado no persistia: la
+ * sesion nacia pendiente y ahi se quedaba, asi que nada de lo que el entrenador
+ * hacia podia darse por hecho y los contadores de la agenda solo podian
+ * reflejar la semilla.
+ */
+test.describe('estado de la sesion', () => {
+  /**
+   * Un contador de la cabecera de la agenda, por su rotulo.
+   *
+   * Devuelve el localizador y no su texto para que las aserciones ESPEREN: el
+   * cambio de estado pasa por el puerto, asi que el contador se actualiza un
+   * instante despues de pulsar Guardar.
+   */
+  function contador(page: Page, rotulo: string): Locator {
+    return page.locator('main .grid > div').filter({ hasText: rotulo })
+  }
+
+  test('marcar una sesion como completada mueve los contadores', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/calendar')
+    await page.waitForTimeout(1500)
+
+    await expect(contador(page, 'Completadas')).toContainText('0')
+
+    await page.getByRole('button', { name: /minutos/ }).first().click()
+    const dialogo = page.getByRole('dialog')
+    await expect(dialogo).toBeVisible()
+
+    await elegirDelDesplegable(page, dialogo.getByRole('combobox').first(), 'Completada')
+    await dialogo.getByRole('button', { name: 'Guardar' }).click()
+
+    /*
+     * El cambio PERSISTE. Antes esto lanzaba un aviso y no tocaba nada: es la
+     * diferencia entre que la aplicacion diga que ha pasado algo y que pase.
+     */
+    await expect(contador(page, 'Completadas')).toContainText('1')
+    // Y sale de donde estaba: no se suma, se mueve.
+    await expect(contador(page, 'Confirmadas')).toContainText('2')
+  })
+
+  test('el desplegable ofrece los cuatro estados, en orden de ciclo de vida', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/calendar')
+    await page.waitForTimeout(1500)
+
+    await page.getByRole('button', { name: /minutos/ }).first().click()
+    await page.getByRole('dialog').getByRole('combobox').first().click()
+
+    const opciones = page.getByRole('listbox').getByRole('option')
+    await expect(opciones).toHaveText([
+      'Pendiente',
+      'Confirmada',
+      'Completada',
+      'Cancelada',
+    ])
+  })
+
+  test('eliminar una sesion la elimina, y no solo lo anuncia', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/calendar')
+    await page.waitForTimeout(1500)
+
+    const tarjetas = page.getByRole('button', { name: /minutos/ })
+    const antes = await tarjetas.count()
+
+    await tarjetas.first().click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Eliminar' }).click()
+
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(tarjetas).toHaveCount(antes - 1)
+  })
+
+  test('la ficha del alumno refleja el estado nuevo', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/calendar')
+    await page.waitForTimeout(1500)
+
+    await page.getByRole('button', { name: /minutos/ }).first().click()
+    const dialogo = page.getByRole('dialog')
+    await elegirDelDesplegable(page, dialogo.getByRole('combobox').first(), 'Completada')
+    await dialogo.getByRole('button', { name: 'Guardar' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    /*
+     * Se navega por la interfaz: los adaptadores falsos viven en memoria y un
+     * `page.goto` devolveria la sesion a su estado de semilla.
+     *
+     * Los dos dominios leen del mismo puerto, asi que el estado cambiado en la
+     * agenda se ve en la ficha sin que ninguno sepa del otro.
+     */
+    await page.getByRole('link', { name: 'Estudiantes' }).first().click()
+    await page.getByRole('link', { name: 'María Gómez' }).click()
+    await expect(page.getByText('Completada')).toBeVisible()
   })
 })

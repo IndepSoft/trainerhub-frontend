@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle, XCircle } from 'lucide-react'
+import { AlertCircle, CheckCircle, CircleCheckBig, XCircle } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { SessionStatus } from '../types/calendar.types'
 
@@ -10,8 +10,10 @@ import type { SessionStatus } from '../types/calendar.types'
  * `border-*` y el modal no. Dos fuentes de verdad para lo mismo, divergiendo en
  * silencio.
  *
- * Como `Record` sobre la unión, el compilador obliga a cubrir los tres estados,
- * asi que ya no hace falta la rama `default` que tenían los `switch`.
+ * Como `Record` sobre la unión, el compilador obliga a cubrir TODOS los estados,
+ * asi que ya no hace falta la rama `default` que tenían los `switch`. Al añadir
+ * `completed` fue el compilador quien señaló los cuatro sitios que faltaban por
+ * cubrir, que es exactamente para lo que sirve escribirlo así.
  */
 interface SessionStatusPresentation {
   label: string
@@ -38,6 +40,14 @@ interface SessionStatusPresentation {
 }
 
 export const SESSION_STATUS: Record<SessionStatus, SessionStatusPresentation> = {
+  pending: {
+    label: 'Pendiente',
+    slotClassName: 'bg-warning-surface text-warning border-warning/30',
+    badgeClassName: 'bg-warning-surface text-warning',
+    outlineBadgeClassName: 'border-warning/45 text-warning',
+    accentClassName: 'bg-warning/28',
+    icon: <AlertCircle className="w-3 h-3" />,
+  },
   confirmed: {
     label: 'Confirmada',
     slotClassName: 'bg-success-surface text-success border-success/30',
@@ -46,13 +56,15 @@ export const SESSION_STATUS: Record<SessionStatus, SessionStatusPresentation> = 
     accentClassName: 'bg-success/25',
     icon: <CheckCircle className="w-3 h-3" />,
   },
-  pending: {
-    label: 'Pendiente',
-    slotClassName: 'bg-warning-surface text-warning border-warning/30',
-    badgeClassName: 'bg-warning-surface text-warning',
-    outlineBadgeClassName: 'border-warning/45 text-warning',
-    accentClassName: 'bg-warning/28',
-    icon: <AlertCircle className="w-3 h-3" />,
+  completed: {
+    label: 'Completada',
+    // Cobalto y no verde: el verde ya dice «confirmada», y una sesión hecha y
+    // una sesión que se va a hacer no pueden leerse igual de un vistazo.
+    slotClassName: 'bg-cobalt-tint text-cobalt border-cobalt/30',
+    badgeClassName: 'bg-cobalt-tint text-cobalt',
+    outlineBadgeClassName: 'border-cobalt/45 text-cobalt',
+    accentClassName: 'bg-cobalt/25',
+    icon: <CircleCheckBig className="w-3 h-3" />,
   },
   cancelled: {
     label: 'Cancelada',
@@ -66,6 +78,10 @@ export const SESSION_STATUS: Record<SessionStatus, SessionStatusPresentation> = 
 
 /**
  * Los estados como pares, para poblar desplegables sin repetir las etiquetas.
+ *
+ * El orden del objeto de arriba es el del CICLO DE VIDA -pendiente, confirmada,
+ * completada, cancelada- y no alfabetico ni historico, porque es el orden en que
+ * se leen en un desplegable.
  * `Object.entries` pierde el tipo de la clave, asi que se reafirma aqui una sola
  * vez en lugar de en cada consumidor.
  */

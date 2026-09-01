@@ -8,8 +8,9 @@ import type { Student } from '@/shared/domain/entities/student'
 
 /** Presentación de cada estado. Los mismos tres que usa la agenda. */
 const STATUS_BADGE: Record<SessionStatus, { label: string; className: string }> = {
-  confirmed: { label: 'Confirmada', className: 'border-success/50 text-success' },
   pending: { label: 'Pendiente', className: 'border-warning/50 text-warning' },
+  confirmed: { label: 'Confirmada', className: 'border-success/50 text-success' },
+  completed: { label: 'Completada', className: 'border-cobalt/50 text-cobalt' },
   cancelled: { label: 'Cancelada', className: 'border-danger/50 text-danger' },
 }
 

@@ -31,7 +31,8 @@ interface SessionDetailsModalProps {
   session: Session
   open: boolean
   onOpenChange: (open: boolean) => void
-  onStatusChange: (sessionId: string, newStatus: string) => void
+  onStatusChange: (sessionId: string, newStatus: SessionStatus) => void
+  onDelete: (sessionId: string) => void
 }
 
 /**
@@ -52,6 +53,7 @@ export function SessionDetailsModal({
   open,
   onOpenChange,
   onStatusChange,
+  onDelete,
 }: SessionDetailsModalProps) {
   const navigate = useNavigate()
   const [newStatus, setNewStatus] = useState<SessionStatus>(session.status)
@@ -91,13 +93,22 @@ export function SessionDetailsModal({
 
   const handleStatusUpdate = () => {
     if (newStatus === session.status) return
+
     onStatusChange(session.id, newStatus)
-    toast.success(
-      `Sesión marcada como ${SESSION_STATUS[newStatus].label.toLowerCase()}`
-    )
+    toast.success(`Sesión marcada como ${SESSION_STATUS[newStatus].label.toLowerCase()}`)
+
+    /*
+     * Se cierra al guardar. `session` es una instantanea tomada al abrir, asi
+     * que dejar el dialogo abierto lo dejaria mostrando el estado ANTERIOR al
+     * cambio que se acaba de confirmar: la insignia diria «confirmada» sobre una
+     * sesion que ya esta completada.
+     */
+    onOpenChange(false)
   }
 
   const handleDelete = () => {
+    // Borra de verdad. Antes solo decia que lo habia hecho.
+    onDelete(session.id)
     toast.success('La sesión se ha eliminado')
     onOpenChange(false)
   }
