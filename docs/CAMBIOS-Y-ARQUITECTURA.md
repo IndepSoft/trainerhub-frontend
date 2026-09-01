@@ -327,3 +327,154 @@ Sólo el primero conserva valor aquí: **el `npm audit fix`** (§6.1). Los otros
 describen problemas de `main` —marcadores de conflicto commiteados, duplicación
 de `shared/ui` contra `shared/components/ui`, router desconectado— que esta rama
 ya resolvió por su cuenta.
+
+---
+
+## 8. El progreso deja de inventarse (1 sep 2026)
+
+### 8.1 La sesión no guardaba lo que había pasado
+
+`Session` sólo tenía estado. La pantalla de ejecución contaba las series
+marcadas y el tiempo transcurrido, y al pulsar «terminar» todo eso moría con el
+componente: lo único que sobrevivía era `status: 'completed'`.
+
+De ahí salía el problema entero de Progreso. Sin ningún registro de trabajo, no
+había de dónde derivar un número, así que estaban escritos a mano: nivel 7, 340
+de 500 XP, racha de 12 días, y logros con fecha de desbloqueo de enero de 2024.
+Ninguno cambiaba entrenando ni dejando de entrenar.
+
+La sesión gana `result`, y el puerto gana `complete(sessionId, result)`:
+
+```ts
+export interface SessionResult {
+  completedSets: number
+  totalSets: number
+  elapsedSeconds: number
+  /** Cuándo se cerró, en fecha local. Distinto de `date`, que es cuándo estaba
+      agendada: una sesión del martes se puede cerrar el miércoles. */
+  completedAt: string
+}
+```
+
+**Se guarda lo MEDIDO, nunca lo derivado.** Aquí no hay XP ni nivel, que se
+calculan con reglas y cambiarían de valor el día que se ajusten: guardar el
+resultado del cálculo dejaría historiales que discrepan entre sí.
+
+`complete` es una operación propia y no `updateStatus('completed')` seguido de un
+`update`. Serían dos escrituras para un solo hecho, y entre las dos la sesión
+queda completada sin resultado, que es justo el estado que el progreso no sabe
+leer. Con un backend real, además, es una transacción.
+
+### 8.2 Las reglas, en un fichero puro
+
+`domains/progress/libs/progressRules.ts`. Entran sesiones, salen números.
+
+- **XP** = 20 por sesión terminada + 1 por serie marcada. El fijo existe porque
+  el cardio no se programa en series: sin él, salir a correr una hora daría cero.
+- **Nivel**: coste lineal, 100 el primero y 50 más cada vez. No exponencial, para
+  que la barra siga moviéndose después del nivel 10.
+- **Racha**: días seguidos contando hacia atrás desde hoy. **No se rompe por no
+  haber entrenado hoy todavía** —el día no ha terminado—; se rompe al pasar un
+  día entero en blanco. Contarla desde hoy a secas la pondría a cero cada mañana.
+- **Hitos**: escalera acumulativa sobre sesiones cerradas, no por semana. Un hito
+  superado no se pierde por saltarse una semana.
+
+Nada de esto se almacena: se recalcula del historial, que es el hecho. Un
+contador guardado se desincroniza en cuanto se corrige, se borra o se importa
+una sesión, y entonces no hay forma de saber cuál de los dos números miente.
+
+### 8.3 Los logros: condición en código, fecha real
+
+La condición de cada logro era una frase en castellano y al lado una fecha de
+desbloqueo escrita a mano. Ahora es una función:
+
+```ts
+condition: (sessions: Session[], asOf: Date) => boolean
+```
+
+Y la fecha se obtiene **repasando la historia día a día**: para cada día
+entrenado se evalúa el catálogo con lo que se sabía al terminar ese día, y el
+primero que cumple es la fecha de desbloqueo. Eso da dos cosas a la vez: la fecha
+es real, y un logro conseguido no se pierde —quien tuvo una racha de 21 días y
+luego enfermó sigue teniendo «Hábito Formado»—.
+
+**Se eliminaron diez de los dieciocho**, los de «métricas» y «desafíos»: no hay
+registro corporal, ni fotos, ni sistema de desafíos. Es la misma decisión que se
+tomó con el indicador de ingresos del panel —quitar antes que inventar—, y queda
+su `TODO` con lo que haría falta para recuperarlos.
+
+Uno era además inalcanzable por construcción: «Madrugador · completa 10 sesiones
+antes de las 8:00», cuando el primer tramo que la agenda ofrece SON las 8:00.
+
+### 8.4 El progreso es de alguien
+
+La pantalla enseñaba una racha y un nivel sin decir de quién, y no podían ser del
+entrenador —no es él quien entrena—. Con datos escritos a mano la pregunta no se
+notaba; en cuanto los números salen de sesiones reales, es la primera que hay que
+responder.
+
+El alumno va en la URL, `?student=<id>`, no en estado interno: así «Ver progreso»
+desde su ficha lleva al suyo, el enlace se comparte y volver atrás funciona. Es
+el mismo patrón que `?agendar` en la ficha del alumno.
+
+### 8.5 Registro: quién eres lo decide tu correo
+
+`AuthPort` no tenía `signUp`, así que «Crear cuenta» no daba de alta a nadie.
+Ahora crea la cuenta y **el perfil que va con ella**, en ese orden —al revés
+quedarían fichas huérfanas cada vez que fallase el alta de la cuenta, que es el
+caso frecuente: correo repetido, contraseña corta—.
+
+Cuál de los dos perfiles lo decide el correo: si ya tiene ficha de alumno, la
+cuenta se ata a esa ficha; si no, nace un entrenador. **El rol no se guarda en la
+cuenta**, coherente con §5: `user_metadata` lo edita el propio cliente, y un rol
+autoasignable no es un rol.
+
+Salió de ahí `FakeTrainerRepository`. Con autenticación simulada, el
+identificador de perfil lo inventa el adaptador falso, así que preguntarle por él
+a Supabase no encontraba nunca nada: quien entraba en desarrollo se quedaba sin
+ficha, y registrarse era imposible. Los dos adaptadores falsos se eligen ahora
+con la misma condición en la raíz de composición, para que no puedan
+desparejarse.
+
+### 8.6 Duplicaciones eliminadas
+
+- **`toLocalDateKey`, tres copias** —agenda, panel y la semilla de sesiones—.
+  Ninguna estaba mal, y eso es lo que hace peligrosa la duplicación: se mantienen
+  iguales hasta que una cambia. Vive en `shared/lib/dateKey.ts`, que es donde
+  puede usarla también la infraestructura.
+- **`ConfirmDeleteDialog`** sube a `shared/components`: lo necesitan dos dominios,
+  el mismo criterio que elevó `Routine` y `DeletionResult`.
+
+### 8.7 Dos defectos que sólo aparecieron al medir
+
+**`useCountUp` no volvía a su objetivo.** Animaba siempre desde cero, lo que
+estaba bien mientras el número no cambiaba nunca; en cuanto Progreso pudo cambiar
+de alumno, cada cambio hacía caer la cifra a cero para volver a subir. Y peor: si
+los fotogramas no se entregan —una pestaña en segundo plano no recibe ninguno—,
+el número se quedaba **congelado en el valor del alumno anterior**. Medido: la
+pantalla decía «7 días de racha» sobre una alumna que no había entrenado nunca.
+
+Ahora arranca desde lo que hay en pantalla y tiene una red de seguridad que fija
+el valor pasado el tiempo de la animación. La animación es decoración; la cifra
+es dato, y un adorno que no puede ejecutarse no puede impedir que el dato sea
+correcto.
+
+**El aspa de cerrar de los diálogos medía 16 × 16 px.** Sin caja propia: era el
+icono y nada más. Por debajo de los 44 px de la regla §1.6 y por debajo incluso
+del mínimo de 24 de WCAG 2.2 AA, y es el botón de cerrar de TODOS los diálogos de
+la aplicación. Se tocó `shared/ui/dialog.tsx` —territorio de shadcn— con esa
+justificación; el icono sigue midiendo 16, lo que crece es la zona pulsable.
+
+### 8.8 Pruebas atadas a la semilla
+
+Tres pruebas se rompieron al añadir historial de sesiones cerradas a
+`sessionsSeed`, sin que nada de la aplicación fallara: afirmaban «Completadas 0»
+y «Confirmadas 2», que eran las cifras exactas de la semilla de entonces.
+
+Se reescribieron en **diferencias**: leer el contador antes y esperar uno más. Y
+el localizador de «una sesión que completar» pasó a pedir por el nombre
+accesible, `/Confirmada\..*minutos/`, porque coger «la primera» dejó de valer en
+cuanto la primera del mes pasó a ser una ya completada.
+
+Regla que sale de ahí: una prueba de comportamiento no debe afirmar un número
+absoluto de datos de ejemplo.

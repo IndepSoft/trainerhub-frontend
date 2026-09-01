@@ -1,4 +1,4 @@
-# Traspaso de sesión — 31 ago 2026
+# Traspaso de sesión — 1 sep 2026
 
 Contexto **de sesión**, no de proyecto. Sirve para que la siguiente sesión
 retome el trabajo sin volver a deducirlo todo. Las reglas permanentes viven en
@@ -33,8 +33,8 @@ conserva el fichero con otro propósito: traspaso rodante entre sesiones.
 `origin/develop`.** Ramificar desde ella sin un `git pull` previo parte de un
 punto viejo.
 
-Estado verificado el 31 de agosto, ejecutado y no supuesto: `npm run lint`
-limpio, `tsc -b` en verde, **101 pruebas de Playwright en verde**.
+Estado verificado el 1 de septiembre, ejecutado y no supuesto: `npm run lint`
+limpio, `npm run build` en verde, **127 pruebas de Playwright en verde**.
 
 ---
 
@@ -63,7 +63,7 @@ así que entra `FakeAuthAdapter`, no Supabase:
 
 Es el punto donde más se equivocaba la versión anterior de este documento.
 
-- `tests/visual/screenshots.spec.ts`: **101 pruebas**. Muchas están
+- `tests/visual/screenshots.spec.ts`: **127 pruebas**. Muchas están
   parametrizadas por tres anchos —375, 768 y 1440— desde la constante
   `VIEWPORTS`.
 - Se lanzan con `npx playwright test`. **No hay script `test` en
@@ -85,6 +85,19 @@ Es el punto donde más se equivocaba la versión anterior de este documento.
 - Y otra: la ruta del catálogo es `lazy`, así que su primera carga en desarrollo
   pasa de los cinco segundos por defecto cuando la máquina va cargada. Esa
   espera lleva margen explícito.
+- **Pruebas atadas a la semilla.** Tres se rompieron al añadir historial de
+  sesiones cerradas a `sessionsSeed`, sin que nada de la aplicación fallara:
+  afirmaban «Completadas 0» y «Confirmadas 2», que eran las cifras exactas de la
+  semilla de entonces. Se reescribieron en DIFERENCIAS —leer el contador antes y
+  esperar uno más—. Regla que sale de ahí: una prueba de comportamiento no debe
+  afirmar un número absoluto de datos de ejemplo.
+
+**Y una trampa del panel de vista previa, no de la aplicación:
+`requestAnimationFrame` no entrega nunca un fotograma ahí**, aunque
+`document.visibilityState` diga `visible`. Cualquier cosa animada por fotogramas
+—contadores, transiciones de salida de Radix— se queda congelada en su último
+valor. Eso destapó un defecto real en `useCountUp`, que se ha corregido; pero al
+verificar en ese panel hay que distinguir «no anima» de «no funciona».
 
 ---
 
@@ -388,43 +401,55 @@ Decidido con el usuario. El orden lo imponen las dependencias, no las ganas.
    agenda, actividad reciente = sesiones completadas. Fuera el indicador de
    ingresos y las tendencias: no hay fuente ni histórico.
 
-### En curso
+4. **Crear, editar y borrar estudiantes.** `StudentRepository` era el ÚNICO
+   puerto sin `create`. Ya lo tiene, más `update`, `remove` y `linkAccount`.
+   «Añadir estudiante» e «Invitar estudiante» eran dos `console.log` y ahora son
+   un solo botón que da de alta de verdad: desde que el alumno se enlaza con su
+   cuenta por el correo que se escribe ahí, dar de alta ES invitar. Borrar está
+   protegido —un alumno con sesiones agendadas no se borra— con la misma regla
+   que ya gobernaba rutinas y catálogo. Se quitó «Duplicar»: duplicar a una
+   persona daría dos fichas con el mismo correo, que es justo la clave del
+   enlace.
+5. **`AuthPort.signUp`.** «Crear cuenta» daba de alta a nadie. Ahora crea la
+   cuenta y **el perfil que va con ella**, y decide cuál por el correo: si ya
+   tiene ficha de alumno, la cuenta se ata a esa ficha; si no, nace un
+   entrenador. El rol no se guarda en la cuenta, se deduce de qué repositorio
+   conoce el perfil.
 
-4. **Crear y editar estudiantes.** `StudentRepository` es el ÚNICO puerto sin
-   `create` —todos los demás lo tienen—, y «Añadir estudiante» e «Invitar
-   estudiante» son dos `console.log`. Un entrenador que instale la app no puede
-   meter a nadie.
-5. **`AuthPort.signUp`.** «Crear cuenta» es otro `console.log`. Es además
-   prerrequisito de lo siguiente.
-6. **Roles y acceso de estudiante.** Decidido: Progreso es del ESTUDIANTE, con
-   su propio acceso.
+   Salió de ahí `FakeTrainerRepository`: con autenticación simulada, el
+   identificador de perfil lo inventa el adaptador falso, así que preguntarle
+   por él a Supabase no encontraba nada. Los dos adaptadores falsos se eligen
+   ahora con la misma condición, para que no puedan desparejarse.
+6. **Reglas de gamificación.** Construidas, y todo sale de las sesiones
+   cerradas.
 
-   El rol **no puede vivir en `user_metadata`** —el propio usuario lo cambiaría y
-   se ascendería solo; está razonado en `CAMBIOS-Y-ARQUITECTURA.md` §5—. Se
-   deriva de quién lo conoce: si `trainers.findByProfileId` responde, es
-   entrenador; si responde `students.findByProfileId`, es estudiante. Eso obliga
-   a que `Student` gane `profileId`, y el enlace se hace **por email** al darse
-   de alta: el entrenador crea al alumno con su correo, y quien se registre con
-   ese correo pasa a ser ese alumno.
-7. **Reglas de gamificación.** Decidido: se construyen.
+   Primero hubo que guardar el hecho: `Session` gana `result` —series marcadas,
+   series prescritas, tiempo y día de cierre— y el puerto gana `complete()`, una
+   sola operación en vez de un cambio de estado seguido de una escritura. Antes,
+   terminar una sesión perdía las series y el tiempo con el componente.
 
-   Hoy no existe ninguna: nivel 7 y 340/500 puntos están escritos a mano, las
-   condiciones de los logros están en PROSA y los desbloqueos llevan fechas de
-   enero de 2024.
-
-   Falta además un dato: la sesión en vivo cuenta las series hechas pero **no las
-   guarda**. Sin eso, lo único premiable es «sesión completada», sin medida del
-   trabajo. Propuesta a validar: la sesión guarda `completedSets` al terminar, y
-   la XP es una serie, un punto —explicable en una frase, y atada a lo que de
-   verdad se hizo—.
+   Sobre eso, `progressRules.ts`, puro: 20 XP por sesión más 1 por serie —el
+   fijo existe porque el cardio no tiene series—, niveles de coste lineal, y la
+   racha contada hacia atrás desde hoy, que **no se rompe por no haber entrenado
+   hoy todavía**. Los logros dejan de tener la condición en prosa: cada uno lleva
+   una función, y su fecha de desbloqueo se obtiene repasando el historial día a
+   día, así que es real. Diez logros se fueron —«métricas» y «desafíos»—: no hay
+   registro corporal ni sistema de desafíos, y un logro inalcanzable es peor que
+   no ofrecerlo.
+7. **El progreso ya es de alguien.** La pantalla enseñaba una racha y un nivel
+   sin decir de quién. Ahora lleva `?student=<id>` en la URL, un selector en la
+   cabecera, y «Ver progreso» desde la ficha del alumno lleva al suyo.
 
 ### Pendiente después
 
+- **Roles y acceso de estudiante, la mitad que falta.** El registro ya distingue
+  quién eres, pero después nadie lo usa: entrenador y alumno aterrizan los dos en
+  `/dashboard`. Faltan las guardas por rol, la navegación filtrada y la
+  superficie del alumno.
 - Filtros de rutinas y de estudiantes: los controles no filtran nada.
 - `/settings` sigue en el menú lateral sin ruta registrada; `/login` es
   configuración muerta que nadie pinta.
-- Acciones sin conectar en `StudentCard` —Editar, Duplicar, Eliminar— y «Vista
-  previa» en las rutinas.
+- «Vista previa» en las rutinas.
 - Reportes: cuatro pestañas vacías.
 - `planAssignmentId` en las sesiones volcadas, y el volcado duplicado.
 
@@ -438,13 +463,14 @@ Decidido con el usuario. El orden lo imponen las dependencias, no las ganas.
    arreglaría.
 2. **Qué hacer con `backup/supabase-test`**: empujarla a origin o borrarla. Hoy
    está sólo en local y sin respaldo, que es lo peor de las dos opciones.
-3. **El contenido de `progress` está escrito para el entrenador** («3 estudiantes
-   necesitan atención») aunque es un módulo del estudiante. Decisión de producto.
+3. **Los peldaños de la escalera de hitos y las constantes de XP son una
+   propuesta.** 3, 7, 12, 20 y 30 sesiones; 20 XP por sesión y 1 por serie. Están
+   juntos y con nombre en `progressRules.ts` para que ajustarlos sea cambiar una
+   constante, pero nadie los ha validado como producto.
 4. **La lista de especialidades del registro es una propuesta**, no un dato
    validado. Lleva su `TODO`.
 5. **Meter Playwright en CI**, y con ello un script `test` en `package.json`.
    Con 72 pruebas que ya afirman cosas, dejarlas fuera de CI es desperdiciarlas.
 6. **La progresión del mesociclo**, arriba. Es el rediseño más grande pendiente.
-7. **La asignación a un estudiante**, que es lo que da sentido a todo lo
-   construido: hoy una sesión guarda el nombre del alumno como texto, no una
-   referencia, y ni la rutina ni el plan se asignan a nadie.
+7. **Dónde aterriza un alumno al entrar.** Hoy, en el panel del entrenador. Es
+   la pieza que queda del acceso de estudiante y hace falta decidir qué ve.

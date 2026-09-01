@@ -267,14 +267,23 @@ Variables en `.env` (plantilla en `.env.example`). `.gitignore` cubre `.env` y
 Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
 [`docs/CAMBIOS-Y-ARQUITECTURA.md`](docs/CAMBIOS-Y-ARQUITECTURA.md).
 
-- Los cinco dominios pintan datos simulados; no hay repositorios salvo
-  `TrainerRepository`.
+- Los adaptadores siguen siendo falsos salvo `TrainerRepository` sobre Supabase,
+  y ése convive con `FakeTrainerRepository`, que se elige con la misma condición
+  que la autenticación simulada. Los datos falsos viven en memoria: al recargar
+  vuelve la semilla.
 - `navigation.config.ts` declara `/reports`, `/settings` y `/login`, que no
   existen como rutas.
 - `GuestRoute` está implementado pero no cableado: falta `withGuestRoute`.
+- **El rol todavía no gobierna nada.** Registrarse ya distingue entrenador de
+  alumno —si el correo tiene ficha de alumno, la cuenta se ata a ella— pero
+  después ambos aterrizan en `/dashboard`, que es la pantalla del entrenador. La
+  navegación no se filtra por rol y no hay superficie para el alumno.
 - Props declaradas y sin conectar, marcadas con `TODO:` en gamification y
   calendar. `ChallengeCard.onUpdate` es la más grave: el padre le pasa un
   manejador real que nunca se invoca.
+- Los filtros de `TrainingFilters` y `StudentFilters` no filtran.
+- Las sesiones volcadas desde un plan no guardan de qué volcado salieron, así que
+  no se pueden mover ni cancelar en bloque y volcar dos veces duplica.
 - La subestructura de carpetas difiere entre dominios; falta unificarla.
 - El dominio `reports` no tiene fichero de rutas ni esta registrado en el
   router: su pagina y sus graficos existen pero son inalcanzables.
