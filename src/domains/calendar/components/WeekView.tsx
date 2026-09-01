@@ -1,5 +1,6 @@
 import { TIME_SLOTS, WEEK_DAY_LABELS } from '../data/calendarOptions'
-import { isToday, toLocalDateKey } from '../libs/calendar.utils'
+import { isToday } from '../libs/calendar.utils'
+import { toLocalDateKey } from '@/shared/lib/dateKey'
 import { SessionLane } from './SessionLane'
 import { SessionCard } from './SessionCard'
 import { cn } from '@/shared/lib/utils'

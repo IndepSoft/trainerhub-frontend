@@ -119,6 +119,36 @@ function contador(page: Page, rotulo: string): Locator {
 }
 
 /**
+ * Una sesion de la agenda que TODAVIA no esta completada.
+ *
+ * Se pide por el NOMBRE ACCESIBLE, que es donde vive el estado: el
+ * `aria-label` de la tarjeta es «titulo. alumno. estado. hora, N minutos». El
+ * texto visible no sirve -la insignia de estado no siempre esta en la vista- y
+ * `hasText` solo mira texto.
+ *
+ * Coger «la primera» a secas dejo de valer cuando la semilla gano un historial
+ * de sesiones cerradas: la primera del mes pasaba a ser una ya completada, y
+ * marcarla como completada no cambia nada -el boton de guardar se queda
+ * desactivado, porque no hay cambio que guardar-.
+ */
+function sesionSinCompletar(page: Page): Locator {
+  return page.getByRole('button', { name: /Confirmada\..*minutos/ })
+}
+
+/**
+ * La cifra de un contador de la agenda.
+ *
+ * Las pruebas de estado comparan ANTES y DESPUES en vez de afirmar numeros
+ * fijos: un numero fijo ata la prueba a la semilla, y cambiar los datos de
+ * ejemplo la rompe sin que la aplicacion tenga nada mal.
+ */
+async function leerCifra(localizador: Locator): Promise<number> {
+  const texto = await localizador.innerText()
+  const cifra = texto.match(/\d+/)
+  return cifra === null ? 0 : Number(cifra[0])
+}
+
+/**
  * Desplaza el contenedor interno hasta abajo.
  *
  * `fullPage: true` no sirve en este layout: el desplazamiento vive en un div con
@@ -2295,9 +2325,20 @@ test.describe('estado de la sesion', () => {
     await page.goto('/calendar')
     await page.waitForTimeout(1500)
 
-    await expect(contador(page, 'Completadas')).toContainText('0')
+    /*
+     * Se mide el cambio, no el valor.
+     *
+     * Antes se afirmaba «Completadas 0» y «Confirmadas 2», que eran las cifras
+     * exactas de la semilla de entonces. En cuanto la semilla gano un historial
+     * de sesiones ya cerradas -para que Progreso tuviera de donde salir-, la
+     * prueba fallo sin que nada se hubiera roto. Lo que esta comprobando es que
+     * el cambio de estado mueve la sesion de un contador al otro, y eso se dice
+     * en diferencias.
+     */
+    const completadasAntes = await leerCifra(contador(page, 'Completadas'))
+    const confirmadasAntes = await leerCifra(contador(page, 'Confirmadas'))
 
-    await page.getByRole('button', { name: /minutos/ }).first().click()
+    await sesionSinCompletar(page).first().click()
     const dialogo = page.getByRole('dialog')
     await expect(dialogo).toBeVisible()
 
@@ -2308,9 +2349,9 @@ test.describe('estado de la sesion', () => {
      * El cambio PERSISTE. Antes esto lanzaba un aviso y no tocaba nada: es la
      * diferencia entre que la aplicacion diga que ha pasado algo y que pase.
      */
-    await expect(contador(page, 'Completadas')).toContainText('1')
+    await expect(contador(page, 'Completadas')).toContainText(String(completadasAntes + 1))
     // Y sale de donde estaba: no se suma, se mueve.
-    await expect(contador(page, 'Confirmadas')).toContainText('2')
+    await expect(contador(page, 'Confirmadas')).toContainText(String(confirmadasAntes - 1))
   })
 
   test('el desplegable ofrece los cuatro estados, en orden de ciclo de vida', async ({
@@ -2355,7 +2396,7 @@ test.describe('estado de la sesion', () => {
     await page.goto('/calendar')
     await page.waitForTimeout(1500)
 
-    await page.getByRole('button', { name: /minutos/ }).first().click()
+    await sesionSinCompletar(page).first().click()
     const dialogo = page.getByRole('dialog')
     await elegirDelDesplegable(page, dialogo.getByRole('combobox').first(), 'Completada')
     await dialogo.getByRole('button', { name: 'Guardar' }).click()
@@ -2370,7 +2411,9 @@ test.describe('estado de la sesion', () => {
      */
     await page.getByRole('link', { name: 'Estudiantes' }).first().click()
     await page.getByRole('link', { name: 'María Gómez' }).click()
-    await expect(page.getByText('Completada')).toBeVisible()
+    // `.first()`: el historial de la semilla puede traer mas sesiones cerradas,
+    // y el localizador dejaria de ser unico.
+    await expect(page.getByText('Completada').first()).toBeVisible()
   })
 })
 
@@ -2476,6 +2519,49 @@ test.describe('sesion en vivo', () => {
     await expect(contador(page, 'Completadas')).toContainText('1')
   })
 
+  test('lo hecho en la sesion llega al progreso del alumno', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+
+    /*
+     * ESTE ES EL BUCLE ENTERO, y el motivo de que la sesion guarde un resultado.
+     *
+     * Antes, terminar solo dejaba el estado en `completed`: las series marcadas
+     * y el tiempo morian con el componente, asi que Progreso no tenia de donde
+     * sacar un numero y se lo inventaba. `session-1` es de `student-2`, que no
+     * tiene historial, asi que lo que se vea despues sale entero de aqui.
+     */
+    await page.goto('/session/session-1')
+
+    // Por la barra de avance y no por el texto: «5» suelto aparece tambien en
+    // los numeros de serie y en la lista de ejercicios.
+    const avance = page.getByRole('progressbar', { name: 'Series completadas' })
+    await expect(avance).toHaveAttribute('aria-valuenow', '0')
+
+    const series = page.getByRole('button', { name: /Serie \d+ de/ })
+    for (let indice = 0; indice < 5; indice += 1) {
+      await series.nth(indice).click()
+    }
+    await expect(avance).toHaveAttribute('aria-valuenow', '5')
+
+    // Por teclado: el control es deslizar-para-confirmar y un toque no confirma.
+    await page.getByRole('button', { name: 'Pausar la sesión' }).press('Enter')
+    await page.getByRole('button', { name: 'Finalizar la sesión' }).press('Enter')
+    await page.waitForURL(/progress/)
+
+    /*
+     * Se navega por la interfaz, sin `goto`: los adaptadores falsos viven en
+     * memoria y recargar devolveria la sesion a su estado de semilla.
+     */
+    await page.getByLabel('Ver el progreso de').selectOption('student-2')
+    await page.waitForTimeout(1200)
+
+    // 20 XP por terminar la sesion mas 1 por cada una de las 5 series marcadas.
+    await expect(page.getByText('25 / 100 XP')).toBeVisible()
+    // Y el primer hito ya cuenta una: el sendero mide sesiones cerradas.
+    await expect(page.getByText('1/3')).toBeVisible()
+  })
+
   test('una sesion que no existe no revienta', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await signIn(page)
@@ -2552,14 +2638,22 @@ test.describe('panel', () => {
     await signIn(page)
     await page.waitForTimeout(1500)
 
-    // Al empezar no hay nada completado, y el panel lo DICE en vez de dejar un
-    // hueco mudo.
-    await expect(page.getByText('Aún no hay sesiones completadas')).toBeVisible()
+    /*
+     * Que hay en cabeza de la actividad antes de tocar nada.
+     *
+     * Ya no se afirma que la lista este vacia: la semilla trae un historial de
+     * sesiones cerradas desde que Progreso calcula la racha y el nivel a partir
+     * de el. Y tampoco se cuentan las entradas, porque la lista esta recortada
+     * a las mas recientes: añadir una no cambia el total, EMPUJA a las demas.
+     * Eso es lo que se comprueba.
+     */
+    const actividadPrevia = page.locator('section').filter({ hasText: 'Actividad reciente' })
+    const cabezaAntes = await actividadPrevia.getByRole('listitem').first().innerText()
 
     // Se completa una desde la agenda.
     await page.getByRole('link', { name: 'Calendario' }).first().click()
     await page.waitForTimeout(1200)
-    await page.getByRole('button', { name: /minutos/ }).first().click()
+    await sesionSinCompletar(page).first().click()
     const dialogo = page.getByRole('dialog')
     await elegirDelDesplegable(page, dialogo.getByRole('combobox').first(), 'Completada')
     await dialogo.getByRole('button', { name: 'Guardar' }).click()
@@ -2573,8 +2667,9 @@ test.describe('panel', () => {
     await page.waitForTimeout(1200)
 
     const actividad = page.locator('section').filter({ hasText: 'Actividad reciente' })
-    await expect(actividad.getByText('Hoy')).toBeVisible()
-    await expect(page.getByText('Aún no hay sesiones completadas')).toHaveCount(0)
+    // La recien cerrada es de hoy, asi que entra en cabeza: es la mas nueva.
+    await expect(actividad.getByRole('listitem').first()).toContainText('Hoy')
+    await expect(actividad.getByRole('listitem').first()).not.toHaveText(cabezaAntes)
   })
 
   test('el panel cumple las reglas de 375 px', async ({ page }) => {
@@ -2595,5 +2690,277 @@ test.describe('panel', () => {
 
     expect(medidas.desborde, 'desbordamiento horizontal').toBe(0)
     expect(medidas.contenedoresEstrechos, 'contenedores bajo 280 px').toBe(0)
+  })
+})
+
+/**
+ * Alta, edicion y baja de alumnos.
+ *
+ * «Añadir estudiante» era un `console.log`: `StudentRepository` era el UNICO
+ * puerto sin `create`, asi que un entrenador que instalara la aplicacion no
+ * podia meter a nadie.
+ */
+test.describe('alumnos', () => {
+  test('crear un alumno lo añade a la lista y al contador', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students')
+
+    const equipoAntes = await leerCifra(page.getByText(/Tu equipo ·/))
+
+    await page.getByRole('button', { name: 'Añadir alumno' }).click()
+    const dialogo = page.getByRole('dialog')
+    await expect(dialogo.getByRole('heading', { name: 'Nuevo alumno' })).toBeVisible()
+
+    await dialogo.getByLabel('Nombre').fill('Lucía')
+    await dialogo.getByLabel('Apellidos').fill('Ramos')
+    await dialogo.getByLabel('Correo').fill('lramos@correo.com')
+    await dialogo.getByLabel('Edad').fill('31')
+    await dialogo.getByRole('button', { name: 'Movilidad' }).click()
+    await dialogo.getByRole('button', { name: 'Añadir alumno' }).click()
+
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(page.getByRole('link', { name: /Lucía Ramos/ })).toBeVisible()
+    await expect(page.getByText('Tu equipo · ' + (equipoAntes + 1))).toBeVisible()
+  })
+
+  test('el formulario exige nombre, apellidos y correo', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students')
+
+    await page.getByRole('button', { name: 'Añadir alumno' }).click()
+    const dialogo = page.getByRole('dialog')
+    await dialogo.getByRole('button', { name: 'Añadir alumno' }).click()
+
+    // El dialogo sigue abierto y dice QUE falta, en vez de cerrarse sin crear.
+    await expect(dialogo).toBeVisible()
+    await expect(dialogo.getByText('Falta este campo')).toHaveCount(3)
+  })
+
+  test('un alumno con sesiones agendadas no se puede borrar', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students')
+
+    const tarjeta = page.locator('article').filter({ hasText: 'Juan Pérez' })
+    await tarjeta.getByRole('button').first().click()
+    await page.getByRole('menuitem', { name: 'Eliminar' }).click()
+
+    /*
+     * NO se pregunta y luego se falla: se explica el impedimento en lugar de
+     * pedir una confirmacion que ya se sabe que no se puede cumplir.
+     */
+    const dialogo = page.getByRole('dialog')
+    await expect(dialogo.getByRole('heading', { name: 'No se puede eliminar' })).toBeVisible()
+    await expect(dialogo).toContainText(/sesion(es)? agendada/)
+    await expect(dialogo.getByRole('button', { name: 'Eliminar' })).toHaveCount(0)
+  })
+})
+
+/**
+ * El progreso, que antes no era de nadie.
+ *
+ * Nivel 7, 340 de 500 XP y una racha de 12 dias estaban escritos a mano en un
+ * fichero de ejemplo: el numero no cambiaba entrenando ni dejando de entrenar,
+ * y era el mismo para cualquier alumno.
+ */
+test.describe('progreso', () => {
+  test('la racha y el nivel salen del historial del alumno', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/progress?student=student-1')
+    await page.waitForTimeout(1500)
+
+    /*
+     * Las cifras se comprueban contra la regla, no contra un numero copiado.
+     *
+     * La semilla de `student-1` son diez sesiones cerradas, 105 series en
+     * total. Con 20 XP por sesion y 1 por serie son 305 XP; descontando 100 del
+     * nivel 1 y 150 del 2, quedan 55 dentro del nivel 3, que cuesta 200.
+     */
+    await expect(page.getByText('Nivel 3')).toBeVisible()
+    await expect(page.getByText('55 / 200 XP')).toBeVisible()
+
+    // Siete dias seguidos hasta ayer. La racha NO se rompe por no haber
+    // entrenado hoy todavia: el dia no ha terminado.
+    await expect(page.getByText('días de racha')).toBeVisible()
+  })
+
+  test('cambiar de alumno cambia las cifras', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/progress?student=student-1')
+    await page.waitForTimeout(1500)
+
+    await expect(page.getByText('Nivel 3')).toBeVisible()
+
+    // `student-2` no tiene ninguna sesion cerrada: empieza de cero.
+    await page.getByLabel('Ver el progreso de').selectOption('student-2')
+    await page.waitForTimeout(1500)
+
+    await expect(page.getByText('Nivel 1')).toBeVisible()
+    await expect(page.getByText('0 / 100 XP')).toBeVisible()
+    await expect(page.getByText('Aún no hay logros conseguidos')).toBeVisible()
+  })
+
+  test('los logros se consiguen por lo hecho, con su fecha real', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/progress?student=student-1')
+    await page.waitForTimeout(1500)
+
+    /*
+     * «Semana Perfecta» se desbloquea sola: la condicion es una funcion sobre
+     * las sesiones, no una frase con una fecha de enero de 2024 escrita al lado.
+     */
+    const recientes = page.locator('section').filter({ hasText: 'Conseguidos recientemente' })
+    // Por su fila de la lista: el nombre aparece tres veces -en la insignia de
+    // la galeria, en la insignia pequeña de la fila y en el titulo-, asi que
+    // pedirlo por texto suelto resuelve a varios elementos.
+    const fila = recientes.getByRole('listitem').filter({ hasText: 'Semana Perfecta' })
+    await expect(fila).toHaveCount(1)
+    // Con SU fecha: el dia en el que se cumplio la condicion, no una escrita a
+    // mano. La semilla la deja en el ultimo dia entrenado, que es ayer.
+    const ayer = new Date()
+    ayer.setDate(ayer.getDate() - 1)
+    await expect(fila).toContainText(ayer.toLocaleDateString('es'))
+
+    // Y los que no hay de donde sacar ya no se ofrecen: sin registro corporal ni
+    // sistema de desafios, esas dos categorias desaparecen del filtro.
+    await expect(page.getByRole('button', { name: /Métricas/ })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /Desafíos/ })).toHaveCount(0)
+  })
+
+  test('«Ver progreso» desde la ficha lleva al progreso de ESE alumno', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students/student-1')
+
+    await page.getByRole('link', { name: 'Ver progreso' }).click()
+
+    await expect(page).toHaveURL(/\/progress\?student=student-1/)
+    await expect(page.getByText('Progreso de Juan Pérez')).toBeVisible()
+  })
+  test('el formulario de alumno cumple las reglas de 375 px', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/students')
+    await page.getByRole('button', { name: 'Añadir alumno' }).click()
+    await expect(page.getByRole('dialog')).toBeVisible()
+
+    const medidas = await page.evaluate(() => {
+      const dialogo = document.querySelector('[role="dialog"]')
+      if (dialogo === null) return { desborde: 0, tactilesPequenos: -1, anchoDialogo: 0 }
+
+      return {
+        desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        anchoDialogo: Math.round(dialogo.getBoundingClientRect().width),
+        /*
+         * `offsetHeight` y no `getBoundingClientRect`: el panel de vista previa
+         * escala la pagina, y la caja mide en pixeles ya escalados.
+         *
+         * Se excluye lo que esta oculto a la accesibilidad: Radix renderiza
+         * junto a cada desplegable un `<select>` nativo de 1 px para que el
+         * control participe en el formulario. No es un objetivo tactil, es
+         * fontaneria, y contarlo daria un fallo que no existe.
+         */
+        tactilesPequenos: [...dialogo.querySelectorAll('button, select, input')].filter(
+          (control) =>
+            control instanceof HTMLElement &&
+            control.getAttribute('aria-hidden') !== 'true' &&
+            control.closest('[aria-hidden="true"]') === null &&
+            control.offsetHeight > 0 &&
+            control.offsetHeight < 44
+        ).length,
+      }
+    })
+
+    expect(medidas.desborde, 'desbordamiento horizontal').toBe(0)
+    expect(medidas.anchoDialogo, 'ancho util del dialogo').toBeGreaterThanOrEqual(280)
+    expect(medidas.tactilesPequenos, 'objetivos tactiles bajo 44 px').toBe(0)
+  })
+
+  test('el progreso cumple las reglas de 375 px', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/progress?student=student-1')
+    await page.waitForTimeout(1500)
+    await scrollInnerContainerToBottom(page)
+
+    const medidas = await page.evaluate(() => {
+      return {
+        desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        contenedoresEstrechos: [...document.querySelectorAll('main section, main .grid > div')]
+          .map((elemento) => elemento.getBoundingClientRect().width)
+          .filter((ancho) => ancho > 0 && ancho < 280).length,
+        // El selector de alumno es el control nuevo de esta pantalla.
+        altoSelector: (() => {
+          const selector = document.querySelector('main select')
+          return selector instanceof HTMLElement ? selector.offsetHeight : 0
+        })(),
+      }
+    })
+
+    expect(medidas.desborde, 'desbordamiento horizontal').toBe(0)
+    expect(medidas.contenedoresEstrechos, 'contenedores bajo 280 px').toBe(0)
+    expect(medidas.altoSelector, 'objetivo tactil del selector de alumno').toBeGreaterThanOrEqual(44)
+  })
+})
+
+
+/**
+ * El registro, que era otro `console.log`.
+ *
+ * `AuthPort` no tenia `signUp`, asi que «Crear cuenta» no daba de alta a nadie.
+ */
+test.describe('registro', () => {
+  async function rellenarRegistro(page: Page, correo: string): Promise<void> {
+    await page.goto('/authentication')
+    await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
+    await page.getByRole('tab', { name: 'Registrarme' }).click()
+
+    // Sin `exact`: la etiqueta de un campo obligatorio es «Nombre *», porque
+    // `FormField` le añade el asterisco dentro del propio <label>.
+    await page.getByLabel('Nombre').fill('Ana')
+    await page.getByLabel('Apellido').fill('Soto')
+    await page.getByLabel('Email').fill(correo)
+    await page.locator('input[type=password]').fill('secreto123')
+    await elegirDelDesplegable(page, page.getByRole('combobox').first(), 'Pérdida de peso')
+  }
+
+  test('crear una cuenta da de alta al entrenador y entra', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await rellenarRegistro(page, 'asoto@correo.com')
+
+    await page.getByRole('button', { name: 'Crear cuenta' }).click()
+    await page.waitForURL(/\/dashboard/, { timeout: 20_000 })
+
+    // La ficha del entrenador existe: sin ella la cuenta entraria sin nombre.
+    const fichas = await page.evaluate(() =>
+      window.localStorage.getItem('trainerhub.fake-trainers')
+    )
+    expect(fichas).toContain('asoto@correo.com')
+  })
+
+  test('registrarse con el correo de un alumno lo enlaza en vez de crear entrenador', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    // Mayusculas distintas a proposito: nadie escribe su correo dos veces igual,
+    // y el enlace de una cuenta con su ficha no puede depender de eso.
+    await rellenarRegistro(page, 'MGomez@gmail.com')
+
+    await page.getByRole('button', { name: 'Crear cuenta' }).click()
+    await page.waitForURL(/\/dashboard/, { timeout: 20_000 })
+
+    /*
+     * QUIEN ERES LO DECIDE TU CORREO. El correo ya tenia ficha de alumna, asi
+     * que la cuenta se ata a ella y NO nace un entrenador.
+     */
+    const fichas = await page.evaluate(() =>
+      window.localStorage.getItem('trainerhub.fake-trainers')
+    )
+    expect(fichas).toBeNull()
   })
 })

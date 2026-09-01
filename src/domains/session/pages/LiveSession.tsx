@@ -4,6 +4,7 @@ import { container } from '@/app/container'
 import { CardioSession } from '../components/CardioSession'
 import { StrengthSession } from '../components/StrengthSession'
 import { useSessionToRun } from '../hooks/useSessionToRun'
+import type { SessionResult } from '@/shared/domain/entities/session'
 
 /**
  * La sesión en vivo. Sólo composición: decide con qué pantalla se ejecuta.
@@ -46,9 +47,19 @@ export default function LiveSession() {
     )
   }
 
-  const handleFinish = () => {
-    void container.sessions.updateStatus(session.id, 'completed')
-    navigate('/progress/celebracion')
+  /*
+   * Cerrar ANOTA lo que ocurrio, no solo que ocurrio.
+   *
+   * Antes se llamaba a `updateStatus(id, 'completed')` y las series marcadas y
+   * el tiempo se perdian con el componente. Progreso no tenia de donde sacar un
+   * numero y se los inventaba; ahora sale de aqui.
+   *
+   * El resultado lo pasa la pantalla que ejecuta, que es la unica que lo sabe:
+   * la de fuerza cuenta series, la de cardio cuenta tiempo.
+   */
+  const handleFinish = (result: SessionResult) => {
+    void container.sessions.complete(session.id, result)
+    navigate(`/progress/celebracion?session=${session.id}`)
   }
 
   if (session.modality === 'cardio') {

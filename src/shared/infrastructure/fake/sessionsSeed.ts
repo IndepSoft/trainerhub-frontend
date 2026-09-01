@@ -1,4 +1,5 @@
 import type { Session } from '@/shared/domain/entities/session'
+import { toLocalDateKey } from '@/shared/lib/dateKey'
 
 /**
  * Sesiones simuladas de la agenda.
@@ -17,25 +18,70 @@ import type { Session } from '@/shared/domain/entities/session'
  *
  * TODO: sustituir por el adaptador real cuando exista el esquema.
  */
-/**
- * Clave de fecha local, `YYYY-MM-DD`.
- *
- * Se calcula aqui y no con `toLocalDateKey` del calendario: la infraestructura
- * compartida no puede importar de un dominio. Son tres lineas y evitan que la
- * semilla ate `shared` a `calendar`.
- */
-function toDateKey(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+const today = new Date()
+const TODAY = toLocalDateKey(today)
+const TOMORROW = toLocalDateKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1))
+
+function daysAgo(days: number): string {
+  return toLocalDateKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() - days))
 }
 
-const today = new Date()
-const TODAY = toDateKey(today)
-const TOMORROW = toDateKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1))
+/**
+ * Historial ya entrenado de `student-1`.
+ *
+ * HACIA FALTA. Sin sesiones cerradas, Progreso no tiene racha que contar ni
+ * nivel que calcular, y el panel enseña «aún no hay sesiones completadas» desde
+ * el primer arranque: la aplicación se veía como si nadie hubiera entrenado
+ * nunca. Y sin datos no hay forma de comprobar que las reglas de progreso
+ * calculan lo que dicen calcular.
+ *
+ * LA FORMA IMPORTA, no sólo la cantidad. Siete días seguidos hasta ayer, un
+ * hueco de dos, y tres días más antes: así el historial ejercita a la vez la
+ * racha en curso, la racha máxima, un logro que se consigue —«Semana Perfecta»,
+ * siete seguidos— y el corte que rompe una racha. Un historial sin agujeros no
+ * probaría nunca el caso que de verdad importa.
+ *
+ * `completedSets` por debajo de `totalSets` en dos de ellas, porque también
+ * ocurre: una sesión se puede cerrar sin terminarla entera.
+ */
+const trainedDaysAgo: { days: number; sets: number; total: number; minutes: number }[] = [
+  { days: 1, sets: 12, total: 12, minutes: 52 },
+  { days: 2, sets: 10, total: 12, minutes: 44 },
+  { days: 3, sets: 12, total: 12, minutes: 58 },
+  { days: 4, sets: 9, total: 9, minutes: 41 },
+  { days: 5, sets: 12, total: 12, minutes: 55 },
+  { days: 6, sets: 12, total: 12, minutes: 61 },
+  { days: 7, sets: 9, total: 9, minutes: 38 },
+  { days: 10, sets: 12, total: 12, minutes: 57 },
+  { days: 11, sets: 8, total: 12, minutes: 39 },
+  { days: 12, sets: 9, total: 9, minutes: 43 },
+]
+
+const completedHistory: Session[] = trainedDaysAgo.map(({ days, sets, total, minutes }) => ({
+  id: `session-history-${days}`,
+  title: 'Entrenamiento Personal',
+  studentId: 'student-1',
+  kind: 'individual',
+  modality: 'strength',
+  category: 'Entrenamiento Personal',
+  date: daysAgo(days),
+  time: '18:00',
+  durationMinutes: 60,
+  location: 'Gimnasio Principal',
+  status: 'completed',
+  notes: '',
+  routineId: 'routine-1',
+  result: {
+    completedSets: sets,
+    totalSets: total,
+    elapsedSeconds: minutes * 60,
+    // Se cerró el mismo día en el que estaba agendada, que es lo corriente.
+    completedAt: daysAgo(days),
+  },
+}))
 
 export const sessionsSeed: Session[] = [
+  ...completedHistory,
   {
     id: 'session-1',
     title: 'Entrenamiento Personal',
@@ -50,6 +96,7 @@ export const sessionsSeed: Session[] = [
     status: 'confirmed',
     notes: 'Enfoque en tren superior',
     routineId: 'routine-2',
+    result: null,
   },
   {
     id: 'session-2',
@@ -65,6 +112,7 @@ export const sessionsSeed: Session[] = [
     status: 'pending',
     notes: 'Primera sesión, mediciones corporales',
     routineId: null,
+    result: null,
   },
   {
     id: 'session-3',
@@ -80,6 +128,7 @@ export const sessionsSeed: Session[] = [
     status: 'confirmed',
     notes: 'Máximo 8 personas',
     routineId: null,
+    result: null,
   },
   {
     id: 'session-4',
@@ -97,6 +146,7 @@ export const sessionsSeed: Session[] = [
     status: 'confirmed',
     notes: 'Revisión de progreso mensual',
     routineId: null,
+    result: null,
   },
   {
     id: 'session-5',
@@ -112,5 +162,6 @@ export const sessionsSeed: Session[] = [
     status: 'cancelled',
     notes: 'Cancelado por el cliente',
     routineId: null,
+    result: null,
   },
 ]

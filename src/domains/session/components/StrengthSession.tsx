@@ -6,14 +6,15 @@ import { SessionDuration } from './SessionDuration'
 import { SlideToAction } from './SlideToAction'
 import { useStrengthSession } from '../hooks/useStrengthSession'
 import type { Routine } from '@/shared/domain/entities/routine'
-import type { Session } from '@/shared/domain/entities/session'
+import { toLocalDateKey } from '@/shared/lib/dateKey'
+import type { Session, SessionResult } from '@/shared/domain/entities/session'
 
 interface StrengthSessionProps {
   session: Session
   /** La rutina que ejecuta, o `null` si la sesión no tiene ninguna. */
   routine: Routine | null
   studentName: string
-  onFinish: () => void
+  onFinish: (result: SessionResult) => void
 }
 
 /**
@@ -50,6 +51,21 @@ export function StrengthSession({
   } = useStrengthSession(routine)
 
   const isRunning = state === 'running'
+
+  /*
+   * Al cerrar se anota lo hecho: series marcadas sobre prescritas y el tiempo
+   * real. `doneSets` puede quedar por debajo de `totalSets` y esta bien -una
+   * sesion se puede terminar sin completarla entera-; guardar los dos numeros
+   * es lo que permite distinguirlo despues.
+   */
+  const handleFinish = () => {
+    onFinish({
+      completedSets: doneSets,
+      totalSets,
+      elapsedSeconds,
+      completedAt: toLocalDateKey(new Date()),
+    })
+  }
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
@@ -189,7 +205,7 @@ export function StrengthSession({
             variant="finish"
             label="Desliza para finalizar"
             accessibleLabel="Finalizar la sesión"
-            onConfirm={onFinish}
+            onConfirm={handleFinish}
           />
         )}
 

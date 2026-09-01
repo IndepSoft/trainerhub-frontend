@@ -35,6 +35,35 @@ export type SessionKind = 'individual' | 'group'
  */
 export type SessionModality = 'strength' | 'cardio'
 
+/**
+ * Lo que de verdad ocurrió en una sesión, anotado al terminarla.
+ *
+ * NO EXISTÍA, Y ESE ERA EL AGUJERO. La sesión en vivo contaba las series
+ * marcadas y el tiempo transcurrido, y al pulsar «terminar» todo eso moría con
+ * el componente: sólo sobrevivía el estado `completed`. Progreso no tenía de
+ * dónde sacar un número, así que se los inventaba —nivel 7, 340 de 500 XP—.
+ *
+ * Se guarda lo MEDIDO, nunca lo derivado: aquí no hay XP ni nivel, que se
+ * calculan con las reglas de `progressRules` y cambiarían de valor el día que se
+ * ajusten. Guardar el resultado del cálculo dejaría historiales que discrepan
+ * entre sí.
+ */
+export interface SessionResult {
+  /** Series marcadas. Cero en cardio, que no se programa en series. */
+  completedSets: number
+  /** Series prescritas, para saber si la sesión se completó entera. */
+  totalSets: number
+  elapsedSeconds: number
+  /**
+   * Cuándo se cerró, en fecha local `YYYY-MM-DD`.
+   *
+   * Se anota además de `date` porque son cosas distintas: `date` es cuándo
+   * estaba agendada, y una sesión del martes se puede cerrar el miércoles. La
+   * racha cuenta días de entrenamiento reales, así que mira esta.
+   */
+  completedAt: string
+}
+
 export interface Session {
   id: string
   /** Para qué es la sesión. No repite el nombre del alumno: eso se resuelve. */
@@ -72,6 +101,13 @@ export interface Session {
    * ninguna rutina—, no una carencia.
    */
   routineId: string | null
+  /**
+   * Lo que ocurrió, o `null` mientras no haya ocurrido.
+   *
+   * Va con la sesión y no en una colección aparte porque es su desenlace, no
+   * otra entidad: no hay resultado sin sesión ni resultado de dos sesiones.
+   */
+  result: SessionResult | null
 }
 
 /**

@@ -82,12 +82,21 @@ function DialogContent({
       >
         {children}
         {showCloseButton && (
+          /*
+            Se toca shadcn a proposito, y por la regla 1.6.
+            El aspa venia sin caja propia: era el icono de 16 px y nada mas, y
+            medido a 375 px daba un objetivo tactil de 16 x 16 -muy por debajo
+            de los 44 exigidos, y por debajo incluso del minimo de 24 de WCAG
+            2.2 AA-. Es el boton de cerrar de TODOS los dialogos de la
+            aplicacion, asi que el fallo se repetia en cada uno.
+            El icono sigue midiendo 16: lo que crece es la zona pulsable.
+          */
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+            className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-2 right-2 inline-flex size-11 items-center justify-center rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
           >
             <XIcon />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">Cerrar</span>
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Content>

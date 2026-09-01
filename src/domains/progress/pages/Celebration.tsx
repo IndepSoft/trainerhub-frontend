@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AchievementCelebration } from '../components/AchievementCelebration'
 import { useLatestAchievement } from '../hooks/useLatestAchievement'
 
@@ -11,7 +11,16 @@ import { useLatestAchievement } from '../hooks/useLatestAchievement'
  */
 export default function Celebration() {
   const navigate = useNavigate()
-  const { achievement, headlineValue, headlineLabel } = useLatestAchievement()
+  // Qué sesión se acaba de cerrar. Sin ella no se sabe a quién felicitar: la
+  // pantalla celebraba una racha que no era de nadie.
+  const [searchParams] = useSearchParams()
+  const { achievement, headlineValue, headlineLabel, loading } = useLatestAchievement(
+    searchParams.get('session') ?? undefined
+  )
+
+  // Mientras carga no se decide nada: `achievement === null` todavía no
+  // significa «no hay logro», y salir aquí devolvería a progreso siempre.
+  if (loading) return null
 
   // Sin logro desbloqueado no hay nada que celebrar: se vuelve a progreso en vez
   // de pintar una pantalla de celebración vacía.

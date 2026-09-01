@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { BicepsFlexed, CalendarDays, Users } from 'lucide-react'
 import { container } from '@/app/container'
-import { describeTimeAgo, toDateKey, weekBounds } from '../libs/dashboardTime'
+import { describeTimeAgo, weekBounds } from '../libs/dashboardTime'
+import { toLocalDateKey } from '@/shared/lib/dateKey'
 import type { DashboardSummary, RecentActivityEntry, UpcomingSession } from '../types/dashboard.types'
 import type { Session } from '@/shared/domain/entities/session'
 import type { Student } from '@/shared/domain/entities/student'
@@ -81,7 +82,7 @@ function buildSummary(
   students: Student[],
   routineCount: number
 ): DashboardSummary {
-  const today = toDateKey(new Date())
+  const today = toLocalDateKey(new Date())
   const { from, to } = weekBounds(new Date())
 
   const studentsById = new Map(students.map((student) => [student.id, student]))

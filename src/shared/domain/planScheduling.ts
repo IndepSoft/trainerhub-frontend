@@ -137,6 +137,8 @@ export function planSessions(
         status: 'pending',
         notes: '',
         routineId: day.routineId,
+        // Nace sin resultado: no ha ocurrido todavia.
+        result: null,
       }
 
       planned.push({

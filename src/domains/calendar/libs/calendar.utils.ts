@@ -1,22 +1,9 @@
 /**
  * Utilidades de fecha de la agenda. Funciones puras, sin React ni estado.
- */
-
-/**
- * Convierte una fecha a su clave `YYYY-MM-DD` **en hora local**.
  *
- * Sustituye a `date.toISOString().split('T')[0]`, que era un error real:
- * `toISOString` pasa a UTC, asi que en un huso negativo -Perú es UTC-5- una
- * sesión de las 20:00 del día 15 se convertía en el día 16 y aparecía en la
- * columna equivocada. El fallo solo se manifestaba según la hora del día, que
- * es lo que lo hacía difícil de ver.
+ * `toLocalDateKey` ya no está aquí: vive en `@/shared/lib/dateKey`, porque
+ * había tres copias suyas repartidas por el proyecto.
  */
-export function toLocalDateKey(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
 
 /** Los siete días de la semana que contiene `date`, empezando en lunes. */
 export function getWeekDates(date: Date): Date[] {

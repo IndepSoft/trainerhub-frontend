@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useIsMobile } from '@/shared/hooks/useIsMobile'
 import { container } from '@/app/container'
-import { addDays, getWeekDates, toLocalDateKey } from '../libs/calendar.utils'
+import { addDays, getWeekDates } from '../libs/calendar.utils'
+import { toLocalDateKey } from '@/shared/lib/dateKey'
 import type {
   CalendarViewMode,
   Session,

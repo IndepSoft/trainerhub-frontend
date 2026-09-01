@@ -4,12 +4,13 @@ import { SessionDuration } from './SessionDuration'
 import { SessionMetrics } from './SessionMetrics'
 import { SessionRouteMap } from './SessionRouteMap'
 import { SlideToAction } from './SlideToAction'
-import type { Session } from '@/shared/domain/entities/session'
+import { toLocalDateKey } from '@/shared/lib/dateKey'
+import type { Session, SessionResult } from '@/shared/domain/entities/session'
 
 interface CardioSessionProps {
   session: Session
   studentName: string
-  onFinish: () => void
+  onFinish: (result: SessionResult) => void
 }
 
 /**
@@ -37,7 +38,14 @@ export function CardioSession({ session, studentName, onFinish }: CardioSessionP
    */
   const handleFinish = () => {
     finish()
-    onFinish()
+    onFinish({
+      // Cardio no se programa en series, y cero no es un hueco: es el numero
+      // correcto. Lo que mide una sesion de cardio es el tiempo.
+      completedSets: 0,
+      totalSets: 0,
+      elapsedSeconds: metrics.elapsedSeconds,
+      completedAt: toLocalDateKey(new Date()),
+    })
   }
 
   return (

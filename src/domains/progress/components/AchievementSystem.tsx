@@ -1,20 +1,26 @@
 import { useMemo, useState } from 'react'
 import { AchievementBadge } from './AchievementBadge'
-import { predefinedAchievements } from '../data/predefinedAchievements'
 import { cn } from '@/shared/lib/utils'
-import type { Achievement } from '../types/achievement.types'
+import { unlockedAchievements } from '../libs/achievementEvaluation'
+import type { Achievement, AchievementCategory } from '../types/achievement.types'
 
-// TODO: `studentId` no se usa; los logros salen de predefinedAchievements
-// (simulados), sin filtrar por estudiante.
 interface AchievementSystemProps {
-  studentId?: string
+  /**
+   * Los logros del alumno, YA EVALUADOS.
+   *
+   * Se reciben en vez de leerlos aquí. Antes el componente importaba el
+   * catálogo simulado directamente y declaraba un `studentId` que no usaba: la
+   * galería enseñaba los mismos seis logros conseguidos para cualquiera. Quien
+   * los evalúa es `useGamificationProfile`, que es el único que sabe de qué
+   * alumno se trata.
+   */
+  achievements: Achievement[]
 }
 
 type CategoryFilter = 'all' | Achievement['category']
 type RarityFilter = 'all' | Achievement['rarity']
 
-const CATEGORY_LABELS: Record<CategoryFilter, string> = {
-  all: 'Todos',
+const CATEGORY_LABELS: Record<AchievementCategory, string> = {
   attendance: 'Asistencia',
   consistency: 'Constancia',
   metrics: 'Métricas',
@@ -29,22 +35,13 @@ const RARITY_LABELS: Record<RarityFilter, string> = {
   legendary: 'Legendario',
 }
 
-const CATEGORY_ORDER: CategoryFilter[] = [
-  'all',
-  'attendance',
-  'consistency',
-  'metrics',
-  'challenges',
-]
 
-export function AchievementSystem(_props: AchievementSystemProps) {
+
+export function AchievementSystem({ achievements }: AchievementSystemProps) {
   const [category, setCategory] = useState<CategoryFilter>('all')
   const [rarity, setRarity] = useState<RarityFilter>('all')
 
-  const unlocked = useMemo(
-    () => predefinedAchievements.filter((achievement) => achievement.unlockedAt),
-    []
-  )
+  const unlocked = useMemo(() => unlockedAchievements(achievements), [achievements])
 
   /**
    * Cuántos hay conseguidos por categoría.
@@ -60,22 +57,27 @@ export function AchievementSystem(_props: AchievementSystemProps) {
     return counts
   }, [unlocked])
 
-  const filtered = predefinedAchievements.filter((achievement) => {
+  /*
+   * Las categorias salen del catalogo, no de una lista escrita al lado.
+   *
+   * Estaban las cuatro fijas, y al quitar del catalogo los logros de «metricas»
+   * y «desafios» -no hay de donde sacarlos- quedaron dos fichas que abrian una
+   * galeria vacia. Derivandolas, un filtro sin nada detras no puede existir.
+   */
+  const categoryFilters = useMemo<CategoryFilter[]>(() => {
+    const present = new Set(achievements.map((achievement) => achievement.category))
+    return ['all', ...[...present].sort((first, second) => first.localeCompare(second))]
+  }, [achievements])
+
+  const filtered = achievements.filter((achievement) => {
     const matchesCategory = category === 'all' || achievement.category === category
     const matchesRarity = rarity === 'all' || achievement.rarity === rarity
     return matchesCategory && matchesRarity
   })
 
-  const recent = useMemo(
-    () =>
-      // Copia antes de ordenar: `sort` muta, y `unlocked` se usa tambien para
-      // el contador de arriba. Ordenar en sitio durante el renderizado es un
-      // efecto secundario escondido.
-      [...unlocked]
-        .sort((a, b) => b.unlockedAt!.getTime() - a.unlockedAt!.getTime())
-        .slice(0, 3),
-    [unlocked]
-  )
+  // `unlockedAchievements` ya los devuelve del mas reciente al mas antiguo, y
+  // sobre una copia: no hay que reordenar ni cuidar de no mutar.
+  const recent = unlocked.slice(0, 3)
 
   return (
     <div className="space-y-8">
@@ -83,10 +85,10 @@ export function AchievementSystem(_props: AchievementSystemProps) {
         <span className="metric-figures font-display text-2xl font-extrabold text-ink">
           {unlocked.length}
         </span>
-        <span className="metric-figures text-ink/40"> / {predefinedAchievements.length}</span>
+        <span className="metric-figures text-ink/40"> / {achievements.length}</span>
         {' logros conseguidos · '}
         <span className="metric-figures font-semibold text-cobalt">
-          {Math.round((unlocked.length / predefinedAchievements.length) * 100)}%
+          {achievements.length === 0 ? 0 : Math.round((unlocked.length / achievements.length) * 100)}%
         </span>
       </p>
 
@@ -124,7 +126,7 @@ export function AchievementSystem(_props: AchievementSystemProps) {
           aria-label="Filtrar por categoría"
           className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
         >
-          {CATEGORY_ORDER.map((value) => {
+          {categoryFilters.map((value) => {
             const isActive = category === value
             const count = value === 'all' ? unlocked.length : (countByCategory[value] ?? 0)
             return (
@@ -140,7 +142,7 @@ export function AchievementSystem(_props: AchievementSystemProps) {
                     : 'border-cobalt-tint-3 text-ink/60 hover:border-cobalt/40'
                 )}
               >
-                {CATEGORY_LABELS[value]}
+                {value === 'all' ? 'Todos' : CATEGORY_LABELS[value]}
                 <span className="metric-figures opacity-60">{count}</span>
               </button>
             )
@@ -169,6 +171,12 @@ export function AchievementSystem(_props: AchievementSystemProps) {
         <h3 className="border-b border-cobalt-tint-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
           Conseguidos recientemente
         </h3>
+
+        {recent.length === 0 && (
+          <p className="py-6 text-sm text-ink/40">
+            Aún no hay logros conseguidos. Se desbloquean solos al completar sesiones.
+          </p>
+        )}
 
         <ul className="space-y-5">
           {recent.map((achievement) => (

@@ -1,15 +1,19 @@
 import { MetricBlock } from '@/shared/components/MetricBlock'
+import { PageHeader } from '@/shared/components/PageHeader'
 import { GamificationHeader } from '../components/GamificationHeader'
 import { MilestonePath } from '../components/MilestonePath'
-import { useGamificationProfile } from '../hooks/useGamificationProfile'
 import { AchievementSystem } from '../components/AchievementSystem'
+import { StudentPicker } from '../components/StudentPicker'
+import { useGamificationProfile } from '../hooks/useGamificationProfile'
+import { useProgressStudent } from '../hooks/useProgressStudent'
 import { useProgressOverview } from '../hooks/useProgressOverview'
-import { PageHeader } from '@/shared/components/PageHeader'
+import { getShortName } from '@/shared/lib/personName'
 
 export default function Progress() {
-  const { overview } = useProgressOverview()
-  const { profile, levelCompletion, experienceToNextLevel } = useGamificationProfile()
-
+  const { students, student, loading: loadingStudents, select } = useProgressStudent()
+  const { profile, achievements, completedCount, levelCompletion, experienceToNextLevel } =
+    useGamificationProfile(student?.id)
+  const { overview } = useProgressOverview(achievements, completedCount)
 
   return (
     // Misma estructura de scroll que el resto de paginas: la cabecera queda
@@ -20,8 +24,20 @@ export default function Progress() {
           brief exige visibles siempre; va `sticky` dentro del contenedor de
           desplazamiento, mas abajo. Esta solo nombra la pagina. */}
       <PageHeader className="pb-4">
-        <PageHeader.Eyebrow>Tu evolución</PageHeader.Eyebrow>
-        <PageHeader.Title>Progreso</PageHeader.Title>
+        <PageHeader.Content>
+          <div className="min-w-0">
+            <PageHeader.Eyebrow>
+              {student === null ? 'Tu equipo' : `Progreso de ${getShortName(student.firstName, student.lastName)}`}
+            </PageHeader.Eyebrow>
+            <PageHeader.Title>Progreso</PageHeader.Title>
+          </div>
+
+          {/* De quien es lo que se ve. Antes no se decia, y la pantalla
+              enseñaba una racha que no era de nadie. */}
+          <PageHeader.Actions>
+            <StudentPicker students={students} selectedId={student?.id} onSelect={select} />
+          </PageHeader.Actions>
+        </PageHeader.Content>
       </PageHeader>
 
       {/* Contenedor de scroll de la pagina. Es un div y no un <main> a
@@ -30,52 +46,61 @@ export default function Progress() {
           admite uno por documento- ademas de confundir a los lectores de
           pantalla. */}
       <div className="flex-1 overflow-auto">
-        <GamificationHeader
-          streak={profile.streak}
-          level={profile.level}
-          levelCompletion={levelCompletion}
-          experienceToNextLevel={experienceToNextLevel}
-        />
-
-        <MilestonePath milestones={profile.milestones} />
-
-        {/* Contadores en el registro sobrio, con reglas de 1 px en vez de
-            tarjetas. Bajan de cinco a tres: «Rachas activas» lo dice ya la llama
-            de la cabecera, y «Puntos totales» competia con la barra de XP como
-            si fueran dos sistemas de puntos distintos. */}
-        <div className="grid grid-cols-1 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-          {overview.stats.map((stat) => (
-            <MetricBlock
-              key={stat.id}
-              title={stat.label}
-              indicator={stat.value}
-              icon={stat.icon}
+        {student === null ? (
+          <p className="px-5 py-16 text-center text-sm text-ink/45">
+            {loadingStudents
+              ? 'Cargando…'
+              : 'Aún no tienes alumnos. El progreso se calcula a partir de sus sesiones completadas.'}
+          </p>
+        ) : (
+          <>
+            <GamificationHeader
+              streak={profile.streak}
+              level={profile.level}
+              levelCompletion={levelCompletion}
+              experienceToNextLevel={experienceToNextLevel}
             />
-          ))}
-        </div>
 
-        <div className="ps-4 pe-4 pb-4 pt-6 max-w-8xl mx-auto space-y-6">
+            <MilestonePath milestones={profile.milestones} />
 
-          {/* Sin envoltura <Card>, por el mismo motivo que en Reportes: su
-              contenido son a su vez tarjetas, que pagaban el relleno dos veces y
-              caian a 277 px, bajo el minimo util de 280 de la regla 1.6. Un
-              <h2> da la misma informacion sin ese nivel, y ademas es un
-              encabezado de verdad para un lector de pantalla: CardTitle
-              renderiza un <div>. */}
-          <section className="space-y-4">
-            {/*
-              Sin pestanas. Quedaban tres -Logros, Desafios, Rachas- y las dos
-              ultimas se han movido a Entrenamientos, porque son cosas que el
-              entrenador CREA para luego asignarlas, no cosas que el estudiante
-              consigue. Con una sola seccion, un control de navegacion de una
-              pestana es cromo que no lleva a ningun sitio.
-            */}
-            <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-              Logros
-            </h2>
-            <AchievementSystem />
-          </section>
-        </div>
+            {/* Contadores en el registro sobrio, con reglas de 1 px en vez de
+                tarjetas. Los tres salen ahora de sesiones reales: antes eran
+                tres cifras escritas a mano —12 logros, 5 desafios, 87 % de
+                participacion— que no cambiaban nunca. */}
+            <div className="grid grid-cols-1 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+              {overview.stats.map((stat) => (
+                <MetricBlock
+                  key={stat.id}
+                  title={stat.label}
+                  indicator={stat.value}
+                  icon={stat.icon}
+                />
+              ))}
+            </div>
+
+            <div className="ps-4 pe-4 pb-4 pt-6 max-w-8xl mx-auto space-y-6">
+              {/* Sin envoltura <Card>, por el mismo motivo que en Reportes: su
+                  contenido son a su vez tarjetas, que pagaban el relleno dos veces y
+                  caian a 277 px, bajo el minimo util de 280 de la regla 1.6. Un
+                  <h2> da la misma informacion sin ese nivel, y ademas es un
+                  encabezado de verdad para un lector de pantalla: CardTitle
+                  renderiza un <div>. */}
+              <section className="space-y-4">
+                {/*
+                  Sin pestanas. Quedaban tres -Logros, Desafios, Rachas- y las dos
+                  ultimas se han movido a Entrenamientos, porque son cosas que el
+                  entrenador CREA para luego asignarlas, no cosas que el estudiante
+                  consigue. Con una sola seccion, un control de navegacion de una
+                  pestana es cromo que no lleva a ningun sitio.
+                */}
+                <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
+                  Logros
+                </h2>
+                <AchievementSystem achievements={achievements} />
+              </section>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

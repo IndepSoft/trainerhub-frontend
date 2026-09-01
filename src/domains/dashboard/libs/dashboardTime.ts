@@ -1,3 +1,5 @@
+import { toLocalDateKey } from '@/shared/lib/dateKey'
+
 /**
  * Fechas del panel. Funciones puras, sin React.
  *
@@ -5,13 +7,6 @@
  * anterior en husos negativos. Todo se construye por partes, que es como se
  * arreglaron los dos fallos de huso que tuvo el calendario.
  */
-
-/** `new Date(2026, 8, 8)` → `2026-09-08`. */
-export function toDateKey(date: Date): string {
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${date.getFullYear()}-${month}-${day}`
-}
 
 /**
  * El lunes y el domingo de la semana que contiene la fecha.
@@ -25,7 +20,7 @@ export function weekBounds(date: Date): { from: string; to: string } {
   const monday = new Date(date.getFullYear(), date.getMonth(), date.getDate() - isoWeekday)
   const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6)
 
-  return { from: toDateKey(monday), to: toDateKey(sunday) }
+  return { from: toLocalDateKey(monday), to: toLocalDateKey(sunday) }
 }
 
 /**

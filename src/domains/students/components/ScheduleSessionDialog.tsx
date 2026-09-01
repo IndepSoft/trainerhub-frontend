@@ -173,6 +173,8 @@ export function ScheduleSessionDialog({
       // Una sesion de cardio no ejecuta una rutina de sala, aunque hubiera uno
       // elegido antes de cambiar de modalidad.
       routineId: modality === 'cardio' || routineId === NO_ROUTINE ? null : routineId,
+      // Nace sin resultado: no ha ocurrido todavia.
+      result: null,
     })
 
     resetForm()

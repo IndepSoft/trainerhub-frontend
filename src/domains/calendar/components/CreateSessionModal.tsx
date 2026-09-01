@@ -25,7 +25,7 @@ import { getShortName } from '@/shared/lib/personName'
 import { useSchedulableStudents } from '../hooks/useSchedulableStudents'
 import { useSchedulableRoutines } from '../hooks/useSchedulableRoutines'
 import { container } from '@/app/container'
-import { toLocalDateKey } from '../libs/calendar.utils'
+import { toLocalDateKey } from '@/shared/lib/dateKey'
 import { ScheduleConflictNotice } from '@/shared/components/ScheduleConflictNotice'
 import { SessionModalityPicker } from '@/shared/components/SessionModalityPicker'
 import { describeOverlap, findOverlappingSessions } from '@/shared/domain/sessionScheduling'
@@ -226,6 +226,8 @@ export function CreateSessionModal({
       notes,
       // Una sesion de cardio no ejecuta una rutina de sala.
       routineId: modality === 'cardio' || routineId === NO_ROUTINE ? null : routineId,
+      // Nace sin resultado: no ha ocurrido todavia.
+      result: null,
     })
 
     toast.success(
