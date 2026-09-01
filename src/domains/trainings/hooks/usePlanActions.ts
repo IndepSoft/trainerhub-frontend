@@ -1,10 +1,11 @@
 import { useCallback } from 'react'
 import { container } from '@/app/container'
 import type { TrainingPlan } from '@/shared/domain/entities/plan'
+import type { NewPlan } from '@/shared/domain/ports/PlanRepository'
 
 interface UsePlanActionsResult {
-  createPlan: (data: Omit<TrainingPlan, 'id'>) => Promise<TrainingPlan>
-  updatePlan: (planId: string, data: Omit<TrainingPlan, 'id'>) => Promise<void>
+  createPlan: (data: NewPlan) => Promise<TrainingPlan>
+  updatePlan: (planId: string, data: NewPlan) => Promise<void>
 }
 
 /**
@@ -16,12 +17,12 @@ interface UsePlanActionsResult {
  */
 export function usePlanActions(): UsePlanActionsResult {
   const createPlan = useCallback(
-    (data: Omit<TrainingPlan, 'id'>) => container.plans.create(data),
+    (data: NewPlan) => container.plans.create(data),
     []
   )
 
   const updatePlan = useCallback(
-    (planId: string, data: Omit<TrainingPlan, 'id'>) => container.plans.update(planId, data),
+    (planId: string, data: NewPlan) => container.plans.update(planId, data),
     []
   )
 

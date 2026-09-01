@@ -9,20 +9,26 @@ import {
 } from '@/shared/ui/dropdown-menu'
 import { LogOut, User } from 'lucide-react'
 import { getInitials, getShortName } from '@/shared/lib/personName'
-import type { Trainer } from '@/shared/domain/entities/trainer'
 import { useLogout } from '@/auth/hooks/useLogout'
 
 interface UserMenuProps {
-  trainer: Trainer | null
+  /**
+   * Quien ha entrado, venga su nombre de donde venga.
+   *
+   * Antes recibia un `Trainer`, y un alumno no tiene ficha de entrenador: el
+   * menu pintaba las iniciales de `undefined`. Quien resuelve de que ficha sale
+   * el nombre es `useViewer`, que es el unico que sabe con que papel se entra.
+   */
+  person: { firstName?: string; lastName?: string; photoUrl?: string }
   loading: boolean
 }
 
-export function UserMenu({ trainer, loading }: UserMenuProps) {
+export function UserMenu({ person, loading }: UserMenuProps) {
   const { handleLogout } = useLogout()
   
-  const displayName = getShortName(trainer?.firstName, trainer?.lastName)
-  const initials = getInitials(trainer?.firstName, trainer?.lastName)
-  const avatarUrl = trainer?.photoUrl
+  const displayName = getShortName(person.firstName, person.lastName)
+  const initials = getInitials(person.firstName, person.lastName)
+  const avatarUrl = person.photoUrl
 
   return (
     <DropdownMenu>

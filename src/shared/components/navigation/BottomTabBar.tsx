@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { getMobileRoutes } from '@/app/config/navigation.config'
 import { cn } from '@/shared/lib/utils'
+import type { CrewRole } from '@/shared/domain/entities/crew'
 
 /**
  * Navegación principal en móvil.
@@ -19,8 +20,13 @@ import { cn } from '@/shared/lib/utils'
  * sistema una vez instalada; funciona porque `index.html` declara
  * `viewport-fit=cover`, sin lo cual el valor sería siempre cero.
  */
-export function BottomTabBar() {
-  const routes = getMobileRoutes()
+interface BottomTabBarProps {
+  /** Con qué papel se navega. `null` sin crew: sólo lo que no pide rol. */
+  role: CrewRole | null
+}
+
+export function BottomTabBar({ role }: BottomTabBarProps) {
+  const routes = getMobileRoutes(role)
 
   return (
     <nav

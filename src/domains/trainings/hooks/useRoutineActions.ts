@@ -1,10 +1,11 @@
 import { useCallback } from 'react'
 import { container } from '@/app/container'
 import type { Routine } from '@/shared/domain/entities/routine'
+import type { NewRoutine } from '@/shared/domain/ports/RoutineRepository'
 
 interface UseRoutineActionsResult {
-  createRoutine: (data: Omit<Routine, 'id'>) => Promise<Routine>
-  updateRoutine: (routineId: string, data: Omit<Routine, 'id'>) => Promise<void>
+  createRoutine: (data: NewRoutine) => Promise<Routine>
+  updateRoutine: (routineId: string, data: NewRoutine) => Promise<void>
 }
 
 /**
@@ -19,12 +20,12 @@ interface UseRoutineActionsResult {
  */
 export function useRoutineActions(): UseRoutineActionsResult {
   const createRoutine = useCallback(
-    (data: Omit<Routine, 'id'>) => container.routines.create(data),
+    (data: NewRoutine) => container.routines.create(data),
     []
   )
 
   const updateRoutine = useCallback(
-    (routineId: string, data: Omit<Routine, 'id'>) => container.routines.update(routineId, data),
+    (routineId: string, data: NewRoutine) => container.routines.update(routineId, data),
     []
   )
 

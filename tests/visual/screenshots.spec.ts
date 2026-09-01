@@ -2929,12 +2929,21 @@ test.describe('registro', () => {
     await elegirDelDesplegable(page, page.getByRole('combobox').first(), 'Pérdida de peso')
   }
 
-  test('crear una cuenta da de alta al entrenador y entra', async ({ page }) => {
+  test('crear una cuenta da de alta al entrenador y lleva a crear su equipo', async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await rellenarRegistro(page, 'asoto@correo.com')
 
     await page.getByRole('button', { name: 'Crear cuenta' }).click()
-    await page.waitForURL(/\/dashboard/, { timeout: 20_000 })
+
+    /*
+     * AL EQUIPO, NO AL PANEL. Un entrenador recien registrado no tiene ninguno,
+     * y sin equipo no hay donde meter alumnos, rutinas ni sesiones: el panel le
+     * enseñaria ceros y ninguna salida. Antes esta prueba esperaba
+     * `/dashboard`, que era el destino fijo de todo el mundo.
+     */
+    await page.waitForURL(/\/crew\/nuevo/, { timeout: 20_000 })
 
     // La ficha del entrenador existe: sin ella la cuenta entraria sin nombre.
     const fichas = await page.evaluate(() =>
@@ -2952,7 +2961,10 @@ test.describe('registro', () => {
     await rellenarRegistro(page, 'MGomez@gmail.com')
 
     await page.getByRole('button', { name: 'Crear cuenta' }).click()
-    await page.waitForURL(/\/dashboard/, { timeout: 20_000 })
+
+    // A Progreso, que es la pantalla del alumno. El entrenador va al panel o a
+    // crear su equipo; lo decide el rol, y el rol lo decide quien te conoce.
+    await page.waitForURL(/\/progress/, { timeout: 20_000 })
 
     /*
      * QUIEN ERES LO DECIDE TU CORREO. El correo ya tenia ficha de alumna, asi
@@ -2962,5 +2974,137 @@ test.describe('registro', () => {
       window.localStorage.getItem('trainerhub.fake-trainers')
     )
     expect(fichas).toBeNull()
+  })
+})
+
+/**
+ * El equipo, que es la unidad de aislamiento de datos.
+ *
+ * Todo lo que crea un entrenador -alumnos, rutinas, planes, sesiones- pertenece
+ * a un crew, y nadie de fuera lo ve. Estaba analizado y sin ejecutar en
+ * `CAMBIOS-Y-ARQUITECTURA.md` §5 bajo el nombre `clubs`.
+ */
+test.describe('equipo', () => {
+  /** Entra con una cuenta nueva, sin equipo. */
+  async function entrarComoNuevo(page: Page, correo: string): Promise<void> {
+    await page.goto('/authentication')
+    await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
+    await page.getByPlaceholder('tu@email.com').fill(correo)
+    await page.locator('input[type=password]').fill('desarrollo123')
+    await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click()
+  }
+
+  test('el entrenador ve su equipo, sus miembros y su QR', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/crew')
+
+    await expect(page.getByRole('heading', { name: 'Hierro y Asfalto' })).toBeVisible()
+    // Los cuatro de la semilla: tienen ficha, asi que son del equipo aunque
+    // todavia no tengan cuenta con la que entrar.
+    await expect(page.getByText('Crew · 4 miembros')).toBeVisible()
+    await expect(page.getByText('Sin cuenta')).toHaveCount(4)
+
+    // El codigo se enseña escrito ademas de en el QR: es la salida cuando la
+    // camara no colabora -permiso denegado, mala luz, pantalla rota-.
+    await expect(page.getByText('HIER-RO24')).toBeVisible()
+  })
+
+  test('una cuenta sin equipo no ve NADA de ningun equipo', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await entrarComoNuevo(page, 'sinequipo@correo.com')
+    await page.waitForURL(/\/progress/, { timeout: 20_000 })
+
+    /*
+     * ESTE ES EL FALLO QUE LA MULTI-TENENCIA EXISTE PARA EVITAR.
+     *
+     * Medido en el navegador antes de acotar los repositorios: una cuenta
+     * recien registrada y sin equipo abria el panel y veia «5 sesiones esta
+     * semana» y tres rutinas, que eran las de otro. Solo las fichas de alumno
+     * estaban acotadas.
+     */
+    await page.goto('/calendar')
+    await expect(page.getByRole('button', { name: /minutos/ })).toHaveCount(0)
+
+    // Y la navegacion tampoco ofrece la gestion: sin rol de entrenador no hay
+    // padron de alumnos ni catalogo que abrir.
+    await expect(page.getByRole('link', { name: 'Estudiantes' })).toHaveCount(0)
+    await expect(page.getByRole('link', { name: 'Entrenamientos' })).toHaveCount(0)
+  })
+
+  test('sin equipo, Progreso enseña lo que va a tener en vez de un hueco', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await entrarComoNuevo(page, 'sinequipo2@correo.com')
+    await page.waitForURL(/\/progress/, { timeout: 20_000 })
+
+    await expect(page.getByRole('heading', { name: 'Únete a un equipo' })).toBeVisible()
+
+    /*
+     * El vacio es la DEMOSTRACION, no un hueco: se pinta el registro entero a
+     * cero. La primera version dejaba `milestones` en `[]` y la pantalla salia
+     * con «Tu camino» sin peldaños y «0 / 0 logros», que se lee como que algo no
+     * ha cargado.
+     */
+    await expect(page.getByText('Primeros pasos')).toBeVisible()
+    await expect(page.getByText('0/3')).toBeVisible()
+    await expect(page.getByText('0 / 8 logros conseguidos')).toBeVisible()
+  })
+
+  test('el QR mete a alguien en el equipo, con el visto bueno del entrenador', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await entrarComoNuevo(page, 'nueva@correo.com')
+    await page.waitForURL(/\/progress/, { timeout: 20_000 })
+
+    /*
+     * Se entra por la URL del QR. El codigo va en la direccion -no suelto- para
+     * que la camara nativa del movil abra esto directamente, sin tener que
+     * escribir un lector dentro de la aplicacion.
+     */
+    await page.goto('/crew/unirse?codigo=HIERRO24')
+
+    // Con aprobacion por defecto: un QR es un secreto que se enseña en publico,
+    // asi que escanearlo pide entrar, no entra.
+    await expect(page.getByRole('heading', { name: 'Solicitud enviada' })).toBeVisible()
+
+    /*
+     * Y hasta que le acepten NO pertenece: la barra lateral lo dice, y -lo que
+     * importa- el ambito de datos sigue vacio. Incluir una solicitud pendiente
+     * daria acceso al equipo por el mero hecho de haber escaneado el QR.
+     */
+    // El conmutador esta en dos sitios a la vez -barra lateral en escritorio y
+    // barra superior en movil-, asi que se cuenta en vez de exigir uno solo.
+    await expect(page.getByText('Sin equipo')).toHaveCount(2)
+  })
+
+  test('un codigo que no vale se rechaza sin dar pistas', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await entrarComoNuevo(page, 'curiosa@correo.com')
+    await page.waitForURL(/\/progress/, { timeout: 20_000 })
+
+    await page.goto('/crew/unirse')
+    await page.getByLabel('Código del equipo').fill('NOEXISTE')
+    await page.getByRole('button', { name: 'Unirme al equipo' }).click()
+
+    // Sin distinguir «no existe» de «existio y se roto»: seria confirmarle a
+    // quien prueba codigos que acerto alguna vez.
+    await expect(page.getByText('Ese código no vale.')).toBeVisible()
+  })
+
+  test('crear un equipo lo deja activo y con su QR', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await entrarComoNuevo(page, 'entrenadora@correo.com')
+
+    await page.goto('/crew/nuevo')
+    await page.getByLabel('Nombre').fill('La Tribu del Cerro')
+    await page.getByRole('button', { name: 'Tribu', exact: true }).click()
+    await page.getByRole('button', { name: 'Crear equipo' }).click()
+
+    await page.waitForURL(/\/crew$/, { timeout: 20_000 })
+    await expect(page.getByRole('heading', { name: 'La Tribu del Cerro' })).toBeVisible()
+    // La denominacion que eligio: solo cambia como aparece escrito.
+    await expect(page.getByText('Tribu · 0 miembros')).toBeVisible()
+    await expect(page.getByText('Todavía no entrena nadie aquí.')).toBeVisible()
   })
 })

@@ -1,3 +1,4 @@
+import type { NewRoutine } from '@/shared/domain/ports/RoutineRepository'
 import type { Block, PrescribedExercise, Routine } from '../types/training.types'
 import type {
   BlockDraft,
@@ -176,7 +177,7 @@ export function toBlock(draft: BlockDraft): Block {
  * sean el mismo camino es lo que garantiza que la duración estimada que el
  * entrenador ve mientras escribe sea exactamente la que quedará guardada.
  */
-export function toRoutineData(draft: RoutineDraft): Omit<Routine, 'id'> {
+export function toRoutineData(draft: RoutineDraft): NewRoutine {
   return {
     title: draft.title.trim(),
     description: draft.description.trim(),
@@ -194,7 +195,7 @@ export function toRoutineData(draft: RoutineDraft): Omit<Routine, 'id'> {
  * cambio—, se le presta uno que nunca sale de aquí.
  */
 export function toRoutinePreview(draft: RoutineDraft): Routine {
-  return { id: 'preview', ...toRoutineData(draft) }
+  return { id: 'preview', crewId: 'preview', ...toRoutineData(draft) }
 }
 
 /**

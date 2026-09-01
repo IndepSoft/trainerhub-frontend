@@ -97,9 +97,18 @@ export function useRegisterForm(): UseRegisterFormResult {
 
     try {
       const user = await container.auth.signUp({ email, password: formData.password })
-      const invited = await container.students.findByEmail(email)
 
-      if (invited === null) {
+      /*
+       * Se reclaman las fichas que esperaban este correo, en CUALQUIER equipo.
+       *
+       * Antes se preguntaba con `findByEmail`, que quedo acotado al crew activo
+       * cuando llego la multi-tenencia: durante el alta no hay ninguno, asi que
+       * no encontraba nunca nada y todo el que se registraba acababa siendo
+       * entrenador, incluidos los alumnos invitados. Lo cazo una prueba.
+       */
+      const claimed = await container.students.claimByEmail(email, user.id)
+
+      if (claimed.length === 0) {
         await container.trainers.create({
           profileId: user.id,
           firstName: formData.firstName.trim(),
@@ -109,12 +118,15 @@ export function useRegisterForm(): UseRegisterFormResult {
           // sin poner, no en cero, que afirmaría algo que nadie ha dicho.
           yearsExperience: Number.parseInt(formData.yearsOfExperience, 10) || undefined,
         })
-      } else {
-        await container.students.linkAccount(invited.id, user.id)
       }
 
       setUser(user)
-      navigate('/dashboard', { replace: true })
+      /*
+       * A la raiz, no a `/dashboard`: es `HomeRedirect` quien sabe con que
+       * papel se ha entrado. Mandar aqui al panel llevaba a un alumno a la
+       * pantalla de gestion del entrenador, vacia y con sus rotulos.
+       */
+      navigate('/', { replace: true })
     } catch (caught) {
       setError(messageFor(caught))
     } finally {

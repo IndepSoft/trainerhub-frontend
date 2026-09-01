@@ -18,7 +18,7 @@ interface UseStudentsResult {
  * acoplamiento que se quería quitar.
  *
  * Importar `container` desde un hook de dominio es el patrón ya establecido en
- * el proyecto —lo hacen `useLogin` y `useTrainer`—: el hook depende del puerto,
+ * el proyecto —lo hacen `useLogin` y `useViewer`—: el hook depende del puerto,
  * y la raíz de composición es quien decide la implementación.
  */
 export function useStudents(): UseStudentsResult {

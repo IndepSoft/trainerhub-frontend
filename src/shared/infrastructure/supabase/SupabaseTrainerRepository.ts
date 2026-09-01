@@ -40,4 +40,16 @@ export class SupabaseTrainerRepository implements TrainerRepository {
 
     return toTrainer(data as TrainerRow)
   }
+
+  /**
+   * TODO: sin suscripción de verdad todavía.
+   *
+   * Devuelve una baja que no hace nada, y NO es un descuido disfrazado: el
+   * contrato es «avísame si cambia», y no avisar nunca es una implementación
+   * válida —conservadora— mientras no haya `postgres_changes` montado. Lo que
+   * no sería válido es que quien suscribe tuviera que saberlo.
+   */
+  onChange(): () => void {
+    return () => undefined
+  }
 }

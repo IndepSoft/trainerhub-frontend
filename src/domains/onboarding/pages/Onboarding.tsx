@@ -25,7 +25,12 @@ export default function Onboarding() {
 
   const finish = () => {
     complete()
-    navigate('/dashboard', { replace: true })
+    /*
+     * A la raiz, no a `/dashboard`: es `HomeRedirect` quien sabe con que
+     * papel se ha entrado. Mandar aqui al panel llevaba a un alumno a la
+     * pantalla de gestion del entrenador, vacia y con sus rotulos.
+     */
+    navigate('/', { replace: true })
   }
 
   const advance = () => {

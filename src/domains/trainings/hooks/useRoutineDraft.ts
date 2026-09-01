@@ -17,6 +17,7 @@ import type {
 } from '../types/routineDraft.types'
 import { copyBlockToDraft } from '../libs/blockLibrary'
 import type { Block, Routine, TrainingLevel } from '../types/training.types'
+import type { NewRoutine } from '@/shared/domain/ports/RoutineRepository'
 
 interface UseRoutineDraftResult {
   draft: RoutineDraft
@@ -42,7 +43,7 @@ interface UseRoutineDraftResult {
     changes: PrescribedExerciseDraftChanges
   ) => void
   /** Los datos listos para guardar, o `null` si el borrador no es válido. */
-  submit: () => Omit<Routine, 'id'> | null
+  submit: () => NewRoutine | null
 }
 
 /**
@@ -163,7 +164,7 @@ export function useRoutineDraft(initial: Routine | null): UseRoutineDraftResult 
    * formulario sirve para las dos cosas sin una condicion dentro. Mismo patron
    * que `useExerciseDraft`.
    */
-  const submit = useCallback((): Omit<Routine, 'id'> | null => {
+  const submit = useCallback((): NewRoutine | null => {
     setWasSubmitted(true)
 
     const validation = validateRoutineDraft(draft)

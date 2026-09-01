@@ -1,4 +1,5 @@
 import type { Routine } from '@/shared/domain/entities/routine'
+import { DEV_CREW_ID } from './crewsSeed'
 
 /**
  * Rutinas simuladas, ya en la estructura de bloques.
@@ -22,6 +23,7 @@ import type { Routine } from '@/shared/domain/entities/routine'
 export const routinesSeed: Routine[] = [
   {
     id: 'routine-1',
+    crewId: DEV_CREW_ID,
     title: 'Full body · Principiante',
     description: 'Base de fuerza con los patrones fundamentales.',
     level: 'Principiante',
@@ -90,6 +92,7 @@ export const routinesSeed: Routine[] = [
   },
   {
     id: 'routine-2',
+    crewId: DEV_CREW_ID,
     title: 'Empuje · Intermedio',
     description: 'Pectoral, deltoides y tríceps con densidad alta al final.',
     level: 'Intermedio',
@@ -154,6 +157,7 @@ export const routinesSeed: Routine[] = [
 
   {
     id: 'routine-3',
+    crewId: DEV_CREW_ID,
     title: 'Torso · Empuje y tracción',
     description: 'Empuje pesado y una superserie de tracción para cerrar.',
     level: 'Intermedio',

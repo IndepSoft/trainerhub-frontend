@@ -8,6 +8,7 @@ import {
   toPlanPreview,
   validatePlanDraft,
 } from '../libs/planDraft'
+import type { NewPlan } from '@/shared/domain/ports/PlanRepository'
 import type { PlanDraft, PlanDraftErrors } from '../types/planDraft.types'
 import type { TrainingLevel, TrainingPlan } from '../types/training.types'
 
@@ -33,7 +34,7 @@ interface UsePlanDraftResult {
   toggleDeload: (weekId: string) => void
   setDayRoutine: (weekId: string, dayOfWeek: number, routineId: string) => void
   /** Los datos listos para guardar, o `null` si el borrador no es válido. */
-  submit: () => Omit<TrainingPlan, 'id'> | null
+  submit: () => NewPlan | null
 }
 
 /**
@@ -105,7 +106,7 @@ export function usePlanDraft(initial: TrainingPlan | null): UsePlanDraftResult {
     }))
   }, [])
 
-  const submit = useCallback((): Omit<TrainingPlan, 'id'> | null => {
+  const submit = useCallback((): NewPlan | null => {
     setWasSubmitted(true)
 
     const validation = validatePlanDraft(draft)

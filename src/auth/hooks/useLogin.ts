@@ -21,7 +21,12 @@ export const useLogin = () => {
     try {
       const user = await container.auth.signInWithEmail(credentials)
       setUser(user)
-      navigate('/dashboard', { replace: true })
+      /*
+       * A la raiz, no a `/dashboard`: es `HomeRedirect` quien sabe con que
+       * papel se ha entrado. Mandar aqui al panel llevaba a un alumno a la
+       * pantalla de gestion del entrenador, vacia y con sus rotulos.
+       */
+      navigate('/', { replace: true })
     } catch (err) {
       setError(messageFor(err))
     } finally {

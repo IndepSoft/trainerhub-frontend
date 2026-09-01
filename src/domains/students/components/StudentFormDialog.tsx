@@ -18,6 +18,7 @@ import {
 } from '@/shared/ui/select'
 import { cn } from '@/shared/lib/utils'
 import { STUDENT_GOALS } from '../data/studentGoals'
+import type { NewStudent } from '@/shared/domain/ports/StudentRepository'
 import type { Student, StudentLevel } from '@/shared/domain/entities/student'
 
 /** Registro de etiqueta del formulario, igual que en el resto de la aplicación. */
@@ -34,7 +35,7 @@ interface StudentFormDialogProps {
   /** El alumno que se edita, o `null` para dar uno de alta. */
   student: Student | null
   onOpenChange: (open: boolean) => void
-  onSave: (data: Omit<Student, 'id'>) => Promise<void>
+  onSave: (data: NewStudent) => Promise<void>
 }
 
 /**
@@ -81,7 +82,7 @@ export function StudentFormDialog({
 
 interface StudentFieldsProps {
   student: Student | null
-  onSave: (data: Omit<Student, 'id'>) => Promise<void>
+  onSave: (data: NewStudent) => Promise<void>
   onCancel: () => void
 }
 
@@ -127,6 +128,13 @@ function StudentFields({ student, onSave, onCancel }: StudentFieldsProps) {
       bodyFatPercentage: Number.parseInt(bodyFat, 10) || 0,
       // Se conserva el enlace a la cuenta al editar: no es del formulario.
       profileId: student?.profileId ?? null,
+      /*
+       * Una ficha nueva nace INVITADA, no activa: existe y espera a que su
+       * dueño se registre con ese correo. Al editar se conserva la que tenga,
+       * porque aprobar a alguien es una decision aparte y no debe ocurrir de
+       * rebote al corregirle la edad.
+       */
+      membershipStatus: student?.membershipStatus ?? 'invited',
     })
 
     onCancel()

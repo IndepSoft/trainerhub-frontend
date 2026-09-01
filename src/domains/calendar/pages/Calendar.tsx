@@ -17,9 +17,11 @@ import { SessionSummary } from '../components/SessionSummary'
 import { useCalendar } from '../hooks/useCalendar'
 import { useSchedulableStudents } from '../hooks/useSchedulableStudents'
 import { container } from '@/app/container'
+import { useViewerContext } from '@/app/ViewerContext'
 import type { CalendarViewMode, SessionStatus } from '../types/calendar.types'
 
 export default function Calendar() {
+  const { role } = useViewerContext()
   /*
    * «Usar en una sesion» llega aqui como `/calendar?routine=<id>`: la ficha de
    * la rutina no abre ningun dialogo por su cuenta -no puede, vive en otro
@@ -119,14 +121,22 @@ export default function Calendar() {
                 </SelectContent>
               </Select>
             )}
-            {/* `key` para que el formulario se monte de nuevo con la rutina ya
-                elegida: su estado inicial se toma una sola vez. */}
-            <CreateSessionModal
-              key={preselectedRoutineId ?? 'sin-rutina'}
-              preselectedRoutineId={preselectedRoutineId}
-              open={isCreateOpen}
-              onOpenChange={setIsCreateOpen}
-            />
+            {/*
+              Agendar es del entrenador. Un alumno abre la agenda para VER lo
+              que tiene, no para ponerse sesiones: quien decide cuando entrena
+              es quien le entrena.
+
+              `key` para que el formulario se monte de nuevo con la rutina ya
+              elegida: su estado inicial se toma una sola vez.
+            */}
+            {role === 'trainer' && (
+              <CreateSessionModal
+                key={preselectedRoutineId ?? 'sin-rutina'}
+                preselectedRoutineId={preselectedRoutineId}
+                open={isCreateOpen}
+                onOpenChange={setIsCreateOpen}
+              />
+            )}
           </PageHeader.Actions>
         </PageHeader.Content>
 

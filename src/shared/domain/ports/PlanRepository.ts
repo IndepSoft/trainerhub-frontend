@@ -11,8 +11,15 @@ import type { TrainingPlan } from '../entities/plan'
 export interface PlanRepository {
   findAll(): Promise<TrainingPlan[]>
   findById(planId: string): Promise<TrainingPlan | null>
-  create(data: Omit<TrainingPlan, 'id'>): Promise<TrainingPlan>
-  update(planId: string, data: Omit<TrainingPlan, 'id'>): Promise<void>
+  create(data: NewPlan): Promise<TrainingPlan>
+  update(planId: string, data: NewPlan): Promise<void>
   remove(planId: string): Promise<void>
   onChange(listener: () => void): () => void
 }
+
+/**
+ * Los datos de un alta. Sin `crewId`: lo pone el adaptador desde el ámbito
+ * activo, para que ningún formulario tenga que saber de multi-tenencia ni pueda
+ * equivocarse de crew. Ver `CrewScope`.
+ */
+export type NewPlan = Omit<TrainingPlan, 'id' | 'crewId'>

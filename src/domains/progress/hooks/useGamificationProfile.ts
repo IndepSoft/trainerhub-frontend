@@ -11,14 +11,28 @@ import {
 } from '../libs/progressRules'
 import { evaluateAchievements } from '../libs/achievementEvaluation'
 import type { Achievement } from '../types/achievement.types'
+import type { Session } from '@/shared/domain/entities/session'
 import type { GamificationProfile } from '../types/gamification.types'
 
-/** Perfil en blanco, para antes de que llegue el historial y para «sin alumno». */
+/**
+ * El perfil de quien no ha entrenado nunca.
+ *
+ * SE CALCULA CON LAS MISMAS REGLAS, sobre un historial vacío, en vez de
+ * escribirse a mano. No es purismo: la versión escrita a mano dejaba
+ * `milestones` en `[]`, y un alumno recién registrado abría Progreso y veía «Tu
+ * camino» sin ningún peldaño y «0 / 0 logros». El vacío tiene que enseñar LO QUE
+ * VA A TENER —la escalera entera en gris, los ocho logros por conseguir—, y eso
+ * es exactamente lo que devuelven las reglas cuando no hay nada que contar.
+ */
+const NO_SESSIONS: Session[] = []
+
 const EMPTY_PROFILE: GamificationProfile = {
-  streak: { currentDays: 0, bestDays: 0, completedToday: false },
-  level: { level: 1, currentExperience: 0, experienceForNextLevel: 100 },
-  milestones: [],
+  streak: streakFrom(NO_SESSIONS),
+  level: levelFromExperience(0),
+  milestones: milestonesFrom(NO_SESSIONS),
 }
+
+const EMPTY_ACHIEVEMENTS: Achievement[] = evaluateAchievements(NO_SESSIONS)
 
 interface UseGamificationProfileResult {
   profile: GamificationProfile
@@ -49,7 +63,7 @@ interface UseGamificationProfileResult {
  */
 export function useGamificationProfile(studentId?: string): UseGamificationProfileResult {
   const [profile, setProfile] = useState<GamificationProfile>(EMPTY_PROFILE)
-  const [achievements, setAchievements] = useState<Achievement[]>([])
+  const [achievements, setAchievements] = useState<Achievement[]>(EMPTY_ACHIEVEMENTS)
   const [completedCount, setCompletedCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -57,7 +71,7 @@ export function useGamificationProfile(studentId?: string): UseGamificationProfi
   const load = useCallback(async (): Promise<void> => {
     if (studentId === undefined) {
       setProfile(EMPTY_PROFILE)
-      setAchievements([])
+      setAchievements(EMPTY_ACHIEVEMENTS)
       setCompletedCount(0)
       setLoading(false)
       return

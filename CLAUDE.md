@@ -274,10 +274,13 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
 - `navigation.config.ts` declara `/reports`, `/settings` y `/login`, que no
   existen como rutas.
 - `GuestRoute` está implementado pero no cableado: falta `withGuestRoute`.
-- **El rol todavía no gobierna nada.** Registrarse ya distingue entrenador de
-  alumno —si el correo tiene ficha de alumno, la cuenta se ata a ella— pero
-  después ambos aterrizan en `/dashboard`, que es la pantalla del entrenador. La
-  navegación no se filtra por rol y no hay superficie para el alumno.
+- La página del equipo tiene miembros, solicitudes y QR. **Faltan el muro de
+  anuncios con «me gusta», el ranking y los eventos.** Los criterios para cuando
+  lleguen están en CAMBIOS §9.8.
+- El registro es el mismo formulario para entrenador y alumno, con campos
+  profesionales que a un alumno no le tocan. **Falta separarlo en dos.**
+- `CrewTrainer` está modelado y no se puebla: un crew tiene hoy un solo
+  entrenador, su dueño.
 - Props declaradas y sin conectar, marcadas con `TODO:` en gamification y
   calendar. `ChallengeCard.onUpdate` es la más grave: el padre le pasa un
   manejador real que nunca se invoca.

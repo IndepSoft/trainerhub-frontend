@@ -1,5 +1,6 @@
 import type { NewTrainer, TrainerRepository } from '@/shared/domain/ports/TrainerRepository'
 import type { Trainer } from '@/shared/domain/entities/trainer'
+import { trainersSeed } from './trainersSeed'
 
 const FAKE_TRAINERS_STORAGE_KEY = 'trainerhub.fake-trainers'
 
@@ -20,7 +21,10 @@ const FAKE_TRAINERS_STORAGE_KEY = 'trainerhub.fake-trainers'
  * aplicación y sin nombre, que es peor que no entrar.
  */
 export class FakeTrainerRepository implements TrainerRepository {
-  private trainers: Trainer[] = this.readPersisted()
+  // La semilla primero, y encima lo que se haya registrado en esta maquina: el
+  // entrenador de desarrollo tiene que existir sin haber pasado por el alta.
+  private trainers: Trainer[] = [...trainersSeed, ...this.readPersisted()]
+  private readonly listeners = new Set<() => void>()
 
   async findByProfileId(profileId: string): Promise<Trainer | null> {
     return this.trainers.find((trainer) => trainer.profileId === profileId) ?? null
@@ -38,7 +42,19 @@ export class FakeTrainerRepository implements TrainerRepository {
 
     this.trainers = [...this.trainers, trainer]
     this.persist()
+    this.notify()
     return trainer
+  }
+
+  onChange(listener: () => void): () => void {
+    this.listeners.add(listener)
+    return () => {
+      this.listeners.delete(listener)
+    }
+  }
+
+  private notify(): void {
+    for (const listener of this.listeners) listener()
   }
 
   private persist(): void {

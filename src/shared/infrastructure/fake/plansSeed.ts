@@ -1,4 +1,5 @@
 import type { TrainingPlan } from '@/shared/domain/entities/plan'
+import { DEV_CREW_ID } from './crewsSeed'
 
 /**
  * Planes simulados.
@@ -15,6 +16,7 @@ import type { TrainingPlan } from '@/shared/domain/entities/plan'
 export const plansSeed: TrainingPlan[] = [
   {
     id: 'plan-1',
+    crewId: DEV_CREW_ID,
     title: 'Base de fuerza · 4 semanas',
     description: 'Adaptación anatómica y técnica antes de subir cargas.',
     objectiveId: 'acondicionamiento',

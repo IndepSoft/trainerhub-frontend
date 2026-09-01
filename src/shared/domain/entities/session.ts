@@ -66,6 +66,15 @@ export interface SessionResult {
 
 export interface Session {
   id: string
+  /**
+   * El crew al que pertenece. Lo pone el adaptador desde el ámbito activo.
+   *
+   * Sin esto, la multi-tenencia era ficticia: sólo las fichas de alumno estaban
+   * acotadas, así que una cuenta recién registrada y sin equipo veía las
+   * sesiones y las rutinas de otro. Medido en el navegador: «5 sesiones esta
+   * semana» y tres rutinas, en un usuario que no pertenecía a ningún sitio.
+   */
+  crewId: string
   /** Para qué es la sesión. No repite el nombre del alumno: eso se resuelve. */
   title: string
   /**

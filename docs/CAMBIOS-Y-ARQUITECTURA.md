@@ -478,3 +478,144 @@ cuanto la primera del mes pasó a ser una ya completada.
 
 Regla que sale de ahí: una prueba de comportamiento no debe afirmar un número
 absoluto de datos de ejemplo.
+
+---
+
+## 9. El crew: la multi-tenencia, ejecutada (1 sep 2026)
+
+Lo que la §5 dejaba analizado y sin escribir. El nombre cambia —`Crew` en vez de
+`clubs`— y el modelo es el mismo.
+
+### 9.1 El entrenador no es el crew
+
+Es la decisión que más pesa, y estaba ya tomada en §5: en cuanto un gimnasio
+tenga un segundo entrenador, la identidad «entrenador = club» se rompe, y para
+entonces está grabada en cada clave foránea. Por eso `Crew` tiene `ownerId` y
+existe `CrewTrainer` aparte, aunque hoy sólo se pueble el primero.
+
+**La denominación la elige quien lo crea** —«equipo», «tribu», «box»—. Es sólo la
+etiqueta visible: el tipo se llama `Crew` en código y no cambia, porque el nombre
+de una entidad no puede depender del gusto de un usuario.
+
+### 9.2 La ficha ES la pertenencia
+
+No hay tabla de miembros para los alumnos. `Student` gana `crewId` y
+`membershipStatus`, y ya era la relación entre un entrenador y un alumno:
+desdoblarla obligaría a mantener dos filas sincronizadas para decir lo mismo.
+
+Un alumno en dos crews tiene **dos fichas**. Suena a duplicación y no lo es: la
+ficha es la libreta privada de un entrenador —edad, grasa, objetivos—, y las
+notas de su entrenador de crossfit no son asunto de su club de running. La
+separación sale gratis, por construcción. Lo que comparten es `profileId`.
+
+### 9.3 El ámbito vive en el adaptador
+
+Es lo más invasivo de todo esto, y no es el QR.
+
+La alternativa era añadir `crewId` a `findAll`, a `create`, a `findByDate` y a
+los cuarenta sitios que los llaman; el identificador acabaría viajando por los
+hooks, las páginas y los componentes, y la multi-tenencia —que es un detalle de
+dónde viven los datos— se habría repartido por toda la aplicación.
+
+Con `CrewScope` inyectado en la raíz de composición, `students.findAll()` sigue
+significando «los alumnos» y lo que cambia es quién los sirve. **Es el sustituto
+de RLS**: con backend, el crew viaja en la sesión y filtra Postgres.
+
+El ámbito dice además **con qué papel** se mira (`asStudent()`). Pertenecer a un
+crew no es ver el crew entero: sin eso, un alumno aceptado abría la agenda y veía
+las sesiones de todos sus compañeros —con quién entrena el entrenador, a qué hora
+y dónde—.
+
+**Los ejercicios NO se acotan.** El catálogo es vocabulario, no contenido: «press
+de banca» es el mismo en todos los gimnasios. Es la misma distinción que ya
+gobernaba las rutinas —se referencia el vocabulario, se copia la decisión—.
+
+### 9.4 El QR codifica una URL, no un token
+
+La decisión que más simplifica el flujo. Con `…/crew/unirse?codigo=XXXX`, **la
+cámara nativa del móvil ya sirve**: apuntas y se abre la aplicación en la pantalla
+correcta, con el código puesto. Un lector propio significaría pedir permiso de
+cámara, mantener un decodificador y fallar en los navegadores que no lo permiten,
+todo para llegar al mismo sitio.
+
+Debajo, **siempre el código escrito**, en dos grupos de cuatro y con un alfabeto
+sin `0`/`O` ni `1`/`I`/`L`. Es la salida cuando la cámara no colabora, y evita que
+el alta dependa de que un hardware ajeno funcione.
+
+El token es **opaco y rotable**, como pedía §5: el `id` no se puede cambiar y un
+token sí, así que un QR fotografiado se invalida en el acto.
+
+**Con aprobación por defecto.** Un QR es un secreto que se enseña en público:
+quien lo vea en la pared del gimnasio puede escanearlo. Escanear PIDE entrar, no
+entra. Y una solicitud pendiente **no** aparece en las pertenencias, que es una
+decisión de seguridad y no de presentación: entrar en esa lista es lo que fija el
+ámbito de datos.
+
+Un código que no vale se rechaza **sin decir por qué**: distinguir «nunca existió»
+de «existió y se rotó» le confirmaría a quien prueba códigos que acertó alguna
+vez.
+
+### 9.5 El rol es por crew, y por fin gobierna
+
+Alguien puede entrenar a su equipo y ser alumno del club de running de al lado.
+Un rol global obligaría a elegir. `useViewer` resuelve las pertenencias una vez,
+en el layout, y de ahí sale qué navegación se pinta y a dónde lleva la raíz:
+
+| Quién llega | Dónde aterriza |
+|---|---|
+| Con equipo, entrenando | `/dashboard` |
+| Con equipo, como alumno | `/progress` |
+| Sin equipo, con ficha de entrenador | `/crew/nuevo` |
+| Sin equipo, sin ficha | `/progress`, con la invitación a unirse |
+
+El nombre del entrenador de la barra lateral pasa a ser **el conmutador de
+crew**: ese hueco dice «dónde estoy», y desde que los datos pertenecen a un crew,
+dónde estoy es en qué crew. Quién soy queda en el menú de usuario. En móvil el
+conmutador va en la barra superior, porque la lateral no se abre.
+
+### 9.6 El vacío como demostración
+
+Decisión de producto: un alumno sin equipo **navega y ve Progreso vacío**, no una
+pantalla única que le corte el paso. Eso obliga a que el vacío sea aspiracional:
+se pinta el registro entero —nivel, racha, los cinco hitos, los ocho logros— a
+cero.
+
+La primera versión tenía un `EMPTY_PROFILE` escrito a mano con `milestones: []`,
+y la pantalla salía con «Tu camino» sin peldaños y «0 / 0 logros», que se lee como
+que algo no ha cargado. Ahora el perfil vacío **se calcula con las mismas reglas
+sobre un historial vacío**: un solo camino, y el vacío enseña lo que va a tener.
+
+### 9.7 Tres fallos que sólo aparecieron ejecutando
+
+**Sólo las fichas estaban acotadas.** Medido en el navegador: una cuenta recién
+registrada y sin equipo abría el panel y veía «5 sesiones esta semana» y tres
+rutinas, que eran de otro. Faltaba acotar sesiones, rutinas, planes y
+asignaciones.
+
+**El enlace por correo dejó de funcionar al acotar.** `findByEmail` pasó a mirar
+sólo el crew activo, y durante el alta no hay ninguno: no encontraba nunca nada, y
+todo el que se registraba acababa siendo entrenador, alumnos invitados incluidos.
+Lo cazó una prueba. La operación correcta es `claimByEmail`, sin acotar y
+devolviendo **varias**: dos entrenadores pueden haber dado de alta a la misma
+persona.
+
+**Una solicitud contaba como alumno.** El panel decía «5 estudiantes» en cuanto
+alguien escaneaba el QR, y a un desconocido pendiente de aceptar se le podía
+agendar una sesión. `findAll` devuelve alumnos y `findRequests` solicitudes: son
+la bandeja de entrada del entrenador, no su padrón.
+
+### 9.8 Lo que falta
+
+La página del equipo tiene miembros, solicitudes y QR. **Faltan el muro de
+anuncios con «me gusta», el ranking y los eventos**, en ese orden.
+
+Dos criterios ya decididos para cuando lleguen:
+
+- **El ranking, por periodo.** Uno por experiencia total se congela: quien lleva
+  dos años gana siempre y el que entra hoy no puede alcanzarle, así que a las tres
+  semanas nadie lo mira. Y desactivable por crew —`rankingEnabled` ya existe—,
+  porque en un grupo de rehabilitación comparar el esfuerzo hace daño. Nunca sobre
+  métricas corporales.
+- **Los entrenamientos grupales NO son una entidad nueva.** `Session` ya tiene
+  `kind: 'group'` y `studentId: null`. Reutilizarla les da calendario, ejecución y
+  experiencia gratis. Los eventos —una carrera, una quedada— sí son otra cosa.

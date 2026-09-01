@@ -1,4 +1,5 @@
 import type { Student } from '@/shared/domain/entities/student'
+import { DEV_CREW_ID } from './crewsSeed'
 
 /**
  * Estudiantes simulados.
@@ -17,12 +18,18 @@ import type { Student } from '@/shared/domain/entities/student'
  *
  * Ninguno tiene cuenta todavia -`profileId` a `null`-, que es el caso corriente:
  * el entrenador da de alta a alguien mucho antes de que esa persona se registre.
+ * Por eso estan `invited` y no `active`: la ficha existe y espera a su dueño.
+ *
+ * Los cuatro pertenecen al crew de ejemplo. Sin `crewId` no los veria nadie: el
+ * filtrado por tenant deja fuera lo que no es de ningun crew.
  *
  * TODO: sustituir por el adaptador real cuando exista el esquema.
  */
 export const studentsSeed: Student[] = [
   {
     id: 'student-1',
+    crewId: DEV_CREW_ID,
+    membershipStatus: 'invited',
     firstName: 'Juan',
     lastName: 'Pérez',
     email: 'jperez@gmail.com',
@@ -34,6 +41,8 @@ export const studentsSeed: Student[] = [
   },
   {
     id: 'student-2',
+    crewId: DEV_CREW_ID,
+    membershipStatus: 'invited',
     firstName: 'María',
     lastName: 'Gómez',
     email: 'mgomez@gmail.com',
@@ -45,6 +54,8 @@ export const studentsSeed: Student[] = [
   },
   {
     id: 'student-3',
+    crewId: DEV_CREW_ID,
+    membershipStatus: 'invited',
     firstName: 'Carlos',
     lastName: 'López',
     email: 'clopez@gmail.com',
@@ -56,6 +67,8 @@ export const studentsSeed: Student[] = [
   },
   {
     id: 'student-4',
+    crewId: DEV_CREW_ID,
+    membershipStatus: 'invited',
     firstName: 'Ana',
     lastName: 'Torres',
     email: 'atorrez@gmail.com',

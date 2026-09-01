@@ -10,9 +10,11 @@ import { calendarRoutes } from '@/domains/calendar/infrastructure/routes'
 import { reportsRoutes } from '@/domains/reports/infrastructure/routes'
 import { sessionRoutes } from '@/domains/session/infrastructure/routes'
 import { onboardingRoutes } from '@/domains/onboarding/infrastructure/routes'
+import { crewRoutes } from '@/domains/crew/infrastructure/routes'
 
 const RootLayout = lazy(() => import('@/app/layouts/RootLayout'))
 const NotFound = lazy(() => import('@/shared/pages/NotFound'))
+const HomeRedirect = lazy(() => import('@/app/routes/HomeRedirect'))
 
 const domainRoutes = [
   ...dashboardRoutes,
@@ -23,6 +25,7 @@ const domainRoutes = [
   ...reportsRoutes,
   ...sessionRoutes,
   ...onboardingRoutes,
+  ...crewRoutes,
   ...authRoutes,
 ]
 
@@ -41,8 +44,17 @@ export const router = createBrowserRouter([
     ),
     children: [
       {
+        /*
+         * La raiz depende del papel: el entrenador va al panel y el alumno a su
+         * progreso. Era un `Navigate` fijo a `/dashboard`, que es la pantalla de
+         * gestion, asi que un alumno aterrizaba en la aplicacion de otro.
+         */
         index: true,
-        element: <Navigate to="/dashboard" replace />,
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <HomeRedirect />
+          </Suspense>
+        ),
       },
       ...domainRoutes,
       {

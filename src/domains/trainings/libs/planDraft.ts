@@ -1,3 +1,4 @@
+import type { NewPlan } from '@/shared/domain/ports/PlanRepository'
 import type { TrainingPlan } from '../types/training.types'
 import type { PlanDraft, PlanDraftErrors, PlanWeekDraft } from '../types/planDraft.types'
 
@@ -103,7 +104,7 @@ function parseWholeNumber(value: string): number {
  * se borra una semana intermedia — que es exactamente la clase de dato que
  * acaba mintiendo.
  */
-export function toPlanData(draft: PlanDraft): Omit<TrainingPlan, 'id'> {
+export function toPlanData(draft: PlanDraft): NewPlan {
   return {
     title: draft.title.trim(),
     description: draft.description.trim(),
@@ -122,9 +123,14 @@ export function toPlanData(draft: PlanDraft): Omit<TrainingPlan, 'id'> {
   }
 }
 
-/** Plan de mentira para el resumen en vivo, igual que en la rutina. */
+/**
+ * Plan de mentira para el resumen en vivo, igual que en la rutina.
+ *
+ * Presta identificador y crew: los dos son de pega y no salen de aqui, porque
+ * lo unico que hace con esto el resumen es contar dias y estimar minutos.
+ */
 export function toPlanPreview(draft: PlanDraft): TrainingPlan {
-  return { id: 'preview', ...toPlanData(draft) }
+  return { id: 'preview', crewId: 'preview', ...toPlanData(draft) }
 }
 
 /**

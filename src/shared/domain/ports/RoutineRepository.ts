@@ -16,8 +16,8 @@ export interface RoutineRepository {
   findAll(): Promise<Routine[]>
   findById(routineId: string): Promise<Routine | null>
   /** Devuelve la rutina ya identificada: el `id` lo pone el almacén. */
-  create(data: Omit<Routine, 'id'>): Promise<Routine>
-  update(routineId: string, data: Omit<Routine, 'id'>): Promise<void>
+  create(data: NewRoutine): Promise<Routine>
+  update(routineId: string, data: NewRoutine): Promise<void>
   remove(routineId: string): Promise<void>
 
   /**
@@ -34,3 +34,10 @@ export interface RoutineRepository {
    */
   onChange(listener: () => void): () => void
 }
+
+/**
+ * Los datos de un alta. Sin `crewId`: lo pone el adaptador desde el ámbito
+ * activo, para que ningún formulario tenga que saber de multi-tenencia ni pueda
+ * equivocarse de crew. Ver `CrewScope`.
+ */
+export type NewRoutine = Omit<Routine, 'id' | 'crewId'>

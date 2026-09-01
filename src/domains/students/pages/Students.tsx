@@ -7,6 +7,7 @@ import { StudentFormDialog } from '../components/StudentFormDialog'
 import { useStudents } from '../hooks/useStudents'
 import { useStudentEditor } from '../hooks/useStudentEditor'
 import { Button } from '@/shared/ui/button'
+import type { NewStudent } from '@/shared/domain/ports/StudentRepository'
 import type { Student } from '@/shared/domain/entities/student'
 
 export default function Students() {
@@ -26,7 +27,7 @@ export default function Students() {
     setIsFormOpen(true)
   }
 
-  const handleSave = async (data: Omit<Student, 'id'>) => {
+  const handleSave = async (data: NewStudent) => {
     if (editing === null) {
       await createStudent(data)
       return

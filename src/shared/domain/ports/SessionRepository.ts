@@ -39,8 +39,8 @@ export interface SessionRepository {
    * viajes para una sola pregunta.
    */
   findBetween(from: string, to: string): Promise<Session[]>
-  create(data: Omit<Session, 'id'>): Promise<Session>
-  update(sessionId: string, data: Omit<Session, 'id'>): Promise<void>
+  create(data: NewSession): Promise<Session>
+  update(sessionId: string, data: NewSession): Promise<void>
   /** Cambia sólo el estado. Es la operación que más se hace sobre una sesión. */
   updateStatus(sessionId: string, status: SessionStatus): Promise<void>
   /**
@@ -56,3 +56,10 @@ export interface SessionRepository {
   /** Avisa de que la colección ha cambiado. Devuelve la función de baja. */
   onChange(listener: () => void): () => void
 }
+
+/**
+ * Los datos de un alta. Sin `crewId`: lo pone el adaptador desde el ámbito
+ * activo, para que ningún formulario tenga que saber de multi-tenencia ni pueda
+ * equivocarse de crew. Ver `CrewScope`.
+ */
+export type NewSession = Omit<Session, 'id' | 'crewId'>

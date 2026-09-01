@@ -1,4 +1,5 @@
 import type { Assignment } from '@/shared/domain/entities/assignment'
+import { DEV_CREW_ID } from './crewsSeed'
 
 /**
  * Asignaciones simuladas.
@@ -43,6 +44,7 @@ const THREE_DAYS_AGO = toDateKey(addDays(today, -3))
 export const assignmentsSeed: Assignment[] = [
   {
     id: 'assignment-1',
+    crewId: DEV_CREW_ID,
     studentId: 'student-2',
     kind: 'plan',
     planId: 'plan-1',
@@ -52,6 +54,7 @@ export const assignmentsSeed: Assignment[] = [
   },
   {
     id: 'assignment-2',
+    crewId: DEV_CREW_ID,
     studentId: 'student-2',
     kind: 'routine',
     routineId: 'routine-2',
@@ -60,6 +63,7 @@ export const assignmentsSeed: Assignment[] = [
   },
   {
     id: 'assignment-3',
+    crewId: DEV_CREW_ID,
     studentId: 'student-3',
     kind: 'plan',
     planId: 'plan-1',

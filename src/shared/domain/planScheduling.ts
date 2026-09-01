@@ -1,4 +1,5 @@
 import type { Routine } from './entities/routine'
+import type { NewSession } from './ports/SessionRepository'
 import type { Session } from './entities/session'
 import type { TrainingPlan } from './entities/plan'
 import { estimateRoutineMinutes } from './routineMetrics'
@@ -24,9 +25,6 @@ import { findOverlappingSessions } from './sessionScheduling'
  * futuras— y el horario COPIADO —reorganizar el plan no mueve retroactivamente
  * lo ya agendado—.
  */
-
-/** Una sesión aún sin identificador, tal y como la crea el puerto. */
-export type NewSession = Omit<Session, 'id'>
 
 /** Hora de comienzo para cada día de la semana, `1` = lunes … `7` = domingo. */
 export type TimesByWeekday = Record<number, string>
@@ -160,11 +158,13 @@ export function planSessions(
 }
 
 /**
- * Las generadas todavía no tienen identificador, y `findOverlappingSessions`
- * pide `Session`. Se les presta uno que no sale de esta función.
+ * Las generadas todavía no tienen identificador ni crew, y
+ * `findOverlappingSessions` pide una `Session` entera. Se les prestan los dos:
+ * ninguno sale de esta función, y la comprobación de solapes no los mira —el
+ * choque se decide por fecha, hora y duración—.
  */
 function withTemporaryId(session: NewSession): Session {
-  return { id: 'planificada', ...session }
+  return { id: 'planificada', crewId: 'planificada', ...session }
 }
 
 /** Cuántas de las planificadas chocan con algo. */

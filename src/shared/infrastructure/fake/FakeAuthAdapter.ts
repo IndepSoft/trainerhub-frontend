@@ -5,6 +5,7 @@ import type {
   SignUpCredentials,
 } from '@/shared/domain/entities/auth'
 import { AppError, AppErrorCode } from '@/shared/domain/errors'
+import { profileIdFromEmail } from './devIdentity'
 
 /**
  * Implementación de AuthPort en memoria, para desarrollo local sin depender de
@@ -72,7 +73,7 @@ export class FakeAuthAdapter implements AuthPort {
     }
 
     const user: AuthUser = {
-      id: this.buildDeterministicIdentifier(credentials.email),
+      id: profileIdFromEmail(credentials.email),
       email: credentials.email,
     }
 
@@ -102,7 +103,7 @@ export class FakeAuthAdapter implements AuthPort {
     }
 
     const user: AuthUser = {
-      id: this.buildDeterministicIdentifier(credentials.email),
+      id: profileIdFromEmail(credentials.email),
       email: credentials.email,
     }
 
@@ -118,7 +119,7 @@ export class FakeAuthAdapter implements AuthPort {
 
   async signInWithGoogle(): Promise<void> {
     const user: AuthUser = {
-      id: this.buildDeterministicIdentifier('google@test.local'),
+      id: profileIdFromEmail('google@test.local'),
       email: 'google@test.local',
     }
 
@@ -147,22 +148,6 @@ export class FakeAuthAdapter implements AuthPort {
     for (const listener of this.listeners) {
       listener(user)
     }
-  }
-
-  /**
-   * Deriva un identificador estable a partir del email, para que el mismo
-   * correo produzca siempre el mismo `id` entre recargas y sesiones. Con un
-   * valor aleatorio, cualquier dato asociado al usuario se perdería en cada
-   * arranque.
-   */
-  private buildDeterministicIdentifier(emailAddress: string): string {
-    let hash = 0
-    for (let index = 0; index < emailAddress.length; index += 1) {
-      hash = (hash << 5) - hash + emailAddress.charCodeAt(index)
-      hash |= 0
-    }
-    const suffix = Math.abs(hash).toString(16).padStart(12, '0')
-    return `00000000-0000-4000-8000-${suffix.slice(0, 12)}`
   }
 
   private persistSession(user: AuthUser): void {

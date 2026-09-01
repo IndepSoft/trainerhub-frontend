@@ -1,3 +1,4 @@
+import type { CrewRole } from '@/shared/domain/entities/crew'
 import {
   type LucideIcon,
   Home,
@@ -20,12 +21,26 @@ export interface NavigationItem {
   guestOnly?: boolean // para GuestRoute
   showInSidebar?: boolean
   showInMobile?: boolean
+  /**
+   * Quién ve este destino.
+   *
+   * Ausente significa «todos los que han entrado», que es lo correcto para
+   * Calendario y Progreso: las dos cosas las mira el entrenador y las mira el
+   * alumno, aunque vean datos distintos.
+   *
+   * Los que llevan `['trainer']` son de gestión —el padrón de alumnos, el
+   * catálogo de entrenamientos, los informes— y un alumno no tiene nada que
+   * hacer ahí. Esconderlos no es la seguridad: la seguridad es RLS en el
+   * servidor. Esto es no ofrecer puertas que no abren.
+   */
+  roles?: CrewRole[]
   children?: NavigationItem[]
 }
 
 export const navigationConfig: NavigationItem[] = [
   {
     id: 'dashboard',
+    roles: ['trainer'],
     label: 'Dashboard',
     href: '/dashboard',
     icon: Home,
@@ -35,6 +50,7 @@ export const navigationConfig: NavigationItem[] = [
   },
   {
     id: 'students',
+    roles: ['trainer'],
     label: 'Estudiantes',
     href: '/students',
     icon: Users,
@@ -44,6 +60,7 @@ export const navigationConfig: NavigationItem[] = [
   },
   {
     id: 'trainings',
+    roles: ['trainer'],
     label: 'Entrenamientos',
     href: '/trainings',
     icon: Dumbbell,
@@ -71,6 +88,7 @@ export const navigationConfig: NavigationItem[] = [
   },
   {
     id: 'reports',
+    roles: ['trainer'],
     label: 'Reportes',
     href: '/reports',
     icon: BarChart3,
@@ -110,13 +128,31 @@ export const navigationConfig: NavigationItem[] = [
   },
 ]
 
+/**
+ * Si un destino le corresponde a este papel.
+ *
+ * Sin crew -`role` a `null`- se ofrece SOLO lo que no pide rol: un alumno recien
+ * registrado navega Calendario y Progreso, los ve vacios, y todo le empuja a
+ * unirse a un equipo. Es deliberado: enseñarle lo que va a tener explica el
+ * producto mucho mejor que una pantalla unica que le corta el paso.
+ */
+function matchesRole(item: NavigationItem, role: CrewRole | null): boolean {
+  if (item.roles === undefined) return true
+  if (role === null) return false
+  return item.roles.includes(role)
+}
+
 // Helpers para filtrar rutas
-export const getSidebarRoutes = () =>
-  navigationConfig.filter((item) => item.showInSidebar && item.requiresAuth)
+export const getSidebarRoutes = (role: CrewRole | null) =>
+  navigationConfig.filter(
+    (item) => item.showInSidebar && item.requiresAuth && matchesRole(item, role)
+  )
 
 /** Destinos de la barra inferior en movil. Maximo cinco. */
-export const getMobileRoutes = () =>
-  navigationConfig.filter((item) => item.showInMobile && item.requiresAuth)
+export const getMobileRoutes = (role: CrewRole | null) =>
+  navigationConfig.filter(
+    (item) => item.showInMobile && item.requiresAuth && matchesRole(item, role)
+  )
 
 export const getGuestRoutes = () =>
   navigationConfig.filter((item) => item.guestOnly)

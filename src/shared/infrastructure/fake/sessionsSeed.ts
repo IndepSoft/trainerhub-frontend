@@ -1,5 +1,6 @@
 import type { Session } from '@/shared/domain/entities/session'
 import { toLocalDateKey } from '@/shared/lib/dateKey'
+import { DEV_CREW_ID } from './crewsSeed'
 
 /**
  * Sesiones simuladas de la agenda.
@@ -59,6 +60,7 @@ const trainedDaysAgo: { days: number; sets: number; total: number; minutes: numb
 
 const completedHistory: Session[] = trainedDaysAgo.map(({ days, sets, total, minutes }) => ({
   id: `session-history-${days}`,
+  crewId: DEV_CREW_ID,
   title: 'Entrenamiento Personal',
   studentId: 'student-1',
   kind: 'individual',
@@ -84,6 +86,7 @@ export const sessionsSeed: Session[] = [
   ...completedHistory,
   {
     id: 'session-1',
+    crewId: DEV_CREW_ID,
     title: 'Entrenamiento Personal',
     studentId: 'student-2',
     kind: 'individual',
@@ -100,6 +103,7 @@ export const sessionsSeed: Session[] = [
   },
   {
     id: 'session-2',
+    crewId: DEV_CREW_ID,
     title: 'Evaluación Inicial',
     studentId: 'student-3',
     kind: 'individual',
@@ -116,6 +120,7 @@ export const sessionsSeed: Session[] = [
   },
   {
     id: 'session-3',
+    crewId: DEV_CREW_ID,
     title: 'Clase Grupal',
     studentId: null,
     kind: 'group',
@@ -132,6 +137,7 @@ export const sessionsSeed: Session[] = [
   },
   {
     id: 'session-4',
+    crewId: DEV_CREW_ID,
     title: 'Carrera continua',
     studentId: 'student-4',
     kind: 'individual',
@@ -150,6 +156,7 @@ export const sessionsSeed: Session[] = [
   },
   {
     id: 'session-5',
+    crewId: DEV_CREW_ID,
     title: 'Entrenamiento Personal',
     studentId: 'student-1',
     kind: 'individual',

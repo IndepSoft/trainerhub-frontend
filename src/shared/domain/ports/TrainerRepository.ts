@@ -19,6 +19,16 @@ export interface TrainerRepository {
    * encontrarse al entrar.
    */
   create(data: NewTrainer): Promise<Trainer>
+
+  /**
+   * Avisa de que la colección ha cambiado. Devuelve la función de baja.
+   *
+   * Hacía falta desde que el rol gobierna la navegación: al registrarse, la
+   * ficha de entrenador nace DESPUÉS de que `useViewer` haya resuelto quién
+   * entra, así que sin este aviso el recién registrado se quedaba sin rol hasta
+   * recargar —y aterrizaba en la pantalla del alumno—. Lo cazó una prueba.
+   */
+  onChange(listener: () => void): () => void
 }
 
 /**

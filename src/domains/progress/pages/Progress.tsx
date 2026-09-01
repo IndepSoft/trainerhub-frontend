@@ -4,13 +4,14 @@ import { GamificationHeader } from '../components/GamificationHeader'
 import { MilestonePath } from '../components/MilestonePath'
 import { AchievementSystem } from '../components/AchievementSystem'
 import { StudentPicker } from '../components/StudentPicker'
+import { JoinCrewPrompt } from '../components/JoinCrewPrompt'
 import { useGamificationProfile } from '../hooks/useGamificationProfile'
 import { useProgressStudent } from '../hooks/useProgressStudent'
 import { useProgressOverview } from '../hooks/useProgressOverview'
 import { getShortName } from '@/shared/lib/personName'
 
 export default function Progress() {
-  const { students, student, loading: loadingStudents, select } = useProgressStudent()
+  const { students, student, isOwnProgress, loading: loadingStudents, select } = useProgressStudent()
   const { profile, achievements, completedCount, levelCompletion, experienceToNextLevel } =
     useGamificationProfile(student?.id)
   const { overview } = useProgressOverview(achievements, completedCount)
@@ -26,17 +27,26 @@ export default function Progress() {
       <PageHeader className="pb-4">
         <PageHeader.Content>
           <div className="min-w-0">
+            {/* De quien es lo que se ve. Antes no se decia, y la pantalla
+                enseñaba una racha que no era de nadie. Al alumno no se le dice
+                «progreso de Lucia»: lo suyo es «tu evolucion». */}
             <PageHeader.Eyebrow>
-              {student === null ? 'Tu equipo' : `Progreso de ${getShortName(student.firstName, student.lastName)}`}
+              {isOwnProgress
+                ? 'Tu evolución'
+                : student === null
+                  ? 'Tu equipo'
+                  : `Progreso de ${getShortName(student.firstName, student.lastName)}`}
             </PageHeader.Eyebrow>
             <PageHeader.Title>Progreso</PageHeader.Title>
           </div>
 
-          {/* De quien es lo que se ve. Antes no se decia, y la pantalla
-              enseñaba una racha que no era de nadie. */}
-          <PageHeader.Actions>
-            <StudentPicker students={students} selectedId={student?.id} onSelect={select} />
-          </PageHeader.Actions>
+          {/* El selector es solo del entrenador: un alumno se mira a si mismo, y
+              ofrecerle a sus compañeros seria enseñarle datos que no son suyos. */}
+          {!isOwnProgress && (
+            <PageHeader.Actions>
+              <StudentPicker students={students} selectedId={student?.id} onSelect={select} />
+            </PageHeader.Actions>
+          )}
         </PageHeader.Content>
       </PageHeader>
 
@@ -46,7 +56,15 @@ export default function Progress() {
           admite uno por documento- ademas de confundir a los lectores de
           pantalla. */}
       <div className="flex-1 overflow-auto">
-        {student === null ? (
+        {/*
+          SIN EQUIPO SE PINTA TODO, A CERO.
+          Es la decision de producto: el alumno navega, ve el registro entero
+          -nivel, racha, sendero- vacio, y todo le empuja a unirse. Cortarle el
+          paso con una pantalla unica seria mas simple y explicaria menos.
+        */}
+        {isOwnProgress && student === null && <JoinCrewPrompt />}
+
+        {student === null && !isOwnProgress ? (
           <p className="px-5 py-16 text-center text-sm text-ink/45">
             {loadingStudents
               ? 'Cargando…'

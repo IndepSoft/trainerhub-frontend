@@ -1,11 +1,12 @@
 import { useCallback } from 'react'
 import { container } from '@/app/container'
+import type { NewStudent } from '@/shared/domain/ports/StudentRepository'
 import type { Student } from '@/shared/domain/entities/student'
 import type { DeletionResult } from '@/shared/domain/deletion'
 
 interface UseStudentEditorResult {
-  createStudent: (data: Omit<Student, 'id'>) => Promise<Student>
-  updateStudent: (studentId: string, data: Omit<Student, 'id'>) => Promise<void>
+  createStudent: (data: NewStudent) => Promise<Student>
+  updateStudent: (studentId: string, data: NewStudent) => Promise<void>
   /** Por qué NO se puede borrar, o `undefined` si se puede. */
   deletionBlocker: (studentId: string) => Promise<string | undefined>
   deleteStudent: (studentId: string) => Promise<DeletionResult>
@@ -26,12 +27,12 @@ interface UseStudentEditorResult {
  */
 export function useStudentEditor(): UseStudentEditorResult {
   const createStudent = useCallback(
-    (data: Omit<Student, 'id'>) => container.students.create(data),
+    (data: NewStudent) => container.students.create(data),
     []
   )
 
   const updateStudent = useCallback(
-    (studentId: string, data: Omit<Student, 'id'>) => container.students.update(studentId, data),
+    (studentId: string, data: NewStudent) => container.students.update(studentId, data),
     []
   )
 

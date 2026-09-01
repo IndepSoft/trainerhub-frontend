@@ -16,6 +16,9 @@ import type { AssignmentRepository } from '@/shared/domain/ports/AssignmentRepos
 import { FakeAssignmentRepository } from '@/shared/infrastructure/fake/FakeAssignmentRepository'
 import type { ExerciseRepository } from '@/shared/domain/ports/ExerciseRepository'
 import { FakeExerciseRepository } from '@/shared/infrastructure/fake/FakeExerciseRepository'
+import type { CrewRepository } from '@/shared/domain/ports/CrewRepository'
+import { FakeCrewRepository } from '@/shared/infrastructure/fake/FakeCrewRepository'
+import { crewScope } from './crewScope'
 
 /**
  * Raíz de composición.
@@ -29,6 +32,7 @@ import { FakeExerciseRepository } from '@/shared/infrastructure/fake/FakeExercis
  */
 export interface Container {
   auth: AuthPort
+  crews: CrewRepository
   trainers: TrainerRepository
   students: StudentRepository
   routines: RoutineRepository
@@ -73,13 +77,24 @@ function createTrainerRepository(): TrainerRepository {
 
 export const container: Container = {
   auth: createAuthenticationAdapter(),
+  crews: new FakeCrewRepository(),
   trainers: createTrainerRepository(),
-  // TODO: sustituir por los repositorios reales cuando existan las tablas. Son
-  // los unicos adaptadores falsos que siguen activos en produccion.
-  students: new FakeStudentRepository(),
-  routines: new FakeRoutineRepository(),
-  sessions: new FakeSessionRepository(),
-  plans: new FakePlanRepository(),
-  assignments: new FakeAssignmentRepository(),
+  /*
+   * TODO: sustituir por los repositorios reales cuando existan las tablas. Son
+   * los unicos adaptadores falsos que siguen activos en produccion.
+   *
+   * EL AMBITO DEL CREW SE INYECTA AQUI, en la raiz de composicion, que es el
+   * unico sitio que puede saber a la vez quien lo provee y quien lo consume. Los
+   * puertos no lo mencionan y los hooks no lo conocen: `students.findAll()`
+   * sigue significando «los alumnos», y lo que cambia es quien los sirve.
+   *
+   * Con un backend real esto desaparece: el crew activo viaja en la sesion y
+   * filtra Postgres con RLS, no el cliente.
+   */
+  students: new FakeStudentRepository(crewScope),
+  routines: new FakeRoutineRepository(crewScope),
+  sessions: new FakeSessionRepository(crewScope),
+  plans: new FakePlanRepository(crewScope),
+  assignments: new FakeAssignmentRepository(crewScope),
   exercises: new FakeExerciseRepository(),
 }
