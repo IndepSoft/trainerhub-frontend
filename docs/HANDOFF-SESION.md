@@ -373,6 +373,63 @@ todavía si merece `manualChunks`.
 
 ---
 
+## El plan en curso: cerrar el flujo sin huecos
+
+Decidido con el usuario. El orden lo imponen las dependencias, no las ganas.
+
+### Hecho
+
+1. **Ciclo de vida de la sesión.** `completed` existe y el cambio de estado
+   persiste. Antes nacía pendiente y ahí se quedaba.
+2. **La pantalla de ejecución.** Dos modos: fuerza —los bloques de su rutina,
+   avance en series— y cardio, que es la que había. Terminar marca la sesión
+   como completada, y ahí se cierra el bucle.
+3. **El panel dice la verdad.** Indicadores contados, próximas sesiones de la
+   agenda, actividad reciente = sesiones completadas. Fuera el indicador de
+   ingresos y las tendencias: no hay fuente ni histórico.
+
+### En curso
+
+4. **Crear y editar estudiantes.** `StudentRepository` es el ÚNICO puerto sin
+   `create` —todos los demás lo tienen—, y «Añadir estudiante» e «Invitar
+   estudiante» son dos `console.log`. Un entrenador que instale la app no puede
+   meter a nadie.
+5. **`AuthPort.signUp`.** «Crear cuenta» es otro `console.log`. Es además
+   prerrequisito de lo siguiente.
+6. **Roles y acceso de estudiante.** Decidido: Progreso es del ESTUDIANTE, con
+   su propio acceso.
+
+   El rol **no puede vivir en `user_metadata`** —el propio usuario lo cambiaría y
+   se ascendería solo; está razonado en `CAMBIOS-Y-ARQUITECTURA.md` §5—. Se
+   deriva de quién lo conoce: si `trainers.findByProfileId` responde, es
+   entrenador; si responde `students.findByProfileId`, es estudiante. Eso obliga
+   a que `Student` gane `profileId`, y el enlace se hace **por email** al darse
+   de alta: el entrenador crea al alumno con su correo, y quien se registre con
+   ese correo pasa a ser ese alumno.
+7. **Reglas de gamificación.** Decidido: se construyen.
+
+   Hoy no existe ninguna: nivel 7 y 340/500 puntos están escritos a mano, las
+   condiciones de los logros están en PROSA y los desbloqueos llevan fechas de
+   enero de 2024.
+
+   Falta además un dato: la sesión en vivo cuenta las series hechas pero **no las
+   guarda**. Sin eso, lo único premiable es «sesión completada», sin medida del
+   trabajo. Propuesta a validar: la sesión guarda `completedSets` al terminar, y
+   la XP es una serie, un punto —explicable en una frase, y atada a lo que de
+   verdad se hizo—.
+
+### Pendiente después
+
+- Filtros de rutinas y de estudiantes: los controles no filtran nada.
+- `/settings` sigue en el menú lateral sin ruta registrada; `/login` es
+  configuración muerta que nadie pinta.
+- Acciones sin conectar en `StudentCard` —Editar, Duplicar, Eliminar— y «Vista
+  previa» en las rutinas.
+- Reportes: cuatro pestañas vacías.
+- `planAssignmentId` en las sesiones volcadas, y el volcado duplicado.
+
+---
+
 ## Preguntas abiertas para el usuario
 
 0. **Subir los 5 commits de esta sesión.** Están sólo en esta máquina.

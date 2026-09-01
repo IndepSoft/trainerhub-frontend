@@ -1,30 +1,37 @@
 import { cn } from '@/shared/lib/utils'
-import type { Session, SessionStatus } from '../types/dashboard.types'
+import type { Session, SessionStatus } from '@/shared/domain/entities/session'
 
 /**
  * Etiqueta y color de cada estado.
  *
  * El estado es un dato, no una accion, asi que no usa la marca: va a la escala
- * semantica. Si «Programada» usara Cobalt se leeria como un boton primario.
+ * semantica. Si «Pendiente» usara Cobalt se leeria como un boton primario.
+ *
+ * Son los MISMOS cuatro que la agenda, porque ahora es la misma entidad. Antes
+ * el panel tenia su propia escala -`programmed | confirmed | canceled`- que ni
+ * siquiera coincidia con la de las sesiones de verdad.
  */
 const STATUS_BADGE: Record<SessionStatus, { label: string; className: string }> = {
-  programmed: { label: 'Programada', className: 'border-cobalt/30 text-cobalt' },
+  pending: { label: 'Pendiente', className: 'border-warning/40 text-warning' },
   confirmed: { label: 'Confirmada', className: 'border-success/40 text-success' },
-  canceled: { label: 'Cancelada', className: 'border-destructive/40 text-destructive' },
+  completed: { label: 'Completada', className: 'border-cobalt/40 text-cobalt' },
+  cancelled: { label: 'Cancelada', className: 'border-danger/40 text-danger' },
 }
 
 interface SessionItemProps {
   session: Session
+  /** El nombre del alumno, ya resuelto por quien compone. */
+  studentName: string
 }
 
-export function SessionItem({ session }: SessionItemProps) {
+export function SessionItem({ session, studentName }: SessionItemProps) {
   const badge = STATUS_BADGE[session.status]
 
   return (
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0">
-        <p className="truncate font-semibold text-ink">{session.customer}</p>
-        <p className="truncate text-sm text-ink/50">{session.activity}</p>
+        <p className="truncate font-semibold text-ink">{studentName}</p>
+        <p className="truncate text-sm text-ink/50">{session.title}</p>
       </div>
 
       {/* Insignia de contorno, no de relleno: en el registro sobrio un bloque

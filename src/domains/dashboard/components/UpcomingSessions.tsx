@@ -2,10 +2,11 @@ import { Link } from 'react-router-dom'
 import { Timeline, TimelineEntry } from '@/shared/components/Timeline'
 import { SectionHeading } from './SectionHeading'
 import { SessionItem } from './SessionItem'
-import type { Session } from '../types/dashboard.types'
+import { formatStamp } from '../libs/dashboardTime'
+import type { UpcomingSession } from '../types/dashboard.types'
 
 interface UpcomingSessionsProps {
-  sessions: Session[]
+  sessions: UpcomingSession[]
 }
 
 /**
@@ -18,12 +19,18 @@ export function UpcomingSessions({ sessions }: UpcomingSessionsProps) {
     <section className="flex-1">
       <SectionHeading count={sessions.length}>Próximas sesiones</SectionHeading>
 
+      {sessions.length === 0 && (
+        <p className="pt-5 text-sm text-ink/40">
+          No hay nada agendado a partir de hoy.
+        </p>
+      )}
+
       <div className="pt-5">
         <Timeline>
-          {sessions.map((session, index) => (
+          {sessions.map(({ session, studentName }, index) => (
             <TimelineEntry
               key={session.id}
-              stamp={session.scheduledDate}
+              stamp={`${formatStamp(session.date)} · ${session.time}`}
               state={index === 0 ? 'active' : 'pending'}
               isLast={index === sessions.length - 1}
             >
@@ -35,10 +42,10 @@ export function UpcomingSessions({ sessions }: UpcomingSessionsProps) {
                   to={`/session/${session.id}`}
                   className="block rounded-sm outline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cobalt-lift"
                 >
-                  <SessionItem session={session} />
+                  <SessionItem session={session} studentName={studentName} />
                 </Link>
               ) : (
-                <SessionItem session={session} />
+                <SessionItem session={session} studentName={studentName} />
               )}
             </TimelineEntry>
           ))}

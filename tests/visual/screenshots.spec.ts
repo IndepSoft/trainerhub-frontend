@@ -2507,3 +2507,93 @@ test.describe('sesion en vivo', () => {
     await page.screenshot({ path: 'tests/visual/salida/sesion-fuerza-mobile.png' })
   })
 })
+
+/**
+ * El panel, con datos reales.
+ *
+ * Venia entero de un fichero de ejemplo: ocho sesiones esta semana, doce rutinas
+ * creadas y una lista de proximas sesiones que no existian en ninguna agenda. El
+ * entrenador hacia el trabajo y la pantalla de resumen lo ignoraba.
+ */
+test.describe('panel', () => {
+  test('los indicadores cuentan lo que hay, no lo que se escribio', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.waitForTimeout(1500)
+
+    const indicadores = page.locator('main .grid > div')
+
+    // Cuatro alumnos y tres rutinas en la semilla. Si cambia la semilla, cambia
+    // el panel: eso es justo lo que antes no pasaba.
+    await expect(indicadores.filter({ hasText: 'Estudiantes' })).toContainText('4')
+    await expect(indicadores.filter({ hasText: 'Rutinas Creadas' })).toContainText('3')
+
+    /*
+     * Y NO hay indicador de ingresos. Se quito: no existe ninguna fuente de
+     * pagos, y una cifra inventada en la primera pantalla es peor que un hueco.
+     */
+    await expect(page.getByText('Ingresos del Mes')).toHaveCount(0)
+  })
+
+  test('las proximas sesiones son las de la agenda, con sus alumnos', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.waitForTimeout(1500)
+
+    const proximas = page.locator('section').filter({ hasText: 'Próximas sesiones' })
+
+    // Nombres resueltos desde `studentId`, no escritos en el dato de la sesion.
+    await expect(proximas.getByText('María Gómez')).toBeVisible()
+    await expect(proximas.getByText('Carlos López')).toBeVisible()
+  })
+
+  test('completar una sesion la mueve de proximas a actividad reciente', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.waitForTimeout(1500)
+
+    // Al empezar no hay nada completado, y el panel lo DICE en vez de dejar un
+    // hueco mudo.
+    await expect(page.getByText('Aún no hay sesiones completadas')).toBeVisible()
+
+    // Se completa una desde la agenda.
+    await page.getByRole('link', { name: 'Calendario' }).first().click()
+    await page.waitForTimeout(1200)
+    await page.getByRole('button', { name: /minutos/ }).first().click()
+    const dialogo = page.getByRole('dialog')
+    await elegirDelDesplegable(page, dialogo.getByRole('combobox').first(), 'Completada')
+    await dialogo.getByRole('button', { name: 'Guardar' }).click()
+
+    /*
+     * Y el panel se entera sin recargar: esta suscrito al mismo puerto. Se
+     * navega por la interfaz porque `page.goto` devolveria la sesion a su
+     * estado de semilla.
+     */
+    await page.getByRole('link', { name: 'Dashboard' }).first().click()
+    await page.waitForTimeout(1200)
+
+    const actividad = page.locator('section').filter({ hasText: 'Actividad reciente' })
+    await expect(actividad.getByText('Hoy')).toBeVisible()
+    await expect(page.getByText('Aún no hay sesiones completadas')).toHaveCount(0)
+  })
+
+  test('el panel cumple las reglas de 375 px', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.waitForTimeout(1500)
+
+    const medidas = await page.evaluate(() => {
+      const caja = (elemento: Element) => elemento.getBoundingClientRect()
+
+      return {
+        desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        contenedoresEstrechos: [...document.querySelectorAll('main section, main .grid > div')]
+          .map((elemento) => caja(elemento).width)
+          .filter((ancho) => ancho > 0 && ancho < 280).length,
+      }
+    })
+
+    expect(medidas.desborde, 'desbordamiento horizontal').toBe(0)
+    expect(medidas.contenedoresEstrechos, 'contenedores bajo 280 px').toBe(0)
+  })
+})
