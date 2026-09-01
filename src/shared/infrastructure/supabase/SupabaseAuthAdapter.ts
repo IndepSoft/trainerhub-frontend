@@ -1,5 +1,9 @@
 import type { AuthPort } from '@/shared/domain/ports/AuthPort'
-import type { AuthUser, LoginCredentials } from '@/shared/domain/entities/auth'
+import type {
+  AuthUser,
+  LoginCredentials,
+  SignUpCredentials,
+} from '@/shared/domain/entities/auth'
 import { AppError, AppErrorCode } from '@/shared/domain/errors'
 import { supabase } from './client'
 import { mapAuthError } from './errorMapper'
@@ -18,6 +22,23 @@ export class SupabaseAuthAdapter implements AuthPort {
       throw new AppError(AppErrorCode.UNKNOWN, 'No se pudo obtener datos del usuario')
     }
 
+    return toAuthUser(data.user)
+  }
+
+  async signUp(credentials: SignUpCredentials): Promise<AuthUser> {
+    const { data, error } = await supabase.auth.signUp({
+      email: credentials.email,
+      password: credentials.password,
+    })
+
+    if (error) throw mapAuthError(error)
+    if (!data.user) {
+      throw new AppError(AppErrorCode.UNKNOWN, 'No se pudo crear la cuenta')
+    }
+
+    // Sin `user_metadata`: el rol NO se guarda ahi. Lo decide de que repositorio
+    // conoce el perfil -entrenadores o alumnos-, porque `user_metadata` lo puede
+    // editar el propio cliente y un rol autoasignable no es un rol.
     return toAuthUser(data.user)
   }
 

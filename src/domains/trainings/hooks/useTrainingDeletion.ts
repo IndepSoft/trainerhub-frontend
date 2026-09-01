@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 import { container } from '@/app/container'
 import { usePlans } from './usePlans'
 import { describeNames, findPlansUsingRoutine } from '../libs/usage'
-import type { DeletionResult } from '../types/deletion.types'
+import type { DeletionResult } from '@/shared/domain/deletion'
 
 interface UseTrainingDeletionResult {
   /**

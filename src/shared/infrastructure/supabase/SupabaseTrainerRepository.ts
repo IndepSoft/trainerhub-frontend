@@ -1,9 +1,9 @@
-import type { TrainerRepository } from '@/shared/domain/ports/TrainerRepository'
+import type { NewTrainer, TrainerRepository } from '@/shared/domain/ports/TrainerRepository'
 import type { Trainer } from '@/shared/domain/entities/trainer'
-import { AppErrorCode } from '@/shared/domain/errors'
+import { AppError, AppErrorCode } from '@/shared/domain/errors'
 import { supabase } from './client'
 import { mapDataError } from './errorMapper'
-import { toTrainer, type TrainerRow } from './mappers'
+import { toTrainer, toTrainerRow, type TrainerRow } from './mappers'
 
 /** Implementacion de TrainerRepository sobre PostgREST. */
 export class SupabaseTrainerRepository implements TrainerRepository {
@@ -22,5 +22,22 @@ export class SupabaseTrainerRepository implements TrainerRepository {
     }
 
     return data ? toTrainer(data as TrainerRow) : null
+  }
+
+  async create(trainer: NewTrainer): Promise<Trainer> {
+    const { data, error } = await supabase
+      .from('trainers')
+      .insert(toTrainerRow(trainer))
+      // Se pide la fila de vuelta en el mismo viaje: la base rellena `id`,
+      // `verified` y `total_reviews`, y sin `select` habria que ir a buscarla.
+      .select('*')
+      .single()
+
+    if (error) throw mapDataError(error)
+    if (!data) {
+      throw new AppError(AppErrorCode.UNKNOWN, 'No se pudo crear el perfil de entrenador')
+    }
+
+    return toTrainer(data as TrainerRow)
   }
 }

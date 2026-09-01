@@ -1,5 +1,9 @@
 import type { AuthPort } from '@/shared/domain/ports/AuthPort'
-import type { AuthUser, LoginCredentials } from '@/shared/domain/entities/auth'
+import type {
+  AuthUser,
+  LoginCredentials,
+  SignUpCredentials,
+} from '@/shared/domain/entities/auth'
 import { AppError, AppErrorCode } from '@/shared/domain/errors'
 
 /**
@@ -72,6 +76,40 @@ export class FakeAuthAdapter implements AuthPort {
       email: credentials.email,
     }
 
+    this.persistSession(user)
+    this.setCurrentUser(user)
+
+    return user
+  }
+
+  async signUp(credentials: SignUpCredentials): Promise<AuthUser> {
+    // Las mismas validaciones que el login, y por el mismo motivo: que el
+    // formulario recorra sus caminos de error contra el adaptador falso
+    // exactamente igual que contra el proveedor.
+    if (!EMAIL_PATTERN.test(credentials.email)) {
+      throw new AppError(AppErrorCode.VALIDATION, 'El email no tiene un formato válido')
+    }
+
+    if (credentials.password.length < MINIMUM_PASSWORD_LENGTH) {
+      throw new AppError(
+        AppErrorCode.VALIDATION,
+        `La contraseña debe tener al menos ${MINIMUM_PASSWORD_LENGTH} caracteres`
+      )
+    }
+
+    if (credentials.email === FAILING_EMAIL_ADDRESS) {
+      throw new AppError(AppErrorCode.VALIDATION, 'Ya existe una cuenta con ese correo')
+    }
+
+    const user: AuthUser = {
+      id: this.buildDeterministicIdentifier(credentials.email),
+      email: credentials.email,
+    }
+
+    // Deja la sesion abierta, que es el comportamiento de Supabase cuando la
+    // confirmacion por correo esta desactivada. Con ella activada habria que
+    // enviar a una pantalla de «revisa tu correo»; el dia que se active, el
+    // cambio esta en el adaptador real, no aqui.
     this.persistSession(user)
     this.setCurrentUser(user)
 

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Calendar, TrendingUp } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Button } from '@/shared/ui/button'
@@ -17,9 +17,31 @@ import { cn } from '@/shared/lib/utils'
  * Ficha de un estudiante. Sólo composición.
  */
 export default function StudentDetail() {
-  const [isScheduleOpen, setIsScheduleOpen] = useState(false)
   const { studentId } = useParams<{ studentId: string }>()
   const { student, loading } = useStudent(studentId)
+
+  /*
+   * `?agendar` abre el dialogo al entrar. Lo usa «Agendar sesion» del menu de
+   * la tarjeta, en la lista: sin esto, esa entrada del menu llevaba a la ficha
+   * y dejaba al entrenador buscando el boton, que es exactamente el paso que
+   * pedia evitar.
+   *
+   * En la URL y no en el estado del enrutador porque asi el enlace se puede
+   * compartir y sobrevive a una recarga.
+   */
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [isScheduleOpen, setIsScheduleOpen] = useState(searchParams.has('agendar'))
+
+  const handleScheduleOpenChange = (open: boolean) => {
+    setIsScheduleOpen(open)
+    if (open || !searchParams.has('agendar')) return
+
+    // Se limpia al cerrar para que recargar no lo vuelva a abrir. `replace`
+    // para no dejar un paso intermedio en el historial.
+    const remaining = new URLSearchParams(searchParams)
+    remaining.delete('agendar')
+    setSearchParams(remaining, { replace: true })
+  }
 
   /*
    * «Cargando» y «no existe» son estados distintos y hay que distinguirlos.
@@ -79,10 +101,11 @@ export default function StudentDetail() {
           </div>
 
           <PageHeader.Actions>
-            {/* TODO: «Ver progreso» sigue sin conectar. */}
-            <Button variant="outline" className="gap-2">
-              <TrendingUp className="size-4" />
-              Ver progreso
+            <Button asChild variant="outline" className="gap-2">
+              <Link to={`/progress?student=${student.id}`}>
+                <TrendingUp className="size-4" />
+                Ver progreso
+              </Link>
             </Button>
             <Button className="gap-2" onClick={() => setIsScheduleOpen(true)}>
               <Calendar className="size-4" />
@@ -123,7 +146,7 @@ export default function StudentDetail() {
       <ScheduleSessionDialog
         student={student}
         open={isScheduleOpen}
-        onOpenChange={setIsScheduleOpen}
+        onOpenChange={handleScheduleOpenChange}
       />
     </div>
   )

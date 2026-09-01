@@ -6,6 +6,7 @@ import {
   CardTitle,
 } from '@/shared/ui/card'
 import { Button } from '@/shared/ui/button'
+import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Calendar, Lock, Mail, MapPin, User } from 'lucide-react'
 import { FormField } from './FormField'
 import { FormInput } from './FormInput'
@@ -17,13 +18,13 @@ import {
 } from '../data/registerOptions'
 
 export function RegisterForm() {
-  const { formData, isValid, isRequired, setField, submit } = useRegisterForm()
+  const { formData, isValid, loading, error, isRequired, setField, submit } = useRegisterForm()
 
   const handleSubmit = (event: React.FormEvent) => {
     // Sin esto el navegador recarga la pagina entera al enviar: el
     // `handleSubmit` anterior no recibia el evento y no lo cancelaba.
     event.preventDefault()
-    submit()
+    void submit()
   }
 
   return (
@@ -36,6 +37,12 @@ export function RegisterForm() {
       </CardHeader>
 
       <CardContent className="px-2">
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -153,8 +160,8 @@ export function RegisterForm() {
               </FormField>
             </div>
 
-            <Button type="submit" className="w-full mt-6" disabled={!isValid}>
-              Crear cuenta
+            <Button type="submit" className="w-full mt-6" disabled={!isValid || loading}>
+              {loading ? 'Creando cuenta…' : 'Crear cuenta'}
             </Button>
           </div>
         </form>

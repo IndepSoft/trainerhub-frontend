@@ -10,7 +10,7 @@ import {
 } from '../libs/usage'
 import type { Exercise } from '../types/training.types'
 import type { Equipment } from '../types/catalog.types'
-import type { DeletionResult } from '../types/deletion.types'
+import type { DeletionResult } from '@/shared/domain/deletion'
 
 interface UseCatalogEditorResult {
   createExercise: (data: Omit<Exercise, 'id'>) => void

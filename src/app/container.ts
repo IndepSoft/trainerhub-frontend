@@ -3,6 +3,7 @@ import type { TrainerRepository } from '@/shared/domain/ports/TrainerRepository'
 import { SupabaseAuthAdapter } from '@/shared/infrastructure/supabase/SupabaseAuthAdapter'
 import { SupabaseTrainerRepository } from '@/shared/infrastructure/supabase/SupabaseTrainerRepository'
 import { FakeAuthAdapter } from '@/shared/infrastructure/fake/FakeAuthAdapter'
+import { FakeTrainerRepository } from '@/shared/infrastructure/fake/FakeTrainerRepository'
 import type { StudentRepository } from '@/shared/domain/ports/StudentRepository'
 import { FakeStudentRepository } from '@/shared/infrastructure/fake/FakeStudentRepository'
 import type { RoutineRepository } from '@/shared/domain/ports/RoutineRepository'
@@ -55,9 +56,24 @@ function createAuthenticationAdapter(): AuthPort {
   return new SupabaseAuthAdapter()
 }
 
+/**
+ * Los entrenadores van con la autenticación, no aparte.
+ *
+ * La misma condición decide los dos porque desparejarlos no tiene sentido: el
+ * identificador de perfil que inventa la autenticación simulada no existe en
+ * ninguna tabla real, así que un entrenador de Supabase sobre una sesión falsa
+ * no encuentra nunca su ficha.
+ */
+function createTrainerRepository(): TrainerRepository {
+  if (shouldUseFakeAuthentication) {
+    return new FakeTrainerRepository()
+  }
+  return new SupabaseTrainerRepository()
+}
+
 export const container: Container = {
   auth: createAuthenticationAdapter(),
-  trainers: new SupabaseTrainerRepository(),
+  trainers: createTrainerRepository(),
   // TODO: sustituir por los repositorios reales cuando existan las tablas. Son
   // los unicos adaptadores falsos que siguen activos en produccion.
   students: new FakeStudentRepository(),

@@ -12,11 +12,15 @@ import { ArrowUpRight, Calendar, MoreHorizontal, TrendingUp } from 'lucide-react
 import { getInitials, getShortName } from '@/shared/lib/personName'
 import { useLongPress } from '@/shared/hooks/useLongPress'
 import { cn } from '@/shared/lib/utils'
+import { ConfirmDeleteDialog } from '@/shared/components/ConfirmDeleteDialog'
+import { useStudentEditor } from '../hooks/useStudentEditor'
 import { LEVEL_BADGE } from '../libs/levelBadge'
 import type { Student } from '@/shared/domain/entities/student'
 
 interface StudentCardProps {
   student: Student
+  /** Abre el formulario de edición, que lo monta la página. */
+  onEdit: (student: Student) => void
 }
 
 /**
@@ -33,8 +37,11 @@ interface StudentCardProps {
  * El corte se hace con una cuña de Ember al 10 %: mantiene el gesto sin
  * competir con el texto, que sobre Ember sólido perdía contraste.
  */
-export function StudentCard({ student }: StudentCardProps) {
+export function StudentCard({ student, onEdit }: StudentCardProps) {
   const navigate = useNavigate()
+  const { deletionBlocker, deleteStudent } = useStudentEditor()
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [blockedReason, setBlockedReason] = useState<string | undefined>(undefined)
   const fullName = getShortName(student.firstName, student.lastName)
   const initials = getInitials(student.firstName, student.lastName)
 
@@ -82,14 +89,36 @@ export function StudentCard({ student }: StudentCardProps) {
               <TrendingUp className="me-2 size-4" />
               Ver ficha
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => navigate(`/students/${student.id}?agendar`)}>
               <Calendar className="me-2 size-4" />
               Agendar sesión
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Editar</DropdownMenuItem>
-            <DropdownMenuItem>Duplicar</DropdownMenuItem>
-            <DropdownMenuItem className="text-danger">Eliminar</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onEdit(student)}>Editar</DropdownMenuItem>
+            {/*
+              «Duplicar» se quita en vez de implementarse: duplicar a una
+              persona no significa nada -saldrian dos fichas con el mismo
+              correo, que es justo la clave con la que se enlaza su cuenta-.
+              Era una entrada del menu copiada de las rutinas, donde si tiene
+              sentido.
+
+              `preventDefault` para que el menu no se cierre antes de abrir el
+              dialogo: al cerrarse, Radix devuelve el foco al disparador y el
+              dialogo naciente se lo encuentra ya movido.
+            */}
+            <DropdownMenuItem
+              className="text-danger"
+              onSelect={(event) => {
+                event.preventDefault()
+                setIsMenuOpen(false)
+                void deletionBlocker(student.id).then((reason) => {
+                  setBlockedReason(reason)
+                  setIsDeleteOpen(true)
+                })
+              }}
+            >
+              Eliminar
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -150,6 +179,20 @@ export function StudentCard({ student }: StudentCardProps) {
           className="ms-auto size-5 text-ink/25 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-ember"
         />
       </div>
+
+      <ConfirmDeleteDialog
+        open={isDeleteOpen}
+        name={fullName}
+        kind="al alumno"
+        blockedReason={blockedReason}
+        onOpenChange={setIsDeleteOpen}
+        onConfirm={() => {
+          void deleteStudent(student.id).then((result) => {
+            if (result.deleted) setIsDeleteOpen(false)
+            else setBlockedReason(result.reason)
+          })
+        }}
+      />
     </article>
   )
 }

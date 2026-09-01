@@ -12,7 +12,7 @@ import { weekdayName } from '../libs/planDraft'
 import { estimateRoutineMinutes } from '../libs/routine.utils'
 import { LEVEL_BADGE } from '../libs/levelBadge'
 import { PlanSummary } from '../components/PlanSummary'
-import { ConfirmDeleteDialog } from '../components/ConfirmDeleteDialog'
+import { ConfirmDeleteDialog } from '@/shared/components/ConfirmDeleteDialog'
 
 /**
  * Ficha de un plan. Sólo composición.

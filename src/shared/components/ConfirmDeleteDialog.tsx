@@ -24,6 +24,11 @@ interface ConfirmDeleteDialogProps {
 /**
  * Confirmación de borrado. Sólo presentación.
  *
+ * Vive en `shared` desde que un segundo dominio lo necesita —estudiantes, además
+ * de entrenamientos—, que es el mismo criterio por el que subieron `Routine` y
+ * `DeletionResult`: se comparte lo que dos dominios usan, no lo que parece
+ * genérico.
+ *
  * El diálogo hace de las dos cosas: pregunta cuando se puede borrar, y explica
  * cuando no. Sacar el bloqueo a un aviso aparte obligaría al usuario a pulsar
  * «Eliminar», ver cerrarse el diálogo y buscar por la página qué ha pasado.

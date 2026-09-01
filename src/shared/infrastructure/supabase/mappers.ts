@@ -1,4 +1,5 @@
 import type { Trainer } from '@/shared/domain/entities/trainer'
+import type { NewTrainer } from '@/shared/domain/ports/TrainerRepository'
 import type { AuthUser } from '@/shared/domain/entities/auth'
 
 /** Fila cruda de la tabla `trainers`. Nombres tal cual estan en Postgres. */
@@ -45,6 +46,28 @@ export function toTrainer(row: TrainerRow): Trainer {
     verified: row.verified ?? false,
     averageRating: optional(row.average_rating),
     totalReviews: row.total_reviews ?? 0,
+  }
+}
+
+/**
+ * Traduce un alta de entrenador a la fila que espera Postgres.
+ *
+ * El mapper de ida hacia falta en cuanto hubo escrituras: hasta ahora todo era
+ * lectura y el snake_case solo tenia que morir en una direccion. Sin el, quien
+ * inserta tendria que conocer los nombres de las columnas, que es exactamente
+ * la fuga que los mappers existen para evitar.
+ *
+ * `id` no se manda: lo genera la base. Tampoco `verified` ni `total_reviews`,
+ * que tienen valor por defecto en el esquema.
+ */
+export function toTrainerRow(trainer: NewTrainer): Omit<TrainerRow, 'id'> {
+  return {
+    profile_id: trainer.profileId,
+    first_name: trainer.firstName,
+    last_name: trainer.lastName,
+    email: trainer.email,
+    bio: trainer.bio ?? null,
+    years_experience: trainer.yearsExperience ?? null,
   }
 }
 

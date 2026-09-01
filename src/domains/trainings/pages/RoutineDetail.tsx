@@ -16,7 +16,7 @@ import {
 } from '../libs/routine.utils'
 import { useTrainingCatalog } from '../hooks/useTrainingCatalog'
 import { useTrainingDeletion } from '../hooks/useTrainingDeletion'
-import { ConfirmDeleteDialog } from '../components/ConfirmDeleteDialog'
+import { ConfirmDeleteDialog } from '@/shared/components/ConfirmDeleteDialog'
 
 /**
  * Ficha de una rutina. Sólo composición.

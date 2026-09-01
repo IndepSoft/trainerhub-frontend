@@ -15,9 +15,10 @@ import type { Student } from '@/shared/domain/entities/student'
  * decision de la vista, no del dato. Antes `levelColor` viajaba dentro del
  * estudiante, lo que obligaba a cambiar los datos para cambiar un color.
  *
- * TODO: sustituir por un `StudentRepository` -puerto en `shared/domain/ports`,
- * adaptador en `shared/infrastructure`- cuando exista el esquema. `useStudents`
- * es el unico punto que habra que tocar.
+ * Ninguno tiene cuenta todavia -`profileId` a `null`-, que es el caso corriente:
+ * el entrenador da de alta a alguien mucho antes de que esa persona se registre.
+ *
+ * TODO: sustituir por el adaptador real cuando exista el esquema.
  */
 export const studentsSeed: Student[] = [
   {
@@ -29,6 +30,7 @@ export const studentsSeed: Student[] = [
     goals: ['Perder peso', 'Ganar músculo'],
     age: 28,
     bodyFatPercentage: 22,
+    profileId: null,
   },
   {
     id: 'student-2',
@@ -39,6 +41,7 @@ export const studentsSeed: Student[] = [
     goals: ['Mejorar resistencia'],
     age: 34,
     bodyFatPercentage: 18,
+    profileId: null,
   },
   {
     id: 'student-3',
@@ -49,6 +52,7 @@ export const studentsSeed: Student[] = [
     goals: ['Tonificar'],
     age: 41,
     bodyFatPercentage: 27,
+    profileId: null,
   },
   {
     id: 'student-4',
@@ -59,5 +63,6 @@ export const studentsSeed: Student[] = [
     goals: ['Perder peso'],
     age: 25,
     bodyFatPercentage: 24,
+    profileId: null,
   },
 ]

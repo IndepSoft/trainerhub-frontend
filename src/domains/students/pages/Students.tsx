@@ -1,21 +1,37 @@
+import { useState } from 'react'
 import { PageHeader } from '@/shared/components/PageHeader'
-import { Plus, UserPlus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { StudentCard } from '../components/StudentCard'
 import { StudentFilters } from '../components/StudentFilters'
+import { StudentFormDialog } from '../components/StudentFormDialog'
 import { useStudents } from '../hooks/useStudents'
+import { useStudentEditor } from '../hooks/useStudentEditor'
 import { Button } from '@/shared/ui/button'
+import type { Student } from '@/shared/domain/entities/student'
 
 export default function Students() {
   const { students, loading } = useStudents()
+  const { createStudent, updateStudent } = useStudentEditor()
 
-  // TODO: sin implementar. Deben pasar a `useStudents` cuando exista el
-  // repositorio, para que la pagina siga siendo solo composicion.
-  const handleAddStudent = () => {
-    console.log('Agregar estudiante')
+  const [isFormOpen, setIsFormOpen] = useState(false)
+  const [editing, setEditing] = useState<Student | null>(null)
+
+  const openForNew = () => {
+    setEditing(null)
+    setIsFormOpen(true)
   }
 
-  const handleInviteStudent = () => {
-    console.log('Invitar estudiante')
+  const openForEdit = (student: Student) => {
+    setEditing(student)
+    setIsFormOpen(true)
+  }
+
+  const handleSave = async (data: Omit<Student, 'id'>) => {
+    if (editing === null) {
+      await createStudent(data)
+      return
+    }
+    await updateStudent(editing.id, data)
   }
 
   return (
@@ -32,13 +48,13 @@ export default function Students() {
             <PageHeader.Title>Estudiantes</PageHeader.Title>
           </div>
           <PageHeader.Actions>
-            <Button variant="outline" onClick={handleInviteStudent}>
-              <UserPlus className="w-4 h-4" />
-              <span>Invitar Estudiante</span>
-            </Button>
-            <Button onClick={handleAddStudent}>
+            {/* Un solo boton. «Invitar» y «Agregar» eran dos y hacian lo mismo
+                -nada, los dos eran `console.log`-; ahora que el alumno se
+                enlaza con su cuenta por el correo que se escribe aqui, dar de
+                alta ES invitar. */}
+            <Button onClick={openForNew}>
               <Plus className="w-4 h-4" />
-              <span>Agregar Estudiante</span>
+              <span>Añadir alumno</span>
             </Button>
           </PageHeader.Actions>
         </PageHeader.Content>
@@ -58,12 +74,26 @@ export default function Students() {
           <div className="space-y-6">
             <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
               {students.map((student) => (
-                <StudentCard key={student.id} student={student} />
+                <StudentCard key={student.id} student={student} onEdit={openForEdit} />
               ))}
             </div>
+
+            {!loading && students.length === 0 ? (
+              <p className="py-12 text-center text-sm text-ink/45">
+                Aún no tienes alumnos. Añade el primero para poder asignarle rutinas y agendarle
+                sesiones.
+              </p>
+            ) : null}
           </div>
         </div>
       </div>
+
+      <StudentFormDialog
+        open={isFormOpen}
+        student={editing}
+        onOpenChange={setIsFormOpen}
+        onSave={handleSave}
+      />
     </div>
   )
 }

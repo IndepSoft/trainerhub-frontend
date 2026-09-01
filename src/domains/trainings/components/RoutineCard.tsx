@@ -20,7 +20,7 @@ import {
 } from '../libs/routine.utils'
 import { useTrainingCatalog } from '../hooks/useTrainingCatalog'
 import { useTrainingDeletion } from '../hooks/useTrainingDeletion'
-import { ConfirmDeleteDialog } from './ConfirmDeleteDialog'
+import { ConfirmDeleteDialog } from '@/shared/components/ConfirmDeleteDialog'
 import type { Routine } from '../types/training.types'
 
 interface RoutineCardProps {

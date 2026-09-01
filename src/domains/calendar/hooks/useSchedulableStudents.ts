@@ -27,20 +27,27 @@ export function useSchedulableStudents(): UseSchedulableStudentsResult {
   useEffect(() => {
     let active = true
 
-    container.students
-      .findAll()
-      .then((result) => {
-        if (active) setStudents(result)
-      })
-      .catch((cause: unknown) => {
-        if (active) setError(cause instanceof Error ? cause.message : 'Error al cargar alumnos')
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
+    const load = () => {
+      container.students
+        .findAll()
+        .then((result) => {
+          if (active) setStudents(result)
+        })
+        .catch((cause: unknown) => {
+          if (active) setError(cause instanceof Error ? cause.message : 'Error al cargar alumnos')
+        })
+        .finally(() => {
+          if (active) setLoading(false)
+        })
+    }
+
+    load()
+    // Suscrito: dar de alta a un alumno tiene que verse sin recargar.
+    const unsubscribe = container.students.onChange(load)
 
     return () => {
       active = false
+      unsubscribe()
     }
   }, [])
 
