@@ -34,7 +34,7 @@ conserva el fichero con otro propósito: traspaso rodante entre sesiones.
 punto viejo.
 
 Estado verificado el 1 de septiembre, ejecutado y no supuesto: `npm run lint`
-limpio, `npm run build` en verde, **127 pruebas de Playwright en verde**.
+limpio, `npm run build` en verde, **140 pruebas de Playwright en verde**.
 
 ---
 
@@ -53,7 +53,12 @@ npm run dev
 **Credenciales de desarrollo.** El `.env` local tiene `VITE_USE_FAKE_AUTH=true`,
 así que entra `FakeAuthAdapter`, no Supabase:
 
-- Email: cualquiera con formato válido, p. ej. `entrenador@indepsoft.com`
+- `entrenador@indepsoft.com` — entrenador con ficha y con el crew de ejemplo,
+  «Hierro y Asfalto», ya activo. Su código de invitación es `HIERRO24`.
+- `admin@indepsoft.com` — administrador de plataforma. Aterriza en `/admin` y es
+  quien activa las suscripciones de los equipos nuevos.
+- Cualquier otro correo con formato válido entra sin ficha: cuenta sin equipo,
+  que es como se prueba el flujo del alumno.
 - Contraseña: seis caracteres o más, p. ej. `desarrollo123`
 - `error@test.local` falla a propósito, para probar la interfaz de error
 
@@ -63,7 +68,7 @@ así que entra `FakeAuthAdapter`, no Supabase:
 
 Es el punto donde más se equivocaba la versión anterior de este documento.
 
-- `tests/visual/screenshots.spec.ts`: **127 pruebas**. Muchas están
+- `tests/visual/screenshots.spec.ts`: **140 pruebas**. Muchas están
   parametrizadas por tres anchos —375, 768 y 1440— desde la constante
   `VIEWPORTS`.
 - Se lanzan con `npx playwright test`. **No hay script `test` en

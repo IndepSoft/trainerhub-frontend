@@ -187,6 +187,18 @@ export class FakeStudentRepository implements StudentRepository {
     this.notify()
   }
 
+  /**
+   * Cuantos miembros tiene un crew, sea cual sea el activo.
+   *
+   * Fuera del puerto por lo mismo que `FakeCrewRepository.listAll`: cruza el
+   * ambito, y solo se la entrega la raiz de composicion a la plataforma.
+   */
+  countMembersOf(crewId: string): number {
+    return this.students.filter(
+      (student) => student.crewId === crewId && isMember(student.membershipStatus)
+    ).length
+  }
+
   onChange(listener: () => void): () => void {
     this.listeners.add(listener)
     return () => {

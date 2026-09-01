@@ -40,6 +40,16 @@ interface UseViewerResult {
   active: Membership | null
   /** Atajo de `active?.role`. `null` sin crew: no se es nada todavía. */
   role: CrewRole | null
+  /**
+   * Si administra la plataforma.
+   *
+   * NO ES UN `CrewRole` MÁS, y por eso va aparte en vez de como tercer valor de
+   * la unión. Un rol de crew responde «qué eres en este equipo»; esto responde
+   * «estás por encima de los equipos», que es otra pregunta: un administrador
+   * puede además entrenar en su propio crew, y las dos cosas son ciertas a la
+   * vez. Meterlo en la misma unión obligaría a elegir.
+   */
+  isPlatformAdmin: boolean
   loading: boolean
   selectCrew: (crewId: string) => void
 }
@@ -66,6 +76,7 @@ export function useViewer(): UseViewerResult {
   const profileId = user?.id
 
   const [trainer, setTrainer] = useState<Trainer | null>(null)
+  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false)
   const [memberships, setMemberships] = useState<Membership[]>([])
   /*
    * Arranca con el crew recordado, no con `null`.
@@ -84,13 +95,15 @@ export function useViewer(): UseViewerResult {
 
     // Las dos preguntas van en paralelo: son independientes, y encadenarlas
     // pagaría dos viajes de red seguidos para pintar una barra lateral.
-    const [ownedCrews, studentRecords, trainerProfile] = await Promise.all([
+    const [ownedCrews, studentRecords, trainerProfile, platformAdmin] = await Promise.all([
       container.crews.findByTrainerProfile(profileId),
       container.students.findAllByProfileId(profileId),
       container.trainers.findByProfileId(profileId),
+      container.platform.isAdmin(profileId),
     ])
 
     setTrainer(trainerProfile)
+    setIsPlatformAdmin(platformAdmin)
 
     const asTrainer: Membership[] = ownedCrews.map((crew) => ({
       crew,
@@ -182,6 +195,7 @@ export function useViewer(): UseViewerResult {
     pending: memberships.filter((entry) => entry.status === 'pending'),
     active,
     role: active?.role ?? null,
+    isPlatformAdmin,
     loading,
     selectCrew,
   }

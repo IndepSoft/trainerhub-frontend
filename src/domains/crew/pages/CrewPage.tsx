@@ -8,6 +8,8 @@ import { useViewerContext } from '@/app/ViewerContext'
 import { useCrewEditor } from '../hooks/useCrewEditor'
 import { useCrewMembers } from '../hooks/useCrewMembers'
 import { CrewInviteCard } from '../components/CrewInviteCard'
+import { SubscriptionNotice } from '../components/SubscriptionNotice'
+import { canEnrollMembers } from '@/shared/domain/entities/crew'
 import type { Student } from '@/shared/domain/entities/student'
 
 /**
@@ -149,16 +151,23 @@ export default function CrewPage() {
             )}
           </section>
 
-          {/* El QR sólo lo enseña quien entrena: es la llave del equipo. */}
-          {isTrainer && (
-            <CrewInviteCard
-              crew={crew}
-              rotating={saving}
-              onRotate={async () => {
-                await rotateJoinToken(crew.id)
-              }}
-            />
-          )}
+          {/*
+            El QR sólo lo enseña quien entrena -es la llave del equipo- y sólo
+            con la suscripción activa. Sin ella no se esconde: se explica, que
+            es la diferencia entre una puerta cerrada y una pared.
+          */}
+          {isTrainer &&
+            (canEnrollMembers(crew) ? (
+              <CrewInviteCard
+                crew={crew}
+                rotating={saving}
+                onRotate={async () => {
+                  await rotateJoinToken(crew.id)
+                }}
+              />
+            ) : (
+              <SubscriptionNotice status={crew.subscriptionStatus} />
+            ))}
         </div>
       </div>
     </div>

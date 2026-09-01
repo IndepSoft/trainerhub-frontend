@@ -23,7 +23,7 @@ export default function RootLayout() {
    * alumno, y que los datos que se leen sean los de su crew.
    */
   const viewer = useViewer()
-  const { person, memberships, active, role, loading, selectCrew } = viewer
+  const { person, memberships, active, role, isPlatformAdmin, loading, selectCrew } = viewer
 
   /*
    * Rutas a pantalla completa, sin barra lateral, superior ni inferior.
@@ -104,6 +104,7 @@ export default function RootLayout() {
           memberships={memberships}
           active={active}
           viewerRole={role}
+        isPlatformAdmin={isPlatformAdmin}
           loading={loading}
           onSelectCrew={selectCrew}
         />
@@ -125,7 +126,7 @@ export default function RootLayout() {
             reparto flex y el contenedor de desplazamiento se encoge solo. Con
             `fixed` habria que compensar con relleno inferior en cada pagina, y
             cualquiera que se olvidara dejaria contenido tapado. */}
-          <BottomTabBar role={role} />
+          <BottomTabBar role={role} isPlatformAdmin={isPlatformAdmin} />
         </SidebarInset>
       </div>
     </ViewerContext.Provider>

@@ -2915,10 +2915,18 @@ test.describe('progreso', () => {
  * `AuthPort` no tenia `signUp`, asi que «Crear cuenta» no daba de alta a nadie.
  */
 test.describe('registro', () => {
+  /**
+   * Rellena el alta de ENTRENADOR.
+   *
+   * Empieza eligiendo con que se viene: el registro esta partido en dos porque
+   * el formulario unico pedia especialidad, años de experiencia y ubicacion a
+   * quien solo quiere ver sus entrenamientos.
+   */
   async function rellenarRegistro(page: Page, correo: string): Promise<void> {
     await page.goto('/authentication')
     await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
     await page.getByRole('tab', { name: 'Registrarme' }).click()
+    await page.getByRole('button', { name: 'Entreno a gente', exact: true }).click()
 
     // Sin `exact`: la etiqueta de un campo obligatorio es «Nombre *», porque
     // `FormField` le añade el asterisco dentro del propio <label>.
@@ -2952,24 +2960,36 @@ test.describe('registro', () => {
     expect(fichas).toContain('asoto@correo.com')
   })
 
-  test('registrarse con el correo de un alumno lo enlaza en vez de crear entrenador', async ({
-    page,
-  }) => {
+  test('registrarse como alumno con un correo invitado reclama su ficha', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
+
+    await page.goto('/authentication')
+    await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
+    await page.getByRole('tab', { name: 'Registrarme' }).click()
+    await page.getByRole('button', { name: 'Entreno', exact: true }).click()
+
+    await page.getByLabel('Nombre').fill('María')
+    await page.getByLabel('Apellido').fill('Gómez')
     // Mayusculas distintas a proposito: nadie escribe su correo dos veces igual,
     // y el enlace de una cuenta con su ficha no puede depender de eso.
-    await rellenarRegistro(page, 'MGomez@gmail.com')
-
+    await page.getByLabel('Email').fill('MGomez@gmail.com')
+    await page.locator('input[type=password]').fill('secreto123')
     await page.getByRole('button', { name: 'Crear cuenta' }).click()
 
-    // A Progreso, que es la pantalla del alumno. El entrenador va al panel o a
-    // crear su equipo; lo decide el rol, y el rol lo decide quien te conoce.
     await page.waitForURL(/\/progress/, { timeout: 20_000 })
 
     /*
-     * QUIEN ERES LO DECIDE TU CORREO. El correo ya tenia ficha de alumna, asi
-     * que la cuenta se ata a ella y NO nace un entrenador.
+     * SU FICHA LA ESPERABA, asi que entra al equipo de quien la creo: la barra
+     * lateral lo dice, y su progreso deja de ser el de alguien sin equipo.
+     *
+     * El registro ya no DECIDE el rol por el correo -eso lo elige quien se
+     * registra-, pero el correo si RECLAMA lo que estuviera esperandole. Las dos
+     * cosas pueden ser ciertas: alguien puede montar su equipo y ser ademas
+     * alumno de otro.
      */
+    await expect(page.getByText('Hierro y Asfalto').first()).toBeVisible()
+
+    // Y no nace ninguna ficha de entrenador: no dijo que entrenara a nadie.
     const fichas = await page.evaluate(() =>
       window.localStorage.getItem('trainerhub.fake-trainers')
     )
@@ -3106,5 +3126,204 @@ test.describe('equipo', () => {
     // La denominacion que eligio: solo cambia como aparece escrito.
     await expect(page.getByText('Tribu · 0 miembros')).toBeVisible()
     await expect(page.getByText('Todavía no entrena nadie aquí.')).toBeVisible()
+  })
+})
+
+/**
+ * Los dos registros, y la puerta de la suscripcion.
+ *
+ * El formulario era uno solo y pedia especialidad, años de experiencia y
+ * ubicacion a cualquiera: a quien solo queria ver sus entrenamientos le hacia
+ * declarar una profesion que no tiene.
+ */
+test.describe('registro separado', () => {
+  async function abrirRegistro(page: Page): Promise<void> {
+    await page.goto('/authentication')
+    await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
+    await page.getByRole('tab', { name: 'Registrarme' }).click()
+  }
+
+  test('primero se elige con que se viene', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await abrirRegistro(page)
+
+    // Las dos opciones pesan igual: empujar hacia la de entrenador haria que
+    // los alumnos se registraran mal.
+    await expect(page.getByRole('button', { name: 'Entreno a gente', exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Entreno', exact: true })).toBeVisible()
+  })
+
+  test('el alumno no declara una profesion que no tiene', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await abrirRegistro(page)
+    await page.getByRole('button', { name: 'Entreno', exact: true }).click()
+
+    await expect(page.getByLabel('Especialidad')).toHaveCount(0)
+    await expect(page.getByLabel('Años de experiencia')).toHaveCount(0)
+    await expect(page.getByLabel('Ubicación')).toHaveCount(0)
+
+    // Y el codigo del equipo es OPCIONAL: quien viene del QR no lo escribe, y
+    // quien se apunta por su cuenta todavia no lo tiene.
+    await expect(page.getByLabel('Código del equipo (opcional)')).toBeVisible()
+  })
+
+  test('quien escanea el QR sin cuenta vuelve al QR despues de registrarse', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.goto('/authentication')
+    await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
+
+    /*
+     * ERA EL AGUJERO MAS GRANDE DEL FLUJO, y en su caso mas frecuente: alguien
+     * sin cuenta escanea el codigo de su entrenador, `ProtectedRoute` le manda a
+     * identificarse, y al terminar aterrizaba en su progreso CON EL CODIGO
+     * PERDIDO. Tenia que volver a pedirle el QR a quien ya se lo habia enseñado.
+     */
+    await page.goto('/crew/unirse?codigo=HIERRO24')
+    await expect(page).toHaveURL(/\/authentication/)
+
+    await page.getByRole('tab', { name: 'Registrarme' }).click()
+    await page.getByRole('button', { name: 'Entreno', exact: true }).click()
+    await page.getByLabel('Nombre').fill('Sara')
+    await page.getByLabel('Apellido').fill('Vidal')
+    await page.getByLabel('Email').fill('svidal@correo.com')
+    await page.locator('input[type=password]').fill('secreto123')
+    await page.getByRole('button', { name: 'Crear cuenta' }).click()
+
+    // Vuelve a donde iba, y el codigo se envia solo.
+    await page.waitForURL(/codigo=HIERRO24/, { timeout: 20_000 })
+    await expect(page.getByRole('heading', { name: 'Solicitud enviada' })).toBeVisible()
+  })
+})
+
+/**
+ * La suscripcion: la llave del producto.
+ *
+ * Un entrenador puede crear su equipo, su catalogo y sus rutinas sin pagar nada
+ * -es trabajo suyo y no lo ve nadie mas-. Lo que exige activacion es INCORPORAR
+ * ALUMNOS, que es cuando el producto empieza a servirle a mas de una persona.
+ */
+test.describe('plataforma', () => {
+  /** Da de alta a un entrenador nuevo, con su ficha. */
+  async function rellenarRegistroEntrenador(page: Page, correo: string): Promise<void> {
+    await page.goto('/authentication')
+    await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
+    await page.getByRole('tab', { name: 'Registrarme' }).click()
+    await page.getByRole('button', { name: 'Entreno a gente', exact: true }).click()
+    await page.getByLabel('Nombre').fill('Nuria')
+    await page.getByLabel('Apellido').fill('Vega')
+    await page.getByLabel('Email').fill(correo)
+    await page.locator('input[type=password]').fill('secreto123')
+    await elegirDelDesplegable(page, page.getByRole('combobox').first(), 'Pérdida de peso')
+    await page.getByRole('button', { name: 'Crear cuenta' }).click()
+  }
+
+  async function entrarComoAdmin(page: Page): Promise<void> {
+    await page.goto('/authentication')
+    await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
+    await page.getByPlaceholder('tu@email.com').fill('admin@indepsoft.com')
+    await page.locator('input[type=password]').fill('desarrollo123')
+    await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click()
+  }
+
+  test('el administrador aterriza en su panel y ve los equipos', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await entrarComoAdmin(page)
+
+    // Entra a mirar equipos ajenos, no a entrenar.
+    await page.waitForURL(/\/admin/, { timeout: 20_000 })
+    await expect(page.getByText('Hierro y Asfalto')).toBeVisible()
+    await expect(page.getByText('Marco Salas · 4 miembros')).toBeVisible()
+  })
+
+  test('un entrenador no puede abrir el panel de la plataforma', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+
+    // Ni se le ofrece el enlace...
+    await expect(page.getByRole('link', { name: 'Plataforma' })).toHaveCount(0)
+
+    // ...ni le sirve escribir la ruta. Esconderla no es la seguridad -eso es la
+    // politica del servidor- pero ofrecer una puerta que no abre tampoco.
+    await page.goto('/admin')
+    await expect(page.getByRole('heading', { name: 'Esto no es para ti' })).toBeVisible()
+  })
+
+  test('un equipo nuevo nace sin poder invitar, y el panel lo espera', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    // Se REGISTRA, no se identifica: entrar con un correo suelto da cuenta pero
+    // no ficha de entrenador, y sin ella no hay a quien pertenezca el equipo.
+    await rellenarRegistroEntrenador(page, 'nuevoentrenador@correo.com')
+    await page.waitForURL(/\/crew\/nuevo/, { timeout: 20_000 })
+
+    await page.getByLabel('Nombre').fill('El Box del Puerto')
+    await page.getByRole('button', { name: 'Crear equipo' }).click()
+    await page.waitForURL(/\/crew$/, { timeout: 20_000 })
+
+    /*
+     * EL QR NO SE ESCONDE: se explica. Un hueco donde deberia estar la forma de
+     * meter gente se lee como que la aplicacion esta rota, y el entrenador se
+     * pone a buscar el boton.
+     */
+    await expect(page.getByRole('heading', { name: 'Todavía no puedes invitar' })).toBeVisible()
+    await expect(page.getByText('Suscripción pendiente')).toBeVisible()
+    await expect(page.getByText('Copiar enlace')).toHaveCount(0)
+
+    /*
+     * Y dar de alta a alguien tampoco: es la misma puerta.
+     *
+     * Se navega POR LA INTERFAZ. `page.goto` recargaria la aplicacion y los
+     * adaptadores falsos volverian a la semilla: el equipo recien creado
+     * desapareceria y la pantalla diria que no hay crew, no que falta la
+     * suscripcion. Es la trampa documentada en el traspaso.
+     */
+    await page.getByRole('link', { name: 'Estudiantes' }).first().click()
+    await expect(page.getByRole('button', { name: /Añadir alumno/ })).toBeDisabled()
+    await expect(page.getByText(/hace falta activar la suscripción/)).toBeVisible()
+  })
+
+  test('activar la suscripcion abre el QR', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+
+    /*
+     * Se hace TODO en la misma carga: los adaptadores falsos viven en memoria,
+     * asi que un `page.goto` intermedio devolveria el equipo recien creado a la
+     * nada. Se navega por la interfaz y se cambia de cuenta por el menu.
+     */
+    await rellenarRegistroEntrenador(page, 'otroentrenador@correo.com')
+    await page.waitForURL(/\/crew\/nuevo/, { timeout: 20_000 })
+
+    await page.getByLabel('Nombre').fill('La Tribu del Cerro')
+    await page.getByRole('button', { name: 'Crear equipo' }).click()
+    await page.waitForURL(/\/crew$/, { timeout: 20_000 })
+    await expect(page.getByRole('heading', { name: 'Todavía no puedes invitar' })).toBeVisible()
+
+    // Se pasa a administrador sin recargar.
+    await page.getByRole('button', { name: 'Menú de usuario' }).click()
+    await page.getByRole('menuitem', { name: 'Cerrar sesión' }).click()
+    await page.getByPlaceholder('tu@email.com').fill('admin@indepsoft.com')
+    await page.locator('input[type=password]').fill('desarrollo123')
+    await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click()
+    await page.waitForURL(/\/admin/, { timeout: 20_000 })
+
+    // El equipo esta esperando, y se activa desde aqui.
+    const fila = page.getByRole('listitem').filter({ hasText: 'La Tribu del Cerro' })
+    await expect(fila).toContainText('Pendiente')
+    await fila.getByRole('button', { name: 'Activar' }).click()
+    await expect(fila).toContainText('Activa')
+
+    // Y el entrenador ya puede invitar.
+    await page.getByRole('button', { name: 'Menú de usuario' }).click()
+    await page.getByRole('menuitem', { name: 'Cerrar sesión' }).click()
+    await page.getByPlaceholder('tu@email.com').fill('otroentrenador@correo.com')
+    await page.locator('input[type=password]').fill('desarrollo123')
+    await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click()
+    await page.waitForURL(/\/dashboard/, { timeout: 20_000 })
+
+    // Al equipo por el conmutador, que es el camino real: no hay entrada de
+    // navegacion para el crew, vive en la cabecera de la barra lateral.
+    await page.getByRole('button', { name: /La Tribu del Cerro/ }).first().click()
+    await page.getByRole('menuitem', { name: 'Ver el equipo' }).click()
+
+    await expect(page.getByRole('button', { name: /Copiar enlace/ })).toBeVisible()
   })
 })

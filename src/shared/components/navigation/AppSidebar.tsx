@@ -26,6 +26,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
    * igual no es solo un choque de tipos: seria pintar `role="trainer"` en el DOM.
    */
   viewerRole: CrewRole | null
+  isPlatformAdmin: boolean
   loading: boolean
   onSelectCrew: (crewId: string) => void
 }
@@ -34,13 +35,14 @@ export function AppSidebar({
   memberships,
   active,
   viewerRole,
+  isPlatformAdmin,
   loading,
   onSelectCrew,
   ...props
 }: AppSidebarProps) {
   // Los destinos dependen del papel: el padron de alumnos y el catalogo son de
   // gestion, y un alumno no tiene nada que hacer ahi.
-  const sidebarRoutes = getSidebarRoutes(viewerRole)
+  const sidebarRoutes = getSidebarRoutes({ role: viewerRole, isPlatformAdmin })
 
   return (
     <Sidebar variant="inset" {...props}>

@@ -1,9 +1,15 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { container } from '@/app/container'
 import { useAuthStore } from '@/app/stores/authStore'
 import { AppError } from '@/shared/domain/errors'
-import type { RegisterFormData, RegisterFormField } from '../types/register.types'
+import { canEnrollMembers } from '@/shared/domain/entities/crew'
+import { readIntendedPath } from '../libs/intendedPath'
+import type {
+  RegisterFormData,
+  RegisterFormField,
+  RegisterIntent,
+} from '../types/register.types'
 
 const EMPTY_FORM: RegisterFormData = {
   firstName: '',
@@ -13,23 +19,25 @@ const EMPTY_FORM: RegisterFormData = {
   specialty: '',
   yearsOfExperience: '',
   location: '',
+  joinCode: '',
 }
 
 /**
- * Campos obligatorios para poder enviar.
+ * Qué es obligatorio, según con qué intención se registra.
  *
  * Como lista, el formulario y la validación no pueden discrepar. Antes sí lo
  * hacían: el input de ubicación estaba marcado `required` en el JSX pero
  * `isFormValid` no lo comprobaba, así que el navegador bloqueaba el envío por un
  * campo que la validación consideraba opcional.
+ *
+ * El alumno no da especialidad ni años de experiencia. Pedírselos era el motivo
+ * de partir el registro en dos: un formulario que interroga sobre una profesión
+ * a quien sólo quiere ver sus entrenamientos.
  */
-const REQUIRED_FIELDS: RegisterFormField[] = [
-  'firstName',
-  'lastName',
-  'email',
-  'password',
-  'specialty',
-]
+const REQUIRED_BY_INTENT: Record<RegisterIntent, RegisterFormField[]> = {
+  trainer: ['firstName', 'lastName', 'email', 'password', 'specialty'],
+  student: ['firstName', 'lastName', 'email', 'password'],
+}
 
 const messageFor = (error: unknown) =>
   AppError.is(error) ? error.message : 'No se pudo crear la cuenta'
@@ -45,20 +53,21 @@ interface UseRegisterFormResult {
 }
 
 /**
- * Estado, validación y envío del formulario de registro.
+ * Estado, validación y envío del registro.
  *
  * Vivía dentro de `RegisterForm`, que a la vez guardaba el estado, validaba,
  * gestionaba el envío y pintaba doscientas líneas de JSX. Separarlo deja el
  * componente como presentación pura y permite probar la validación sin montar
  * el formulario.
  *
- * QUIÉN ERES LO DECIDE TU CORREO, no una casilla del formulario. Si el correo ya
- * tiene ficha de alumno —porque un entrenador lo dio de alta—, la cuenta se ata
- * a esa ficha y entras como alumno. Si no, se crea una ficha de entrenador.
+ * RECIBE LA INTENCIÓN, y de ella dependen tres cosas: qué campos se exigen, qué
+ * perfil se crea y a dónde se aterriza. Lo que NO depende de ella es el rol
+ * real: eso se sigue deduciendo de quién te conoce.
  *
- * El rol NO se guarda en la cuenta. Se deduce de qué repositorio conoce tu
- * perfil, que es la decisión registrada en CAMBIOS §5: lo que el propio cliente
- * puede editar —`user_metadata`— no sirve para decidir permisos.
+ * QUIEN YA ERA ALUMNO DE ALGUIEN LO SIGUE SIENDO, se registre como se registre.
+ * `claimByEmail` corre en los dos casos: si un entrenador ya había creado tu
+ * ficha con este correo, entras a su equipo aunque además vengas a montar el
+ * tuyo. Las dos cosas pueden ser ciertas a la vez, y el rol es por crew.
  *
  * ORDEN IMPORTANTE: primero la cuenta, después el perfil. Al revés quedarían
  * fichas huérfanas cada vez que el alta de la cuenta fallase, que es el caso
@@ -69,12 +78,15 @@ interface UseRegisterFormResult {
  * el perfil falla, queda una cuenta sin ficha y el siguiente intento choca con
  * «ya existe ese correo».
  */
-export function useRegisterForm(): UseRegisterFormResult {
+export function useRegisterForm(intent: RegisterIntent): UseRegisterFormResult {
   const navigate = useNavigate()
+  const location = useLocation()
   const setUser = useAuthStore((state) => state.setUser)
   const [formData, setFormData] = useState<RegisterFormData>(EMPTY_FORM)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const required = REQUIRED_BY_INTENT[intent]
 
   const setField = (field: RegisterFormField, value: string) => {
     setFormData((previous) => ({ ...previous, [field]: value }))
@@ -83,9 +95,9 @@ export function useRegisterForm(): UseRegisterFormResult {
     setError(null)
   }
 
-  const isRequired = (field: RegisterFormField) => REQUIRED_FIELDS.includes(field)
+  const isRequired = (field: RegisterFormField) => required.includes(field)
 
-  const isValid = REQUIRED_FIELDS.every((field) => formData[field].trim().length > 0)
+  const isValid = required.every((field) => formData[field].trim().length > 0)
 
   const submit = async () => {
     if (!isValid || loading) return
@@ -98,17 +110,11 @@ export function useRegisterForm(): UseRegisterFormResult {
     try {
       const user = await container.auth.signUp({ email, password: formData.password })
 
-      /*
-       * Se reclaman las fichas que esperaban este correo, en CUALQUIER equipo.
-       *
-       * Antes se preguntaba con `findByEmail`, que quedo acotado al crew activo
-       * cuando llego la multi-tenencia: durante el alta no hay ninguno, asi que
-       * no encontraba nunca nada y todo el que se registraba acababa siendo
-       * entrenador, incluidos los alumnos invitados. Lo cazo una prueba.
-       */
-      const claimed = await container.students.claimByEmail(email, user.id)
+      // Las fichas que esperaban este correo, en CUALQUIER equipo. Corre para
+      // los dos roles: un entrenador puede ser además alumno de otro.
+      await container.students.claimByEmail(email, user.id)
 
-      if (claimed.length === 0) {
+      if (intent === 'trainer') {
         await container.trainers.create({
           profileId: user.id,
           firstName: formData.firstName.trim(),
@@ -118,15 +124,14 @@ export function useRegisterForm(): UseRegisterFormResult {
           // sin poner, no en cero, que afirmaría algo que nadie ha dicho.
           yearsExperience: Number.parseInt(formData.yearsOfExperience, 10) || undefined,
         })
+      } else if (formData.joinCode.trim() !== '') {
+        await joinWithCode(formData.joinCode, user.id, email)
       }
 
       setUser(user)
-      /*
-       * A la raiz, no a `/dashboard`: es `HomeRedirect` quien sabe con que
-       * papel se ha entrado. Mandar aqui al panel llevaba a un alumno a la
-       * pantalla de gestion del entrenador, vacia y con sus rotulos.
-       */
-      navigate('/', { replace: true })
+      // A donde se quería ir —el QR desvía aquí y hay que volver— y si no a la
+      // raíz, que es donde `HomeRedirect` decide según el papel.
+      navigate(readIntendedPath(location.state) ?? '/', { replace: true })
     } catch (caught) {
       setError(messageFor(caught))
     } finally {
@@ -135,4 +140,24 @@ export function useRegisterForm(): UseRegisterFormResult {
   }
 
   return { formData, isValid, loading, error, isRequired, setField, submit }
+}
+
+/**
+ * Entra al equipo cuyo código se ha escrito en el alta.
+ *
+ * UN CÓDIGO QUE NO VALE NO TUMBA EL REGISTRO. La cuenta ya está creada y es lo
+ * importante; equivocarse al copiar ocho caracteres no puede costar volver a
+ * empezar. Se ignora en silencio y quien lo escribió lo reintenta desde la
+ * pantalla de unirse, que es donde el error sí se explica.
+ */
+async function joinWithCode(code: string, profileId: string, email: string): Promise<void> {
+  const crew = await container.crews.findByJoinToken(code)
+  if (crew === null || !canEnrollMembers(crew)) return
+
+  await container.students.claimMembership({
+    crewId: crew.id,
+    profileId,
+    email,
+    status: crew.requiresApproval ? 'pending' : 'active',
+  })
 }

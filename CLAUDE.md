@@ -277,10 +277,14 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
 - La página del equipo tiene miembros, solicitudes y QR. **Faltan el muro de
   anuncios con «me gusta», el ranking y los eventos.** Los criterios para cuando
   lleguen están en CAMBIOS §9.8.
-- El registro es el mismo formulario para entrenador y alumno, con campos
-  profesionales que a un alumno no le tocan. **Falta separarlo en dos.**
 - `CrewTrainer` está modelado y no se puebla: un crew tiene hoy un solo
   entrenador, su dueño.
+- La lista de administradores de plataforma es una constante en la semilla. Con
+  backend es una tabla que sólo escribe el rol de servicio, y la comprobación
+  vive en las políticas, no en el cliente: **hoy la puerta de la suscripción la
+  guarda el navegador**, que es suficiente para el producto y no para la
+  seguridad. Está anotado en `PlatformRepository`.
+- No hay cobro: activar una suscripción es una decisión manual desde `/admin`.
 - Props declaradas y sin conectar, marcadas con `TODO:` en gamification y
   calendar. `ChallengeCard.onUpdate` es la más grave: el padre le pasa un
   manejador real que nunca se invoca.

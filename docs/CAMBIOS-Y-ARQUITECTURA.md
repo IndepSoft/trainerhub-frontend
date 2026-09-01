@@ -619,3 +619,96 @@ Dos criterios ya decididos para cuando lleguen:
 - **Los entrenamientos grupales NO son una entidad nueva.** `Session` ya tiene
   `kind: 'group'` y `studentId: null`. Reutilizarla les da calendario, ejecución y
   experiencia gratis. Los eventos —una carrera, una quedada— sí son otra cosa.
+
+---
+
+## 10. La suscripción, el super admin y el registro partido (1 sep 2026)
+
+### 10.1 El rol que se elige al registrarse es una declaración
+
+Cualquiera puede decir «soy entrenador»: el formulario no comprueba nada, y no
+puede. **Eso es seguro precisamente porque lo que vale está detrás de la
+suscripción**: registrarse como entrenador sin serlo da un equipo vacío en el que
+no se puede meter a nadie.
+
+El rol de verdad se sigue deduciendo de quién te conoce. Lo que la declaración
+decide es qué formulario se ve y qué perfil se crea, no qué se puede hacer.
+
+Y el correo sigue **reclamando** lo que estuviera esperándole, se registre uno
+como se registre: si un entrenador ya había creado tu ficha, entras a su equipo
+aunque además vengas a montar el tuyo. Las dos cosas pueden ser ciertas —el rol
+es por crew— y por eso `claimByEmail` corre en los dos casos.
+
+### 10.2 Qué exige suscripción, y qué no
+
+Un entrenador puede crear su equipo, montar su catálogo, escribir rutinas y
+planificar mesociclos **sin pagar nada**: es trabajo suyo y no lo ve nadie más.
+Lo que exige activación es **incorporar alumnos** —el QR y el alta de fichas—,
+que es cuando el producto empieza a servirle a más de una persona.
+
+La regla vive junto a la entidad, en `canEnrollMembers`, porque la comprueban
+tres sitios: el QR, el alta de alumnos y la solicitud de entrada. Una regla
+repetida en tres pantallas es una regla que acabará aplicándose en dos.
+
+**Se comprueba también al entrar por el código, no sólo al pintar el QR.** El
+código sigue circulando después de suspender —está en un cartel, en una foto, en
+el historial de un móvil— y esconder el QR no lo invalida. La puerta tiene que
+estar donde se entra, no sólo donde se enseña la llave.
+
+Y el mensaje que ve el alumno **no menciona la suscripción**: quien intenta
+entrar no puede resolver el estado del pago de su entrenador, y no es asunto
+suyo.
+
+**El estado es por crew, no por entrenador.** Lo que se activa es la capacidad de
+meter gente EN UN EQUIPO, así que vive donde está el equipo. Un entrenador con
+dos crews puede tener uno activo y otro no, que es lo que pasa cuando abre un
+segundo local.
+
+`subscriptionStatus` **no está en `CrewSettings`**: si viajara con los ajustes,
+el dueño podría activarse la suscripción desde su propia pantalla.
+
+### 10.3 El super admin no es un rol de crew
+
+`CrewRole` responde «qué eres en este equipo». Esto responde «estás por encima de
+los equipos», que es otra pregunta: un administrador puede además entrenar en su
+propio crew, y las dos cosas son ciertas a la vez. Meterlo en la misma unión
+obligaría a elegir.
+
+`PlatformRepository` está separado de `CrewRepository` porque **es el único
+puerto que mira por encima de los crews**. Tenerlo aparte hace que esa excepción
+se vea al leer la lista de puertos, en vez de esconderse dentro de uno que
+promete lo contrario. Sus dos métodos de lectura sin acotar —`listAll` en crews,
+`countMembersOf` en alumnos— tampoco están en ningún puerto: son de la
+implementación falsa, y la raíz de composición se los entrega expresamente.
+
+**Esconder la pantalla no es la seguridad.** La ruta comprueba quién entra y eso
+evita mostrarla por error; lo que impedirá de verdad que alguien active su propio
+equipo es la política del servidor, que todavía no existe. Está anotado en el
+puerto.
+
+### 10.4 El agujero del QR que sólo se veía sin cuenta
+
+`ProtectedRoute` desviaba al login **y perdía el destino**. En el caso más
+frecuente de todos —alguien sin cuenta escanea el QR de su entrenador— eso
+significaba: rebote a identificarse, registro, y aterrizaje en su progreso con el
+código perdido. Tenía que volver a pedirle el QR a quien acababa de enseñárselo.
+
+Ahora la ruta viaja en el estado del historial, como texto, y login y registro
+vuelven a ella. La ruta guardada se valida —interna, sin `//`— porque el estado
+del historial es dato de fuera.
+
+### 10.5 Por qué el registro se parte en dos
+
+El formulario único pedía especialidad, años de experiencia y ubicación a
+cualquiera. A quien sólo quiere ver sus entrenamientos le hacía declarar una
+profesión que no tiene, que es la forma más rápida de que alguien abandone un
+alta. Son siete campos frente a cuatro.
+
+Se pregunta la intención **antes** que nada, y no con una casilla dentro del
+mismo formulario: media pantalla apareciendo y desapareciendo se lee peor que dos
+formularios distintos. Las dos opciones tienen el mismo peso visual a propósito,
+porque empujar hacia la de entrenador haría que los alumnos se registraran mal.
+
+El borrador es uno solo para los dos, y los campos que no le tocan al rol elegido
+no se leen. La alternativa —una unión discriminada— obligaba a tirar lo escrito
+al cambiar de rol, que es justo lo que hace quien se equivoca y vuelve.

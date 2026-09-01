@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/app/stores/authStore'
 import { container } from '@/app/container'
 import { AppError } from '@/shared/domain/errors'
+import { readIntendedPath } from '../libs/intendedPath'
 import type { LoginCredentials } from '@/shared/domain/entities/auth'
 
 const messageFor = (err: unknown) =>
@@ -10,6 +11,7 @@ const messageFor = (err: unknown) =>
 
 export const useLogin = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const setUser = useAuthStore((state) => state.setUser)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -22,11 +24,11 @@ export const useLogin = () => {
       const user = await container.auth.signInWithEmail(credentials)
       setUser(user)
       /*
-       * A la raiz, no a `/dashboard`: es `HomeRedirect` quien sabe con que
-       * papel se ha entrado. Mandar aqui al panel llevaba a un alumno a la
-       * pantalla de gestion del entrenador, vacia y con sus rotulos.
+       * A donde se queria ir, y si no a la raiz -que es donde `HomeRedirect`
+       * decide segun el papel-. Mandar siempre al panel llevaba a un alumno a
+       * la pantalla de gestion del entrenador, vacia y con sus rotulos.
        */
-      navigate('/', { replace: true })
+      navigate(readIntendedPath(location.state) ?? '/', { replace: true })
     } catch (err) {
       setError(messageFor(err))
     } finally {

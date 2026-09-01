@@ -23,10 +23,11 @@ import type { CrewRole } from '@/shared/domain/entities/crew'
 interface BottomTabBarProps {
   /** Con qué papel se navega. `null` sin crew: sólo lo que no pide rol. */
   role: CrewRole | null
+  isPlatformAdmin: boolean
 }
 
-export function BottomTabBar({ role }: BottomTabBarProps) {
-  const routes = getMobileRoutes(role)
+export function BottomTabBar({ role, isPlatformAdmin }: BottomTabBarProps) {
+  const routes = getMobileRoutes({ role, isPlatformAdmin })
 
   return (
     <nav

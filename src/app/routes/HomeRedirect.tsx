@@ -20,15 +20,20 @@ import { LoadingFallback } from '@/shared/components/LoadingFallback'
  *   dónde meter alumnos ni rutinas y la aplicación no tiene nada que enseñarle.
  *   Quien no la tiene va a Progreso, donde le espera la invitación a unirse.
  *
+ * Y quien administra la plataforma va a su panel ANTES que a nada de esto: entra
+ * a mirar equipos ajenos, no a entrenar. Si además tiene crew propio, lo alcanza
+ * por el conmutador como todo el mundo.
+ *
  * Se espera a saber quién es antes de redirigir. Sin esperar, todo el mundo
  * pasaría un instante por la ruta equivocada y volvería, que es un parpadeo y
  * una entrada de más en el historial.
  */
 export default function HomeRedirect() {
-  const { role, trainer, loading } = useViewerContext()
+  const { role, trainer, isPlatformAdmin, loading } = useViewerContext()
 
   if (loading) return <LoadingFallback />
 
+  if (isPlatformAdmin) return <Navigate to="/admin" replace />
   if (role === 'trainer') return <Navigate to="/dashboard" replace />
   if (role === null && trainer !== null) return <Navigate to="/crew/nuevo" replace />
 

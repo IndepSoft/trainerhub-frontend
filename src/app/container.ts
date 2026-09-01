@@ -18,6 +18,8 @@ import type { ExerciseRepository } from '@/shared/domain/ports/ExerciseRepositor
 import { FakeExerciseRepository } from '@/shared/infrastructure/fake/FakeExerciseRepository'
 import type { CrewRepository } from '@/shared/domain/ports/CrewRepository'
 import { FakeCrewRepository } from '@/shared/infrastructure/fake/FakeCrewRepository'
+import type { PlatformRepository } from '@/shared/domain/ports/PlatformRepository'
+import { FakePlatformRepository } from '@/shared/infrastructure/fake/FakePlatformRepository'
 import { crewScope } from './crewScope'
 
 /**
@@ -33,6 +35,7 @@ import { crewScope } from './crewScope'
 export interface Container {
   auth: AuthPort
   crews: CrewRepository
+  platform: PlatformRepository
   trainers: TrainerRepository
   students: StudentRepository
   routines: RoutineRepository
@@ -75,10 +78,21 @@ function createTrainerRepository(): TrainerRepository {
   return new SupabaseTrainerRepository()
 }
 
+/*
+ * La plataforma se compone aparte porque necesita las CLASES CONCRETAS de crews
+ * y alumnos: mira por encima del ambito de un crew, y los puertos no ofrecen eso
+ * a proposito. Juntarlas es exactamente el trabajo de la raiz de composicion, y
+ * el unico sitio donde puede ocurrir sin que nadie mas se entere.
+ */
+const fakeCrews = new FakeCrewRepository()
+const fakeStudents = new FakeStudentRepository(crewScope)
+const trainers = createTrainerRepository()
+
 export const container: Container = {
   auth: createAuthenticationAdapter(),
-  crews: new FakeCrewRepository(),
-  trainers: createTrainerRepository(),
+  crews: fakeCrews,
+  platform: new FakePlatformRepository(fakeCrews, fakeStudents, trainers),
+  trainers,
   /*
    * TODO: sustituir por los repositorios reales cuando existan las tablas. Son
    * los unicos adaptadores falsos que siguen activos en produccion.
@@ -91,7 +105,7 @@ export const container: Container = {
    * Con un backend real esto desaparece: el crew activo viaja en la sesion y
    * filtra Postgres con RLS, no el cliente.
    */
-  students: new FakeStudentRepository(crewScope),
+  students: fakeStudents,
   routines: new FakeRoutineRepository(crewScope),
   sessions: new FakeSessionRepository(crewScope),
   plans: new FakePlanRepository(crewScope),

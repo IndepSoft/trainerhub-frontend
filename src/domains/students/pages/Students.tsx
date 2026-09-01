@@ -8,11 +8,21 @@ import { useStudents } from '../hooks/useStudents'
 import { useStudentEditor } from '../hooks/useStudentEditor'
 import { Button } from '@/shared/ui/button'
 import type { NewStudent } from '@/shared/domain/ports/StudentRepository'
+import { canEnrollMembers } from '@/shared/domain/entities/crew'
+import { useViewerContext } from '@/app/ViewerContext'
 import type { Student } from '@/shared/domain/entities/student'
 
 export default function Students() {
   const { students, loading } = useStudents()
   const { createStudent, updateStudent } = useStudentEditor()
+  const { active } = useViewerContext()
+
+  /*
+   * Dar de alta a alguien es incorporarlo al equipo, así que pasa por la misma
+   * puerta que el QR. Editar y ver a los que ya están sigue abierto: lo que se
+   * activa es crecer, no trabajar con quien ya tienes.
+   */
+  const canEnroll = active !== null && canEnrollMembers(active.crew)
 
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editing, setEditing] = useState<Student | null>(null)
@@ -53,13 +63,22 @@ export default function Students() {
                 -nada, los dos eran `console.log`-; ahora que el alumno se
                 enlaza con su cuenta por el correo que se escribe aqui, dar de
                 alta ES invitar. */}
-            <Button onClick={openForNew}>
+            <Button onClick={openForNew} disabled={!canEnroll}>
               <Plus className="w-4 h-4" />
               <span>Añadir alumno</span>
             </Button>
           </PageHeader.Actions>
         </PageHeader.Content>
       </PageHeader>
+
+      {/* El porqué, donde se ve el botón apagado. Un control desactivado sin
+          explicación es un control roto. */}
+      {!canEnroll && active !== null && (
+        <p className="ps-4 pe-4 pt-3 text-sm text-ink/55">
+          Para dar de alta a alguien hace falta activar la suscripción de{' '}
+          {active.crew.name}. Puedes seguir trabajando con quienes ya están.
+        </p>
+      )}
 
       <section className="pt-4 ps-4 pe-4 mb-6 space-y-6">
         <StudentFilters />

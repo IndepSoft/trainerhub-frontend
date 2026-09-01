@@ -11,6 +11,7 @@ import { reportsRoutes } from '@/domains/reports/infrastructure/routes'
 import { sessionRoutes } from '@/domains/session/infrastructure/routes'
 import { onboardingRoutes } from '@/domains/onboarding/infrastructure/routes'
 import { crewRoutes } from '@/domains/crew/infrastructure/routes'
+import { platformRoutes } from '@/domains/platform/infrastructure/routes'
 
 const RootLayout = lazy(() => import('@/app/layouts/RootLayout'))
 const NotFound = lazy(() => import('@/shared/pages/NotFound'))
@@ -26,6 +27,7 @@ const domainRoutes = [
   ...sessionRoutes,
   ...onboardingRoutes,
   ...crewRoutes,
+  ...platformRoutes,
   ...authRoutes,
 ]
 

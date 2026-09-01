@@ -48,7 +48,53 @@ export interface Crew {
    * general, comparar públicamente el esfuerzo hace daño en vez de motivar.
    */
   rankingEnabled: boolean
+  /**
+   * En qué punto está la suscripción de este crew.
+   *
+   * ES POR CREW Y NO POR ENTRENADOR, aunque quien paga sea una persona: lo que
+   * se activa es la capacidad de meter gente EN UN EQUIPO, así que el estado
+   * tiene que estar donde está el equipo. Un entrenador con dos crews puede
+   * tener uno activo y otro no, que es lo que ocurre cuando abre un segundo
+   * local.
+   *
+   * Sólo la cambia un administrador de plataforma, por `PlatformRepository`. No
+   * está en `CrewSettings` a propósito: si estuviera, el dueño del crew podría
+   * activarse la suscripción a sí mismo con la pantalla de ajustes.
+   */
+  subscriptionStatus: SubscriptionStatus
   photoUrl?: string
+}
+
+/**
+ * El estado de la suscripción de un crew.
+ *
+ * `pending` es donde nace todo crew: creado y sin activar. `suspended` es
+ * distinto —estuvo activo y se apagó—, y se distingue porque lo que hay que
+ * decirle al entrenador no es lo mismo: a uno se le explica que falta la
+ * activación, al otro que se le ha retirado.
+ */
+export type SubscriptionStatus = 'pending' | 'active' | 'suspended'
+
+/**
+ * Si este crew puede incorporar gente.
+ *
+ * ES LA PUERTA DEL PRODUCTO. Un entrenador puede crear su equipo, montar su
+ * catálogo, escribir rutinas y planificar mesociclos sin pagar nada: todo eso es
+ * trabajo suyo y nadie más lo ve. Lo que exige suscripción es METER ALUMNOS —el
+ * QR y el alta de fichas—, que es cuando el producto empieza a servirle a más de
+ * una persona.
+ *
+ * Se declara aquí, junto a la entidad, y no dentro de una pantalla, porque la
+ * comprueban tres sitios distintos: el QR, el alta de alumnos y la solicitud de
+ * entrada. Una regla repetida en tres pantallas es una regla que acabará
+ * aplicándose en dos.
+ *
+ * TODO: hoy la comprueba el cliente. Con backend es una política del servidor:
+ * un cliente modificado puede saltarse esto, y por eso la comprobación tiene que
+ * existir también donde se escribe.
+ */
+export function canEnrollMembers(crew: Crew): boolean {
+  return crew.subscriptionStatus === 'active'
 }
 
 /** Las denominaciones que se ofrecen. Lista cerrada, por el mismo motivo que los objetivos de un alumno. */

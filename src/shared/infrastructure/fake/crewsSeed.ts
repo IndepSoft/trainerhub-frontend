@@ -26,5 +26,9 @@ export const crewsSeed: Crew[] = [
     joinToken: 'HIERRO24',
     requiresApproval: true,
     rankingEnabled: true,
+    // Activo: es el equipo con el que se trabaja en desarrollo, y dejarlo
+    // pendiente obligaria a entrar como administrador antes de poder hacer
+    // nada. Los que se crean desde la aplicacion SI nacen pendientes.
+    subscriptionStatus: 'active',
   },
 ]

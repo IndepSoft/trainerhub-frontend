@@ -8,6 +8,7 @@ import {
   Calendar,
   Users,
   Award,
+  ShieldCheck,
 } from 'lucide-react'
 
 export interface NavigationItem {
@@ -34,6 +35,14 @@ export interface NavigationItem {
    * servidor. Esto es no ofrecer puertas que no abren.
    */
   roles?: CrewRole[]
+  /**
+   * Sólo para quien administra la plataforma.
+   *
+   * Va aparte de `roles` porque no es un rol de crew: no depende de en qué
+   * equipo se esté, ni de estar en alguno. Un administrador sin equipo tiene que
+   * ver su panel igual.
+   */
+  platformOnly?: boolean
   children?: NavigationItem[]
 }
 
@@ -109,6 +118,19 @@ export const navigationConfig: NavigationItem[] = [
     showInMobile: false,
   },
 
+  {
+    id: 'admin',
+    label: 'Plataforma',
+    href: '/admin',
+    icon: ShieldCheck,
+    requiresAuth: true,
+    platformOnly: true,
+    showInSidebar: true,
+    // Fuera de la barra inferior: no es una pantalla de uso diario, y cinco
+    // destinos es el maximo antes de que la etiqueta deje de caber a 375 px.
+    showInMobile: false,
+  },
+
   // Rutas de guest (sin auth)
   {
     id: 'authentication',
@@ -136,22 +158,29 @@ export const navigationConfig: NavigationItem[] = [
  * unirse a un equipo. Es deliberado: enseñarle lo que va a tener explica el
  * producto mucho mejor que una pantalla unica que le corta el paso.
  */
-function matchesRole(item: NavigationItem, role: CrewRole | null): boolean {
+function matchesViewer(item: NavigationItem, viewer: NavigationViewer): boolean {
+  if (item.platformOnly === true) return viewer.isPlatformAdmin
   if (item.roles === undefined) return true
-  if (role === null) return false
-  return item.roles.includes(role)
+  if (viewer.role === null) return false
+  return item.roles.includes(viewer.role)
+}
+
+/** Quien navega, en lo que hace falta para decidir qué se le ofrece. */
+export interface NavigationViewer {
+  role: CrewRole | null
+  isPlatformAdmin: boolean
 }
 
 // Helpers para filtrar rutas
-export const getSidebarRoutes = (role: CrewRole | null) =>
+export const getSidebarRoutes = (viewer: NavigationViewer) =>
   navigationConfig.filter(
-    (item) => item.showInSidebar && item.requiresAuth && matchesRole(item, role)
+    (item) => item.showInSidebar && item.requiresAuth && matchesViewer(item, viewer)
   )
 
 /** Destinos de la barra inferior en movil. Maximo cinco. */
-export const getMobileRoutes = (role: CrewRole | null) =>
+export const getMobileRoutes = (viewer: NavigationViewer) =>
   navigationConfig.filter(
-    (item) => item.showInMobile && item.requiresAuth && matchesRole(item, role)
+    (item) => item.showInMobile && item.requiresAuth && matchesViewer(item, viewer)
   )
 
 export const getGuestRoutes = () =>

@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { container } from '@/app/container'
 import { useAuthStore } from '@/app/stores/authStore'
 import { AppError } from '@/shared/domain/errors'
+import { canEnrollMembers } from '@/shared/domain/entities/crew'
 import type { Crew } from '@/shared/domain/entities/crew'
 
 /** Cómo acabó el intento, para que la pantalla sepa qué decir. */
@@ -52,6 +53,23 @@ export function useJoinCrew(): UseJoinCrewResult {
         const crew = await container.crews.findByJoinToken(code)
         if (crew === null) {
           setError('Ese código no vale. Comprueba que esté bien escrito, o pide uno nuevo.')
+          return null
+        }
+
+        /*
+         * Se comprueba TAMBIÉN aquí, no sólo al pintar el QR.
+         *
+         * El código puede seguir circulando después de que la suscripción se
+         * suspenda —está en un cartel, en una foto, en el historial del móvil de
+         * alguien— y esconder el QR no lo invalida. La puerta tiene que estar
+         * donde se entra, no sólo donde se enseña la llave.
+         *
+         * El mensaje NO menciona la suscripción: quien intenta entrar es un
+         * alumno, y el estado del pago de su entrenador no es asunto suyo ni
+         * algo que pueda resolver.
+         */
+        if (!canEnrollMembers(crew)) {
+          setError('Ese equipo no está admitiendo gente ahora mismo. Habla con tu entrenador.')
           return null
         }
 

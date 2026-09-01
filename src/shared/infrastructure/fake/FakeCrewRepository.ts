@@ -3,7 +3,7 @@ import type {
   CrewSettings,
   NewCrew,
 } from '@/shared/domain/ports/CrewRepository'
-import type { Crew } from '@/shared/domain/entities/crew'
+import type { Crew, SubscriptionStatus } from '@/shared/domain/entities/crew'
 import { crewsSeed } from './crewsSeed'
 
 /**
@@ -58,6 +58,12 @@ export class FakeCrewRepository implements CrewRepository {
       // sepa. Se puede desactivar para un crew abierto.
       requiresApproval: true,
       rankingEnabled: true,
+      /*
+       * NACE PENDIENTE. Crear el equipo, el catalogo y las rutinas es gratis
+       * -es trabajo del entrenador y no lo ve nadie mas-; lo que exige
+       * activacion es meter alumnos. Ver `canEnrollMembers`.
+       */
+      subscriptionStatus: 'pending',
     }
 
     this.crews = [...this.crews, crew]
@@ -75,6 +81,27 @@ export class FakeCrewRepository implements CrewRepository {
     this.crews = this.crews.map((crew) => (crew.id === crewId ? { ...crew, joinToken } : crew))
     this.notify()
     return joinToken
+  }
+
+  /**
+   * Todos los crews, sin acotar.
+   *
+   * NO ESTA EN EL PUERTO, y es lo que la mantiene honesta: `CrewRepository`
+   * promete operaciones de un equipo, y esto ve todos. Solo la usa
+   * `FakePlatformRepository`, a quien la raiz de composicion se la entrega
+   * expresamente. Con backend desaparece: sera una consulta con rol de
+   * servicio, que es lo unico que puede saltarse RLS.
+   */
+  listAll(): Crew[] {
+    return this.crews
+  }
+
+  /** Igual que `listAll`: fuera del puerto, y solo para la plataforma. */
+  setSubscription(crewId: string, subscriptionStatus: SubscriptionStatus): void {
+    this.crews = this.crews.map((crew) =>
+      crew.id === crewId ? { ...crew, subscriptionStatus } : crew
+    )
+    this.notify()
   }
 
   onChange(listener: () => void): () => void {
