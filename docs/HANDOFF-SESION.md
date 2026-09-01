@@ -34,7 +34,7 @@ conserva el fichero con otro propósito: traspaso rodante entre sesiones.
 punto viejo.
 
 Estado verificado el 31 de agosto, ejecutado y no supuesto: `npm run lint`
-limpio, `tsc -b` en verde, **72 pruebas de Playwright en verde**.
+limpio, `tsc -b` en verde, **101 pruebas de Playwright en verde**.
 
 ---
 
@@ -63,7 +63,7 @@ así que entra `FakeAuthAdapter`, no Supabase:
 
 Es el punto donde más se equivocaba la versión anterior de este documento.
 
-- `tests/visual/screenshots.spec.ts`: **72 pruebas**. Muchas están
+- `tests/visual/screenshots.spec.ts`: **101 pruebas**. Muchas están
   parametrizadas por tres anchos —375, 768 y 1440— desde la constante
   `VIEWPORTS`.
 - Se lanzan con `npx playwright test`. **No hay script `test` en
@@ -78,6 +78,13 @@ Es el punto donde más se equivocaba la versión anterior de este documento.
   encima de 280, que la duración que muestra un formulario sea la que se guarda,
   y que un bloque insertado desde la biblioteca sea una copia y no una
   referencia.
+- Una trampa que ya mordió: **`page.goto` recarga la aplicación**, y los
+  adaptadores falsos vuelven a su semilla. Cualquier prueba que cree algo y
+  luego compruebe otra pantalla tiene que navegar POR LA INTERFAZ, o estará
+  comprobando la semilla.
+- Y otra: la ruta del catálogo es `lazy`, así que su primera carga en desarrollo
+  pasa de los cinco segundos por defecto cuando la máquina va cargada. Esa
+  espera lleva margen explícito.
 
 ---
 
@@ -281,7 +288,8 @@ ficheros `*.mock.ts` los esperan con un `TODO` que nombra la costura.
 
 **Siete puertos**: `AuthPort`, `TrainerRepository`, `StudentRepository`,
 `RoutineRepository`, `SessionRepository`, `PlanRepository` y
-`AssignmentRepository`. Cada uno nació al cumplirse su condición —una entidad
+`AssignmentRepository`. Y tres módulos de reglas puras en `shared/domain`:
+`sessionScheduling` (choques), `planScheduling` (volcado) y `routineDuration`. Cada uno nació al cumplirse su condición —una entidad
 sube cuando la necesitan DOS dominios, según `shared/domain/entities/student.ts`—
 y no antes.
 
@@ -300,9 +308,13 @@ No son excluyentes: un alumno puede tener un plan y tres rutinas a la vez. Y un
 plan puede estar asignado **sin fecha de inicio**, que es un estado legítimo
 —«ya veremos cuándo empiezas»— y por eso `startDate` admite `null`.
 
-Volcar un plan a la agenda —generar sus sesiones— es una **cuarta acción, aún
-sin construir**. Es lo único que falta de la asignación masiva, y la regla de
-choques ya está lista para que su vista previa marque los conflictos.
+**Volcar un plan a la agenda** es la cuarta acción, y ya existe: desde la
+asignación, con una hora por cada día de la semana que el plan usa, una previa
+que marca los conflictos y confirmación explícita. Genera las sesiones
+—materializadas, no derivadas— con la duración estimada de cada rutina.
+
+Sólo se ofrece en planes **con fecha de inicio**: sin ella no hay desde cuándo
+contar las semanas.
 
 **Cada dominio tiene su propio hook sobre el puerto compartido** en vez de
 importar del vecino: `useSchedulableStudents` y `useSchedulableRoutines` en

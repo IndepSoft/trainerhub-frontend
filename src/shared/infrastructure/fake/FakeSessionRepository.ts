@@ -30,6 +30,14 @@ export class FakeSessionRepository implements SessionRepository {
     return this.sessions.filter((session) => session.date === date).sort(compareByStartInstant)
   }
 
+  async findBetween(from: string, to: string): Promise<Session[]> {
+    // `YYYY-MM-DD` ordena bien como texto, asi que el intervalo se compara sin
+    // construir ninguna fecha.
+    return this.sessions
+      .filter((session) => session.date >= from && session.date <= to)
+      .sort(compareByStartInstant)
+  }
+
   async create(data: Omit<Session, 'id'>): Promise<Session> {
     const session: Session = { id: crypto.randomUUID(), ...data }
     this.sessions = [...this.sessions, session]

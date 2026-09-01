@@ -1014,7 +1014,16 @@ test.describe('catalogo del entrenamiento', () => {
   async function abrirCatalogo(page: Page): Promise<void> {
     await page.goto('/trainings')
     await page.getByRole('link', { name: 'Catálogo' }).click()
-    await expect(page.getByRole('heading', { name: 'Catálogo', level: 1 })).toBeVisible()
+    /*
+     * Margen amplio a proposito: la ruta es `lazy`, asi que al pulsar hay que
+     * descargar y compilar su fragmento. En el servidor de desarrollo, y con la
+     * maquina cargada por la propia suite, eso pasa de los cinco segundos por
+     * defecto. No tapa nada: si la pagina no apareciera, tampoco lo haria en
+     * quince.
+     */
+    await expect(page.getByRole('heading', { name: 'Catálogo', level: 1 })).toBeVisible({
+      timeout: 15_000,
+    })
   }
 
   test('un ejercicio nuevo queda disponible al componer una rutina', async ({ page }) => {
@@ -2084,5 +2093,146 @@ test.describe('asignaciones del alumno', () => {
     expect(medidas.etiquetasHuerfanas, 'etiquetas sin control').toBe(0)
 
     await page.screenshot({ path: 'tests/visual/salida/alumno-asignado-mobile.png' })
+  })
+})
+
+/**
+ * Volcar un plan asignado a la agenda.
+ *
+ * Es la tercera accion, la que convierte «este es tu programa» en huecos
+ * reservados. Separada de asignar a proposito: hay quien asigna un plan para que
+ * el alumno lo siga por su cuenta.
+ */
+test.describe('volcar un plan a la agenda', () => {
+  /**
+   * Abre el volcado en la ficha en la que ya se este.
+   *
+   * NO navega: un `page.goto` recarga la aplicacion y los adaptadores falsos
+   * vuelven a su semilla, asi que la prueba de conflictos perdia la sesion que
+   * acababa de crear para provocarlo.
+   */
+  async function abrirVolcado(page: Page): Promise<Locator> {
+    await page.getByRole('button', { name: /Volcar a la agenda/ }).click()
+    const dialogo = page.getByRole('dialog')
+    await expect(dialogo).toContainText('Volcar a la agenda')
+    return dialogo
+  }
+
+  async function ponerHoras(page: Page, hora: string): Promise<void> {
+    for (const dia of ['lunes', 'miércoles', 'jueves', 'viernes']) {
+      await elegirDelDesplegable(page, desplegables(page, dia), hora)
+    }
+  }
+
+  test('pide una hora por cada dia que el plan usa, y no por los siete', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students/student-2')
+    const dialogo = await abrirVolcado(page)
+
+    /*
+     * El plan entrena lunes, miercoles y viernes, y su semana de descarga lunes
+     * y jueves: cuatro dias distintos. Preguntar por los siete obligaria a
+     * rellenar tres campos para dias de descanso.
+     */
+    for (const dia of ['lunes', 'miércoles', 'jueves', 'viernes']) {
+      await expect(dialogo.getByText(dia, { exact: true })).toBeVisible()
+    }
+    await expect(dialogo.getByText('martes', { exact: true })).toHaveCount(0)
+    await expect(dialogo.getByText('domingo', { exact: true })).toHaveCount(0)
+
+    // Sin horas no hay nada que previsualizar, y lo dice.
+    await expect(dialogo).toContainText('Elige la hora de al menos un día')
+  })
+
+  test('la previa calcula las fechas, incluido el cambio de mes', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students/student-2')
+    const dialogo = await abrirVolcado(page)
+    await ponerHoras(page, '08:00')
+
+    /*
+     * Tres semanas de tres dias mas la descarga de dos: once. Es el mismo numero
+     * que la ficha del plan cuenta con `countPlanSessions`, y que salga igual es
+     * lo que confirma que el generador respeta el plan.
+     */
+    await expect(dialogo.getByRole('button', { name: 'Agendar 11 sesiones' })).toBeVisible()
+
+    // La semana 1 arranca en la fecha de inicio.
+    await expect(dialogo).toContainText('lunes, 7 de septiembre · 08:00')
+    // Y la cuarta semana cae ya en octubre: la aritmetica no se queda en el mes.
+    await expect(dialogo).toContainText('jueves, 1 de octubre · 08:00')
+  })
+
+  test('confirmar crea las sesiones, con la duracion de su rutina', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+
+    await page.goto('/students/student-2')
+
+    const filasDeSesion = page
+      .locator('section')
+      .filter({ hasText: 'Sesiones' })
+      .locator('ul > li')
+
+    const dialogo = await abrirVolcado(page)
+    await expect(filasDeSesion).toHaveCount(1)
+
+    await ponerHoras(page, '08:00')
+    await dialogo.getByRole('button', { name: 'Agendar 11 sesiones' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    // Una que ya habia mas las once volcadas.
+    await expect(filasDeSesion).toHaveCount(12)
+
+    /*
+     * La duracion sale de la rutina, no de un valor fijo: es el motivo de que
+     * `estimateRoutineMinutes` subiera a `shared/domain`. Full body estima 25.
+     */
+    await expect(page.getByText('08:00 · 25 min').first()).toBeVisible()
+    // Y nacen pendientes: confirmarlas es un acto aparte.
+    await expect(page.getByText('PENDIENTE').first()).toBeVisible()
+  })
+
+  test('la previa marca lo que choca con lo ya agendado', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students/student-2')
+
+    // Primero se ocupa a mano el hueco del primer dia del plan.
+    await page.getByRole('button', { name: 'Agendar sesión' }).first().click()
+    const alta = page.getByRole('dialog')
+    await alta.getByRole('button', { name: 'Go to the Next Month' }).click()
+    await alta.getByRole('button', { name: 'lunes, 7 de septiembre de 2026' }).click()
+    await elegirDelDesplegable(page, desplegables(page, 'Hora'), '08:00')
+    await elegirDelDesplegable(page, desplegables(page, 'Ubicación'), 'Online')
+    // «Agendar sesion» es el envio de la ficha del alumno; «Programar sesion»
+    // es el del formulario de la agenda, que es otro.
+    await alta.getByRole('button', { name: 'Agendar sesión' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    // Y ahora el volcado avisa de ese choque, sin impedirlo.
+    const dialogo = await abrirVolcado(page)
+    await ponerHoras(page, '08:00')
+
+    await expect(dialogo).toContainText('1 en conflicto')
+    await expect(dialogo.getByText(/lunes, 7 de septiembre · 08:00 · ocupado/)).toBeVisible()
+    // Avisa, no bloquea: el boton sigue disponible.
+    await expect(dialogo.getByRole('button', { name: 'Agendar 11 sesiones' })).toBeEnabled()
+  })
+
+  test('un plan sin fecha de inicio no ofrece volcarse', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/students/student-3')
+
+    /*
+     * Sin fecha de inicio no hay desde cuando contar las semanas, asi que el
+     * boton no llevaria a ninguna parte. La asignacion sigue siendo valida: solo
+     * es un plan que aun no ha empezado.
+     */
+    await expect(page.getByText('Asignado, sin fecha de inicio')).toBeVisible()
+    await expect(page.getByRole('button', { name: /Volcar a la agenda/ })).toHaveCount(0)
   })
 })

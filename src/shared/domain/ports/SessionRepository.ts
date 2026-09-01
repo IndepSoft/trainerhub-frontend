@@ -24,6 +24,14 @@ export interface SessionRepository {
    * significar descargar la agenda entera.
    */
   findByDate(date: string): Promise<Session[]>
+  /**
+   * Las de un intervalo, ambos extremos incluidos.
+   *
+   * La pide el volcado de un plan: comprobar los choques de doce sesiones
+   * repartidas en cuatro semanas con doce llamadas a `findByDate` seria doce
+   * viajes para una sola pregunta.
+   */
+  findBetween(from: string, to: string): Promise<Session[]>
   create(data: Omit<Session, 'id'>): Promise<Session>
   update(sessionId: string, data: Omit<Session, 'id'>): Promise<void>
   /** Avisa de que la colección ha cambiado. Devuelve la función de baja. */

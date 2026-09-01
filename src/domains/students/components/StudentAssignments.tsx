@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CalendarRange, Dumbbell, Plus, Trash2 } from 'lucide-react'
+import { CalendarCheck, CalendarRange, Dumbbell, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { useStudentAssignments } from '../hooks/useStudentAssignments'
 import { useAssignableRoutines } from '../hooks/useAssignableRoutines'
 import { useAssignablePlans } from '../hooks/useAssignablePlans'
 import { formatDateKey } from '../libs/dateKey'
 import { AssignDialog } from './AssignDialog'
-import type { Assignment } from '@/shared/domain/entities/assignment'
+import { PlanToAgendaDialog } from './PlanToAgendaDialog'
+import type { Assignment, PlanAssignment } from '@/shared/domain/entities/assignment'
 import type { Student } from '@/shared/domain/entities/student'
 
 interface StudentAssignmentsProps {
@@ -31,6 +32,17 @@ export function StudentAssignments({ student }: StudentAssignmentsProps) {
   const { plans } = useAssignablePlans()
 
   const [isAssignOpen, setIsAssignOpen] = useState(false)
+  /*
+   * El plan que se esta volcando. Se guarda la asignacion entera y no solo su
+   * identificador porque el dialogo necesita su `startDate`, que es de la
+   * asignacion y no del plan: el plan dice «lunes», no «lunes 8 de septiembre».
+   */
+  const [dumping, setDumping] = useState<PlanAssignment | null>(null)
+
+  const planBeingDumped = useMemo(
+    () => (dumping === null ? null : (plans.find((plan) => plan.id === dumping.planId) ?? null)),
+    [dumping, plans]
+  )
 
   /*
    * Se indexan una vez para toda la lista. La asignacion guarda el
@@ -93,6 +105,24 @@ export function StudentAssignments({ student }: StudentAssignmentsProps) {
                 )}
               </div>
 
+              <div className="flex shrink-0 items-center">
+                {/*
+                  Volcar solo aparece en planes CON fecha de inicio: sin ella no
+                  hay desde cuando contar las semanas, asi que el boton no
+                  llevaria a ninguna parte. Una rutina suelta tampoco se vuelca:
+                  es repertorio, no un programa con calendario.
+                */}
+                {assignment.kind === 'plan' && assignment.startDate !== null && (
+                  <button
+                    type="button"
+                    onClick={() => setDumping(assignment)}
+                    aria-label={`Volcar a la agenda ${titlesById.get(assignment.planId) ?? 'el plan'}`}
+                    className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-cobalt-tint hover:text-cobalt"
+                  >
+                    <CalendarCheck className="size-4" />
+                  </button>
+                )}
+
               <button
                 type="button"
                 onClick={() => void unassign(assignment.id)}
@@ -101,6 +131,7 @@ export function StudentAssignments({ student }: StudentAssignmentsProps) {
               >
                 <Trash2 className="size-4" />
               </button>
+              </div>
             </li>
           ))}
         </ul>
@@ -112,6 +143,18 @@ export function StudentAssignments({ student }: StudentAssignmentsProps) {
         onOpenChange={setIsAssignOpen}
         onAssign={assign}
       />
+
+      {dumping !== null && planBeingDumped !== null && (
+        <PlanToAgendaDialog
+          student={student}
+          plan={planBeingDumped}
+          startDate={dumping.startDate ?? ''}
+          open
+          onOpenChange={(next) => {
+            if (!next) setDumping(null)
+          }}
+        />
+      )}
     </section>
   )
 }
