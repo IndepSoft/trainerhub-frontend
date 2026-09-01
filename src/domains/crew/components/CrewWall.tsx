@@ -9,8 +9,16 @@ import { describePostTime } from '../libs/postTime'
 import type { CrewPost } from '@/shared/domain/entities/crewPost'
 
 interface CrewWallProps {
-  /** Quién entrena aquí puede publicar y borrar; el resto, sólo reaccionar. */
+  /** Si quien mira entrena aquí. Cambia lo que dice el muro vacío. */
   isTrainer: boolean
+  /**
+   * Si además puede publicar y borrar.
+   *
+   * Distinto de `isTrainer` porque un administrador de plataforma entra con
+   * papel de entrenador para poder ver, y publicar en el muro de otro —firmado
+   * con el nombre del entrenador de verdad— sería suplantarle, no inspeccionar.
+   */
+  canPublish: boolean
   /** Cómo se firma el anuncio. Es el nombre de quien entrena el equipo. */
   authorName: string
 }
@@ -23,7 +31,7 @@ interface CrewWallProps {
  * arrastraría lo segundo: moderar, denunciar, bloquear. Los alumnos participan
  * con el «me gusta», que basta para saber si algo se ha leído.
  */
-export function CrewWall({ isTrainer, authorName }: CrewWallProps) {
+export function CrewWall({ isTrainer, canPublish, authorName }: CrewWallProps) {
   const { posts, loading, publish, toggleLike, removePost, isLikedByViewer } = useCrewWall()
   const [draft, setDraft] = useState('')
 
@@ -44,7 +52,7 @@ export function CrewWall({ isTrainer, authorName }: CrewWallProps) {
         Muro
       </h2>
 
-      {isTrainer && (
+      {canPublish && (
         <form onSubmit={handleSubmit} className="space-y-2">
           <label htmlFor="muro-anuncio" className="sr-only">
             Escribe un anuncio para tu equipo
@@ -91,7 +99,7 @@ export function CrewWall({ isTrainer, authorName }: CrewWallProps) {
               post={post}
               authorName={authorName}
               liked={isLikedByViewer(post)}
-              canDelete={isTrainer}
+              canDelete={canPublish}
               onToggleLike={() => void toggleLike(post.id)}
               onDelete={() => void removePost(post.id)}
             />

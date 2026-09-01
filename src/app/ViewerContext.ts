@@ -17,6 +17,7 @@ export interface ViewerContextValue {
   pending: Membership[]
   active: Membership | null
   role: CrewRole | null
+  canManage: boolean
   isPlatformAdmin: boolean
   loading: boolean
   selectCrew: (crewId: string) => void
@@ -41,6 +42,7 @@ export const ViewerContext = createContext<ViewerContextValue>({
   pending: [],
   active: null,
   role: null,
+  canManage: false,
   isPlatformAdmin: false,
   loading: true,
   selectCrew: () => undefined,

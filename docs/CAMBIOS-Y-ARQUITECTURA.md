@@ -790,3 +790,64 @@ utilidades del panel.
 `rounded-action` en superficies grandes dejaba las tarjetas del muro con forma de
 elipse. Sólo se veía mirándolo: compilaba, pasaba el lint y las clases parecían
 razonables.
+
+---
+
+## 12. Ver no es poder: el administrador observando (1 sep 2026)
+
+### 12.1 Enseñar los módulos vacíos no es enseñarlos
+
+La petición era «como super admin necesito ver todos los módulos». Abrir la
+navegación, a secas, no lo habría cumplido: **los datos están acotados al crew
+activo**, y un administrador no pertenece a ninguno, así que habría entrado en
+Estudiantes y no habría habido nadie. Módulos visibles y vacíos.
+
+Así que además de la navegación, un administrador **alcanza cualquier equipo**
+desde el conmutador de crew. Ahí es donde los módulos tienen algo que enseñar.
+
+### 12.2 Los dos ejes
+
+`role` responde **qué se ve**; `canManage`, **qué se puede tocar**. Estaban
+fundidos en `role === 'trainer'`, y separarlos es lo que hace seguro un rol de
+administración.
+
+Si observar diera `role: 'trainer'` a secas, quien mira podría publicar en el
+muro de otro —**firmado con el nombre del entrenador de verdad**—, aceptar
+solicitudes, dar de alta alumnos o borrarlos. Eso no es inspeccionar: es
+suplantar, y es una decisión distinta que nadie ha tomado.
+
+`Membership.observed` marca la diferencia, y `canManage` es
+`role === 'trainer' && !observed`. Las pantallas de gestión se pintan con `role`;
+todo control que crea, cambia o borra se apoya en `canManage`.
+
+### 12.3 Decirlo, o parecerá roto
+
+Dentro del equipo de otro, con el padrón y la agenda delante, un administrador es
+indistinguible de su entrenador. Sin avisar, quien lo olvide se preguntará por
+qué no le dejan pulsar nada —o concluirá que la aplicación falla—.
+
+La cinta va arriba, en Ember, y **no aparece en `/admin`**: ésa es su pantalla y
+ahí sí manda. Decirle que no puede modificar nada al lado de un botón de activar
+suscripciones sería lo contrario de la verdad.
+
+### 12.4 Un aviso que mentía
+
+Con el botón «Añadir alumno» apagado, la página de alumnos explicaba que **hacía
+falta activar la suscripción**. Para un administrador observando, eso era falso:
+la suscripción de ese equipo estaba activa, y lo que faltaba era permiso.
+
+Ahora ese aviso sólo lo ve quien de verdad podría dar de alta. El motivo del
+administrador se lo da la cinta. Es la misma regla de siempre: un control
+desactivado sin explicación es un control roto, y con la explicación equivocada
+es peor.
+
+### 12.5 Lo que esto NO es
+
+**No es seguridad.** Que los botones desaparezcan impide equivocarse, no impide
+actuar: un cliente modificado sigue pudiendo llamar a los repositorios. Lo que lo
+impedirá son las políticas del servidor, que todavía no existen —anotado ya en
+`PlatformRepository`—.
+
+Y **no hay registro de quién miró qué**. Un administrador que entra en el equipo
+de un cliente ve datos personales de sus alumnos: edad, grasa corporal,
+objetivos. En cuanto haya usuarios reales, eso debería quedar registrado.

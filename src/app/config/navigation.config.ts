@@ -160,6 +160,16 @@ export const navigationConfig: NavigationItem[] = [
  */
 function matchesViewer(item: NavigationItem, viewer: NavigationViewer): boolean {
   if (item.platformOnly === true) return viewer.isPlatformAdmin
+
+  /*
+   * Un administrador de plataforma llega a TODOS los módulos.
+   *
+   * No es un permiso de escritura: entra a ver cómo está la aplicación de sus
+   * clientes, y lo que puede tocar lo decide `canManage`, no esto. Esconderle
+   * pantallas le obligaría a pedir capturas para diagnosticar cualquier cosa.
+   */
+  if (viewer.isPlatformAdmin) return true
+
   if (item.roles === undefined) return true
   if (viewer.role === null) return false
   return item.roles.includes(viewer.role)

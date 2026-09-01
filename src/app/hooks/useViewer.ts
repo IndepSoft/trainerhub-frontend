@@ -41,6 +41,15 @@ interface UseViewerResult {
   /** Atajo de `active?.role`. `null` sin crew: no se es nada todavía. */
   role: CrewRole | null
   /**
+   * Si se puede ESCRIBIR en el crew activo.
+   *
+   * Separado de `role` porque ver y poder son dos ejes: un administrador de
+   * plataforma ve las pantallas de gestión de cualquier equipo —para eso entra—
+   * y no toca nada. Todo control que crea, cambia o borra se apoya en esto; los
+   * que sólo pintan, en `role`.
+   */
+  canManage: boolean
+  /**
    * Si administra la plataforma.
    *
    * NO ES UN `CrewRole` MÁS, y por eso va aparte en vez de como tercer valor de
@@ -105,11 +114,13 @@ export function useViewer(): UseViewerResult {
     setTrainer(trainerProfile)
     setIsPlatformAdmin(platformAdmin)
 
+
     const asTrainer: Membership[] = ownedCrews.map((crew) => ({
       crew,
       role: 'trainer',
       status: 'active',
       student: null,
+      observed: false,
     }))
 
     const asStudent = await Promise.all(
@@ -118,11 +129,42 @@ export function useViewer(): UseViewerResult {
         // Una ficha cuyo crew ya no existe no es una pertenencia: se ignora en
         // vez de pintar una entrada rota en el conmutador.
         if (crew === null) return null
-        return { crew, role: 'student', status: student.membershipStatus, student }
+        return {
+          crew,
+          role: 'student',
+          status: student.membershipStatus,
+          student,
+          observed: false,
+        }
       })
     )
 
-    return [...asTrainer, ...asStudent.filter((entry) => entry !== null)]
+    const own = [...asTrainer, ...asStudent.filter((entry) => entry !== null)]
+    if (!platformAdmin) return own
+
+    /*
+     * UN ADMINISTRADOR ALCANZA TODOS LOS EQUIPOS, no sólo los suyos.
+     *
+     * Sin esto, «ver todos los módulos» daba pantallas vacías: los datos están
+     * acotados al crew activo, y quien no pertenece a ninguno abre Estudiantes y
+     * no hay nadie. Enseñar los módulos sin poder entrar en un equipo no es
+     * verlos.
+     *
+     * Los propios van primero y no se duplican: si además entrena uno, ahí manda
+     * de verdad, no como mirón.
+     */
+    const ownIds = new Set(own.map((entry) => entry.crew.id))
+    const observed: Membership[] = (await container.platform.listCrews())
+      .filter((entry) => !ownIds.has(entry.crew.id))
+      .map((entry) => ({
+        crew: entry.crew,
+        role: 'trainer',
+        status: 'active',
+        student: null,
+        observed: true,
+      }))
+
+    return [...own, ...observed]
   }, [profileId])
 
   /*
@@ -195,6 +237,7 @@ export function useViewer(): UseViewerResult {
     pending: memberships.filter((entry) => entry.status === 'pending'),
     active,
     role: active?.role ?? null,
+    canManage: active !== null && active.role === 'trainer' && !active.observed,
     isPlatformAdmin,
     loading,
     selectCrew,

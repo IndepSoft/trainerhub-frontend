@@ -21,7 +21,7 @@ import { useViewerContext } from '@/app/ViewerContext'
 import type { CalendarViewMode, SessionStatus } from '../types/calendar.types'
 
 export default function Calendar() {
-  const { role } = useViewerContext()
+  const { canManage } = useViewerContext()
   /*
    * «Usar en una sesion» llega aqui como `/calendar?routine=<id>`: la ficha de
    * la rutina no abre ningun dialogo por su cuenta -no puede, vive en otro
@@ -129,7 +129,7 @@ export default function Calendar() {
               `key` para que el formulario se monte de nuevo con la rutina ya
               elegida: su estado inicial se toma una sola vez.
             */}
-            {role === 'trainer' && (
+            {canManage && (
               <CreateSessionModal
                 key={preselectedRoutineId ?? 'sin-rutina'}
                 preselectedRoutineId={preselectedRoutineId}

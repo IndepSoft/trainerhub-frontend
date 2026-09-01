@@ -15,14 +15,14 @@ import type { Student } from '@/shared/domain/entities/student'
 export default function Students() {
   const { students, loading } = useStudents()
   const { createStudent, updateStudent } = useStudentEditor()
-  const { active } = useViewerContext()
+  const { active, canManage } = useViewerContext()
 
   /*
    * Dar de alta a alguien es incorporarlo al equipo, así que pasa por la misma
    * puerta que el QR. Editar y ver a los que ya están sigue abierto: lo que se
    * activa es crecer, no trabajar con quien ya tienes.
    */
-  const canEnroll = active !== null && canEnrollMembers(active.crew)
+  const canEnroll = canManage && active !== null && canEnrollMembers(active.crew)
 
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editing, setEditing] = useState<Student | null>(null)
@@ -71,9 +71,16 @@ export default function Students() {
         </PageHeader.Content>
       </PageHeader>
 
-      {/* El porqué, donde se ve el botón apagado. Un control desactivado sin
-          explicación es un control roto. */}
-      {!canEnroll && active !== null && (
+      {/*
+        El porqué, donde se ve el botón apagado. Un control desactivado sin
+        explicación es un control roto.
+
+        Sólo se le dice a quien PODRÍA dar de alta: a un administrador que está
+        observando el equipo, el botón le sale apagado por otro motivo —no es
+        suyo— y decirle que falta la suscripción seria mentirle. Su motivo se lo
+        explica la cinta de arriba.
+      */}
+      {canManage && !canEnroll && active !== null && (
         <p className="ps-4 pe-4 pt-3 text-sm text-ink/55">
           Para dar de alta a alguien hace falta activar la suscripción de{' '}
           {active.crew.name}. Puedes seguir trabajando con quienes ya están.

@@ -34,7 +34,7 @@ import type { Student } from '@/shared/domain/entities/student'
  * quedada, sí lo es.
  */
 export default function CrewPage() {
-  const { active, trainer, loading: loadingViewer } = useViewerContext()
+  const { active, trainer, canManage, loading: loadingViewer } = useViewerContext()
   const { members, pending, loading, approve, reject } = useCrewMembers()
   const { rotateJoinToken, saving } = useCrewEditor()
 
@@ -44,6 +44,11 @@ export default function CrewPage() {
   if (active === null) return <NoCrew />
 
   const { crew, role } = active
+  /*
+   * VER Y PODER, separados. `isTrainer` decide qué pantallas se pintan —un
+   * administrador de plataforma entra a mirar y necesita verlas todas— y
+   * `canManage` decide qué se puede tocar, que al observar es nada.
+   */
   const isTrainer = role === 'trainer'
 
   return (
@@ -74,7 +79,7 @@ export default function CrewPage() {
         <div className="mx-auto max-w-3xl space-y-8 px-5 py-6">
           {/* Lo que pide una decisión va primero: es lo único de esta pantalla
               que se queda parado esperando al entrenador. */}
-          {isTrainer && pending.length > 0 && (
+          {canManage && pending.length > 0 && (
             <section className="space-y-3" aria-labelledby="solicitudes-titulo">
               <h2
                 id="solicitudes-titulo"
@@ -123,6 +128,7 @@ export default function CrewPage() {
               anuncio sin autor se lee como un aviso del sistema. */}
           <CrewWall
             isTrainer={isTrainer}
+            canPublish={canManage}
             authorName={
               trainer === null ? crew.name : `${trainer.firstName} ${trainer.lastName}`
             }
@@ -182,7 +188,7 @@ export default function CrewPage() {
             con la suscripción activa. Sin ella no se esconde: se explica, que
             es la diferencia entre una puerta cerrada y una pared.
           */}
-          {isTrainer &&
+          {canManage &&
             (canEnrollMembers(crew) ? (
               <CrewInviteCard
                 crew={crew}

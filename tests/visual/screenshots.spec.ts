@@ -3231,8 +3231,16 @@ test.describe('plataforma', () => {
 
     // Entra a mirar equipos ajenos, no a entrenar.
     await page.waitForURL(/\/admin/, { timeout: 20_000 })
-    await expect(page.getByText('Hierro y Asfalto')).toBeVisible()
-    await expect(page.getByText('Marco Salas · 4 miembros')).toBeVisible()
+
+    /*
+     * Por su FILA de la lista, y DENTRO de <main>. Desde que el administrador
+     * alcanza cualquier equipo, el nombre sale tambien en los dos conmutadores
+     * de crew -barra lateral y barra superior-, y el de la lateral vive ademas
+     * dentro de un <li> del menu: pedir «la fila que dice Hierro y Asfalto» a
+     * secas resuelve a dos.
+     */
+    const fila = page.getByRole('main').getByRole('listitem').filter({ hasText: 'Hierro y Asfalto' })
+    await expect(fila).toContainText('Marco Salas · 4 miembros')
   })
 
   test('un entrenador no puede abrir el panel de la plataforma', async ({ page }) => {
@@ -3306,7 +3314,9 @@ test.describe('plataforma', () => {
     await page.waitForURL(/\/admin/, { timeout: 20_000 })
 
     // El equipo esta esperando, y se activa desde aqui.
-    const fila = page.getByRole('listitem').filter({ hasText: 'La Tribu del Cerro' })
+    // Dentro de <main>: el conmutador de crew de la barra lateral tambien vive
+    // en un <li>, y con el equipo activo su nombre coincidiria.
+    const fila = page.getByRole('main').getByRole('listitem').filter({ hasText: 'La Tribu del Cerro' })
     await expect(fila).toContainText('Pendiente')
     await fila.getByRole('button', { name: 'Activar' }).click()
     await expect(fila).toContainText('Activa')
@@ -3492,5 +3502,98 @@ test.describe('ranking', () => {
     await page.getByRole('link', { name: 'Calendario' }).first().click()
     // Solo la clase grupal, que es de todo el equipo por definicion.
     await expect(page.getByRole('button', { name: /Juan Pérez.*minutos/ })).toHaveCount(0)
+  })
+})
+
+/**
+ * El administrador de plataforma mirando un equipo ajeno.
+ *
+ * VER Y PODER SON DOS EJES DISTINTOS, y confundirlos es lo que hace peligroso un
+ * rol de administracion: entra con las pantallas de gestion delante para poder
+ * diagnosticar, y no toca nada. Publicar en el muro de otro -firmado con el
+ * nombre del entrenador de verdad- no seria inspeccionar, seria suplantar.
+ */
+test.describe('administrador observando', () => {
+  async function entrarComoAdmin(page: Page): Promise<void> {
+    await page.goto('/authentication')
+    await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
+    await page.getByPlaceholder('tu@email.com').fill('admin@indepsoft.com')
+    await page.locator('input[type=password]').fill('desarrollo123')
+    await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click()
+    await page.waitForURL(/\/admin/, { timeout: 20_000 })
+  }
+
+  test('alcanza todos los modulos, y con datos', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await entrarComoAdmin(page)
+
+    /*
+     * ENSEÑAR LOS MODULOS VACIOS NO ES VERLOS. Los datos estan acotados al crew
+     * activo, asi que un administrador sin equipo abriria Estudiantes y no
+     * habria nadie. Por eso alcanza cualquier equipo, y ahi es donde los modulos
+     * tienen algo que enseñar.
+     */
+    for (const destino of ['Dashboard', 'Estudiantes', 'Entrenamientos', 'Calendario']) {
+      await expect(page.getByRole('link', { name: destino }).first()).toBeVisible()
+    }
+
+    await page.getByRole('link', { name: 'Estudiantes' }).first().click()
+    await expect(page.getByRole('link', { name: /Juan Pérez/ })).toBeVisible()
+
+    await page.getByRole('link', { name: 'Entrenamientos' }).first().click()
+    await expect(page.getByRole('tab', { name: /Rutinas/ })).toBeVisible()
+  })
+
+  test('lo dice, y no deja tocar nada', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await entrarComoAdmin(page)
+
+    await page.getByRole('link', { name: 'Estudiantes' }).first().click()
+
+    /*
+     * Sin la cinta, estar dentro del equipo de otro es indistinguible de ser su
+     * entrenador, y quien lo olvide creera que la aplicacion esta rota cuando no
+     * le deje pulsar nada.
+     */
+    await expect(page.getByText(/como administrador\. No puedes modificar nada/)).toBeVisible()
+    await expect(page.getByRole('button', { name: /Añadir alumno/ })).toBeDisabled()
+
+    /*
+     * Y NO se le explica con el motivo de la suscripcion: la de este equipo esta
+     * activa, y decirle que falta activarla seria mentirle. Su motivo se lo da
+     * la cinta.
+     */
+    await expect(page.getByText(/hace falta activar la suscripción/)).toHaveCount(0)
+
+    // Agendar tampoco.
+    await page.getByRole('link', { name: 'Calendario' }).first().click()
+    await expect(page.getByRole('button', { name: /Nueva Sesión/ })).toHaveCount(0)
+  })
+
+  test('no publica en el muro ajeno ni acepta solicitudes', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await entrarComoAdmin(page)
+
+    await page.getByRole('button', { name: /Hierro y Asfalto/ }).first().click()
+    await page.getByRole('menuitem', { name: 'Ver el equipo' }).click()
+
+    // Ve el muro y el ranking...
+    await expect(page.getByText('El sábado hacemos la salida larga')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Ranking' })).toBeVisible()
+
+    // ...pero no puede escribir en el, ni borrar lo de otro, ni enseñar su QR.
+    await expect(page.getByLabel('Escribe un anuncio para tu equipo')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Eliminar anuncio' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /Copiar enlace/ })).toHaveCount(0)
+  })
+
+  test('en su propio panel no aparece la cinta: ahi si manda', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await entrarComoAdmin(page)
+
+    // Decirle que no puede modificar nada al lado de un boton de activar
+    // suscripciones es lo contrario de la verdad.
+    await expect(page.getByText(/como administrador\. No puedes modificar nada/)).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Suspender' })).toBeVisible()
   })
 })

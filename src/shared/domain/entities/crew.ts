@@ -172,4 +172,18 @@ export interface Membership {
   status: MembershipStatus
   /** La ficha, cuando se está como alumno. `null` cuando se entrena. */
   student: Student | null
+  /**
+   * Si se está MIRANDO un equipo ajeno, no perteneciendo a él.
+   *
+   * Es lo que tiene un administrador de plataforma en los crews que no son
+   * suyos: entra a ver, con el papel de entrenador para que las pantallas de
+   * gestión se pinten, pero sin poder tocar nada.
+   *
+   * VER Y PODER SON DOS EJES DISTINTOS, y confundirlos es lo que hace peligroso
+   * un rol de administración. Si observar diera `role: 'trainer'` a secas,
+   * quien mira podría publicar en el muro de otro —firmado con el nombre del
+   * entrenador de verdad—, aceptar solicitudes o borrar alumnos. Eso no es
+   * inspeccionar, es suplantar, y es una decisión aparte que nadie ha tomado.
+   */
+  observed: boolean
 }

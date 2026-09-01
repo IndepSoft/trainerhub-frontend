@@ -291,6 +291,10 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   guarda el navegador**, que es suficiente para el producto y no para la
   seguridad. Está anotado en `PlatformRepository`.
 - No hay cobro: activar una suscripción es una decisión manual desde `/admin`.
+- **No hay registro de auditoría.** Un administrador de plataforma entra en el
+  equipo de cualquier cliente y ve datos personales de sus alumnos —edad, grasa
+  corporal, objetivos— sin que quede constancia de quién miró qué. En cuanto haya
+  usuarios reales, hace falta.
 - Props declaradas y sin conectar, marcadas con `TODO:` en gamification y
   calendar. `ChallengeCard.onUpdate` es la más grave: el padre le pasa un
   manejador real que nunca se invoca.

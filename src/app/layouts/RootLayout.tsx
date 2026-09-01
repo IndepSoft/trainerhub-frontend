@@ -6,6 +6,7 @@ import { SidebarInset } from '@/shared/ui/sidebar'
 import { useAuth } from '@/auth/hooks/useAuth'
 import { useViewer } from '@/app/hooks/useViewer'
 import { ViewerContext } from '@/app/ViewerContext'
+import { ObserverBanner } from '@/shared/components/ObserverBanner'
 import { hasSeenOnboarding } from '@/domains/onboarding/hooks/useOnboarding'
 
 export default function RootLayout() {
@@ -23,7 +24,15 @@ export default function RootLayout() {
    * alumno, y que los datos que se leen sean los de su crew.
    */
   const viewer = useViewer()
-  const { person, memberships, active, role, isPlatformAdmin, loading, selectCrew } = viewer
+  const {
+    person,
+    memberships,
+    active,
+    role,
+    isPlatformAdmin,
+    loading,
+    selectCrew,
+  } = viewer
 
   /*
    * Rutas a pantalla completa, sin barra lateral, superior ni inferior.
@@ -104,19 +113,31 @@ export default function RootLayout() {
           memberships={memberships}
           active={active}
           viewerRole={role}
-        isPlatformAdmin={isPlatformAdmin}
+          isPlatformAdmin={isPlatformAdmin}
           loading={loading}
           onSelectCrew={selectCrew}
         />
 
         <SidebarInset className="flex-1 flex flex-col min-h-0">
+          {/*
+            Encima de todo, y no dentro de una pagina: se esta observando la
+            aplicacion ENTERA de otro, no una pantalla suelta.
+
+            Menos en el panel de plataforma, que es SU pantalla y donde si
+            manda: decirle ahi que no puede modificar nada, al lado de un boton
+            de activar suscripciones, es lo contrario de la verdad.
+          */}
+          {active?.observed === true && location.pathname !== '/admin' && (
+            <ObserverBanner crewName={active.crew.name} />
+          )}
+
           <AppNavbar
-          person={person}
-          memberships={memberships}
-          active={active}
-          loading={loading}
-          onSelectCrew={selectCrew}
-        />
+            person={person}
+            memberships={memberships}
+            active={active}
+            loading={loading}
+            onSelectCrew={selectCrew}
+          />
 
           <div className="p-4 flex-1 flex flex-col overflow-hidden min-h-0">
             <Outlet />
