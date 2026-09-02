@@ -1177,3 +1177,26 @@ la agenda, que es de donde salió la sesión y donde está la siguiente.
 El texto de la celebración se le sigue enseñando a los dos, y es correcto: está
 en tercera persona —«Logro desbloqueado», el nombre, los XP—, así que un
 entrenador ve que su alumna acaba de conseguir algo.
+
+### 16.5 En la ficha, la medida; el registro motivacional es del alumno
+
+La sección de la ficha empezó reutilizando `GamificationHeader` y `MilestonePath`
+enteros, y traía de paso dos cosas que no le tocan a quien entrena a otros: el
+sendero —«Tu camino»— y la racha.
+
+**El sendero es el registro que empuja a seguir, y está escrito para quien lo
+recorre.** Al entrenador le sirve la medida: en qué nivel va y cuánto lleva. Se
+la damos en la misma forma que en la lista.
+
+Así que la ficha pinta ahora **la misma franja que la tarjeta**, no una copia con
+otro tamaño: si las dos pintaran el nivel por su cuenta acabarían discrepando el
+día que cambie la regla de cuánto cuesta subir.
+
+De paso desaparece una consulta: la sección usaba `useGamificationProfile`, que
+carga el historial completo de esa persona, y ahora sale del mismo agregado del
+equipo que ya alimenta las tarjetas. Abrir una ficha dejó de costar una consulta
+más, y la deuda que lo anotaba se retira.
+
+`GamificationHeader` es además `sticky`, pensado para quedarse fijo en la
+pantalla del alumno; dentro de una sección de la ficha esa fijación no
+significaba nada.

@@ -136,7 +136,7 @@ export default function StudentDetail() {
           </div>
         </section>
 
-        <StudentProgressSection studentId={student.id} firstName={student.firstName} />
+        <StudentProgressSection studentId={student.id} />
 
         <StudentAssignments student={student} />
 

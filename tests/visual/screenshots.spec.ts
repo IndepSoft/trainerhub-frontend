@@ -2621,11 +2621,11 @@ test.describe('sesion en vivo', () => {
     await expect(tarjeta).toContainText('25 / 100 XP')
     await expect(tarjeta).toContainText('1 sesión')
 
-    // Y en su ficha, con el sendero: el primer hito ya cuenta una.
+    // Y en su ficha, con la misma cifra: sale del mismo agregado, asi que las
+    // dos no pueden discrepar.
     await tarjeta.getByRole('link', { name: 'María Gómez' }).click()
     await page.waitForURL(/\/students\/student-2/, { timeout: 15_000 })
     await expect(page.getByText('25 / 100 XP')).toBeVisible()
-    await expect(page.getByText('1/3')).toBeVisible()
   })
 
   test('terminar una sesion no lleva al entrenador a progreso', async ({ page }) => {
@@ -2889,7 +2889,7 @@ test.describe('progreso', () => {
     await expect(maria).not.toContainText('XP')
   })
 
-  test('la ficha lleva el progreso entero, con su sendero', async ({ page }) => {
+  test('la ficha lleva la medida, no el registro motivacional', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
     await page.goto('/students/student-1')
@@ -2897,11 +2897,15 @@ test.describe('progreso', () => {
     await expect(page.getByRole('heading', { name: 'Progreso' })).toBeVisible()
     await expect(page.getByText('Nivel 3')).toBeVisible()
     await expect(page.getByText('55 / 200 XP')).toBeVisible()
-    // Siete dias seguidos hasta ayer. La racha NO se rompe por no haber
-    // entrenado hoy todavia: el dia no ha terminado.
-    await expect(page.getByText('días de racha')).toBeVisible()
-    // Y el sendero, que es lo que da sentido a la cifra.
-    await expect(page.getByText('Tu camino')).toBeVisible()
+
+    /*
+     * SIN «TU CAMINO» NI RACHA. Llegaron aqui reutilizando la cabecera de la
+     * pantalla del alumno, y son suyas: el sendero es el registro que empuja a
+     * seguir, escrito para quien lo recorre. Al entrenador le sirve la medida, y
+     * la tiene en la misma forma que en la lista.
+     */
+    await expect(page.getByText('Tu camino')).toHaveCount(0)
+    await expect(page.getByText('días de racha')).toHaveCount(0)
   })
 
   test('el entrenador no tiene modulo de progreso', async ({ page }) => {
