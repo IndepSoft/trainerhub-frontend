@@ -26,6 +26,10 @@ import type { CrewProgressRepository } from '@/shared/domain/ports/CrewProgressR
 import { FakeCrewProgressRepository } from '@/shared/infrastructure/fake/FakeCrewProgressRepository'
 import type { CrewStaffRepository } from '@/shared/domain/ports/CrewStaffRepository'
 import { FakeCrewStaffRepository } from '@/shared/infrastructure/fake/FakeCrewStaffRepository'
+import type { SubscriptionRepository } from '@/shared/domain/ports/SubscriptionRepository'
+import { FakeSubscriptionRepository } from '@/shared/infrastructure/fake/FakeSubscriptionRepository'
+import type { NoticeRepository } from '@/shared/domain/ports/NoticeRepository'
+import { FakeNoticeRepository } from '@/shared/infrastructure/fake/FakeNoticeRepository'
 import { crewScope } from './crewScope'
 
 /**
@@ -43,6 +47,8 @@ export interface Container {
   crews: CrewRepository
   crewStaff: CrewStaffRepository
   crewPosts: CrewPostRepository
+  subscriptions: SubscriptionRepository
+  notices: NoticeRepository
   crewProgress: CrewProgressRepository
   platform: PlatformRepository
   trainers: TrainerRepository
@@ -104,6 +110,8 @@ export const container: Container = {
   crews: fakeCrews,
   crewStaff: fakeCrewStaff,
   crewPosts: new FakeCrewPostRepository(crewScope),
+  subscriptions: new FakeSubscriptionRepository(crewScope),
+  notices: new FakeNoticeRepository(crewScope),
   /*
    * El ranking recibe las clases concretas: necesita las sesiones de TODO el
    * equipo, y el ambito de un alumno le deja ver solo las suyas. Lo que sale de

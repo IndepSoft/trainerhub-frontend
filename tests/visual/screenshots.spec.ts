@@ -3963,3 +3963,144 @@ test.describe('capacidades', () => {
     ).toContainText('Entrenador')
   })
 })
+
+/**
+ * La cuota del alumno con su equipo.
+ *
+ * OJO: NO es `Crew.subscriptionStatus`, que es la del EQUIPO con la plataforma.
+ * Esta la cobra el entrenador y dice hasta cuando ha pagado alguien.
+ */
+test.describe('cuotas', () => {
+  test('la ficha dice hasta cuando tiene pagado, y en palabras', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students/student-1')
+
+    /*
+     * La semilla deja a Juan vencido hace cinco dias. Se comprueba contra la
+     * regla y no contra una fecha copiada: `subscriptionStanding` cuenta dias
+     * desde `paidThrough`, y la semilla los pone relativos a hoy justo para que
+     * la prueba no caduque.
+     */
+    await expect(page.getByRole('heading', { name: 'Cuota' })).toBeVisible()
+    await expect(page.getByText('Venció hace 5 días')).toBeVisible()
+
+    // Los dias dicen si corre prisa; la fecha dice que dia es. Las dos cosas.
+    await expect(page.getByText(/Pagado hasta el/)).toBeVisible()
+  })
+
+  test('registrar un pago mueve la fecha, y cambiar el periodo no cobra', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students/student-1')
+
+    /*
+     * Juan esta vencido, asi que renovar cuenta DESDE HOY y no desde la fecha
+     * vieja: quien lleva dias sin pagar no compra dias de pasado. Treinta dias
+     * desde hoy caen dentro de «activa», no de «vence pronto».
+     */
+    await page.getByRole('button', { name: 'Registrar pago' }).click()
+    await expect(page.getByText('Vence en 30 días')).toBeVisible()
+
+    // Cambiar el periodo NO cobra: la fecha pagada se queda donde estaba.
+    await page.getByRole('button', { name: 'Trimestral' }).click()
+    await expect(page.getByText('Vence en 30 días')).toBeVisible()
+
+    // Y el siguiente pago ya dura tres meses.
+    await page.getByRole('button', { name: 'Registrar pago' }).click()
+    await expect(page.getByText('Vence en 120 días')).toBeVisible()
+  })
+
+  test('el aviso llega a la campana del alumno, no al muro', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students/student-2')
+
+    /*
+     * TODO EN LA MISMA CARGA: los adaptadores falsos viven en memoria, y un
+     * `page.goto` devolveria los avisos a cero.
+     */
+    await page.getByRole('button', { name: 'Avisar' }).click()
+    const dialogo = page.getByRole('dialog')
+
+    // Viene con el texto escrito segun el estado: no es lo mismo avisar de lo
+    // que va a pasar que reclamar lo que ya paso.
+    await expect(dialogo.getByLabel('Texto del aviso')).toHaveValue(/vence en 3 días/)
+    await dialogo.getByRole('button', { name: 'Enviar aviso' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    // Maria ya tiene ficha en el equipo, asi que registrarse la reclama.
+    await page.getByRole('button', { name: 'Menú de usuario' }).click()
+    await page.getByRole('menuitem', { name: 'Cerrar sesión' }).click()
+    await page.getByRole('tab', { name: 'Registrarme' }).click()
+    await page.getByRole('button', { name: 'Entreno', exact: true }).click()
+    await page.getByLabel('Nombre').fill('María')
+    await page.getByLabel('Apellido').fill('Gómez')
+    await page.getByLabel('Email').fill('mgomez@gmail.com')
+    await page.locator('input[type=password]').fill('secreto123')
+    await page.getByRole('button', { name: 'Crear cuenta' }).click()
+    await page.waitForURL(/\/progress/, { timeout: 20_000 })
+
+    // Le llega, y el contador lo dice.
+    await page.getByRole('button', { name: 'Avisos, 1 sin leer' }).click()
+    await expect(page.getByText(/tu cuota vence en 3 días/)).toBeVisible()
+
+    /*
+     * Y NO ESTA EN EL MURO. Es la mitad que importa: un recordatorio de dinero
+     * publicado donde lo ven sus compañeros seria exponer a alguien por deber.
+     */
+    await page.keyboard.press('Escape')
+    await page.getByRole('button', { name: /Hierro y Asfalto/ }).first().click()
+    await page.getByRole('menuitem', { name: 'Ver el equipo' }).click()
+    await expect(page.getByText(/tu cuota vence en 3 días/)).toHaveCount(0)
+  })
+})
+
+/**
+ * Reportes: tres pestañas, y cada una responde a una pregunta de negocio.
+ *
+ * Estaba enteramente inventado -24 alumnos, 4.800 de ingresos, 87 % de
+ * asistencia- con cuatro pestañas vacias bajo un rotulo que repetia Progreso.
+ */
+test.describe('reportes', () => {
+  test('la cola de cobros se lee de arriba abajo', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/reports')
+
+    /*
+     * EL ORDEN ES LA FUNCION: lo vencido primero, despues lo que vence antes, y
+     * quien no tiene cuota al final -no debe nada-. Por orden alfabetico habria
+     * que recorrerla entera para encontrar lo urgente.
+     */
+    const filas = page.getByRole('main').getByRole('listitem')
+    await expect(filas.nth(0)).toContainText('Juan Pérez')
+    await expect(filas.nth(0)).toContainText('Venció hace 5 días')
+    await expect(filas.nth(1)).toContainText('María Gómez')
+    await expect(filas.nth(3)).toContainText('Sin cuota registrada')
+
+    // Y las cifras de arriba salen de ahi, no de un numero escrito a mano.
+    await expect(page.getByText('Cuotas vencidas')).toBeVisible()
+  })
+
+  test('las pestañas son las tres que cambian una decision', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/reports')
+
+    for (const pestana of ['Cobros', 'Retención', 'Actividad']) {
+      await expect(page.getByRole('tab', { name: pestana })).toBeVisible()
+    }
+
+    // Lo que se quito no era poco util, era decorativo: graficas de ingresos sin
+    // ninguna fuente de pagos y un rotulo que repetia Progreso.
+    await expect(page.getByRole('tab', { name: 'Logros' })).toHaveCount(0)
+    await expect(page.getByText('Sistema de Gamificación')).toHaveCount(0)
+
+    await page.getByRole('tab', { name: 'Retención' }).click()
+    // Quien nunca entreno va arriba: es el caso mas extremo de lo que mide.
+    await expect(page.getByRole('main').getByRole('listitem').first()).toContainText(
+      'No ha entrenado nunca'
+    )
+  })
+})

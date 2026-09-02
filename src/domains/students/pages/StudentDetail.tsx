@@ -9,6 +9,7 @@ import { getInitials, getShortName } from '@/shared/lib/personName'
 import { useStudent } from '../hooks/useStudent'
 import { StudentAssignments } from '../components/StudentAssignments'
 import { StudentProgressSection } from '../components/StudentProgressSection'
+import { StudentSubscriptionSection } from '../components/StudentSubscriptionSection'
 import { StudentSessions } from '../components/StudentSessions'
 import { ScheduleSessionDialog } from '../components/ScheduleSessionDialog'
 import { LEVEL_BADGE } from '../libs/levelBadge'
@@ -135,6 +136,8 @@ export default function StudentDetail() {
             ))}
           </div>
         </section>
+
+        <StudentSubscriptionSection student={student} />
 
         <StudentProgressSection studentId={student.id} />
 

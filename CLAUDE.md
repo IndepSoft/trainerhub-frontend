@@ -303,8 +303,11 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
 - Las sesiones volcadas desde un plan no guardan de qué volcado salieron, así que
   no se pueden mover ni cancelar en bloque y volcar dos veces duplica.
 - La subestructura de carpetas difiere entre dominios; falta unificarla.
-- El dominio `reports` no tiene fichero de rutas ni esta registrado en el
-  router: su pagina y sus graficos existen pero son inalcanzables.
+- Las cuotas no guardan importes: la cola de cobros dice **quién vence y
+  cuándo**, no cuánto. Poner precio exige decidir moneda y modelo de tarifas, y
+  nada de eso está decidido. Ver `StudentSubscription`.
+- Los avisos son una bandeja **dentro** de la aplicación: quien no la abra no se
+  entera. Correo o push son otro trabajo, y otro consentimiento.
 - El lint esta en cero. `react-refresh/only-export-components` queda desactivada
   **solo** en `src/shared/ui/**`, porque el patron de shadcn -componente y
   variantes de `cva` en el mismo fichero- choca con ella y no es corregible sin

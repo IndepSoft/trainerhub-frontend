@@ -1,77 +1,49 @@
-import {
-  MetricBlock,
-  type MetricBlockProps,
-} from '@/shared/components/MetricBlock'
+import { AlertTriangle, CalendarDays, UserMinus, Users } from 'lucide-react'
+import { MetricBlock } from '@/shared/components/MetricBlock'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
-import {
-  BanknoteArrowUp,
-  BicepsFlexed,
-  CalendarDays,
-  Users,
-} from 'lucide-react'
-import { useState } from 'react'
-import SummaryComponent from '../components/SummaryComponent'
+import { useViewerContext } from '@/app/ViewerContext'
+import { useDuesQueue } from '../hooks/useDuesQueue'
+import { useRetention } from '../hooks/useRetention'
+import { useCrewActivity } from '../hooks/useCrewActivity'
+import { DuesQueue } from '../components/DuesQueue'
+import { RetentionList } from '../components/RetentionList'
+import { ActivityBreakdown } from '../components/ActivityBreakdown'
 
 /**
- * Indicadores de la cabecera de Reportes.
+ * Reportes. Sólo composición.
  *
- * A nivel de modulo a proposito: son estaticos, y dentro del componente se
- * recreaban en cada render, lo que obligaba a omitirlos de las dependencias del
- * useEffect y disparaba react-hooks/exhaustive-deps.
+ * ESTABA ENTERAMENTE INVENTADO: 24 alumnos, 4.800 € de ingresos y un 87 % de
+ * asistencia escritos a mano, más cuatro pestañas vacías bajo el rótulo «Sistema
+ * de Gamificación» —que repetía lo que ya hace Progreso—. Ninguna cifra cambiaba
+ * entrenando ni dejando de entrenar.
  *
- * TODO: valores de ejemplo. Deben venir del backend cuando exista el
- * repositorio de reportes.
+ * TRES PESTAÑAS, Y CADA UNA RESPONDE A UNA PREGUNTA DE NEGOCIO. El criterio para
+ * que algo esté aquí es que su respuesta cambie una decisión:
+ *
+ *   Cobros      ¿a quién tengo que llamar hoy?      → dinero que entra
+ *   Retención   ¿quién está dejando de venir?       → dinero que se va
+ *   Actividad   ¿cuánto se entrena, y cuándo?       → si cabe más gente
+ *
+ * Lo que se ha quitado no era poco útil, era decorativo: gráficas de ingresos
+ * mensuales sin ninguna fuente de pagos, distribución de planes sin planes
+ * asignados, y un botón de exportar que no exportaba.
+ *
+ * TODO: sigue sin haber importes. La cola dice QUIÉN vence y CUÁNDO, que es lo
+ * que hace falta para cobrar; cuánto exige decidir moneda y modelo de tarifas, y
+ * nada de eso está decidido. Ver `StudentSubscription`.
  */
-const indicatorsVal: MetricBlockProps[] = [
-  {
-    title: 'Alumnos Activos',
-    indicator: 24,
-    icon: Users,
-    delta: 5,
-    deltaType: 'up',
-    period: 'month',
-  },
-  {
-    title: 'Sesiones Completadas',
-    indicator: 125,
-    icon: CalendarDays,
-    delta: 2,
-    deltaType: 'up',
-    period: 'week',
-  },
-  {
-    title: 'Tasa de Asistencia',
-    indicator: 87,
-    icon: BanknoteArrowUp,
-    suffix: '%',
-    delta: 200,
-    deltaType: 'up',
-    period: 'month',
-  },
-  {
-    title: 'Ingresos Totales',
-    indicator: 4800,
-    prefix: '$',
-    icon: BicepsFlexed,
-    delta: 4.8,
-    deltaType: 'up',
-    period: 'month',
-  },
-]
-
 export default function Reports() {
-  const [activeTab, setActiveTab] = useState('summary')
+  const { active } = useViewerContext()
+  const { overdueCount, dueSoonCount, loading: loadingDues } = useDuesQueue()
+  const { atRiskCount, entries } = useRetention()
+  const { completedThisWeek } = useCrewActivity()
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden bg-bone">
-      <PageHeader>
-        <PageHeader.Content>
-          <div>
-            <PageHeader.Eyebrow>Tu negocio</PageHeader.Eyebrow>
-            <PageHeader.Title>Reportes</PageHeader.Title>
-          </div>
-        </PageHeader.Content>
+      <PageHeader className="pb-4">
+        <PageHeader.Eyebrow>{active?.crew.name ?? 'Tu negocio'}</PageHeader.Eyebrow>
+        <PageHeader.Title>Reportes</PageHeader.Title>
       </PageHeader>
 
       {/* Contenedor de scroll de la pagina. Es un div y no un <main> a
@@ -80,84 +52,56 @@ export default function Reports() {
           admite uno por documento- ademas de confundir a los lectores de
           pantalla. */}
       <div className="flex-1 overflow-auto">
-        <div className="ps-4 pe-4 pb-4 max-w-8xl mx-auto space-y-6">
-          <div className="grid grid-cols-1 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3 sm:grid-cols-2 sm:divide-x lg:grid-cols-4">
-            {indicatorsVal.map((indicator) => (
-              <MetricBlock
-                key={indicator.title}
-                title={indicator.title}
-                delta={indicator.delta}
-                deltaType={indicator.deltaType}
-                prefix={indicator.prefix}
-                suffix={indicator.suffix}
-                icon={indicator.icon}
-                indicator={indicator.indicator}
-                period={indicator.period}
-              />
-            ))}
-          </div>
+        {/*
+          Cuatro cifras, y las tres primeras son cosas que hay que atender hoy.
+          Sin tendencias: comparar con el periodo anterior exige un historico que
+          no hay, y `MetricBlock` ya sabe omitir esa linea —«en vez de pintar un
+          cero engañoso», dice su propio comentario—.
+        */}
+        <div className="grid grid-cols-1 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3 sm:grid-cols-2 sm:divide-x lg:grid-cols-4">
+          <MetricBlock title="Cuotas vencidas" indicator={overdueCount} icon={AlertTriangle} />
+          <MetricBlock title="Vencen esta semana" indicator={dueSoonCount} icon={CalendarDays} />
+          <MetricBlock title="Sin venir" indicator={atRiskCount} icon={UserMinus} />
+          <MetricBlock title="Alumnos" indicator={entries.length} icon={Users} />
+        </div>
 
-          {/* Sin envoltura <Card>. La tenia, y como su contenido son a su vez
-              tarjetas, cada una pagaba el relleno dos veces y caia a 277 px, por
-              debajo del minimo util de 280 que fija la regla 1.6. Un encabezado
-              suelto da la misma informacion sin anadir un nivel de anidamiento
-              -y <h2> si es un encabezado para un lector de pantalla, cosa que
-              CardTitle no es: renderiza un <div>. */}
-          <section className="space-y-4">
-            <h2 className="text-lg font-semibold leading-none tracking-tight">
-              Sistema de Gamificación
-            </h2>
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="w-full md:grid md:grid-cols-5">
-                <TabsTrigger value="summary">Resumen</TabsTrigger>
-                <TabsTrigger value="achievements">Logros</TabsTrigger>
-                <TabsTrigger value="challenges">Desafíos</TabsTrigger>
-                <TabsTrigger value="streaks">Rachas</TabsTrigger>
-                <TabsTrigger value="analytics">Análisis</TabsTrigger>
-              </TabsList>
+        <div className="mx-auto max-w-4xl px-5 py-6">
+          <Tabs defaultValue="cobros">
+            {/* Tres columnas y no `inline-flex`: a 375 px, tres pestañas en
+                linea dejaban la ultima cortada contra el borde. */}
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="cobros">Cobros</TabsTrigger>
+              <TabsTrigger value="retencion">Retención</TabsTrigger>
+              <TabsTrigger value="actividad">Actividad</TabsTrigger>
+            </TabsList>
 
-              <TabsContent value="summary" className="mt-6">
-                <SummaryComponent />
-              </TabsContent>
+            <TabsContent value="cobros" className="mt-6 space-y-3">
+              <p className="text-sm text-ink/55">
+                {loadingDues
+                  ? 'Cargando…'
+                  : 'De arriba abajo: primero lo vencido, después lo que vence antes.'}
+              </p>
+              <DuesQueue />
+            </TabsContent>
 
-              {/* TODO: cuatro pestanas sin contenido. Heredaron el andamiaje
-                  «pageN works» del generador y nunca se completaron. Falta
-                  decidir en producto que muestra cada una: hoy repiten las
-                  mismas cinco solapas que /progress, asi que puede que
-                  sobren aqui en vez de tener que rellenarse. */}
-              <TabsContent value="achievements" className="mt-6">
-                <EmptyTabNotice />
-              </TabsContent>
+            <TabsContent value="retencion" className="mt-6 space-y-3">
+              <p className="text-sm text-ink/55">
+                Días desde la última sesión completada. Quien lleva dos semanas
+                sin venir suele dejar de renovar poco después.
+              </p>
+              <RetentionList />
+            </TabsContent>
 
-              <TabsContent value="challenges" className="mt-6">
-                <EmptyTabNotice />
-              </TabsContent>
-
-              <TabsContent value="streaks" className="mt-6">
-                <EmptyTabNotice />
-              </TabsContent>
-
-              <TabsContent value="analytics" className="mt-6">
-                <EmptyTabNotice />
-              </TabsContent>
-            </Tabs>
-          </section>
+            <TabsContent value="actividad" className="mt-6 space-y-3">
+              <p className="text-sm text-ink/55">
+                {completedThisWeek} sesiones completadas esta semana, de lunes a
+                domingo.
+              </p>
+              <ActivityBreakdown />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
-  )
-}
-
-/**
- * Marcador para las pestanas de Reportes que aun no tienen contenido definido.
- * Existe para que la interfaz diga la verdad -«no hay nada aqui todavia»- en
- * vez de mostrar el «pageN works» del andamiaje, que un usuario lee como un
- * fallo.
- */
-function EmptyTabNotice() {
-  return (
-    <p className="text-sm text-muted-foreground py-8 text-center">
-      Esta sección todavía no tiene contenido.
-    </p>
   )
 }

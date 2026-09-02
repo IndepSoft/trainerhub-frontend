@@ -1200,3 +1200,108 @@ más, y la deuda que lo anotaba se retira.
 `GamificationHeader` es además `sticky`, pensado para quedarse fijo en la
 pantalla del alumno; dentro de una sección de la ficha esa fijación no
 significaba nada.
+
+---
+
+## 17. La cuota del alumno, los avisos, y Reportes de verdad (2 sep 2026)
+
+### 17.1 Dos suscripciones que no son la misma
+
+`Crew.subscriptionStatus` es la del **equipo con la plataforma**: la activa un
+administrador de plataforma y abre la puerta a incorporar gente.
+`StudentSubscription` es la del **alumno con su equipo**: lo que paga por
+entrenar allí, y lo cobra su entrenador. Comparten palabra y no se parecen en
+nada —ni en quién decide ni en qué desbloquean—, así que el comentario que las
+distingue está en la entidad, que es donde alguien va a buscarlo.
+
+**Una fecha, no un contador.** `paidThrough` dice hasta qué día está pagado; un
+contador de días restantes habría que recalcularlo cada día, y el día que nadie
+abriera la aplicación se quedaría parado.
+
+**El periodo se guarda por alumno.** Mensual es lo corriente, pero varía: bonos
+trimestrales, un mes de prueba, el que paga el año. Con un valor fijo, cada
+excepción obligaría a falsear la fecha de vencimiento para que cuadrara.
+
+**Renovar encadena si va por delante y reinicia si venció.** Quien paga antes de
+tiempo no pierde los días que le quedaban; quien lleva dos meses sin pagar no
+compra dos meses de pasado. Encadenar siempre regalaría meses vencidos;
+reiniciar siempre castigaría al puntual.
+
+### 17.2 Sin importes, y por qué
+
+Poner un precio obliga a elegir moneda, decidir si es por alumno o por tarifa, y
+qué pasa cuando cambia —¿retroactivo?—, y nada de eso está decidido. Lo que la
+cola de cobros necesita para ser útil es **quién vence y cuándo**, y eso sí está.
+
+Añadir el importe después es un campo. Inventarse ahora un modelo de precios es
+arriesgarse a tirarlo.
+
+### 17.3 Un aviso que no llega a ninguna parte no es un aviso
+
+«Que se puedan enviar avisos» exigía el otro extremo del hilo: la campana de la
+barra superior era un botón que no hacía nada, y ahora es la bandeja donde
+aterrizan.
+
+**No es el muro, y la diferencia importa.** El muro es un tablón que lee el
+equipo entero; un recordatorio de cuota es entre dos personas, y publicarlo donde
+lo ven sus compañeros sería exponer a alguien por deber dinero. Hay una prueba
+que comprueba justamente que el aviso llega a la campana y **no** aparece en el
+muro.
+
+El borrador viene escrito y **cambia según el estado**: no es lo mismo avisar de
+lo que va a pasar que reclamar lo que ya pasó. Quien manda veinte al mes no va a
+redactarlos uno a uno, y con un campo en blanco acaba no mandándolos.
+
+TODO: es una bandeja **dentro** de la aplicación. Correo, WhatsApp o push son
+otro trabajo —y otro consentimiento—; hasta entonces, quien no abra la aplicación
+no se entera.
+
+### 17.4 Reportes: tres pestañas, tres preguntas
+
+Estaba enteramente inventado: 24 alumnos, 4.800 € de ingresos y un 87 % de
+asistencia escritos a mano, más cuatro pestañas vacías bajo el rótulo «Sistema de
+Gamificación» —que repetía lo que ya hace Progreso—. Ninguna cifra cambiaba
+entrenando ni dejando de entrenar.
+
+El criterio para que algo esté aquí es que **su respuesta cambie una decisión**:
+
+| Pestaña | Pregunta | Por qué importa |
+|---|---|---|
+| Cobros | ¿a quién llamo hoy? | dinero que entra |
+| Retención | ¿quién está dejando de venir? | dinero que se va |
+| Actividad | ¿cuánto se entrena, y cuándo? | si cabe más gente |
+
+**La cola de cobros se lee de arriba abajo y se llama.** Lo vencido primero, y
+dentro de cada grupo lo que vence antes. Quien no tiene cuota va al final: no
+debe nada, es un alta a la que aún no se le ha puesto tarifa, y mezclarla con los
+morosos rompería la lectura.
+
+**Retención es la que más dinero mueve, y ninguna pantalla la respondía.** Un
+alumno que deja de aparecer no se da de baja: deja de renovar tres semanas
+después, y para entonces ya no hay conversación que tener. La cuota vencida llega
+tarde; esto llega antes. El umbral son catorce días y no siete porque una semana
+sin venir es un viaje o una gripe, y avisar de eso llenaría la lista de falsos
+positivos hasta que dejara de mirarse.
+
+**Actividad agrupa por hora y no por día** porque el cuello de botella de un
+gimnasio pequeño es el horario, no el calendario: los martes no se llenan, las
+siete de la tarde sí.
+
+Se han borrado `SummaryComponent` y `chartData` —gráficas de ingresos sin ninguna
+fuente de pagos, distribución de planes sin planes asignados, y un botón de
+exportar que no exportaba— y con ellos la dependencia **`chart.js`**, que se
+quedó sin un solo uso.
+
+### 17.5 Una hora perdida por una comprobación mal hecha
+
+El diálogo de aviso «no se cerraba». Estuve buscando el fallo en el código —
+sondas incluidas— hasta medir `data-state`, que decía `closed`: **el diálogo sí
+se cerraba**, y lo que fallaba era mi comprobación, que buscaba el nodo en el DOM
+sin contar con que Radix lo deja montado durante la animación de salida.
+
+Antes de eso perdí otro rato con un `describeWeekdays is not defined` que sólo
+existía en la caché de transformaciones de Vite: las pruebas, que levantan su
+propio servidor, pasaban. `rm -rf node_modules/.vite` lo resolvió.
+
+Las dos son la misma lección: cuando el síntoma no encaja con el código, sospecha
+del instrumento antes que del código.
