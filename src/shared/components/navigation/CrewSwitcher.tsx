@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
 import { cn } from '@/shared/lib/utils'
+import { ROLE_LABEL } from '@/shared/domain/permissions'
 import type { Membership } from '@/shared/domain/entities/crew'
 
 interface CrewSwitcherProps {
@@ -64,7 +65,10 @@ export function CrewSwitcher({ memberships, active, loading, onSelect }: CrewSwi
           <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/45">
             {/* La denominación que eligió su entrenador: «tribu», «box»… */}
             {crew.denomination}
-            {active.role === 'student' ? ' · Alumno' : ''}
+            {/* El papel, salvo el de entrenador: es el corriente y decirlo en
+                cada pantalla es ruido. Administrador y alumno sí, porque
+                cambian lo que se puede hacer. */}
+            {active.role === 'trainer' ? '' : ` · ${ROLE_LABEL[active.role]}`}
           </span>
         </span>
 

@@ -851,3 +851,115 @@ impedirá son las políticas del servidor, que todavía no existen —anotado ya
 Y **no hay registro de quién miró qué**. Un administrador que entra en el equipo
 de un cliente ve datos personales de sus alumnos: edad, grasa corporal,
 objetivos. En cuanto haya usuarios reales, eso debería quedar registrado.
+
+---
+
+## 13. Tres roles, permisos que sólo suman, y la privacidad recuperada (1 sep 2026)
+
+### 13.1 Dos poderes, no uno
+
+Dentro de un crew hay dos cosas distintas que hasta ahora eran una sola:
+
+- **Entrenar**: asignar rutinas, agendar, llevar fichas, hablarle al equipo.
+- **Gobernar**: decidir quién trabaja allí y cómo se llama la casa.
+
+En un entrenador solo los tiene la misma persona. En un gimnasio no: el dueño
+gobierna —y puede no entrenar a nadie— y sus entrenadores entrenan sin poder
+echarse entre ellos.
+
+De ahí el rango `admin > trainer > student`. **Quien crea un crew nace `admin`**,
+así que en el caso corriente la distinción no se nota; el rol separado aparece
+cuando hay más de una persona trabajando. Lo que separa a un `admin` de un
+`trainer` son exactamente dos capacidades: `crew.settings` y `crew.staff`.
+
+**El rol sale del puesto, no de haber fundado el equipo.** Antes se derivaba de
+`Crew.ownerId`, y con eso sólo cabía una persona gestionando. `CrewStaff` —que
+estaba modelado y sin poblar desde el principio— es ahora la fuente.
+
+### 13.2 Las capacidades, y por qué sólo suman
+
+`role === 'trainer'` no expresaba el caso del gimnasio, así que cada control
+pregunta ahora por lo que necesita: `can('schedule.manage')`, `can('crew.wall')`.
+
+Encima del rol se pueden **conceder** capacidades sueltas, y **sólo conceder**.
+Es la decisión que mantiene esto razonable: se conserva el invariante «nunca
+puedes menos que tu rol», así que la pregunta «¿qué puede hacer esta persona?»
+sigue teniendo respuesta corta —su rol, y como mucho un par de extras—.
+
+Permitir restar por debajo del rol convertiría a cada usuario en un caso único:
+con ocho capacidades hay 256 configuraciones por persona, cada pantalla tendría
+que ser correcta en todas, y ninguna se probaría. Es el motivo por el que los
+sistemas de permisos libres acaban siendo imposibles de auditar.
+
+Al cambiar de rol se limpian las concesiones que el rol nuevo ya trae:
+un administrador con «Agenda» concedida aparte sugeriría que sin ella no podría,
+que es falso.
+
+### 13.3 El super admin deja de entrar en equipos ajenos
+
+Se revierte lo de la sección 12. Administrar la plataforma es **gestionar cuentas
+y accesos**, no leer los datos de los alumnos de un cliente —su edad, su grasa
+corporal, sus objetivos— sin que quede constancia. El riesgo estaba anotado en
+§12.5 y la decisión es la contraria: los demás equipos son privados.
+
+Para ver la aplicación funcionando tiene **su propio equipo**, `CREWTEST`,
+sembrado y activo, donde es `admin` como cualquiera.
+
+La pestaña de cuentas enseña **identidad y acceso**: nombre, correo, equipo y
+rol. Nada de lo que esa persona entrena. Esa línea es la que hace que la
+privacidad del resto sea real y no una promesa.
+
+### 13.4 Dos regresiones que sólo se vieron mirando
+
+Añadir un rol por encima de `trainer` rompió dos comprobaciones que llevaban
+meses siendo correctas:
+
+**`HomeRedirect` preguntaba `role === 'trainer'`**, así que el dueño de un
+gimnasio aterrizaba en la pantalla de progreso de un alumno. Ahora pregunta por
+«gestiona», que es lo que quería decir.
+
+**`useProgressStudent` preguntaba `role !== 'trainer'`** para decidir si mirabas
+tu progreso o el de otro, y con eso un administrador veía la invitación a unirse
+a un equipo del que es dueño.
+
+Las dos son el mismo error: comprobar un rol concreto donde se quería comprobar
+una capacidad. Es exactamente el motivo de que ahora haya `can`.
+
+### 13.5 Una carrera en el arranque
+
+`useViewer.load` devolvía `[]` cuando todavía no había sesión, y con eso el ciclo
+terminaba poniendo `loading: false` **antes de saber quién había entrado**.
+Durante ese instante nadie era administrador de nada, y `HomeRedirect` —que sí
+espera a `loading`— mandaba al recién identificado a la pantalla equivocada, de
+la que ya no volvía.
+
+Ahora devuelve `null`, que significa «todavía no se sabe» y es distinto de «no
+pertenece a nada». El fallo sólo aparecía al identificarse, nunca al recargar.
+
+### 13.6 El ámbito iba un tick por detrás
+
+Lo destapó una prueba que llevaba semanas en verde: abrir una sesión con un
+enlace directo, recién identificado, decía «sesión no encontrada».
+
+`setActiveCrew` vivía sólo en un efecto, así que `HomeRedirect` navegaba en
+cuanto `loading` era falso y el crew activo se guardaba **después**. Una recarga
+inmediata sobre una ruta profunda leía el almacenamiento antes de que se hubiera
+escrito, se quedaba sin ámbito, y toda consulta devolvía vacío.
+
+Ahora se fija también dentro de `resolve`, que corre fuera del renderizado y por
+tanto puede escribir sin ser un efecto secundario. El efecto se queda para lo que
+cambia después: el conmutador de equipo, y que te acepten una solicitud.
+
+Sólo se manifestaba en el primer acceso tras identificarse, que es exactamente el
+tipo de fallo que un usuario reporta como «a veces no me carga».
+
+### 13.7 Lo que queda fuera
+
+**Ascender a un alumno a la plantilla.** `crewStaff.add` escribe en el crew
+activo, que para quien administra la plataforma es el suyo y no el del alumno.
+Hasta que el alta de puestos acepte un crew explícito, la operación falla con un
+mensaje claro en vez de escribir en el equipo equivocado.
+
+**Sigue sin haber servidor.** Que la pantalla esconda un botón impide
+equivocarse, no impide actuar. Quien se ascienda a sí mismo con un cliente
+modificado lo conseguirá hasta que existan las políticas.

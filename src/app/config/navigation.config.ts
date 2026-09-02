@@ -1,3 +1,4 @@
+import { CREW_ROLE_RANK } from '@/shared/domain/entities/crew'
 import type { CrewRole } from '@/shared/domain/entities/crew'
 import {
   type LucideIcon,
@@ -23,18 +24,24 @@ export interface NavigationItem {
   showInSidebar?: boolean
   showInMobile?: boolean
   /**
-   * Quién ve este destino.
+   * El rango MÍNIMO que ve este destino.
    *
    * Ausente significa «todos los que han entrado», que es lo correcto para
-   * Calendario y Progreso: las dos cosas las mira el entrenador y las mira el
+   * Calendario y Progreso: las dos cosas las mira quien gestiona y las mira el
    * alumno, aunque vean datos distintos.
    *
-   * Los que llevan `['trainer']` son de gestión —el padrón de alumnos, el
-   * catálogo de entrenamientos, los informes— y un alumno no tiene nada que
-   * hacer ahí. Esconderlos no es la seguridad: la seguridad es RLS en el
-   * servidor. Esto es no ofrecer puertas que no abren.
+   * MÍNIMO Y NO UNA LISTA DE ROLES, y el cambio salió de un fallo real: decía
+   * `roles: ['trainer']`, y al aparecer `admin` por encima resultó que el dueño
+   * de un gimnasio no está en esa lista —así que se quedó sin Estudiantes, sin
+   * Entrenamientos y sin Panel—. Con una lista, cada rol nuevo obliga a repasar
+   * todas; con un mínimo, el rango se encarga.
+   *
+   * Los que piden `trainer` son de gestión —el padrón de alumnos, el catálogo,
+   * los informes— y un alumno no tiene nada que hacer ahí. Esconderlos no es la
+   * seguridad: la seguridad es RLS en el servidor. Esto es no ofrecer puertas
+   * que no abren.
    */
-  roles?: CrewRole[]
+  minRole?: CrewRole
   /**
    * Sólo para quien administra la plataforma.
    *
@@ -49,7 +56,7 @@ export interface NavigationItem {
 export const navigationConfig: NavigationItem[] = [
   {
     id: 'dashboard',
-    roles: ['trainer'],
+    minRole: 'trainer',
     label: 'Dashboard',
     href: '/dashboard',
     icon: Home,
@@ -59,7 +66,7 @@ export const navigationConfig: NavigationItem[] = [
   },
   {
     id: 'students',
-    roles: ['trainer'],
+    minRole: 'trainer',
     label: 'Estudiantes',
     href: '/students',
     icon: Users,
@@ -69,7 +76,7 @@ export const navigationConfig: NavigationItem[] = [
   },
   {
     id: 'trainings',
-    roles: ['trainer'],
+    minRole: 'trainer',
     label: 'Entrenamientos',
     href: '/trainings',
     icon: Dumbbell,
@@ -97,7 +104,7 @@ export const navigationConfig: NavigationItem[] = [
   },
   {
     id: 'reports',
-    roles: ['trainer'],
+    minRole: 'trainer',
     label: 'Reportes',
     href: '/reports',
     icon: BarChart3,
@@ -159,20 +166,16 @@ export const navigationConfig: NavigationItem[] = [
  * producto mucho mejor que una pantalla unica que le corta el paso.
  */
 function matchesViewer(item: NavigationItem, viewer: NavigationViewer): boolean {
+  // El panel de plataforma sólo lo ve quien la administra, y lo ve siempre:
+  // no depende de en qué equipo esté, ni de estar en alguno.
   if (item.platformOnly === true) return viewer.isPlatformAdmin
 
-  /*
-   * Un administrador de plataforma llega a TODOS los módulos.
-   *
-   * No es un permiso de escritura: entra a ver cómo está la aplicación de sus
-   * clientes, y lo que puede tocar lo decide `canManage`, no esto. Esconderle
-   * pantallas le obligaría a pedir capturas para diagnosticar cualquier cosa.
-   */
-  if (viewer.isPlatformAdmin) return true
-
-  if (item.roles === undefined) return true
+  if (item.minRole === undefined) return true
   if (viewer.role === null) return false
-  return item.roles.includes(viewer.role)
+
+  // Por RANGO: quien manda más ve todo lo de quien manda menos. Comparar por
+  // igualdad dejaba fuera al administrador de los destinos de gestión.
+  return CREW_ROLE_RANK[viewer.role] <= CREW_ROLE_RANK[item.minRole]
 }
 
 /** Quien navega, en lo que hace falta para decidir qué se le ofrece. */

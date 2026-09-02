@@ -34,7 +34,14 @@ export default function HomeRedirect() {
   if (loading) return <LoadingFallback />
 
   if (isPlatformAdmin) return <Navigate to="/admin" replace />
-  if (role === 'trainer') return <Navigate to="/dashboard" replace />
+  /*
+   * Cualquiera que GESTIONE va al panel, sea administrador o entrenador.
+   *
+   * Antes preguntaba por `role === 'trainer'` y con el rango nuevo eso dejaba
+   * fuera precisamente a quien más manda: el dueño de un gimnasio aterrizaba en
+   * la pantalla de progreso de un alumno.
+   */
+  if (role !== null && role !== 'student') return <Navigate to="/dashboard" replace />
   if (role === null && trainer !== null) return <Navigate to="/crew/nuevo" replace />
 
   return <Navigate to="/progress" replace />

@@ -28,7 +28,7 @@ const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-
 export default function NewCrew() {
   const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
-  const { selectCrew } = useViewerContext()
+  const { selectCrew, trainer } = useViewerContext()
   const { createCrew, saving, error } = useCrewEditor()
 
   const [name, setName] = useState('')
@@ -48,6 +48,11 @@ export default function NewCrew() {
       name: name.trim(),
       denomination,
       ownerId: user.id,
+      // De la ficha de entrenador si la hay, y si no del correo: el puesto se
+      // pinta en una lista de personas y «undefined undefined» no es un nombre.
+      ownerName:
+        trainer === null ? user.email : `${trainer.firstName} ${trainer.lastName}`,
+      ownerEmail: user.email,
     })
 
     if (crew === null) return

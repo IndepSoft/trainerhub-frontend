@@ -9,14 +9,14 @@ import { describePostTime } from '../libs/postTime'
 import type { CrewPost } from '@/shared/domain/entities/crewPost'
 
 interface CrewWallProps {
-  /** Si quien mira entrena aquí. Cambia lo que dice el muro vacío. */
-  isTrainer: boolean
+  /** Si quien mira es del equipo técnico. Cambia lo que dice el muro vacío. */
+  isStaff: boolean
   /**
    * Si además puede publicar y borrar.
    *
-   * Distinto de `isTrainer` porque un administrador de plataforma entra con
-   * papel de entrenador para poder ver, y publicar en el muro de otro —firmado
-   * con el nombre del entrenador de verdad— sería suplantarle, no inspeccionar.
+   * Distinto de `isStaff` porque la capacidad se puede prestar: un alumno
+   * veterano al que se le deja anunciar cosas publica sin ser plantilla, y un
+   * entrenador al que no se le ha dado la llave sigue siéndolo sin publicar.
    */
   canPublish: boolean
   /** Cómo se firma el anuncio. Es el nombre de quien entrena el equipo. */
@@ -31,7 +31,7 @@ interface CrewWallProps {
  * arrastraría lo segundo: moderar, denunciar, bloquear. Los alumnos participan
  * con el «me gusta», que basta para saber si algo se ha leído.
  */
-export function CrewWall({ isTrainer, canPublish, authorName }: CrewWallProps) {
+export function CrewWall({ isStaff, canPublish, authorName }: CrewWallProps) {
   const { posts, loading, publish, toggleLike, removePost, isLikedByViewer } = useCrewWall()
   const [draft, setDraft] = useState('')
 
@@ -87,7 +87,7 @@ export function CrewWall({ isTrainer, canPublish, authorName }: CrewWallProps) {
 
       {!loading && posts.length === 0 ? (
         <p className="py-6 text-sm text-ink/45">
-          {isTrainer
+          {isStaff
             ? 'Todavía no has publicado nada. Aquí es donde tu equipo se entera de lo que pasa.'
             : 'Tu entrenador todavía no ha publicado nada.'}
         </p>

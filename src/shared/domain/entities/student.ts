@@ -1,4 +1,5 @@
 import type { MembershipStatus } from './crew'
+import type { Capability } from '../permissions'
 
 /**
  * Estudiante, en términos de la aplicación.
@@ -38,6 +39,15 @@ export interface Student {
   age: number
   bodyFatPercentage: number
   photoUrl?: string
+  /**
+   * Concesiones por encima de su rol.
+   *
+   * Un alumno no gestiona nada de serie, así que esto normalmente está vacío.
+   * Existe para el caso real del veterano al que se le deja publicar en el muro
+   * sin convertirlo en entrenador: darle la llave suelta es más pequeño —y más
+   * fácil de retirar— que un ascenso.
+   */
+  extraCapabilities: Capability[]
   /**
    * En qué punto está su pertenencia a este crew.
    *

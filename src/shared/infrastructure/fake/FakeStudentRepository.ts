@@ -6,6 +6,7 @@ import type {
 import type { CrewScope } from '@/shared/domain/ports/CrewScope'
 import { isMember } from '@/shared/domain/entities/crew'
 import type { MembershipStatus } from '@/shared/domain/entities/crew'
+import type { Capability } from '@/shared/domain/permissions'
 import type { Student } from '@/shared/domain/entities/student'
 import { studentsSeed } from './studentsSeed'
 
@@ -174,6 +175,9 @@ export class FakeStudentRepository implements StudentRepository {
       bodyFatPercentage: 0,
       photoUrl: undefined,
       membershipStatus: input.status,
+      // Sin concesiones: entra a entrenar. Prestar una llave es una decision
+      // posterior de quien gobierna el equipo, no algo que ocurra al entrar.
+      extraCapabilities: [],
       profileId: input.profileId,
     }
 
@@ -197,6 +201,19 @@ export class FakeStudentRepository implements StudentRepository {
     return this.students.filter(
       (student) => student.crewId === crewId && isMember(student.membershipStatus)
     )
+  }
+
+  /** Todas las fichas, sin acotar. Fuera del puerto: solo para la plataforma. */
+  listAll(): Student[] {
+    return this.students
+  }
+
+  /** Concesiones por encima del rol. Fuera del puerto, como `listAll`. */
+  async updateCapabilities(studentId: string, extraCapabilities: Capability[]): Promise<void> {
+    this.students = this.students.map((student) =>
+      student.id === studentId ? { ...student, extraCapabilities } : student
+    )
+    this.notify()
   }
 
   /** Cuantos son. Derivado de `membersOf`, para que no puedan discrepar. */

@@ -283,18 +283,27 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
 - `CrewPost.likedBy` guarda la lista entera de quién ha dado «me gusta». Con
   equipos de decenas da igual; con miles hay que pasar a un contador y una
   bandera calculados en el servidor.
-- `CrewTrainer` está modelado y no se puebla: un crew tiene hoy un solo
-  entrenador, su dueño.
+- Un crew no se puede quedar sin administrador: nada impide bajar de rango al
+  último que queda, y entonces el equipo pierde a quien podía gobernarlo. Falta
+  la comprobación.
+- Cuatro capacidades están declaradas y no las comprueba ningún control:
+  `crew.settings` y `crew.staff` no tienen pantalla, y `training.manage` y
+  `students.manage` sólo las protege el rango mínimo de la navegación. **No hay
+  permiso de más, hay concesión que no surte efecto**: concederle
+  `training.manage` a un alumno no le abre nada. Detalle en `permissions.ts`.
 - La lista de administradores de plataforma es una constante en la semilla. Con
   backend es una tabla que sólo escribe el rol de servicio, y la comprobación
   vive en las políticas, no en el cliente: **hoy la puerta de la suscripción la
   guarda el navegador**, que es suficiente para el producto y no para la
   seguridad. Está anotado en `PlatformRepository`.
 - No hay cobro: activar una suscripción es una decisión manual desde `/admin`.
-- **No hay registro de auditoría.** Un administrador de plataforma entra en el
-  equipo de cualquier cliente y ve datos personales de sus alumnos —edad, grasa
-  corporal, objetivos— sin que quede constancia de quién miró qué. En cuanto haya
-  usuarios reales, hace falta.
+- Ascender a un alumno a la plantilla no está implementado: `crewStaff.add`
+  escribe en el crew activo, que para quien administra la plataforma no es el del
+  alumno. Falla con un mensaje claro en vez de escribir donde no toca.
+- `CrewStaff.displayName` y `email` están copiados, no referenciados. Es la
+  excepción a «se referencia el vocabulario»: no hay entidad de persona todavía
+  —`AuthUser` sólo tiene id y correo—, así que el nombre se guarda con el puesto.
+  Cuando exista un perfil, esto se resuelve por identificador.
 - Props declaradas y sin conectar, marcadas con `TODO:` en gamification y
   calendar. `ChallengeCard.onUpdate` es la más grave: el padre le pasa un
   manejador real que nunca se invoca.

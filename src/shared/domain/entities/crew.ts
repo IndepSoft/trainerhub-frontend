@@ -1,3 +1,4 @@
+import type { Capability } from '../permissions'
 import type { Student } from './student'
 
 /**
@@ -111,30 +112,60 @@ export const CREW_DENOMINATIONS = [
 export type CrewDenomination = (typeof CREW_DENOMINATIONS)[number]
 
 /**
- * Un entrenador de un crew.
+ * Un puesto en el equipo técnico de un crew.
  *
  * Tabla aparte y no un campo en `Crew` porque un crew puede tener varios: es
- * justo el caso que rompería modelar entrenador = crew. `ownerId` distingue a
- * quien manda de quien entrena.
+ * justo el caso que rompería modelar entrenador = crew. `Crew.ownerId` sigue
+ * marcando a quien lo fundó, que es distinto de quien manda hoy.
  *
  * Los ALUMNOS no están aquí: su pertenencia vive en `Student`, que ya es la
  * ficha que el entrenador lleva de cada uno. Ver la nota de `Student.crewId`.
  */
-export interface CrewTrainer {
+export interface CrewStaff {
   id: string
   crewId: string
   profileId: string
+  /**
+   * `admin` o `trainer`. Nunca `student`: quien entrena aquí no es plantilla.
+   *
+   * El tipo es `CrewRole` entero y no una unión recortada porque las pantallas
+   * que lo pintan comparten tabla con los alumnos, y estrecharlo aquí obligaría
+   * a ensancharlo con un cast en cuanto se juntan las dos listas.
+   */
+  role: CrewRole
+  /** Concesiones por encima del rol. Ver `Membership.extraCapabilities`. */
+  extraCapabilities: Capability[]
+  /** Cómo se le llama en la lista, sin tener que resolver su ficha. */
+  displayName: string
+  email: string
 }
 
 /**
  * Con qué papel se está en un crew.
  *
- * ES POR CREW, NO POR PERSONA. Alguien puede entrenar a su equipo y a la vez ser
+ * ES POR CREW, NO POR PERSONA. Alguien puede dirigir su gimnasio y a la vez ser
  * alumno del club de running de al lado, y las dos cosas son ciertas a la vez.
- * Un rol global obligaria a elegir, o a inventar un tercero que no significa
- * nada. Lo dice tambien `CAMBIOS-Y-ARQUITECTURA.md` §5: «el rol es por club».
+ * Un rol global obligaría a elegir, o a inventar un tercero que no significa
+ * nada. Lo dice también `CAMBIOS-Y-ARQUITECTURA.md` §5: «el rol es por club».
+ *
+ * SON UN RANGO: `admin` puede todo lo de `trainer`, y `trainer` todo lo de
+ * `student`. Quien crea un crew nace `admin`, así que en el caso corriente —un
+ * entrenador solo— la distinción no se nota: es las dos cosas. El rol separado
+ * aparece cuando hay más de una persona trabajando, que es el caso del gimnasio
+ * cuyo dueño tiene varios entrenadores: él gobierna —y puede no entrenar a
+ * nadie— y ellos entrenan sin poder echarse entre sí.
+ *
+ * Qué puede cada uno está en `shared/domain/permissions.ts`, y no aquí, porque
+ * la respuesta no es una propiedad del rol sino una tabla que se consulta.
  */
-export type CrewRole = 'trainer' | 'student'
+export type CrewRole = 'admin' | 'trainer' | 'student'
+
+/** De más a menos poder. Sirve para ordenar listas y para comparar rangos. */
+export const CREW_ROLE_RANK: Record<CrewRole, number> = {
+  admin: 0,
+  trainer: 1,
+  student: 2,
+}
 
 /**
  * En qué punto está la pertenencia de un alumno a un crew.
@@ -170,20 +201,19 @@ export interface Membership {
   crew: Crew
   role: CrewRole
   status: MembershipStatus
-  /** La ficha, cuando se está como alumno. `null` cuando se entrena. */
+  /** La ficha, cuando se está como alumno. `null` cuando se gestiona. */
   student: Student | null
   /**
-   * Si se está MIRANDO un equipo ajeno, no perteneciendo a él.
+   * Permisos concedidos por encima de los del rol.
    *
-   * Es lo que tiene un administrador de plataforma en los crews que no son
-   * suyos: entra a ver, con el papel de entrenador para que las pantallas de
-   * gestión se pinten, pero sin poder tocar nada.
+   * SÓLO SUMAN. Es lo que mantiene esto razonable: se conserva el invariante
+   * «nunca puedes menos que tu rol», así que para saber qué puede alguien basta
+   * mirar su rol y, como mucho, un par de extras. Poder restar convertiría a
+   * cada persona en un caso único y la pregunta «¿qué puede hacer éste?» dejaría
+   * de tener respuesta corta.
    *
-   * VER Y PODER SON DOS EJES DISTINTOS, y confundirlos es lo que hace peligroso
-   * un rol de administración. Si observar diera `role: 'trainer'` a secas,
-   * quien mira podría publicar en el muro de otro —firmado con el nombre del
-   * entrenador de verdad—, aceptar solicitudes o borrar alumnos. Eso no es
-   * inspeccionar, es suplantar, y es una decisión aparte que nadie ha tomado.
+   * Sirve para el caso intermedio real: darle a un entrenador concreto la llave
+   * de los ajustes sin ascenderlo a administrador del equipo entero.
    */
-  observed: boolean
+  extraCapabilities: Capability[]
 }

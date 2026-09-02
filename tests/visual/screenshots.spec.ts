@@ -3506,94 +3506,177 @@ test.describe('ranking', () => {
 })
 
 /**
- * El administrador de plataforma mirando un equipo ajeno.
+ * Los tres roles del crew, y las concesiones sueltas.
  *
- * VER Y PODER SON DOS EJES DISTINTOS, y confundirlos es lo que hace peligroso un
- * rol de administracion: entra con las pantallas de gestion delante para poder
- * diagnosticar, y no toca nada. Publicar en el muro de otro -firmado con el
- * nombre del entrenador de verdad- no seria inspeccionar, seria suplantar.
+ * En un entrenador solo, gobernar y entrenar los hace la misma persona -quien
+ * crea el crew nace `admin`-. En un gimnasio se separan: el dueño gobierna y sus
+ * entrenadores entrenan sin poder echarse entre ellos.
  */
-test.describe('administrador observando', () => {
-  async function entrarComoAdmin(page: Page): Promise<void> {
+test.describe('roles del equipo', () => {
+  test('el administrador de un crew llega a los modulos de gestion', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+
+    /*
+     * FALLO REAL QUE ESTO ATRAPA: la navegacion decia `roles: ['trainer']`, y al
+     * aparecer `admin` por encima resulto que el dueño de un gimnasio no estaba
+     * en esa lista. Se quedo sin Estudiantes, sin Entrenamientos y sin Panel, y
+     * aterrizaba en la pantalla de progreso de un alumno.
+     */
+    await expect(page).toHaveURL(/\/dashboard/)
+    for (const destino of ['Dashboard', 'Estudiantes', 'Entrenamientos']) {
+      await expect(page.getByRole('link', { name: destino }).first()).toBeVisible()
+    }
+
+    // Y el conmutador dice con que papel se esta.
+    await expect(page.getByText('Administrador').first()).toBeVisible()
+  })
+
+  test('un entrenador entrena pero no gobierna', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.goto('/authentication')
+    await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
+    await page.getByPlaceholder('tu@email.com').fill('lucia@indepsoft.com')
+    await page.locator('input[type=password]').fill('desarrollo123')
+    await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click()
+    await page.waitForURL(/\/dashboard/, { timeout: 20_000 })
+
+    // Entrena: alcanza el padron y el catalogo igual que el administrador.
+    await expect(page.getByRole('link', { name: 'Estudiantes' }).first()).toBeVisible()
+
+    // Y da de alta, porque `crew.invite` es suyo de serie.
+    await page.getByRole('link', { name: 'Estudiantes' }).first().click()
+    await expect(page.getByRole('button', { name: /Añadir alumno/ })).toBeEnabled()
+  })
+
+  test('un alumno no ve las pantallas de gestion', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+
+    /*
+     * Se une por QR y el entrenador la acepta, todo en la misma carga: los
+     * adaptadores falsos viven en memoria y un `page.goto` devolveria la
+     * semilla.
+     */
+    await page.goto('/authentication')
+    await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
+    await page.getByPlaceholder('tu@email.com').fill('alumnarol@correo.com')
+    await page.locator('input[type=password]').fill('desarrollo123')
+    await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click()
+    await page.waitForURL(/\/progress/, { timeout: 20_000 })
+
+    await page.goto('/crew/unirse?codigo=HIERRO24')
+    await expect(page.getByRole('heading', { name: 'Solicitud enviada' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Menú de usuario' }).click()
+    await page.getByRole('menuitem', { name: 'Cerrar sesión' }).click()
+    await page.getByPlaceholder('tu@email.com').fill('entrenador@indepsoft.com')
+    await page.locator('input[type=password]').fill('desarrollo123')
+    await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click()
+    await page.waitForURL(/\/dashboard/, { timeout: 20_000 })
+
+    await page.getByRole('button', { name: /Hierro y Asfalto/ }).first().click()
+    await page.getByRole('menuitem', { name: 'Ver el equipo' }).click()
+    await page.getByRole('button', { name: /^Aceptar a / }).click()
+
+    await page.getByRole('button', { name: 'Menú de usuario' }).click()
+    await page.getByRole('menuitem', { name: 'Cerrar sesión' }).click()
+    await page.getByPlaceholder('tu@email.com').fill('alumnarol@correo.com')
+    await page.locator('input[type=password]').fill('desarrollo123')
+    await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click()
+    await page.waitForURL(/\/progress/, { timeout: 20_000 })
+
+    // Ni el padron ni el catalogo: no tiene nada que hacer ahi.
+    await expect(page.getByRole('link', { name: 'Estudiantes' })).toHaveCount(0)
+    await expect(page.getByRole('link', { name: 'Entrenamientos' })).toHaveCount(0)
+    // Calendario y Progreso si: los mira todo el mundo, con datos distintos.
+    await expect(page.getByRole('link', { name: 'Progreso' }).first()).toBeVisible()
+  })
+})
+
+/**
+ * Las cuentas de la plataforma.
+ *
+ * IDENTIDAD Y ACCESO, NUNCA CONTENIDO: nombre, correo, equipo y rol. Nada de lo
+ * que esa persona entrena. Esa linea es la que hace que el resto de los equipos
+ * sea privado de verdad y no de palabra.
+ */
+test.describe('cuentas de la plataforma', () => {
+  async function abrirCuentas(page: Page): Promise<void> {
     await page.goto('/authentication')
     await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
     await page.getByPlaceholder('tu@email.com').fill('admin@indepsoft.com')
     await page.locator('input[type=password]').fill('desarrollo123')
     await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click()
     await page.waitForURL(/\/admin/, { timeout: 20_000 })
+    await page.getByRole('tab', { name: 'Cuentas' }).click()
   }
 
-  test('alcanza todos los modulos, y con datos', async ({ page }) => {
+  test('lista las pertenencias con su rol, y filtra', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
-    await entrarComoAdmin(page)
+    await abrirCuentas(page)
 
-    /*
-     * ENSEÑAR LOS MODULOS VACIOS NO ES VERLOS. Los datos estan acotados al crew
-     * activo, asi que un administrador sin equipo abriria Estudiantes y no
-     * habria nadie. Por eso alcanza cualquier equipo, y ahi es donde los modulos
-     * tienen algo que enseñar.
-     */
-    for (const destino of ['Dashboard', 'Estudiantes', 'Entrenamientos', 'Calendario']) {
-      await expect(page.getByRole('link', { name: destino }).first()).toBeVisible()
-    }
+    const lista = page.getByRole('main').getByRole('listitem')
+    await expect(lista.filter({ hasText: 'Marco Salas' })).toContainText('Administrador')
+    await expect(lista.filter({ hasText: 'Lucía Ferrer' })).toContainText('Entrenador')
+    await expect(lista.filter({ hasText: 'Juan Pérez' })).toContainText('Alumno')
 
-    await page.getByRole('link', { name: 'Estudiantes' }).first().click()
-    await expect(page.getByRole('link', { name: /Juan Pérez/ })).toBeVisible()
+    // La concesion suelta se ve en la fila: es la excepcion, y una excepcion que
+    // hay que abrir un dialogo para descubrir es una excepcion que se olvida.
+    await expect(lista.filter({ hasText: 'Lucía Ferrer' })).toContainText(
+      'Ajustes del equipo'
+    )
 
-    await page.getByRole('link', { name: 'Entrenamientos' }).first().click()
-    await expect(page.getByRole('tab', { name: /Rutinas/ })).toBeVisible()
+    await page.getByRole('button', { name: 'Alumno', exact: true }).click()
+    await expect(lista.filter({ hasText: 'Marco Salas' })).toHaveCount(0)
+    await expect(lista.filter({ hasText: 'Juan Pérez' })).toHaveCount(1)
   })
 
-  test('lo dice, y no deja tocar nada', async ({ page }) => {
+  test('el super admin NO entra en los equipos de otros', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
-    await entrarComoAdmin(page)
-
-    await page.getByRole('link', { name: 'Estudiantes' }).first().click()
+    await abrirCuentas(page)
 
     /*
-     * Sin la cinta, estar dentro del equipo de otro es indistinguible de ser su
-     * entrenador, y quien lo olvide creera que la aplicacion esta rota cuando no
-     * le deje pulsar nada.
+     * Su conmutador ofrece SU equipo y ninguno mas. Administrar la plataforma es
+     * gestionar cuentas y accesos, no leer los datos de los alumnos de un
+     * cliente -su edad, su grasa corporal, sus objetivos-.
      */
-    await expect(page.getByText(/como administrador\. No puedes modificar nada/)).toBeVisible()
-    await expect(page.getByRole('button', { name: /Añadir alumno/ })).toBeDisabled()
+    await page.getByRole('button', { name: /CREWTEST/ }).first().click()
+    await expect(page.getByRole('menuitem', { name: /Hierro y Asfalto/ })).toHaveCount(0)
+  })
+
+  test('ascender limpia las concesiones que el rol nuevo ya trae', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await abrirCuentas(page)
+
+    const fila = page
+      .getByRole('main')
+      .getByRole('listitem')
+      .filter({ hasText: 'Lucía Ferrer' })
+    await fila.getByRole('button', { name: 'Permisos' }).click()
+
+    const dialogo = page.getByRole('dialog')
+    // Los del rol se ven concedidos y apagados: quitarlos exigiria poder restar,
+    // que es justo lo que no se hace.
+    await expect(dialogo.getByRole('button', { name: /Agenda/ })).toBeDisabled()
+
+    await dialogo.getByRole('button', { name: /^Administrador/ }).click()
+    await dialogo.getByRole('button', { name: 'Guardar' }).click()
 
     /*
-     * Y NO se le explica con el motivo de la suscripcion: la de este equipo esta
-     * activa, y decirle que falta activarla seria mentirle. Su motivo se lo da
-     * la cinta.
+     * Se espera a que el dialogo se vaya ANTES de mirar la lista.
+     *
+     * Radix marca `aria-hidden` en el resto de la pagina mientras hay un dialogo
+     * abierto, asi que `getByRole('main')` no encuentra nada: la fila parece
+     * haber desaparecido cuando lo que pasa es que esta tapada.
      */
-    await expect(page.getByText(/hace falta activar la suscripción/)).toHaveCount(0)
+    await expect(page.getByRole('dialog')).toHaveCount(0)
 
-    // Agendar tampoco.
-    await page.getByRole('link', { name: 'Calendario' }).first().click()
-    await expect(page.getByRole('button', { name: /Nueva Sesión/ })).toHaveCount(0)
-  })
-
-  test('no publica en el muro ajeno ni acepta solicitudes', async ({ page }) => {
-    await page.setViewportSize({ width: 1440, height: 900 })
-    await entrarComoAdmin(page)
-
-    await page.getByRole('button', { name: /Hierro y Asfalto/ }).first().click()
-    await page.getByRole('menuitem', { name: 'Ver el equipo' }).click()
-
-    // Ve el muro y el ranking...
-    await expect(page.getByText('El sábado hacemos la salida larga')).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Ranking' })).toBeVisible()
-
-    // ...pero no puede escribir en el, ni borrar lo de otro, ni enseñar su QR.
-    await expect(page.getByLabel('Escribe un anuncio para tu equipo')).toHaveCount(0)
-    await expect(page.getByRole('button', { name: 'Eliminar anuncio' })).toHaveCount(0)
-    await expect(page.getByRole('button', { name: /Copiar enlace/ })).toHaveCount(0)
-  })
-
-  test('en su propio panel no aparece la cinta: ahi si manda', async ({ page }) => {
-    await page.setViewportSize({ width: 1440, height: 900 })
-    await entrarComoAdmin(page)
-
-    // Decirle que no puede modificar nada al lado de un boton de activar
-    // suscripciones es lo contrario de la verdad.
-    await expect(page.getByText(/como administrador\. No puedes modificar nada/)).toHaveCount(0)
-    await expect(page.getByRole('button', { name: 'Suspender' })).toBeVisible()
+    /*
+     * Sube a administradora Y la concesion desaparece: un administrador con
+     * «Ajustes del equipo» concedido aparte sugiere que sin el no podria, que es
+     * falso.
+     */
+    await expect(fila).toContainText('Administrador')
+    await expect(fila).not.toContainText('Ajustes del equipo')
   })
 })

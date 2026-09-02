@@ -45,7 +45,11 @@ export function useProgressStudent(): UseProgressStudentResult {
     setSearchParams(next, { replace: true })
   }
 
-  if (role !== 'trainer') {
+  // Quien gestiona -administrador o entrenador- mira el progreso de OTRO. Sólo
+  // el alumno mira el suyo. Con `role !== 'trainer'` el administrador de un
+  // gimnasio caía en la rama del alumno y veía la invitación a unirse a un
+  // equipo del que ya es dueño.
+  if (role === null || role === 'student') {
     return {
       // Sin lista: un alumno no elige a quién mira. `active.student` es su
       // propia ficha en el crew activo, y `null` cuando aún no tiene ninguno.

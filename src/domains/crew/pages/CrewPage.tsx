@@ -34,7 +34,7 @@ import type { Student } from '@/shared/domain/entities/student'
  * quedada, sí lo es.
  */
 export default function CrewPage() {
-  const { active, trainer, canManage, loading: loadingViewer } = useViewerContext()
+  const { active, trainer, can, loading: loadingViewer } = useViewerContext()
   const { members, pending, loading, approve, reject } = useCrewMembers()
   const { rotateJoinToken, saving } = useCrewEditor()
 
@@ -45,11 +45,14 @@ export default function CrewPage() {
 
   const { crew, role } = active
   /*
-   * VER Y PODER, separados. `isTrainer` decide qué pantallas se pintan —un
-   * administrador de plataforma entra a mirar y necesita verlas todas— y
-   * `canManage` decide qué se puede tocar, que al observar es nada.
+   * CADA CONTROL PREGUNTA POR SU PROPIA CAPACIDAD, no por el rol.
+   *
+   * Con `role === 'trainer'` no cabía el gimnasio: su dueño gobierna sin
+   * entrenar y sus entrenadores llevan alumnos sin tocar los ajustes. Preguntar
+   * por lo que cada botón necesita deja los dos casos expresados, y deja además
+   * la puerta abierta a prestarle una llave suelta a alguien.
    */
-  const isTrainer = role === 'trainer'
+  const isStaff = role !== 'student'
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
@@ -62,7 +65,7 @@ export default function CrewPage() {
             <PageHeader.Title>{crew.name}</PageHeader.Title>
           </div>
 
-          {isTrainer && (
+          {isStaff && (
             <PageHeader.Actions>
               <Button asChild variant="outline" className="gap-2">
                 <Link to="/students">
@@ -79,7 +82,7 @@ export default function CrewPage() {
         <div className="mx-auto max-w-3xl space-y-8 px-5 py-6">
           {/* Lo que pide una decisión va primero: es lo único de esta pantalla
               que se queda parado esperando al entrenador. */}
-          {canManage && pending.length > 0 && (
+          {can('crew.members') && pending.length > 0 && (
             <section className="space-y-3" aria-labelledby="solicitudes-titulo">
               <h2
                 id="solicitudes-titulo"
@@ -127,8 +130,8 @@ export default function CrewPage() {
               no está —cuenta sin perfil—, con el nombre del propio equipo: un
               anuncio sin autor se lee como un aviso del sistema. */}
           <CrewWall
-            isTrainer={isTrainer}
-            canPublish={canManage}
+            isStaff={isStaff}
+            canPublish={can('crew.wall')}
             authorName={
               trainer === null ? crew.name : `${trainer.firstName} ${trainer.lastName}`
             }
@@ -188,7 +191,7 @@ export default function CrewPage() {
             con la suscripción activa. Sin ella no se esconde: se explica, que
             es la diferencia entre una puerta cerrada y una pared.
           */}
-          {canManage &&
+          {can('crew.invite') &&
             (canEnrollMembers(crew) ? (
               <CrewInviteCard
                 crew={crew}

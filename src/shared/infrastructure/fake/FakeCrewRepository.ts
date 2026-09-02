@@ -35,12 +35,6 @@ export class FakeCrewRepository implements CrewRepository {
     return this.crews.find((crew) => crew.id === crewId) ?? null
   }
 
-  async findByTrainerProfile(profileId: string): Promise<Crew[]> {
-    // Sólo por `ownerId` de momento: el equipo técnico de varios entrenadores
-    // por crew está modelado en `CrewTrainer` pero todavía no se puebla.
-    return this.crews.filter((crew) => crew.ownerId === profileId)
-  }
-
   async findByJoinToken(joinToken: string): Promise<Crew | null> {
     // Normalizado: quien teclea el código a mano lo escribe en minúsculas o con
     // el guión de separación que la interfaz pinta para hacerlo legible.

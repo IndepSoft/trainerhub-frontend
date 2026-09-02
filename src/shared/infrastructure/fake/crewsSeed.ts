@@ -1,8 +1,12 @@
 import type { Crew } from '@/shared/domain/entities/crew'
-import { DEV_TRAINER_PROFILE_ID } from './devIdentity'
+import { profileIdFromEmail, DEV_TRAINER_PROFILE_ID } from './devIdentity'
+import { DEV_ADMIN_EMAIL } from './platformAdminsSeed'
 
 /** El crew de ejemplo. Todo lo demás de las semillas le pertenece. */
 export const DEV_CREW_ID = 'crew-1'
+
+/** El equipo del administrador de plataforma. El único al que entra. */
+export const TEST_CREW_ID = 'crew-test'
 
 /**
  * Crews simulados.
@@ -29,6 +33,24 @@ export const crewsSeed: Crew[] = [
     // Activo: es el equipo con el que se trabaja en desarrollo, y dejarlo
     // pendiente obligaria a entrar como administrador antes de poder hacer
     // nada. Los que se crean desde la aplicacion SI nacen pendientes.
+    subscriptionStatus: 'active',
+  },
+  {
+    /*
+     * EL EQUIPO PROPIO DEL ADMINISTRADOR DE PLATAFORMA.
+     *
+     * Existe porque administrar la plataforma y entrenar son dos cosas
+     * distintas, y quien hace lo primero también necesita ver la aplicación
+     * funcionando. Antes entraba en los equipos de sus clientes para eso; ahora
+     * tiene el suyo, y los de los demás son privados.
+     */
+    id: TEST_CREW_ID,
+    name: 'CREWTEST',
+    denomination: 'Crew',
+    ownerId: profileIdFromEmail(DEV_ADMIN_EMAIL),
+    joinToken: 'CREWTEST',
+    requiresApproval: true,
+    rankingEnabled: true,
     subscriptionStatus: 'active',
   },
 ]

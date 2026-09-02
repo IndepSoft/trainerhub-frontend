@@ -14,9 +14,6 @@ import type { Crew, CrewDenomination } from '../entities/crew'
 export interface CrewRepository {
   findById(crewId: string): Promise<Crew | null>
 
-  /** Los crews que entrena este perfil. Vacío si no entrena ninguno. */
-  findByTrainerProfile(profileId: string): Promise<Crew[]>
-
   /**
    * El crew al que pertenece un token de invitación, o `null`.
    *

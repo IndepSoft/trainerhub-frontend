@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react'
 import type { ViewerPerson } from './hooks/useViewer'
+import type { Capability } from '@/shared/domain/permissions'
 import type { CrewRole, Membership } from '@/shared/domain/entities/crew'
 import type { Trainer } from '@/shared/domain/entities/trainer'
 
@@ -17,7 +18,7 @@ export interface ViewerContextValue {
   pending: Membership[]
   active: Membership | null
   role: CrewRole | null
-  canManage: boolean
+  can: (capability: Capability) => boolean
   isPlatformAdmin: boolean
   loading: boolean
   selectCrew: (crewId: string) => void
@@ -42,7 +43,7 @@ export const ViewerContext = createContext<ViewerContextValue>({
   pending: [],
   active: null,
   role: null,
-  canManage: false,
+  can: () => false,
   isPlatformAdmin: false,
   loading: true,
   selectCrew: () => undefined,

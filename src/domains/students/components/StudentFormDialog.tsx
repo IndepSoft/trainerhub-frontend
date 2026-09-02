@@ -135,6 +135,9 @@ function StudentFields({ student, onSave, onCancel }: StudentFieldsProps) {
        * rebote al corregirle la edad.
        */
       membershipStatus: student?.membershipStatus ?? 'invited',
+      // Se conservan al editar: los permisos no son del formulario de la ficha,
+      // se dan desde la gestion de personas del equipo.
+      extraCapabilities: student?.extraCapabilities ?? [],
     })
 
     onCancel()

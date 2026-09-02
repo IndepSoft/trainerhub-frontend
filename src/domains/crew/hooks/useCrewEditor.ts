@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { container } from '@/app/container'
+import { setActiveCrew } from '@/app/crewScope'
 import { AppError } from '@/shared/domain/errors'
 import type { Crew, CrewDenomination } from '@/shared/domain/entities/crew'
 import type { CrewSettings } from '@/shared/domain/ports/CrewRepository'
@@ -8,6 +9,9 @@ interface CreateCrewInput {
   name: string
   denomination: CrewDenomination
   ownerId: string
+  /** Cómo aparecerá en la lista del equipo técnico. */
+  ownerName: string
+  ownerEmail: string
 }
 
 interface UseCrewEditorResult {
@@ -45,7 +49,40 @@ export function useCrewEditor(): UseCrewEditorResult {
   }, [])
 
   const createCrew = useCallback(
-    (input: CreateCrewInput) => run(() => container.crews.create(input)),
+    (input: CreateCrewInput) =>
+      run(async () => {
+        const crew = await container.crews.create({
+          name: input.name,
+          denomination: input.denomination,
+          ownerId: input.ownerId,
+        })
+
+        /*
+         * QUIEN CREA UN CREW NACE ADMINISTRADOR, y hay que escribirlo: el rol ya
+         * no se deduce de haber fundado el equipo, sale del puesto. Sin esta
+         * alta, el fundador se quedaría fuera de su propio crew —sin puesto no
+         * hay pertenencia— y no podría ni entrar.
+         *
+         * `setActiveCrew` antes del alta porque el puesto se escribe en el crew
+         * ACTIVO, y en este instante el activo sigue siendo el anterior o
+         * ninguno. Es el único sitio donde el ámbito se mueve a mano, y es
+         * porque el equipo acaba de nacer.
+         *
+         * TODO: con backend, crear el crew y su primer puesto van en la misma
+         * transacción del servidor. Aquí, si lo segundo falla queda un equipo
+         * sin nadie que pueda entrar.
+         */
+        setActiveCrew(crew.id)
+        await container.crewStaff.add({
+          profileId: input.ownerId,
+          role: 'admin',
+          extraCapabilities: [],
+          displayName: input.ownerName,
+          email: input.ownerEmail,
+        })
+
+        return crew
+      }),
     [run]
   )
 

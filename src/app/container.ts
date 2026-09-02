@@ -24,6 +24,8 @@ import type { CrewPostRepository } from '@/shared/domain/ports/CrewPostRepositor
 import { FakeCrewPostRepository } from '@/shared/infrastructure/fake/FakeCrewPostRepository'
 import type { RankingRepository } from '@/shared/domain/ports/RankingRepository'
 import { FakeRankingRepository } from '@/shared/infrastructure/fake/FakeRankingRepository'
+import type { CrewStaffRepository } from '@/shared/domain/ports/CrewStaffRepository'
+import { FakeCrewStaffRepository } from '@/shared/infrastructure/fake/FakeCrewStaffRepository'
 import { crewScope } from './crewScope'
 
 /**
@@ -39,6 +41,7 @@ import { crewScope } from './crewScope'
 export interface Container {
   auth: AuthPort
   crews: CrewRepository
+  crewStaff: CrewStaffRepository
   crewPosts: CrewPostRepository
   ranking: RankingRepository
   platform: PlatformRepository
@@ -93,11 +96,13 @@ function createTrainerRepository(): TrainerRepository {
 const fakeCrews = new FakeCrewRepository()
 const fakeStudents = new FakeStudentRepository(crewScope)
 const fakeSessions = new FakeSessionRepository(crewScope)
+const fakeCrewStaff = new FakeCrewStaffRepository(crewScope)
 const trainers = createTrainerRepository()
 
 export const container: Container = {
   auth: createAuthenticationAdapter(),
   crews: fakeCrews,
+  crewStaff: fakeCrewStaff,
   crewPosts: new FakeCrewPostRepository(crewScope),
   /*
    * El ranking recibe las clases concretas: necesita las sesiones de TODO el
@@ -105,7 +110,7 @@ export const container: Container = {
    * aqui es un agregado, no las sesiones de nadie.
    */
   ranking: new FakeRankingRepository(fakeSessions, fakeStudents, crewScope),
-  platform: new FakePlatformRepository(fakeCrews, fakeStudents, trainers),
+  platform: new FakePlatformRepository(fakeCrews, fakeStudents, fakeCrewStaff, trainers),
   trainers,
   /*
    * TODO: sustituir por los repositorios reales cuando existan las tablas. Son
