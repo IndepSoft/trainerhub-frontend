@@ -5,7 +5,8 @@ import type {
 import type { CrewScope } from '@/shared/domain/ports/CrewScope'
 import type { CrewRole, CrewStaff } from '@/shared/domain/entities/crew'
 import type { Capability } from '@/shared/domain/permissions'
-import { meaningfulExtras } from '@/shared/domain/permissions'
+import { lastAdminBlocker, meaningfulExtras } from '@/shared/domain/permissions'
+import { AppError, AppErrorCode } from '@/shared/domain/errors'
 import { crewStaffSeed } from './crewStaffSeed'
 
 /**
@@ -37,7 +38,24 @@ export class FakeCrewStaffRepository implements CrewStaffRepository {
   async add(data: NewCrewStaff): Promise<CrewStaff> {
     const crewId = this.scope.current()
     if (crewId === null) {
-      throw new Error('No hay ningún crew activo: un puesto pertenece a un equipo.')
+      throw new AppError(
+        AppErrorCode.VALIDATION,
+        'No hay ningún crew activo: un puesto pertenece a un equipo.'
+      )
+    }
+
+    return this.addToCrew(crewId, data)
+  }
+
+  async addToCrew(crewId: string, data: NewCrewStaff): Promise<CrewStaff> {
+    // Dos puestos de la misma persona en el mismo equipo no significan nada, y
+    // dejarían el conmutador con la entrada duplicada.
+    const already = this.staff.find(
+      (entry) => entry.crewId === crewId && entry.profileId === data.profileId
+    )
+    if (already !== undefined) {
+      await this.updateRole(already.id, data.role)
+      return { ...already, role: data.role }
     }
 
     const entry: CrewStaff = {
@@ -53,6 +71,8 @@ export class FakeCrewStaffRepository implements CrewStaffRepository {
   }
 
   async updateRole(staffId: string, role: CrewRole): Promise<void> {
+    this.guardLastAdmin(staffId, role)
+
     this.staff = this.staff.map((entry) => {
       if (entry.id !== staffId) return entry
 
@@ -74,6 +94,8 @@ export class FakeCrewStaffRepository implements CrewStaffRepository {
   }
 
   async remove(staffId: string): Promise<void> {
+    this.guardLastAdmin(staffId, null)
+
     this.staff = this.staff.filter((entry) => entry.id !== staffId)
     this.notify()
   }
@@ -82,6 +104,25 @@ export class FakeCrewStaffRepository implements CrewStaffRepository {
     this.listeners.add(listener)
     return () => {
       this.listeners.delete(listener)
+    }
+  }
+
+  /**
+   * Impide dejar un crew sin quien lo gobierne.
+   *
+   * SE COMPRUEBA EN EL ADAPTADOR, no solo en la pantalla: la misma operacion
+   * llega desde el equipo tecnico de un crew Y desde el panel de plataforma, y
+   * una regla repetida en dos sitios es una regla que acabara aplicandose en
+   * uno. Con backend, esto es una restriccion o un disparador en la base.
+   */
+  private guardLastAdmin(staffId: string, nextRole: CrewRole | null): void {
+    const target = this.staff.find((entry) => entry.id === staffId)
+    if (target === undefined) return
+
+    const sameCrew = this.staff.filter((entry) => entry.crewId === target.crewId)
+    const reason = lastAdminBlocker(sameCrew, staffId, nextRole)
+    if (reason !== undefined) {
+      throw new AppError(AppErrorCode.VALIDATION, reason)
     }
   }
 

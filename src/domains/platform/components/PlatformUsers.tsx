@@ -6,7 +6,7 @@ import { Input } from '@/shared/ui/input'
 import { cn } from '@/shared/lib/utils'
 import { CAPABILITY_LABEL, ROLE_LABEL } from '@/shared/domain/permissions'
 import { usePlatformUsers } from '../hooks/usePlatformUsers'
-import { MembershipDialog } from './MembershipDialog'
+import { RolePermissionsDialog } from '@/shared/components/RolePermissionsDialog'
 import type { CrewRole } from '@/shared/domain/entities/crew'
 import type { PlatformUser } from '@/shared/domain/ports/PlatformRepository'
 
@@ -175,9 +175,19 @@ export function PlatformUsers() {
         </div>
       )}
 
-      <MembershipDialog
+      <RolePermissionsDialog
         open={editing !== null}
-        user={editing}
+        subject={
+          editing === null
+            ? null
+            : {
+                id: editing.membershipId,
+                displayName: editing.displayName,
+                subtitle: `${editing.email} · ${editing.crewName}`,
+                role: editing.role,
+                extraCapabilities: editing.extraCapabilities,
+              }
+        }
         onOpenChange={(open) => {
           if (!open) setEditing(null)
         }}

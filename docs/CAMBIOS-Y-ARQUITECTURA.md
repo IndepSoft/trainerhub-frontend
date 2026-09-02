@@ -963,3 +963,99 @@ mensaje claro en vez de escribir en el equipo equivocado.
 **Sigue sin haber servidor.** Que la pantalla esconda un botón impide
 equivocarse, no impide actuar. Quien se ascienda a sí mismo con un cliente
 modificado lo conseguirá hasta que existan las políticas.
+
+---
+
+## 14. Los cabos de los permisos, cerrados (2 sep 2026)
+
+Cuatro cosas quedaron abiertas al introducir los roles por crew. Tres se cierran
+con código; la cuarta no se puede cerrar sin servidor, y aquí queda dicho qué
+haría falta exactamente.
+
+### 14.1 La navegación pregunta por capacidad, no por rango
+
+Conceder «Rutinas y planes» a un alumno se guardaba en su ficha **y la puerta
+seguía cerrada**: la navegación filtraba por rango mínimo, y su rango no
+cambiaba. No era un permiso de más, era una concesión que no servía para nada —lo
+peor de los dos mundos, porque parece que funciona.
+
+Ahora un destino puede declarar `capability` en vez de `minRole`, y entonces se
+pregunta con `can()`, que mira el rol **y** lo concedido aparte. El padrón de
+alumnos pide `students.manage`; el catálogo, `training.manage`.
+
+`minRole` se queda para el panel y los informes, que son **resúmenes** de
+gestión: no autorizan una acción concreta, resumen varias. Pedirles una capacidad
+obligaría a inventar una —«ver el resumen»— que no autoriza nada.
+
+De paso, las tres props sueltas que la navegación recibía —rol, concesiones, si
+administra la plataforma— pasan a ser un objeto. Eran tres porque crecieron una a
+una, y se rompía cada vez que la decisión necesitaba un dato más.
+
+### 14.2 Las dos pantallas que faltaban
+
+`crew.settings` y `crew.staff` no las comprobaba nadie porque no había dónde: se
+declaraba un poder que no abría ninguna puerta.
+
+**Ajustes del equipo** (`/crew/ajustes`): nombre, denominación, aprobación de
+entradas y ranking. Cada conmutador lleva escrito **qué pasa si se apaga**, no
+qué es: «Aprobar quién entra» no le explica a nadie que desactivarlo convierte un
+QR fotografiado en una puerta abierta.
+
+**Equipo técnico** (`/crew/equipo`): quién trabaja aquí, con qué rol y con qué
+concesiones. Antes esto sólo se podía tocar desde el panel de plataforma, que es
+de otra persona y para otra cosa; quien de verdad sabe a quién asciende es quien
+gobierna su equipo.
+
+El diálogo de rol y permisos sube a `shared/components` al necesitarlo los dos
+—el criterio de elevación de siempre— con una forma propia, `RoleSubject`, en vez
+del tipo del panel de plataforma: pedir el de uno obligaría al otro a fabricarlo
+con campos que no le incumben.
+
+### 14.3 Un crew no se queda sin administrador
+
+Sin la regla, bajar de rango al último —o borrarlo— dejaba un equipo que **nadie
+puede gobernar**: sus ajustes quedan congelados y no hay quien nombre a otro
+administrador, porque justamente eso exige serlo. Una puerta que se cierra por
+dentro.
+
+`lastAdminBlocker` vive en el dominio y devuelve **el motivo**, no un booleano,
+porque quien llama tiene que poder explicarlo. La pantalla lo consulta antes de
+ofrecer la acción —el botón sale apagado con su explicación— y el adaptador lo
+impone además, porque la misma operación llega desde dos sitios y una regla
+repetida en dos sitios acaba aplicándose en uno.
+
+### 14.4 Ascender a un alumno a la plantilla
+
+`crewStaff.add` escribe en el crew activo, que para quien administra la
+plataforma es el suyo y no el del alumno. Ahora hay `addToCrew`, que lo nombra —
+la excepción declarada, igual que `students.claimMembership`.
+
+Método aparte y no un `crewId` opcional: un parámetro que casi siempre se omite
+acaba omitiéndose también donde hacía falta, y ahí el fallo es silencioso —se
+escribe en el equipo equivocado—.
+
+**El ascenso conserva la ficha.** Borrarla perdería el historial: sus sesiones la
+referencian por identificador. Así que la persona tiene puesto y ficha en el
+mismo equipo, y `useViewer` se queda con el rango más alto conservando la ficha.
+Sin eso, el rol dependía de cuál de las dos consultas llegara antes.
+
+### 14.5 Lo que NO se cierra, y qué haría falta
+
+**No hay servidor.** Todo lo anterior lo comprueba el navegador: impide
+equivocarse, no impide actuar. Un cliente modificado escribe igual.
+
+Cerrarlo de verdad es una lista corta y concreta de políticas, y se deja escrita
+para que la migración sea mecánica en vez de arqueológica:
+
+| Qué | Dónde vive hoy | Qué política hace falta |
+|---|---|---|
+| Aislamiento por crew | `CrewScope` + filtros en los adaptadores falsos | RLS: `crew_id` en cada tabla, política contra la pertenencia del usuario |
+| Rol y concesiones | `permissions.can` en el cliente | Función del servidor que resuelva capacidades y las exija en cada escritura |
+| Último administrador | `lastAdminBlocker` + `FakeCrewStaffRepository` | Restricción o disparador: un crew no puede quedar con cero administradores |
+| Suscripción | `canEnrollMembers` en tres pantallas | Política de escritura sobre altas de miembros |
+| Administrador de plataforma | constante en la semilla | Tabla que sólo escribe el rol de servicio |
+| Quién miró qué | nada | Registro de auditoría: hoy no existe |
+
+Mientras tanto, lo que sí se ha ganado es que **cada regla tenga una sola
+definición**: están en `shared/domain`, las usan la pantalla y el adaptador, y
+portarlas es traducir esa función, no buscarla por la aplicación.

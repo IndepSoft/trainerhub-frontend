@@ -3680,3 +3680,184 @@ test.describe('cuentas de la plataforma', () => {
     await expect(fila).not.toContainText('Ajustes del equipo')
   })
 })
+
+/**
+ * Las capacidades, cerradas: cada una tiene ya donde comprobarse.
+ *
+ * Estaban declaradas y no las miraba nadie. `crew.settings` y `crew.staff` no
+ * tenian pantalla; `training.manage` y `students.manage` solo las protegia el
+ * rango de la navegacion, asi que conceder una no abria nada.
+ */
+test.describe('capacidades', () => {
+  async function entrarComo(page: Page, correo: string, destino: RegExp): Promise<void> {
+    await page.getByPlaceholder('tu@email.com').fill(correo)
+    await page.locator('input[type=password]').fill('desarrollo123')
+    await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click()
+    await page.waitForURL(destino, { timeout: 20_000 })
+  }
+
+  async function cerrarSesion(page: Page): Promise<void> {
+    await page.getByRole('button', { name: 'Menú de usuario' }).click()
+    await page.getByRole('menuitem', { name: 'Cerrar sesión' }).click()
+  }
+
+  test('un entrenador no gobierna: sin ajustes ni equipo tecnico', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.goto('/authentication')
+    await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
+    await entrarComo(page, 'lucia@indepsoft.com', /\/dashboard/)
+
+    await page.getByRole('button', { name: /Hierro y Asfalto/ }).first().click()
+    await page.getByRole('menuitem', { name: 'Ver el equipo' }).click()
+
+    /*
+     * Lucia es entrenadora CON «Ajustes del equipo» concedido aparte, asi que ve
+     * uno de los dos accesos y no el otro. Es exactamente el caso intermedio que
+     * justifica que las concesiones existan: prestar una llave sin ascender.
+     */
+    await expect(page.getByRole('link', { name: 'Ajustes' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Equipo técnico' })).toHaveCount(0)
+
+    // Y la pantalla lo comprueba tambien, no solo el enlace.
+    await page.goto('/crew/equipo')
+    await expect(page.getByRole('heading', { name: 'Esto no es para ti' })).toBeVisible()
+  })
+
+  test('los ajustes del equipo se guardan', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/crew/ajustes')
+
+    await page.getByLabel('Nombre').fill('Hierro y Asfalto Norte')
+    await page.getByRole('button', { name: 'Tribu', exact: true }).click()
+    // Apagar el ranking es una decision de producto, no un adorno: en un grupo
+    // de rehabilitacion comparar hace daño.
+    await page.getByRole('switch', { name: /Ranking visible/ }).click()
+    await page.getByRole('button', { name: 'Guardar' }).click()
+
+    await page.waitForURL(/\/crew$/, { timeout: 20_000 })
+    await expect(page.getByRole('heading', { name: 'Hierro y Asfalto Norte' })).toBeVisible()
+    await expect(page.getByText('Tribu · 4 miembros')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Ranking' })).toHaveCount(0)
+  })
+
+  test('un equipo no se queda sin administrador', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/crew/equipo')
+
+    const marco = page.getByRole('main').getByRole('listitem').filter({ hasText: 'Marco Salas' })
+
+    /*
+     * Es el unico administrador. Sin esta regla, bajarle de rango dejaba un
+     * equipo que nadie puede gobernar: sus ajustes quedan congelados y no hay
+     * quien nombre a otro administrador, porque eso exige serlo. Una puerta que
+     * se cierra por dentro.
+     */
+    await expect(marco.getByRole('button', { name: /^Quitar del equipo/ })).toBeDisabled()
+
+    await marco.getByRole('button', { name: 'Permisos' }).click()
+    await expect(page.getByRole('dialog').getByText(/único administrador/)).toBeVisible()
+    await expect(page.getByRole('dialog').getByRole('button', { name: 'Guardar' })).toBeDisabled()
+    await page.getByRole('dialog').getByRole('button', { name: 'Cancelar' }).click()
+
+    // Con un segundo administrador, la regla deja de aplicar.
+    const lucia = page.getByRole('main').getByRole('listitem').filter({ hasText: 'Lucía Ferrer' })
+    await lucia.getByRole('button', { name: 'Permisos' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: /^Administrador/ }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Guardar' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    await expect(marco.getByRole('button', { name: /^Quitar del equipo/ })).toBeEnabled()
+  })
+
+  test('conceder una capacidad a un alumno le abre el destino', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+
+    /*
+     * ERA LA CONCESION QUE NO SERVIA PARA NADA. La navegacion filtraba solo por
+     * rango, asi que darle «Rutinas y planes» a un alumno se guardaba en su
+     * ficha y la puerta seguia cerrada. Todo en la misma carga: los adaptadores
+     * falsos viven en memoria.
+     */
+    await page.goto('/authentication')
+    await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
+    await entrarComo(page, 'veterana@correo.com', /\/progress/)
+
+    await page.goto('/crew/unirse?codigo=HIERRO24')
+    await expect(page.getByRole('heading', { name: 'Solicitud enviada' })).toBeVisible()
+
+    // El entrenador la acepta.
+    await cerrarSesion(page)
+    await entrarComo(page, 'entrenador@indepsoft.com', /\/dashboard/)
+    await page.getByRole('button', { name: /Hierro y Asfalto/ }).first().click()
+    await page.getByRole('menuitem', { name: 'Ver el equipo' }).click()
+    await page.getByRole('button', { name: /^Aceptar a / }).click()
+
+    // Sin la concesion, no alcanza el catalogo.
+    await cerrarSesion(page)
+    await entrarComo(page, 'veterana@correo.com', /\/progress/)
+    await expect(page.getByRole('link', { name: 'Entrenamientos' })).toHaveCount(0)
+
+    // La plataforma se la concede.
+    await cerrarSesion(page)
+    await entrarComo(page, 'admin@indepsoft.com', /\/admin/)
+    await page.getByRole('tab', { name: 'Cuentas' }).click()
+    const fila = page.getByRole('main').getByRole('listitem').filter({ hasText: 'veterana' })
+    await fila.getByRole('button', { name: 'Permisos' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: /Rutinas y planes/ }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Guardar' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    // Y ahora si: sigue siendo alumna, y el destino se le abre.
+    await cerrarSesion(page)
+    await entrarComo(page, 'veterana@correo.com', /\/progress/)
+    await expect(page.getByRole('link', { name: 'Entrenamientos' }).first()).toBeVisible()
+    // Lo que NO se le abre es lo que no se le concedio.
+    await expect(page.getByRole('link', { name: 'Estudiantes' })).toHaveCount(0)
+  })
+
+  test('ascender a un alumno a la plantilla le da su puesto', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+
+    await page.goto('/authentication')
+    await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
+    await entrarComo(page, 'ascendida@correo.com', /\/progress/)
+
+    await page.goto('/crew/unirse?codigo=HIERRO24')
+    await expect(page.getByRole('heading', { name: 'Solicitud enviada' })).toBeVisible()
+
+    await cerrarSesion(page)
+    await entrarComo(page, 'entrenador@indepsoft.com', /\/dashboard/)
+    await page.getByRole('button', { name: /Hierro y Asfalto/ }).first().click()
+    await page.getByRole('menuitem', { name: 'Ver el equipo' }).click()
+    await page.getByRole('button', { name: /^Aceptar a / }).click()
+
+    /*
+     * Antes esto fallaba con «todavia no esta implementado»: `crewStaff.add`
+     * escribe en el crew ACTIVO, que para quien administra la plataforma es el
+     * suyo y no el del alumno. Ahora hay `addToCrew`, que nombra el equipo.
+     */
+    await cerrarSesion(page)
+    await entrarComo(page, 'admin@indepsoft.com', /\/admin/)
+    await page.getByRole('tab', { name: 'Cuentas' }).click()
+    const fila = page.getByRole('main').getByRole('listitem').filter({ hasText: 'ascendida' })
+    await fila.first().getByRole('button', { name: 'Permisos' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: /^Entrenador/ }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Guardar' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    // Su puesto existe en el equipo de su ficha, no en el del administrador.
+    await cerrarSesion(page)
+    await entrarComo(page, 'entrenador@indepsoft.com', /\/dashboard/)
+    await page.getByRole('button', { name: /Hierro y Asfalto/ }).first().click()
+    await page.getByRole('menuitem', { name: 'Ver el equipo' }).click()
+
+    // Por el enlace y no con `page.goto`: recargar devolveria los adaptadores
+    // falsos a la semilla y el ascenso se perderia. Es la trampa documentada.
+    await page.getByRole('link', { name: 'Equipo técnico' }).click()
+    await expect(
+      page.getByRole('main').getByRole('listitem').filter({ hasText: 'ascendida' })
+    ).toContainText('Entrenador')
+  })
+})

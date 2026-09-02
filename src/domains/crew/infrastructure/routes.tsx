@@ -6,6 +6,8 @@ import type { RouteObject } from 'react-router-dom'
 const CrewPage = lazy(() => import('../pages/CrewPage'))
 const NewCrew = lazy(() => import('../pages/NewCrew'))
 const JoinCrew = lazy(() => import('../pages/JoinCrew'))
+const CrewSettings = lazy(() => import('../pages/CrewSettings'))
+const CrewStaffPage = lazy(() => import('../pages/CrewStaffPage'))
 
 /**
  * Las rutas del equipo.
@@ -26,5 +28,13 @@ export const crewRoutes: RouteObject[] = [
   {
     path: '/crew/unirse',
     element: withSuspense(withProtectedRoute(<JoinCrew />)),
+  },
+  {
+    path: '/crew/ajustes',
+    element: withSuspense(withProtectedRoute(<CrewSettings />)),
+  },
+  {
+    path: '/crew/equipo',
+    element: withSuspense(withProtectedRoute(<CrewStaffPage />)),
   },
 ]

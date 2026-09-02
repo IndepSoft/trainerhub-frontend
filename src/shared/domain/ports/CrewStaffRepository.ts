@@ -30,6 +30,19 @@ export interface CrewStaffRepository {
   add(data: NewCrewStaff): Promise<CrewStaff>
 
   /**
+   * Lo mismo, pero en un crew CONCRETO y no en el activo.
+   *
+   * Es la excepción declarada, igual que `students.claimMembership`: quien
+   * administra la plataforma asciende a alguien en un equipo que no es el suyo
+   * —el suyo es otro—, así que el ámbito activo no puede decidirlo.
+   *
+   * Que sea un método aparte y no un `crewId` opcional en `add` es a propósito:
+   * un parámetro que casi siempre se omite acaba omitiéndose también donde hacía
+   * falta, y el fallo es silencioso —se escribe en el equipo equivocado—.
+   */
+  addToCrew(crewId: string, data: NewCrewStaff): Promise<CrewStaff>
+
+  /**
    * Cambia el rol de un puesto.
    *
    * Separado de las capacidades porque son decisiones distintas: ascender a

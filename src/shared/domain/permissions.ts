@@ -32,22 +32,24 @@ export type Capability =
   | 'students.manage'
 
 /**
- * TODO: CUATRO DE ESTAS TODAVÍA NO LAS COMPRUEBA NINGÚN CONTROL.
+ * LAS OCHO SE COMPRUEBAN. Dónde, para no tener que buscarlo:
  *
- * En vigor están `crew.invite`, `crew.members`, `crew.wall` y
- * `schedule.manage`. Las otras cuatro describen el modelo pero no cierran nada:
+ *   crew.settings     `/crew/ajustes`
+ *   crew.staff        `/crew/equipo`
+ *   crew.invite       el QR del equipo, y el alta en el padrón de alumnos
+ *   crew.members      aceptar y rechazar solicitudes
+ *   crew.wall         publicar y borrar anuncios
+ *   training.manage   el destino «Entrenamientos» de la navegación
+ *   schedule.manage   «Nueva sesión» en la agenda
+ *   students.manage   el destino «Estudiantes» de la navegación
  *
- *  - `crew.settings` y `crew.staff` no tienen pantalla todavía. Cuando la
- *    tengan, ahí es donde se comprueban.
- *  - `training.manage` y `students.manage` sólo están protegidas por el rango
- *    mínimo de la navegación, no por la capacidad. Un alumno no llega a esas
- *    pantallas, así que nadie puede lo que no debe; lo que NO funciona es lo
- *    contrario: concederle `training.manage` a un alumno no le abre nada,
- *    porque la navegación sigue filtrando por rango.
+ * Los dos destinos de navegación se filtran POR CAPACIDAD y no por rango, que es
+ * lo que hace que conceder una llave suelta sirva de algo: antes se guardaba la
+ * concesión y la puerta seguía cerrada.
  *
- * O sea: no hay permiso de más, hay concesión que no surte efecto. Cerrarlo es
- * hacer que la navegación mire también las capacidades concedidas, no sólo el
- * rango.
+ * TODO: todo esto lo comprueba el navegador. Impide equivocarse, no impide
+ * actuar. La tabla de qué política de servidor sustituye a cada regla está en
+ * `docs/CAMBIOS-Y-ARQUITECTURA.md` §14.5.
  */
 
 /** Todas, en el orden en el que se presentan. Gobernar primero. */
@@ -143,4 +145,38 @@ export function can(
 export function meaningfulExtras(role: CrewRole, extraCapabilities: Capability[]): Capability[] {
   const base = CAPABILITIES_BY_ROLE[role]
   return extraCapabilities.filter((capability) => !base.includes(capability))
+}
+
+/**
+ * Por qué NO se puede cambiar este puesto, o `undefined` si se puede.
+ *
+ * UN CREW NO SE PUEDE QUEDAR SIN ADMINISTRADOR. Sin esta regla, bajar de rango
+ * al último —o borrarlo— dejaba un equipo que nadie puede gobernar: sus ajustes
+ * quedan congelados y no hay quien meta a otro administrador, porque justamente
+ * eso exige ser administrador. Es una puerta que se cierra por dentro.
+ *
+ * Se comprueba sobre la LISTA COMPLETA de puestos del crew y no sobre un
+ * contador: un contador guardado se desincroniza en cuanto alguien entra o sale,
+ * y aquí equivocarse significa perder el equipo.
+ *
+ * Devuelve el motivo y no un booleano porque quien llama tiene que poder
+ * explicarlo. Un botón desactivado sin explicación es un botón roto.
+ */
+export function lastAdminBlocker(
+  staff: Array<{ id: string; role: CrewRole }>,
+  staffId: string,
+  nextRole: CrewRole | null
+): string | undefined {
+  const target = staff.find((entry) => entry.id === staffId)
+  if (target === undefined || target.role !== 'admin') return undefined
+
+  // `null` es «se le quita el puesto». Cualquier otro rol que no sea admin
+  // también le retira el gobierno, así que los dos casos son el mismo.
+  const keepsBeingAdmin = nextRole === 'admin'
+  if (keepsBeingAdmin) return undefined
+
+  const admins = staff.filter((entry) => entry.role === 'admin')
+  if (admins.length > 1) return undefined
+
+  return 'Es el único administrador del equipo. Nombra a otro antes de cambiarle el papel.'
 }

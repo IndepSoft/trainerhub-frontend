@@ -9,6 +9,7 @@ import type {
 import type { TrainerRepository } from '@/shared/domain/ports/TrainerRepository'
 import type { Crew, SubscriptionStatus } from '@/shared/domain/entities/crew'
 import { meaningfulExtras } from '@/shared/domain/permissions'
+import { AppError, AppErrorCode } from '@/shared/domain/errors'
 import { getShortName } from '@/shared/lib/personName'
 import type { FakeCrewRepository } from './FakeCrewRepository'
 import type { FakeCrewStaffRepository } from './FakeCrewStaffRepository'
@@ -150,17 +151,40 @@ export class FakePlatformRepository implements PlatformRepository {
         await this.staff.updateCapabilities(input.membershipId, extras)
       }
     } else {
-      if (input.role !== 'student') {
-        /*
-         * TODO: ascender a un alumno a plantilla necesita crear su puesto en el
-         * crew de su ficha, y `crewStaff.add` escribe en el crew ACTIVO —que
-         * para el administrador de plataforma es el suyo, no el del alumno—.
-         * Mientras el alta de puestos no acepte un crew explícito, esto se queda
-         * fuera y la pantalla no ofrece la opción.
-         */
-        throw new Error('Ascender a un alumno a la plantilla todavía no está implementado.')
+      const student = this.students.listAll().find((entry) => entry.id === input.membershipId)
+      if (student === undefined) {
+        throw new AppError(AppErrorCode.NOT_FOUND, 'Esa persona ya no está en ningún equipo.')
       }
-      await this.students.updateCapabilities(input.membershipId, extras)
+
+      if (input.role === 'student') {
+        await this.students.updateCapabilities(input.membershipId, extras)
+      } else {
+        /*
+         * ASCENDER A PLANTILLA CREA EL PUESTO Y CONSERVA LA FICHA.
+         *
+         * Borrarla perdería su historial —sus sesiones la referencian por
+         * identificador— y con él su progreso. Así que la persona pasa a tener
+         * las dos cosas en el mismo equipo, y `useViewer` se queda con el rango
+         * más alto: manda su puesto, y lo que entrenó sigue ahí.
+         *
+         * Por `addToCrew` y no por `add`: se escribe en el crew de la FICHA, que
+         * no es el activo —quien administra la plataforma está en el suyo—.
+         */
+        if (student.profileId === null) {
+          throw new AppError(
+            AppErrorCode.VALIDATION,
+            'Todavía no ha reclamado su cuenta: no se le puede dar un puesto sin ella.'
+          )
+        }
+
+        await this.staff.addToCrew(student.crewId, {
+          profileId: student.profileId,
+          role: input.role,
+          extraCapabilities: extras,
+          displayName: getShortName(student.firstName, student.lastName),
+          email: student.email,
+        })
+      }
     }
 
     this.notify()

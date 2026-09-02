@@ -6,6 +6,7 @@ import { SidebarInset } from '@/shared/ui/sidebar'
 import { useAuth } from '@/auth/hooks/useAuth'
 import { useViewer } from '@/app/hooks/useViewer'
 import { ViewerContext } from '@/app/ViewerContext'
+import type { NavigationViewer } from '@/app/config/navigation.config'
 import { hasSeenOnboarding } from '@/domains/onboarding/hooks/useOnboarding'
 
 export default function RootLayout() {
@@ -23,15 +24,20 @@ export default function RootLayout() {
    * alumno, y que los datos que se leen sean los de su crew.
    */
   const viewer = useViewer()
-  const {
-    person,
-    memberships,
-    active,
-    role,
+  const { person, memberships, active, isPlatformAdmin, loading, selectCrew } = viewer
+
+  /*
+   * Lo que la navegacion necesita para decidir, armado una vez.
+   *
+   * Las concesiones sueltas viajan con el rol porque la navegacion pregunta por
+   * CAPACIDAD: prestarle «Rutinas y planes» a un alumno tiene que abrirle el
+   * destino, no solo guardarse en su ficha.
+   */
+  const navigationViewer: NavigationViewer = {
+    role: active?.role ?? null,
+    extraCapabilities: active?.extraCapabilities ?? [],
     isPlatformAdmin,
-    loading,
-    selectCrew,
-  } = viewer
+  }
 
   /*
    * Rutas a pantalla completa, sin barra lateral, superior ni inferior.
@@ -111,8 +117,7 @@ export default function RootLayout() {
         <AppSidebar
           memberships={memberships}
           active={active}
-          viewerRole={role}
-          isPlatformAdmin={isPlatformAdmin}
+          navigationViewer={navigationViewer}
           loading={loading}
           onSelectCrew={selectCrew}
         />
@@ -134,7 +139,7 @@ export default function RootLayout() {
             reparto flex y el contenedor de desplazamiento se encoge solo. Con
             `fixed` habria que compensar con relleno inferior en cada pagina, y
             cualquiera que se olvidara dejaria contenido tapado. */}
-          <BottomTabBar role={role} isPlatformAdmin={isPlatformAdmin} />
+          <BottomTabBar navigationViewer={navigationViewer} />
         </SidebarInset>
       </div>
     </ViewerContext.Provider>

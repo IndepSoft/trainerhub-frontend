@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Check, Plus, UserPlus, X } from 'lucide-react'
+import { Check, Plus, Settings, UserPlus, Users, X } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Button } from '@/shared/ui/button'
 import { PageHeader } from '@/shared/components/PageHeader'
@@ -67,12 +67,34 @@ export default function CrewPage() {
 
           {isStaff && (
             <PageHeader.Actions>
-              <Button asChild variant="outline" className="gap-2">
-                <Link to="/students">
-                  <UserPlus className="size-4" />
-                  Gestionar alumnos
-                </Link>
-              </Button>
+              {/* Cada acceso pregunta por SU capacidad, no por el rol: es lo que
+                  permite prestarle una llave a alguien sin ascenderlo. */}
+              {can('crew.staff') && (
+                <Button asChild variant="outline" className="gap-2">
+                  <Link to="/crew/equipo">
+                    <Users className="size-4" />
+                    Equipo técnico
+                  </Link>
+                </Button>
+              )}
+
+              {can('crew.settings') && (
+                <Button asChild variant="outline" className="gap-2">
+                  <Link to="/crew/ajustes">
+                    <Settings className="size-4" />
+                    Ajustes
+                  </Link>
+                </Button>
+              )}
+
+              {can('students.manage') && (
+                <Button asChild variant="outline" className="gap-2">
+                  <Link to="/students">
+                    <UserPlus className="size-4" />
+                    Gestionar alumnos
+                  </Link>
+                </Button>
+              )}
             </PageHeader.Actions>
           )}
         </PageHeader.Content>

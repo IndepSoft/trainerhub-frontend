@@ -3,6 +3,7 @@ import { container } from '@/app/container'
 import { crewScope, setActiveCrew } from '@/app/crewScope'
 import { useAuthStore } from '@/app/stores/authStore'
 import { isMember } from '@/shared/domain/entities/crew'
+import { CREW_ROLE_RANK } from '@/shared/domain/entities/crew'
 import { can } from '@/shared/domain/permissions'
 import type { Capability } from '@/shared/domain/permissions'
 import type { CrewRole, Membership } from '@/shared/domain/entities/crew'
@@ -175,7 +176,8 @@ export function useViewer(): UseViewerResult {
      * corporal, sus objetivos— sin que nadie se entere. Para ver la aplicación
      * funcionando tiene su propio equipo.
      */
-    return [...asStaff, ...asStudent].filter((entry) => entry !== null)
+    const found = [...asStaff, ...asStudent].filter((entry) => entry !== null)
+    return highestPerCrew(found)
   }, [profileId])
 
   /*
@@ -324,4 +326,44 @@ function pickActiveCrew(memberships: Membership[], current: string | null): stri
     return current
   }
   return memberships[0]?.crew.id ?? null
+}
+
+/**
+ * Una pertenencia por crew: la del rango más alto.
+ *
+ * HAY QUIEN TIENE LAS DOS COSAS EN EL MISMO EQUIPO. Ascender a un alumno a la
+ * plantilla le crea el puesto y le CONSERVA la ficha, porque borrarla perdería
+ * su historial —sus sesiones la referencian—. Así que la misma persona aparece
+ * como entrenadora y como alumna del mismo sitio.
+ *
+ * Manda el puesto, que es lo que dice qué puede hacer. La ficha no se pierde:
+ * sigue ahí para su progreso, y la conserva la pertenencia elegida cuando existe.
+ *
+ * Sin esto, `find` por `crew.id` se quedaba con la primera que apareciera y el
+ * rol dependía del orden de dos consultas, que es la clase de fallo que se
+ * manifiesta un día sí y otro no.
+ */
+function highestPerCrew(memberships: Membership[]): Membership[] {
+  const best = new Map<string, Membership>()
+
+  for (const membership of memberships) {
+    const current = best.get(membership.crew.id)
+
+    if (current === undefined) {
+      best.set(membership.crew.id, membership)
+      continue
+    }
+
+    const winner =
+      CREW_ROLE_RANK[membership.role] < CREW_ROLE_RANK[current.role] ? membership : current
+
+    // La ficha se conserva venga de donde venga: es de donde sale el progreso
+    // propio y a qué fila señalar en el ranking.
+    best.set(membership.crew.id, {
+      ...winner,
+      student: winner.student ?? current.student ?? membership.student,
+    })
+  }
+
+  return [...best.values()]
 }

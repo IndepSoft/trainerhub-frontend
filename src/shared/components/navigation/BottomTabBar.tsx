@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { getMobileRoutes } from '@/app/config/navigation.config'
 import { cn } from '@/shared/lib/utils'
-import type { CrewRole } from '@/shared/domain/entities/crew'
+import type { NavigationViewer } from '@/app/config/navigation.config'
 
 /**
  * Navegación principal en móvil.
@@ -21,13 +21,12 @@ import type { CrewRole } from '@/shared/domain/entities/crew'
  * `viewport-fit=cover`, sin lo cual el valor sería siempre cero.
  */
 interface BottomTabBarProps {
-  /** Con qué papel se navega. `null` sin crew: sólo lo que no pide rol. */
-  role: CrewRole | null
-  isPlatformAdmin: boolean
+  /** Quien navega. Sin crew sólo se ofrece lo que no pide nada. */
+  navigationViewer: NavigationViewer
 }
 
-export function BottomTabBar({ role, isPlatformAdmin }: BottomTabBarProps) {
-  const routes = getMobileRoutes({ role, isPlatformAdmin })
+export function BottomTabBar({ navigationViewer }: BottomTabBarProps) {
+  const routes = getMobileRoutes(navigationViewer)
 
   return (
     <nav

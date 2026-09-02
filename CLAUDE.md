@@ -283,23 +283,15 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
 - `CrewPost.likedBy` guarda la lista entera de quién ha dado «me gusta». Con
   equipos de decenas da igual; con miles hay que pasar a un contador y una
   bandera calculados en el servidor.
-- Un crew no se puede quedar sin administrador: nada impide bajar de rango al
-  último que queda, y entonces el equipo pierde a quien podía gobernarlo. Falta
-  la comprobación.
-- Cuatro capacidades están declaradas y no las comprueba ningún control:
-  `crew.settings` y `crew.staff` no tienen pantalla, y `training.manage` y
-  `students.manage` sólo las protege el rango mínimo de la navegación. **No hay
-  permiso de más, hay concesión que no surte efecto**: concederle
-  `training.manage` a un alumno no le abre nada. Detalle en `permissions.ts`.
+- **Todas las reglas de permisos las comprueba el navegador.** Impide
+  equivocarse, no impide actuar: un cliente modificado escribe igual. Cada regla
+  tiene ya una sola definición en `shared/domain` —`can`, `lastAdminBlocker`,
+  `canEnrollMembers`— y CAMBIOS §14.5 lleva la tabla de qué política de servidor
+  sustituye a cada una. Es lo único que queda entre esto y ser seguro.
 - La lista de administradores de plataforma es una constante en la semilla. Con
-  backend es una tabla que sólo escribe el rol de servicio, y la comprobación
-  vive en las políticas, no en el cliente: **hoy la puerta de la suscripción la
-  guarda el navegador**, que es suficiente para el producto y no para la
-  seguridad. Está anotado en `PlatformRepository`.
+  backend es una tabla que sólo escribe el rol de servicio.
 - No hay cobro: activar una suscripción es una decisión manual desde `/admin`.
-- Ascender a un alumno a la plantilla no está implementado: `crewStaff.add`
-  escribe en el crew activo, que para quien administra la plataforma no es el del
-  alumno. Falla con un mensaje claro en vez de escribir donde no toca.
+- No hay registro de auditoría: nadie sabe quién miró o cambió qué.
 - `CrewStaff.displayName` y `email` están copiados, no referenciados. Es la
   excepción a «se referencia el vocabulario»: no hay entidad de persona todavía
   —`AuthUser` sólo tiene id y correo—, así que el nombre se guarda con el puesto.

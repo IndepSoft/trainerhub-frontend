@@ -17,16 +17,40 @@ import {
   type Capability,
 } from '@/shared/domain/permissions'
 import type { CrewRole } from '@/shared/domain/entities/crew'
-import type { PlatformUser } from '@/shared/domain/ports/PlatformRepository'
+
+/**
+ * A quién se le está cambiando el papel.
+ *
+ * Forma propia y no `PlatformUser`: lo usan dos dominios —el panel de plataforma
+ * y el equipo técnico de un crew— y cada uno tiene su tipo. Pedir el de uno
+ * obligaría al otro a fabricarlo con campos que no le incumben.
+ */
+export interface RoleSubject {
+  /** Identifica la PERTENENCIA, no a la persona: una por equipo. */
+  id: string
+  displayName: string
+  /** La segunda línea: correo, equipo, lo que distinga a esta pertenencia. */
+  subtitle: string
+  role: CrewRole
+  extraCapabilities: Capability[]
+}
 
 /** Los roles que se pueden asignar, de más a menos poder. */
 const ASSIGNABLE_ROLES: CrewRole[] = ['admin', 'trainer', 'student']
 
-interface MembershipDialogProps {
+interface RolePermissionsDialogProps {
   open: boolean
-  user: PlatformUser | null
+  subject: RoleSubject | null
   onOpenChange: (open: boolean) => void
   onSave: (role: CrewRole, extraCapabilities: Capability[]) => Promise<void>
+  /**
+   * Por qué no se puede guardar, si es que no se puede.
+   *
+   * Lo decide quien lo monta, porque la razón depende del contexto: en un equipo
+   * es «no puedes quitar al último administrador», y ese conocimiento no es del
+   * diálogo.
+   */
+  blockedReason?: string
 }
 
 /**
@@ -35,24 +59,31 @@ interface MembershipDialogProps {
  * SE MONTA CON `key` desde quien lo usa, para que el borrador se reinicialice al
  * cambiar de persona. Es el mismo patrón que el formulario de alumno.
  */
-export function MembershipDialog({ open, user, onOpenChange, onSave }: MembershipDialogProps) {
+export function RolePermissionsDialog({
+  open,
+  subject,
+  onOpenChange,
+  onSave,
+  blockedReason,
+}: RolePermissionsDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto">
-        {user !== null && (
+        {subject !== null && (
           <>
             <DialogHeader className="text-left">
               <DialogTitle className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
-                {user.displayName}
+                {subject.displayName}
               </DialogTitle>
               <DialogDescription className="text-sm text-ink/50">
-                {user.email} · {user.crewName}
+                {subject.subtitle}
               </DialogDescription>
             </DialogHeader>
 
             <MembershipFields
-              key={user.membershipId}
-              user={user}
+              key={subject.id}
+              subject={subject}
+              blockedReason={blockedReason}
               onSave={onSave}
               onCancel={() => onOpenChange(false)}
             />
@@ -64,14 +95,20 @@ export function MembershipDialog({ open, user, onOpenChange, onSave }: Membershi
 }
 
 interface MembershipFieldsProps {
-  user: PlatformUser
+  subject: RoleSubject
+  blockedReason?: string
   onSave: (role: CrewRole, extraCapabilities: Capability[]) => Promise<void>
   onCancel: () => void
 }
 
-function MembershipFields({ user, onSave, onCancel }: MembershipFieldsProps) {
-  const [role, setRole] = useState<CrewRole>(user.role)
-  const [extras, setExtras] = useState<Capability[]>(user.extraCapabilities)
+function MembershipFields({
+  subject,
+  blockedReason,
+  onSave,
+  onCancel,
+}: MembershipFieldsProps) {
+  const [role, setRole] = useState<CrewRole>(subject.role)
+  const [extras, setExtras] = useState<Capability[]>(subject.extraCapabilities)
   const [saving, setSaving] = useState(false)
 
   const included = CAPABILITIES_BY_ROLE[role]
@@ -163,11 +200,21 @@ function MembershipFields({ user, onSave, onCancel }: MembershipFieldsProps) {
         </ul>
       </div>
 
+      {blockedReason !== undefined && (
+        <p className="rounded-block border border-danger/40 bg-danger/5 px-3 py-2 text-xs text-danger">
+          {blockedReason}
+        </p>
+      )}
+
       <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancelar
         </Button>
-        <Button type="button" disabled={saving} onClick={() => void handleSave()}>
+        <Button
+          type="button"
+          disabled={saving || blockedReason !== undefined}
+          onClick={() => void handleSave()}
+        >
           {saving ? 'Guardando…' : 'Guardar'}
         </Button>
       </div>

@@ -15,18 +15,22 @@ import { getSidebarRoutes } from '@/app/config/navigation.config'
 import { NavItem } from './NavItem'
 import { CrewSwitcher } from './CrewSwitcher'
 import { Separator } from '@/shared/ui/separator'
-import type { CrewRole, Membership } from '@/shared/domain/entities/crew'
+import type { NavigationViewer } from '@/app/config/navigation.config'
+import type { Membership } from '@/shared/domain/entities/crew'
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   memberships: Membership[]
   active: Membership | null
-  /*
-   * `viewerRole` y no `role`: estas props extienden las de `Sidebar`, que a su
-   * vez son las de un <div>, y ahi `role` YA EXISTE como atributo ARIA. Llamarlo
-   * igual no es solo un choque de tipos: seria pintar `role="trainer"` en el DOM.
+  /**
+   * Quien navega, entero y en un solo objeto.
+   *
+   * Eran tres props sueltas —rol, permisos concedidos, si administra la
+   * plataforma— y se rompía cada vez que la decisión necesitaba un dato más.
+   * Además evita el choque de nombres con el atributo `role` del DOM: estas
+   * props extienden las de `Sidebar`, que a su vez son las de un <div>, y
+   * llamarlo `role` pintaba `role="trainer"` en el marcado.
    */
-  viewerRole: CrewRole | null
-  isPlatformAdmin: boolean
+  navigationViewer: NavigationViewer
   loading: boolean
   onSelectCrew: (crewId: string) => void
 }
@@ -34,15 +38,14 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 export function AppSidebar({
   memberships,
   active,
-  viewerRole,
-  isPlatformAdmin,
+  navigationViewer,
   loading,
   onSelectCrew,
   ...props
 }: AppSidebarProps) {
   // Los destinos dependen del papel: el padron de alumnos y el catalogo son de
   // gestion, y un alumno no tiene nada que hacer ahi.
-  const sidebarRoutes = getSidebarRoutes({ role: viewerRole, isPlatformAdmin })
+  const sidebarRoutes = getSidebarRoutes(navigationViewer)
 
   return (
     <Sidebar variant="inset" {...props}>

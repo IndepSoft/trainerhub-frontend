@@ -1,4 +1,6 @@
 import { CREW_ROLE_RANK } from '@/shared/domain/entities/crew'
+import { can } from '@/shared/domain/permissions'
+import type { Capability } from '@/shared/domain/permissions'
 import type { CrewRole } from '@/shared/domain/entities/crew'
 import {
   type LucideIcon,
@@ -24,11 +26,24 @@ export interface NavigationItem {
   showInSidebar?: boolean
   showInMobile?: boolean
   /**
-   * El rango MÍNIMO que ve este destino.
+   * La capacidad que hace falta para ver este destino.
    *
-   * Ausente significa «todos los que han entrado», que es lo correcto para
-   * Calendario y Progreso: las dos cosas las mira quien gestiona y las mira el
-   * alumno, aunque vean datos distintos.
+   * SE PREGUNTA POR LA CAPACIDAD, NO POR EL ROL, y es lo que hace que conceder
+   * un permiso suelto sirva de algo. Antes la navegación filtraba sólo por
+   * rango, así que darle «Rutinas y planes» a un alumno veterano no le abría
+   * nada: la concesión se guardaba y la puerta seguía cerrada.
+   */
+  capability?: Capability
+  /**
+   * El rango MÍNIMO que ve este destino, para lo que no es una sola capacidad.
+   *
+   * El panel y los informes son RESÚMENES de gestión: no autorizan una acción
+   * concreta, resumen varias. Pedirles una capacidad obligaría a inventar una
+   * —«ver el resumen»— que no autoriza nada y que habría que mantener.
+   *
+   * Ausente —y sin capacidad— significa «todos los que han entrado», que es lo
+   * correcto para Calendario y Progreso: las dos cosas las mira quien gestiona y
+   * las mira el alumno, aunque vean datos distintos.
    *
    * MÍNIMO Y NO UNA LISTA DE ROLES, y el cambio salió de un fallo real: decía
    * `roles: ['trainer']`, y al aparecer `admin` por encima resultó que el dueño
@@ -36,10 +51,8 @@ export interface NavigationItem {
    * Entrenamientos y sin Panel—. Con una lista, cada rol nuevo obliga a repasar
    * todas; con un mínimo, el rango se encarga.
    *
-   * Los que piden `trainer` son de gestión —el padrón de alumnos, el catálogo,
-   * los informes— y un alumno no tiene nada que hacer ahí. Esconderlos no es la
-   * seguridad: la seguridad es RLS en el servidor. Esto es no ofrecer puertas
-   * que no abren.
+   * Esconder un destino no es la seguridad: la seguridad es la política del
+   * servidor. Esto es no ofrecer puertas que no abren.
    */
   minRole?: CrewRole
   /**
@@ -66,7 +79,7 @@ export const navigationConfig: NavigationItem[] = [
   },
   {
     id: 'students',
-    minRole: 'trainer',
+    capability: 'students.manage',
     label: 'Estudiantes',
     href: '/students',
     icon: Users,
@@ -76,7 +89,7 @@ export const navigationConfig: NavigationItem[] = [
   },
   {
     id: 'trainings',
-    minRole: 'trainer',
+    capability: 'training.manage',
     label: 'Entrenamientos',
     href: '/trainings',
     icon: Dumbbell,
@@ -170,6 +183,13 @@ function matchesViewer(item: NavigationItem, viewer: NavigationViewer): boolean 
   // no depende de en qué equipo esté, ni de estar en alguno.
   if (item.platformOnly === true) return viewer.isPlatformAdmin
 
+  // La capacidad manda sobre el rango: incluye lo que el rol trae de serie Y lo
+  // que se haya concedido aparte, que es lo que hace útil una concesión suelta.
+  if (item.capability !== undefined) {
+    if (viewer.role === null) return false
+    return can(viewer.role, item.capability, viewer.extraCapabilities)
+  }
+
   if (item.minRole === undefined) return true
   if (viewer.role === null) return false
 
@@ -181,6 +201,8 @@ function matchesViewer(item: NavigationItem, viewer: NavigationViewer): boolean 
 /** Quien navega, en lo que hace falta para decidir qué se le ofrece. */
 export interface NavigationViewer {
   role: CrewRole | null
+  /** Lo concedido por encima del rol. Ver `permissions.ts`. */
+  extraCapabilities: Capability[]
   isPlatformAdmin: boolean
 }
 
