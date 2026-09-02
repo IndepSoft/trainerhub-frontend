@@ -24,7 +24,8 @@ export default function RootLayout() {
    * alumno, y que los datos que se leen sean los de su crew.
    */
   const viewer = useViewer()
-  const { person, memberships, active, isPlatformAdmin, loading, selectCrew } = viewer
+  const { person, memberships, active, hasOwnProgress, isPlatformAdmin, loading, selectCrew } =
+    viewer
 
   /*
    * Lo que la navegacion necesita para decidir, armado una vez.
@@ -36,9 +37,7 @@ export default function RootLayout() {
   const navigationViewer: NavigationViewer = {
     role: active?.role ?? null,
     extraCapabilities: active?.extraCapabilities ?? [],
-    // Tener ficha en este equipo ES entrenar aquí. Un entrenador sin ficha no
-    // tiene progreso propio que mirar.
-    trainsHere: active?.student !== null && active?.student !== undefined,
+    hasOwnProgress,
     isPlatformAdmin,
   }
 

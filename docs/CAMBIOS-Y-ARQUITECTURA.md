@@ -1157,3 +1157,23 @@ midiendo el `transform` del indicador en el navegador.
 
 De paso, la franja usaba el `bg-primary` de shadcn en vez del Cobalt del sistema:
 el nivel es azul en todas las demás pantallas.
+
+### 16.4 La celebración devolvía a una pantalla que ya no existía para él
+
+Reportado desde el uso, y consecuencia directa de mudar el progreso: al terminar
+una sesión, la celebración volvía **siempre** a `/progress`. Para un entrenador
+—o un administrador— eso es una pantalla que su propio menú ya no le ofrece.
+
+La causa de fondo no es el destino, es que **la regla estaba escrita dos veces**.
+`matchesViewer` decidía «ve Progreso» con `role === null || trainsHere`, y la
+celebración no consultaba nada. Con la regla repetida, una de las dos se queda
+atrás — y se quedó.
+
+Ahora hay una sola definición, `useViewer.hasOwnProgress`, y la consultan los dos
+sitios que la necesitan: la navegación para ofrecer el destino, y la celebración
+para saber a dónde volver. Quien entrena vuelve a su progreso; quien gestiona, a
+la agenda, que es de donde salió la sesión y donde está la siguiente.
+
+El texto de la celebración se le sigue enseñando a los dos, y es correcto: está
+en tercera persona —«Logro desbloqueado», el nombre, los XP—, así que un
+entrenador ve que su alumna acaba de conseguir algo.

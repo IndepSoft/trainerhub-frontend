@@ -2628,6 +2628,36 @@ test.describe('sesion en vivo', () => {
     await expect(page.getByText('1/3')).toBeVisible()
   })
 
+  test('terminar una sesion no lleva al entrenador a progreso', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+
+    /*
+     * FALLO REPORTADO: «luego de terminar una sesion me esta llevando a progreso
+     * a pesar de ser admin».
+     *
+     * La celebracion volvia SIEMPRE a `/progress`, y ese destino dejo de ser del
+     * entrenador cuando el progreso se mudo a la tarjeta y la ficha del alumno.
+     * Acababa en una pantalla que su propio menu ya no le ofrece.
+     *
+     * La regla vive ahora en un solo sitio -`useViewer.hasOwnProgress`- y la
+     * consultan los dos que la necesitan: la navegacion, para ofrecer el
+     * destino, y esto, para saber a donde volver. Escrita dos veces, una de las
+     * dos se queda atras, que es exactamente lo que paso.
+     */
+    await page.goto('/session/session-1')
+
+    const series = page.getByRole('button', { name: /Serie \d+ de/ })
+    await series.first().click()
+
+    await page.getByRole('button', { name: 'Pausar la sesión' }).press('Enter')
+    await page.getByRole('button', { name: 'Finalizar la sesión' }).press('Enter')
+
+    // A la agenda, que es de donde salio la sesion y donde esta la siguiente.
+    await page.waitForURL(/\/calendar/, { timeout: 20_000 })
+    await expect(page.getByRole('heading', { name: 'Agenda', level: 1 })).toBeVisible()
+  })
+
   test('una sesion que no existe no revienta', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await signIn(page)

@@ -56,6 +56,19 @@ interface UseViewerResult {
    */
   can: (capability: Capability) => boolean
   /**
+   * Si tiene un progreso propio que mirar.
+   *
+   * DOS CASOS Y UNA SOLA DEFINICIÓN: quien entrena aquí —tiene ficha en el crew
+   * activo— y quien todavía no pertenece a ningún equipo, porque su progreso
+   * vacío ES la invitación a unirse.
+   *
+   * Vive aquí y no repartido porque lo preguntan dos sitios muy separados: la
+   * navegación, para ofrecer el destino, y la celebración de un logro, para
+   * saber a dónde volver. Con la regla escrita dos veces, un entrenador acababa
+   * en una pantalla que su menú ya no le ofrecía —que es justo lo que pasó—.
+   */
+  hasOwnProgress: boolean
+  /**
    * Si administra la plataforma.
    *
    * NO ES UN `CrewRole` MÁS, y por eso va aparte en vez de como tercer valor de
@@ -301,6 +314,7 @@ export function useViewer(): UseViewerResult {
     role: active?.role ?? null,
     can: (capability: Capability) =>
       active !== null && can(active.role, capability, active.extraCapabilities),
+    hasOwnProgress: active === null || active.student !== null,
     isPlatformAdmin,
     loading,
     selectCrew,

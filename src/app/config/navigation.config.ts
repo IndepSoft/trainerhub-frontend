@@ -201,9 +201,10 @@ function matchesViewer(item: NavigationItem, viewer: NavigationViewer): boolean 
   // no depende de en qué equipo esté, ni de estar en alguno.
   if (item.platformOnly === true) return viewer.isPlatformAdmin
 
-  // Quien no gestiona nada -no pertenece a ningun equipo- tambien: su progreso
-  // vacio es la invitacion a unirse.
-  if (item.ownTrainingOnly === true) return viewer.role === null || viewer.trainsHere
+  // La regla no se repite aqui: la resuelve `useViewer`, que es quien sabe si
+  // hay ficha. Escrita dos veces, una de las dos se queda atras -y se quedo: la
+  // celebracion devolvia al entrenador a una pantalla que su menu ya no ofrece-.
+  if (item.ownTrainingOnly === true) return viewer.hasOwnProgress
 
   // La capacidad manda sobre el rango: incluye lo que el rol trae de serie Y lo
   // que se haya concedido aparte, que es lo que hace útil una concesión suelta.
@@ -223,8 +224,8 @@ function matchesViewer(item: NavigationItem, viewer: NavigationViewer): boolean 
 /** Quien navega, en lo que hace falta para decidir qué se le ofrece. */
 export interface NavigationViewer {
   role: CrewRole | null
-  /** Si tiene ficha de alumno en el crew activo: si ENTRENA aquí. */
-  trainsHere: boolean
+  /** Si tiene un progreso propio que mirar. Lo resuelve `useViewer`. */
+  hasOwnProgress: boolean
   /** Lo concedido por encima del rol. Ver `permissions.ts`. */
   extraCapabilities: Capability[]
   isPlatformAdmin: boolean

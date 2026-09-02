@@ -19,6 +19,8 @@ export interface ViewerContextValue {
   active: Membership | null
   role: CrewRole | null
   can: (capability: Capability) => boolean
+  /** Si tiene progreso propio que mirar. Ver `useViewer`. */
+  hasOwnProgress: boolean
   isPlatformAdmin: boolean
   loading: boolean
   selectCrew: (crewId: string) => void
@@ -44,6 +46,7 @@ export const ViewerContext = createContext<ViewerContextValue>({
   active: null,
   role: null,
   can: () => false,
+  hasOwnProgress: false,
   isPlatformAdmin: false,
   loading: true,
   selectCrew: () => undefined,
