@@ -1,4 +1,8 @@
-import type { NewTrainer, TrainerRepository } from '@/shared/domain/ports/TrainerRepository'
+import type {
+  NewTrainer,
+  TrainerProfile,
+  TrainerRepository,
+} from '@/shared/domain/ports/TrainerRepository'
 import type { Trainer } from '@/shared/domain/entities/trainer'
 import { trainersSeed } from './trainersSeed'
 
@@ -44,6 +48,15 @@ export class FakeTrainerRepository implements TrainerRepository {
     this.persist()
     this.notify()
     return trainer
+  }
+
+  async updateProfile(trainerId: string, data: TrainerProfile): Promise<void> {
+    this.trainers = this.trainers.map((trainer) =>
+      // `profileId` y `email` se conservan: son la cuenta y la llave, no perfil.
+      trainer.id === trainerId ? { ...trainer, ...data } : trainer
+    )
+    this.persist()
+    this.notify()
   }
 
   onChange(listener: () => void): () => void {

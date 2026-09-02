@@ -4104,3 +4104,101 @@ test.describe('reportes', () => {
     )
   })
 })
+
+/**
+ * Configuracion y el perfil de la cabecera.
+ *
+ * La barra lateral llevaba a `/settings`, que no existia como ruta, y el
+ * «Perfil» del menu de usuario no tenia ni `onClick` ni enlace: dos puertas
+ * pintadas en la pared.
+ */
+test.describe('configuracion', () => {
+  test('«Perfil» de la cabecera lleva a Configuracion', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+
+    await page.getByRole('button', { name: 'Menú de usuario' }).click()
+    await page.getByRole('menuitem', { name: 'Perfil' }).click()
+
+    await expect(page).toHaveURL(/\/settings/)
+    await expect(page.getByRole('heading', { name: 'Configuración' })).toBeVisible()
+  })
+
+  test('cambiar el nombre se ve en toda la aplicacion', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/settings')
+
+    /*
+     * NO HAY ENTIDAD DE PERSONA: el nombre vive en la ficha que a uno le
+     * corresponda —la de entrenador si gestiona, la de alumno si entrena—, y
+     * guardar escribe en ella. Por eso el cambio se ve en la cabecera, que lee
+     * la misma ficha.
+     */
+    await page.getByLabel('Nombre').fill('Marcos')
+    await page.getByLabel('Apellidos').fill('Salas Ruiz')
+    await page.getByRole('button', { name: 'Guardar' }).click()
+
+    await expect(page.getByRole('button', { name: 'Guardar' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Perfil guardado' })).toBeVisible()
+
+    /*
+     * En la cabecera, por su TEXTO y no por el nombre accesible: el boton del
+     * menu lleva `aria-label="Menu de usuario"`, que gana al contenido. Y sale
+     * acortado -«Marcos Salas»- porque `getShortName` se queda con la primera
+     * palabra de cada parte.
+     */
+    await expect(page.getByText('Marcos Salas', { exact: true })).toBeVisible()
+  })
+
+  test('el correo se enseña y no se edita', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/settings')
+
+    // Es la llave por la que se reconoce a alguien -lo que enlazo su cuenta con
+    // su ficha-, asi que se enseña pero no hay campo que lo cambie.
+    await expect(page.getByText('entrenador@indepsoft.com')).toBeVisible()
+    await expect(page.getByLabel('Correo')).toHaveCount(0)
+  })
+
+  test('quien no esta en ningun equipo no tiene ficha que editar', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.goto('/authentication')
+    await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
+    await page.getByPlaceholder('tu@email.com').fill('sinequipo@correo.com')
+    await page.locator('input[type=password]').fill('desarrollo123')
+    await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click()
+    await page.waitForURL(/\/progress/, { timeout: 20_000 })
+
+    await page.goto('/settings')
+
+    // Estado legitimo, no un fallo: se dice, en vez de ofrecer un formulario que
+    // no guardaria en ninguna parte.
+    await expect(page.getByText(/Tu perfil vive en tu ficha del equipo/)).toBeVisible()
+    await expect(page.getByLabel('Nombre')).toHaveCount(0)
+
+    // Y el correo SI se enseña: sale de la cuenta, no de la ficha.
+    await expect(page.getByText('sinequipo@correo.com')).toBeVisible()
+  })
+
+  test('no se ofrecen ajustes que no ajustan nada', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/settings')
+
+    /*
+     * La tentacion era rellenarlo con lo que suele haber en unos ajustes, y cada
+     * una habria sido un control que no controla nada: el tema no tiene paleta
+     * oscura propia -el bloque `.dark` es el de shadcn, sin bone ni ink-, la
+     * contraseña no la expone `AuthPort`, y no hay mas canal de avisos que la
+     * campana.
+     */
+    await expect(page.getByText('Tema')).toHaveCount(0)
+    await expect(page.getByText('Contraseña')).toHaveCount(0)
+    await expect(page.getByText('Notificaciones')).toHaveCount(0)
+
+    // Y los ajustes del EQUIPO no estan aqui: son de la casa, no de la persona.
+    await expect(page.getByText('Aprobar quién entra')).toHaveCount(0)
+  })
+})

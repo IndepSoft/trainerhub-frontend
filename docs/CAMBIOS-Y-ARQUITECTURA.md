@@ -1305,3 +1305,61 @@ propio servidor, pasaban. `rm -rf node_modules/.vite` lo resolvió.
 
 Las dos son la misma lección: cuando el síntoma no encaja con el código, sospecha
 del instrumento antes que del código.
+
+---
+
+## 18. Configuración y el perfil de la cabecera (2 sep 2026)
+
+Dos puertas pintadas en la pared: la barra lateral llevaba a `/settings`, que no
+existía como ruta, y el «Perfil» del menú de usuario no tenía ni `onClick` ni
+enlace. Cualquiera que las pulsara se daba contra el muro.
+
+### 18.1 El perfil vive en la ficha, porque no hay entidad de persona
+
+`AuthUser` sólo tiene identificador y correo. El nombre y la cara están en la
+FICHA que a uno le corresponda: la de entrenador si gestiona, la de alumno si
+entrena. Guardar escribe en una o en otra, y la de entrenador manda cuando
+existen las dos —es la que se enseña por ahí, firmando los anuncios del muro—.
+
+Quien no está en ningún equipo **no tiene ninguna**, y eso es un estado legítimo:
+se le dice, en vez de ofrecerle un formulario que no guardaría en ninguna parte.
+
+**El correo sale de la CUENTA, no de la ficha.** Leerlo de la ficha dejaba un
+guion en el sitio del dato de alguien que sí lo tiene. Y no se edita: es la llave
+por la que se reconoce a una persona —lo que enlaza su cuenta con la ficha que le
+esperaba— y cambiarlo desde aquí la dejaría fuera de su propio historial.
+
+`updateProfile` es una operación aparte de `update`, en los dos puertos, y la
+diferencia es de propiedad: la ficha de alumno es la libreta del entrenador
+—nivel, objetivos, grasa corporal son SU valoración— y el alumno no debería poder
+reescribirla desde sus ajustes. Su nombre y su cara sí son suyos.
+
+### 18.2 Lo que NO se ha puesto, y por qué
+
+La tentación era rellenar los ajustes con lo que suele haber. Cada una habría
+sido un control que no controla nada:
+
+- **Tema.** `next-themes` está instalado, su proveedor no se monta, y el bloque
+  `.dark` del CSS es el de shadcn por defecto: bone, ink, cobalt y ember no están
+  redefinidos ahí. Un conmutador dejaría los componentes de la librería en oscuro
+  y el resto de la aplicación en claro. Es trabajo de diseño, no una casilla.
+- **Contraseña.** `AuthPort` no expone cambiarla.
+- **Notificaciones.** No hay más canal que la campana, y ésa no se apaga.
+
+Los ajustes del EQUIPO siguen en `/crew/ajustes`: son de la casa, no de la
+persona, y los cambia quien la gobierna. Mezclarlos haría que un entrenador
+buscara su nombre entre las reglas del equipo.
+
+De paso se retira `/login` de `navigation.config`, que se declaraba y no existía
+como ruta. Con `/reports` y `/settings` ya reales, esa deuda queda cerrada.
+
+### 18.3 Una clave que se comía el acuse
+
+`ProfileFields` se montaba con `key={nombre-apellidos}` para reinicializar el
+borrador cuando llegaban los datos. Guardar cambia esos valores, así que la clave
+cambiaba y **el formulario se remontaba**: el «Perfil guardado» desaparecía al
+instante y, con dos ediciones seguidas, se habría perdido lo escrito.
+
+La clave es ahora la ficha, no lo escrito en ella. Sólo se vio probándolo: el
+nombre se actualizaba correctamente en la cabecera, y era el acuse el que no
+llegaba a verse.

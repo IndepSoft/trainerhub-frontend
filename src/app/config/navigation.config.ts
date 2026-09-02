@@ -178,14 +178,6 @@ export const navigationConfig: NavigationItem[] = [
     showInSidebar: false,
     showInMobile: false,
   },
-  {
-    id: 'login',
-    label: 'Login',
-    href: '/login',
-    guestOnly: true, // ← Solo para GuestRoute
-    showInSidebar: false,
-    showInMobile: false,
-  },
 ]
 
 /**

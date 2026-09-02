@@ -1,9 +1,13 @@
-import type { NewTrainer, TrainerRepository } from '@/shared/domain/ports/TrainerRepository'
+import type {
+  NewTrainer,
+  TrainerProfile,
+  TrainerRepository,
+} from '@/shared/domain/ports/TrainerRepository'
 import type { Trainer } from '@/shared/domain/entities/trainer'
 import { AppError, AppErrorCode } from '@/shared/domain/errors'
 import { supabase } from './client'
 import { mapDataError } from './errorMapper'
-import { toTrainer, toTrainerRow, type TrainerRow } from './mappers'
+import { toTrainer, toTrainerProfileRow, toTrainerRow, type TrainerRow } from './mappers'
 
 /** Implementacion de TrainerRepository sobre PostgREST. */
 export class SupabaseTrainerRepository implements TrainerRepository {
@@ -39,6 +43,15 @@ export class SupabaseTrainerRepository implements TrainerRepository {
     }
 
     return toTrainer(data as TrainerRow)
+  }
+
+  async updateProfile(trainerId: string, data: TrainerProfile): Promise<void> {
+    const { error } = await supabase
+      .from('trainers')
+      .update(toTrainerProfileRow(data))
+      .eq('id', trainerId)
+
+    if (error) throw mapDataError(error)
   }
 
   /**

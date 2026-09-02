@@ -1,6 +1,7 @@
 import type {
   ClaimMembershipInput,
   NewStudent,
+  StudentProfile,
   StudentRepository,
 } from '@/shared/domain/ports/StudentRepository'
 import type { CrewScope } from '@/shared/domain/ports/CrewScope'
@@ -120,6 +121,14 @@ export class FakeStudentRepository implements StudentRepository {
   async linkAccount(studentId: string, profileId: string): Promise<void> {
     this.students = this.students.map((student) =>
       student.id === studentId ? { ...student, profileId } : student
+    )
+    this.notify()
+  }
+
+  async updateProfile(studentId: string, data: StudentProfile): Promise<void> {
+    this.students = this.students.map((student) =>
+      // Sólo los tres campos: el resto es la valoración del entrenador.
+      student.id === studentId ? { ...student, ...data } : student
     )
     this.notify()
   }

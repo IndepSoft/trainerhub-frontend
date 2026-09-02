@@ -1,6 +1,7 @@
 import type { Trainer } from '@/shared/domain/entities/trainer'
 import type { NewTrainer } from '@/shared/domain/ports/TrainerRepository'
 import type { AuthUser } from '@/shared/domain/entities/auth'
+import type { TrainerProfile } from '@/shared/domain/ports/TrainerRepository'
 
 /** Fila cruda de la tabla `trainers`. Nombres tal cual estan en Postgres. */
 export interface TrainerRow {
@@ -68,6 +69,25 @@ export function toTrainerRow(trainer: NewTrainer): Omit<TrainerRow, 'id'> {
     email: trainer.email,
     bio: trainer.bio ?? null,
     years_experience: trainer.yearsExperience ?? null,
+  }
+}
+
+/**
+ * La parte de la fila que cambia un perfil.
+ *
+ * Ni `profile_id` ni `email`: el primero es la cuenta con la que se entra y el
+ * segundo la llave por la que se reconoce a alguien. Que no estén aquí no es una
+ * omisión, es la garantía de que un `update` de perfil no puede tocarlos.
+ */
+export function toTrainerProfileRow(
+  profile: TrainerProfile
+): Pick<TrainerRow, 'first_name' | 'last_name' | 'photo_url' | 'bio' | 'years_experience'> {
+  return {
+    first_name: profile.firstName,
+    last_name: profile.lastName,
+    photo_url: profile.photoUrl ?? null,
+    bio: profile.bio ?? null,
+    years_experience: profile.yearsExperience ?? null,
   }
 }
 

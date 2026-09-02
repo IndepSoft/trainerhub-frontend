@@ -21,6 +21,16 @@ export interface TrainerRepository {
   create(data: NewTrainer): Promise<Trainer>
 
   /**
+   * Cambia lo que un entrenador dice de sí mismo.
+   *
+   * `profileId` y `email` NO se tocan: el primero es la cuenta con la que entra
+   * y el segundo es la llave por la que se le reconoce —es lo que enlaza a
+   * alguien con su ficha al registrarse—. Cambiarlos desde una pantalla de
+   * perfil dejaría a la persona fuera de su propia ficha.
+   */
+  updateProfile(trainerId: string, data: TrainerProfile): Promise<void>
+
+  /**
    * Avisa de que la colección ha cambiado. Devuelve la función de baja.
    *
    * Hacía falta desde que el rol gobierna la navegación: al registrarse, la
@@ -37,6 +47,15 @@ export interface TrainerRepository {
  * `verified` y `totalReviews` no estan: los pone el sistema -nadie se registra
  * verificado ni con reseñas-, y dejarlos en el alta seria invitar a mentir.
  */
+/** Lo que uno dice de sí mismo, y puede cambiar. */
+export interface TrainerProfile {
+  firstName: string
+  lastName: string
+  photoUrl?: string
+  bio?: string
+  yearsExperience?: number
+}
+
 export interface NewTrainer {
   profileId: string
   firstName: string

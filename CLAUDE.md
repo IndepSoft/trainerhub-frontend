@@ -271,8 +271,11 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   y ése convive con `FakeTrainerRepository`, que se elige con la misma condición
   que la autenticación simulada. Los datos falsos viven en memoria: al recargar
   vuelve la semilla.
-- `navigation.config.ts` declara `/reports`, `/settings` y `/login`, que no
-  existen como rutas.
+- No se puede cambiar la contraseña: `AuthPort` no expone esa operación, así que
+  Configuración no la ofrece en vez de fingirla.
+- No hay tema oscuro de verdad: el bloque `.dark` del CSS es el de shadcn por
+  defecto y no redefine bone, ink, cobalt ni ember. `next-themes` está instalado
+  pero su proveedor no se monta. Un conmutador dejaría media aplicación en claro.
 - `GuestRoute` está implementado pero no cableado: falta `withGuestRoute`.
 - La página del equipo tiene miembros, solicitudes, QR, muro y ranking.
   **Faltan los eventos.** Los entrenamientos grupales NO son una entidad nueva

@@ -7,6 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
+import { useNavigate } from 'react-router-dom'
 import { LogOut, User } from 'lucide-react'
 import { getInitials, getShortName } from '@/shared/lib/personName'
 import { useLogout } from '@/auth/hooks/useLogout'
@@ -24,6 +25,7 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ person, loading }: UserMenuProps) {
+  const navigate = useNavigate()
   const { handleLogout } = useLogout()
   
   const displayName = getShortName(person.firstName, person.lastName)
@@ -55,7 +57,9 @@ export function UserMenu({ person, loading }: UserMenuProps) {
       <DropdownMenuContent className="w-56" align="end" sideOffset={8}>
         <DropdownMenuLabel>Mi cuenta</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
+        {/* Lleva a Configuracion, que es donde vive el perfil. Era una entrada
+            de menu sin `onClick` ni enlace: no hacia absolutamente nada. */}
+        <DropdownMenuItem onSelect={() => navigate('/settings')}>
           <User className="mr-2 h-4 w-4" />
           <span>Perfil</span>
         </DropdownMenuItem>

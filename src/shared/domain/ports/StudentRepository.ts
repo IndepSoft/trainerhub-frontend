@@ -80,6 +80,20 @@ export interface StudentRepository {
    */
   linkAccount(studentId: string, profileId: string): Promise<void>
   /**
+   * Cambia lo que un alumno dice de sí mismo: su nombre y su foto.
+   *
+   * OPERACIÓN APARTE Y NO `update`, y la diferencia es de propiedad. La ficha es
+   * la libreta del entrenador —nivel, objetivos, grasa corporal son SU
+   * valoración— y el alumno no debería poder reescribirla desde sus ajustes. Su
+   * nombre y su cara sí son suyos.
+   *
+   * Con `update` bastaría pasar el resto de campos sin tocar, y ahí está la
+   * trampa: quien llama tendría que leer la ficha entera antes de escribir, y
+   * entre la lectura y la escritura cabe que el entrenador le cambie el nivel.
+   */
+  updateProfile(studentId: string, data: StudentProfile): Promise<void>
+
+  /**
    * Acepta o rechaza una solicitud de entrada.
    *
    * Separado de `update` por lo mismo: aprobar a alguien es una decisión del
@@ -110,6 +124,13 @@ export interface StudentRepository {
 
   remove(studentId: string): Promise<void>
   onChange(listener: () => void): () => void
+}
+
+/** Lo que un alumno dice de sí mismo, y puede cambiar. */
+export interface StudentProfile {
+  firstName: string
+  lastName: string
+  photoUrl?: string
 }
 
 export interface ClaimMembershipInput {
