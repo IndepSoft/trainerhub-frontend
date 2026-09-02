@@ -87,7 +87,7 @@ export function MilestoneNode({
         >
         {milestone.state === 'completed' && <Check className="size-4" strokeWidth={3} />}
         {isLocked && <Lock className="size-3.5" strokeWidth={2.5} />}
-          {isActive && <span className="size-2 rounded-full bg-white" />}
+          {isActive && <span className="size-2 rounded-full bg-surface" />}
         </span>
       </span>
 

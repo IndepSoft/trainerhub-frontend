@@ -73,7 +73,7 @@ export function BlockEditor({
   const canRemoveExercise = block.exercises.length > 1
 
   return (
-    <section className="rounded-block border border-cobalt-tint-3 bg-white p-4 sm:p-5">
+    <section className="rounded-block border border-cobalt-tint-3 bg-surface p-4 sm:p-5">
       <header className="flex items-center gap-3 border-b border-cobalt-tint-3 pb-4">
         <span className="metric-figures font-display text-2xl font-extrabold leading-none text-cobalt">
           {String(position).padStart(2, '0')}

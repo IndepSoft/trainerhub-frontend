@@ -55,6 +55,7 @@ export default {
         },
         ink: 'hsl(var(--ink))',
         bone: 'hsl(var(--bone))',
+        surface: 'hsl(var(--surface))',
         // Estados semanticos: un hecho, no una accion ni un nivel.
         success: {
           DEFAULT: 'hsl(var(--success))',

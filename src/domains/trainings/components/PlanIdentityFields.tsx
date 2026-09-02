@@ -51,7 +51,7 @@ export function PlanIdentityFields({
   const selectedSplit = splitsById.get(draft.splitId)
 
   return (
-    <section className="rounded-block border border-cobalt-tint-3 bg-white p-4 sm:p-5">
+    <section className="rounded-block border border-cobalt-tint-3 bg-surface p-4 sm:p-5">
       <h2 className="border-b border-cobalt-tint-3 pb-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
         El mesociclo
       </h2>

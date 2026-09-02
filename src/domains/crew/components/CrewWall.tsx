@@ -130,7 +130,7 @@ function PostCard({
   const likeCount = post.likedBy.length
 
   return (
-    <li className="rounded-block border border-cobalt-tint-3 bg-white p-4">
+    <li className="rounded-block border border-cobalt-tint-3 bg-surface p-4">
       <div className="flex items-baseline justify-between gap-3">
         <p className="truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
           {authorName}

@@ -84,7 +84,7 @@ export default function Onboarding() {
         <button
           type="button"
           onClick={advance}
-          className="flex w-full items-center justify-center gap-3 bg-white py-5 font-display text-lg font-extrabold uppercase tracking-[0.2em] text-ink transition-transform active:scale-[0.98]"
+          className="flex w-full items-center justify-center gap-3 bg-surface py-5 font-display text-lg font-extrabold uppercase tracking-[0.2em] text-ink transition-transform active:scale-[0.98]"
         >
           {isLastStep ? 'Empezar' : 'Siguiente'}
           <ArrowRight className="size-5" strokeWidth={2.5} />

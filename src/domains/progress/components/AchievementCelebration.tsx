@@ -82,7 +82,7 @@ export function AchievementCelebration({
         <button
           type="button"
           onClick={onDismiss}
-          className="w-full bg-white py-5 font-display text-lg font-extrabold uppercase tracking-[0.2em] text-ink transition-transform active:scale-[0.98]"
+          className="w-full bg-surface py-5 font-display text-lg font-extrabold uppercase tracking-[0.2em] text-ink transition-transform active:scale-[0.98]"
         >
           {dismissLabel}
         </button>

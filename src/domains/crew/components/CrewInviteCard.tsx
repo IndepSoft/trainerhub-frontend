@@ -48,6 +48,10 @@ export function CrewInviteCard({ crew, onRotate, rotating }: CrewInviteCardProps
         Invitar al equipo
       </h2>
 
+      {/* Blanco de verdad, no `bg-surface`: es la ÚNICA superficie de la
+          aplicación que no cambia con el tema. Los módulos del QR se dibujan en
+          negro, y un lector necesita ese contraste; sobre el papel oscuro el
+          código deja de escanearse. */}
       <div className="mx-auto w-full max-w-[18rem] rounded-block border border-cobalt-tint-3 bg-white p-5">
         <QRCodeSVG
           value={joinUrl}

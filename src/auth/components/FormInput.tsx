@@ -23,7 +23,7 @@ export function FormInput({
   return (
     <div className="relative">
       {Icon && (
-        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-ink/40">
           <Icon className="size-4 shrink-0" />
         </div>
       )}

@@ -273,9 +273,11 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   vuelve la semilla.
 - No se puede cambiar la contraseña: `AuthPort` no expone esa operación, así que
   Configuración no la ofrece en vez de fingirla.
-- No hay tema oscuro de verdad: el bloque `.dark` del CSS es el de shadcn por
-  defecto y no redefine bone, ink, cobalt ni ember. `next-themes` está instalado
-  pero su proveedor no se monta. Un conmutador dejaría media aplicación en claro.
+- La aplicación sólo habla español. No hay infraestructura de traducción y el
+  texto visible ronda las 350 cadenas distintas repartidas en más de sesenta
+  ficheros, con diecisiete `'es-ES'` escritos a mano en las funciones de fecha.
+  Hasta que la traducción esté completa no se ofrece selector de idioma: media
+  aplicación en inglés es peor que una aplicación en español.
 - `GuestRoute` está implementado pero no cableado: falta `withGuestRoute`.
 - La página del equipo tiene miembros, solicitudes, QR, muro y ranking.
   **Faltan los eventos.** Los entrenamientos grupales NO son una entidad nueva

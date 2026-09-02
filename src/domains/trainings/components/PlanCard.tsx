@@ -26,7 +26,7 @@ export function PlanCard({ plan }: PlanCardProps) {
   const deloadWeeks = countDeloadWeeks(plan)
 
   return (
-    <article className="group relative isolate flex flex-col overflow-hidden rounded-block border border-cobalt-tint-3 bg-white transition-colors hover:border-cobalt/40 focus-within:border-cobalt">
+    <article className="group relative isolate flex flex-col overflow-hidden rounded-block border border-cobalt-tint-3 bg-surface transition-colors hover:border-cobalt/40 focus-within:border-cobalt">
       <div
         aria-hidden="true"
         className="absolute inset-x-[-15%] top-[13%] -z-10 h-[5.5rem] bg-cobalt-tint-2 transition-transform duration-300 group-hover:-translate-y-0.5"

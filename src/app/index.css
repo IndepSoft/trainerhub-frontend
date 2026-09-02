@@ -66,12 +66,19 @@
     --radius-block: 0rem;
     --radius-action: 999px;
 
+    /* La superficie ELEVADA: tarjetas y paneles sobre el papel de fondo.
+       Existe porque `bg-white` estaba escrito a mano en diecisiete sitios, y
+       en oscuro cada uno de ellos habria seguido siendo blanco. Un token
+       responde a «que es esto» -una superficie por encima del fondo- en vez
+       de a «de que color es hoy». */
+    --surface: 0 0% 100%;
+
     --background: var(--bone);
     --foreground: var(--ink);
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --card: var(--surface);
+    --card-foreground: var(--ink);
+    --popover: var(--surface);
+    --popover-foreground: var(--ink);
     --primary: var(--cobalt);
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
@@ -102,38 +109,88 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* -----------------------------------------------------------------
+       TEMA OSCURO.
+
+       `--bone` y `--ink` cambian de valor, y eso obliga a leer sus nombres
+       como PAPELES y no como colores: bone es «la superficie de la pagina» e
+       ink «el texto encima». En claro son hueso y tinta; en oscuro, tinta y
+       hueso. Redefinir los dos aqui es lo que hace que las cuarenta pantallas
+       que escriben `bg-bone` y `text-ink` funcionen sin tocarlas.
+
+       La alternativa -dejar los tokens quietos y cambiar solo
+       `--background`- habria exigido reescribir esas cuarenta pantallas para
+       que dejaran de nombrar el color y nombraran el papel. Es lo correcto en
+       abstracto y no lo que este sistema hace hoy.
+
+       No es negro puro: 222 grados conserva el parentesco con Cobalt, y un
+       fondo absolutamente negro con texto blanco puro produce el halo que
+       cansa la vista en pantallas OLED.
+       ----------------------------------------------------------------- */
+    --bone: 222 30% 7%;
+    --ink: 36 25% 93%;
+
+    /* Cobalt SUBE. Un azul al 42 % de luminosidad sobre un fondo casi negro
+       se lee como gris oscuro: el mismo tono no vale para los dos temas. Se
+       usa el que ya existia para los estados de elevacion. */
+    --cobalt: 215 88% 62%;
+    --cobalt-lift: 215 92% 72%;
+
+    /* Los tintes suben de opacidad ademas de tono: un 6 % de azul sobre papel
+       claro se ve, y sobre casi negro no. */
+    --cobalt-tint-1: 215 88% 62% / 0.10;
+    --cobalt-tint-2: 215 88% 62% / 0.18;
+    --cobalt-tint-3: 215 88% 62% / 0.30;
+
+    /* Ember se aclara lo justo. `--ember-deep` deja de ser «mas oscuro» para
+       ser «mas claro»: su papel es destacar sobre el fondo, y el fondo cambio
+       de lado. */
+    --ember: 14 100% 63%;
+    --ember-deep: 14 92% 72%;
+
+    /* Estados y escala de dificultad, subidos por el mismo motivo. */
+    --success: 142 62% 52%;
+    --success-surface: 142 62% 52% / 0.16;
+    --warning: 38 92% 58%;
+    --warning-surface: 38 92% 58% / 0.18;
+    --destructive: 0 84% 65%;
+    --destructive-surface: 0 84% 65% / 0.16;
+
+    --scale-1: 43 96% 60%;
+    --scale-2: 199 89% 60%;
+    --scale-3: 142 62% 55%;
+
+    /* La superficie elevada se separa del fondo subiendo, no bajando: en
+       oscuro lo que esta mas cerca es mas claro. */
+    --surface: 222 26% 11%;
+
+    --background: var(--bone);
+    --foreground: var(--ink);
+    --card: var(--surface);
+    --card-foreground: var(--ink);
+    --popover: var(--surface);
+    --popover-foreground: var(--ink);
+    --primary: var(--cobalt);
+    --primary-foreground: 222 30% 7%;
+    --secondary: 222 22% 16%;
+    --secondary-foreground: var(--ink);
+    --muted: 222 22% 16%;
+    --muted-foreground: 36 12% 68%;
+    --accent: 222 22% 18%;
+    --accent-foreground: var(--ink);
+    --destructive-foreground: 222 30% 7%;
+    --border: 215 88% 62% / 0.22;
+    --input: 215 88% 62% / 0.28;
+    --ring: var(--cobalt-lift);
+
+    --sidebar-background: var(--bone);
+    --sidebar-foreground: var(--ink);
+    --sidebar-primary: var(--cobalt);
+    --sidebar-primary-foreground: 222 30% 7%;
+    --sidebar-accent: 222 22% 16%;
+    --sidebar-accent-foreground: var(--ink);
+    --sidebar-border: 215 88% 62% / 0.22;
+    --sidebar-ring: var(--cobalt-lift);
   }
 }
 

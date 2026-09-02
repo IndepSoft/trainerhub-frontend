@@ -166,7 +166,7 @@ function PlanFormFields({ plan }: PlanFormFieldsProps) {
             </h2>
 
             {routines.length === 0 ? (
-              <p className="rounded-block border border-cobalt-tint-3 bg-white px-4 py-6 text-center text-sm text-ink/45">
+              <p className="rounded-block border border-cobalt-tint-3 bg-surface px-4 py-6 text-center text-sm text-ink/45">
                 Todavía no hay rutinas que asignar. Crea una primero y vuelve.
               </p>
             ) : (

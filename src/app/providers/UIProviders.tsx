@@ -1,4 +1,5 @@
 import { SidebarProvider } from '@/shared/ui/sidebar'
+import { ThemeProvider } from './ThemeProvider'
 
 interface UIProvidersProps {
   children: React.ReactNode
@@ -6,9 +7,8 @@ interface UIProvidersProps {
 
 export function UIProviders({ children }: UIProvidersProps) {
   return (
-    <SidebarProvider defaultOpen>
-      {/* Aquí irán ThemeProvider, ToastProvider, etc. */}
-      {children}
-    </SidebarProvider>
+    <ThemeProvider>
+      <SidebarProvider defaultOpen>{children}</SidebarProvider>
+    </ThemeProvider>
   )
 }

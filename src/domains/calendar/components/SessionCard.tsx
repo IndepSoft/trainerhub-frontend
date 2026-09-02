@@ -62,7 +62,7 @@ export function SessionCard({
        */
       aria-label={`${session.title}. ${studentName}. ${status.label}. ${session.time}, ${session.durationMinutes} minutos`}
       className={cn(
-        'group relative isolate flex h-full w-full flex-col overflow-hidden rounded-block border border-cobalt-tint-3 bg-white text-left transition-colors hover:border-cobalt/40',
+        'group relative isolate flex h-full w-full flex-col overflow-hidden rounded-block border border-cobalt-tint-3 bg-surface text-left transition-colors hover:border-cobalt/40',
         isCompact ? 'p-2' : 'p-3'
       )}
     >

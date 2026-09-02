@@ -61,7 +61,7 @@ export function StudentCard({ student, progress, onEdit }: StudentCardProps) {
 
   return (
     <article
-      className="group relative isolate flex flex-col overflow-hidden rounded-block border border-cobalt-tint-3 bg-white transition-colors hover:border-cobalt/40 focus-within:border-cobalt"
+      className="group relative isolate flex flex-col overflow-hidden rounded-block border border-cobalt-tint-3 bg-surface transition-colors hover:border-cobalt/40 focus-within:border-cobalt"
       {...longPressHandlers}
     >
       {/* La cuña diagonal. `-z-10` con `isolate` en el contenedor: queda detrás

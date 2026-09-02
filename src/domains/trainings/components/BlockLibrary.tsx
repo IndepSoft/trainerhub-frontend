@@ -64,7 +64,7 @@ export function BlockLibrary() {
 
       <ul className="mt-5 space-y-4">
         {savedBlocks.map((saved) => (
-          <li key={saved.id} className="rounded-block border border-cobalt-tint-3 bg-white p-4">
+          <li key={saved.id} className="rounded-block border border-cobalt-tint-3 bg-surface p-4">
             <div className="flex items-start gap-2">
               {editingId === saved.id ? (
                 <>

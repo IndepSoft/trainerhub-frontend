@@ -1363,3 +1363,130 @@ instante y, con dos ediciones seguidas, se habría perdido lo escrito.
 La clave es ahora la ficha, no lo escrito en ella. Sólo se vio probándolo: el
 nombre se actualizaba correctamente en la cabecera, y era el acuse el que no
 llegaba a verse.
+
+---
+
+## 19. El tema oscuro, que no era un interruptor (2 sep 2026)
+
+### 19.1 Por qué no bastaba con montar el proveedor
+
+`next-themes` llevaba instalado desde el principio y su proveedor no se montaba
+en ninguna parte: `UIProviders` tenía un comentario —«Aquí irán ThemeProvider,
+ToastProvider, etc.»— y nada más. La lectura fácil era que faltaba una línea.
+
+No era eso. El bloque `.dark` del CSS era **el de shadcn de fábrica**: redefinía
+`--background`, `--card`, `--muted` y compañía, y no tocaba `--bone`, `--ink`,
+`--cobalt` ni `--ember`. Como toda la aplicación está escrita contra los tokens
+del proyecto —`bg-bone`, `text-ink`, `border-cobalt-tint-3`—, montar el proveedor
+habría puesto en oscuro los componentes de la librería y habría dejado las
+cuarenta pantallas propias exactamente igual que estaban. Un interruptor que
+enciende media casa es peor que ninguno.
+
+### 19.2 Los nombres pasan a ser papeles
+
+La decisión de fondo: `--bone` y `--ink` **cambian de valor** en `.dark`.
+
+Eso obliga a leer sus nombres como papeles y no como colores. `bone` es «la
+superficie de la página» e `ink` «el texto encima»; en claro son hueso y tinta,
+en oscuro tinta y hueso. Es lo que hace que las pantallas funcionen sin tocarlas.
+
+La alternativa —dejar los tokens quietos y cambiar sólo `--background`— es más
+limpia en abstracto y exigía reescribir esas cuarenta pantallas para que dejaran
+de nombrar el color. No es lo que este sistema hace hoy, y el rodeo no compraba
+nada.
+
+Lo demás sale de ahí:
+
+- **Cobalt sube** a `215 88% 62%`. Un azul al 42 % de luminosidad sobre un fondo
+  casi negro se lee como gris oscuro: el mismo tono no vale para los dos temas.
+- **Los tintes suben de opacidad además de tono.** Un 6 % de azul se ve sobre
+  papel claro y no se ve sobre casi negro.
+- **`--ember-deep` deja de ser «más oscuro» para ser «más claro».** Su papel es
+  destacar sobre el fondo, y el fondo cambió de lado.
+- **El fondo no es negro puro.** 222 grados conserva el parentesco con Cobalt, y
+  un negro absoluto con texto blanco puro produce el halo que cansa la vista en
+  pantallas OLED.
+
+### 19.3 `--surface`: diecisiete blancos que no tenían nombre
+
+`bg-white` estaba escrito a mano en diecisiete sitios. En oscuro, cada uno de
+ellos habría seguido siendo blanco.
+
+Se añadió `--surface` —la superficie elevada, la de tarjetas y paneles— y se
+sustituyeron sistemáticamente. El token responde a «qué es esto» en vez de a «de
+qué color es hoy»: en claro vale blanco, en oscuro sube a `222 26% 11%`, porque
+en oscuro lo que está más cerca es más claro, no más oscuro.
+
+**Una excepción, deliberada:** `CrewInviteCard`. Los módulos del QR se dibujan en
+negro y un lector necesita ese contraste; sobre papel oscuro el código deja de
+escanearse. Es la única superficie de la aplicación que no cambia con el tema, y
+está anotada en el propio componente.
+
+También cayeron los grises sueltos de Tailwind que quedaban —`text-gray-400` en
+los iconos de los campos, `bg-gray-50` en el pie de la barra lateral,
+`hover:bg-gray-100` en el menú de usuario—, que en oscuro habrían quedado como
+manchas claras.
+
+### 19.4 El destello, y por qué hay un guion en `index.html`
+
+React no llega a tiempo. El fondo del `body` sale de la hoja de estilos y se
+pinta en cuanto el navegador la tiene, mucho antes de que se descargue y ejecute
+el módulo de la aplicación. El guion que `next-themes` inyecta se ejecuta cuando
+React monta, que es tarde.
+
+Sin nada más, abrir con tema oscuro daba **un destello blanco de pantalla
+entera** en cada arranque. En una PWA instalada eso se nota más, porque el
+arranque es frecuente.
+
+La solución es un guion en línea en el `<head>` que lee la preferencia y pone la
+clase antes del primer pintado. Duplica la clave del almacenamiento
+—`trainerhub.tema`, que en TypeScript es `THEME_STORAGE_KEY`— porque desde HTML
+no se puede importar. Está anotado en los dos lados.
+
+### 19.5 La barra del navegador
+
+`<meta name="theme-color">` estaba fija en el azul primario. En una PWA instalada
+esa etiqueta tiñe la barra de estado del sistema operativo: con el tema oscuro
+quedaba una franja azul brillante pegada a una aplicación negra.
+
+`BrowserBarColor` la sincroniza con el tema resuelto. Lee `resolvedTheme` y no
+`theme` porque con «sistema» elegido `theme` vale literalmente `'system'`, que no
+es un color. El valor oscuro es `--bone` del bloque `.dark` convertido a
+hexadecimal —la etiqueta no entiende `hsl(var(…))`—, así que si cambia la paleta
+hay que cambiarlo ahí también.
+
+### 19.6 Tres opciones, no un interruptor
+
+`system` no es un tema: es la renuncia a elegir uno. Quien lo escoge delega en el
+sistema operativo y la aplicación cambia sola cuando el teléfono pasa a modo
+noche. Es la opción de fábrica, porque quien tiene el teléfono en modo noche
+espera que las aplicaciones lo respeten sin tener que decírselo a cada una.
+
+`useThemePreference` envuelve a la librería y devuelve el tema **tipado**:
+`next-themes` devuelve `string | undefined`, y sin esa capa nada impedía escribir
+`setTheme('oscuro')` y quedarse sin efecto ni aviso. Es además el único punto que
+nombra la librería fuera del proveedor.
+
+Devuelve `null` mientras no se sabe. La preferencia vive en el almacenamiento del
+navegador y no está disponible en el primer render: sin ese estado intermedio, el
+selector marcaba «claro» durante un instante aunque estuviera guardado «oscuro»,
+y el salto se veía.
+
+### 19.7 Lo que se midió, no lo que se leyó
+
+Con el tema oscuro puesto, en las ocho rutas principales a 375 px:
+
+- **Cero desbordamiento horizontal** en todas.
+- **Cero pares texto/fondo por debajo de 3:1**, medido calculando la luminancia
+  relativa de cada nodo de texto contra el primer ancestro con fondo opaco. Es la
+  comprobación que encuentra los colores que no giraron: un `text-gray-600`
+  olvidado sobre fondo oscuro sale ahí y no sale leyendo clases.
+
+### 19.8 Lo que queda
+
+El idioma. El conmutador de tema y el de idioma se pidieron juntos; el tema se
+podía cerrar entero y el idioma no, porque no hay infraestructura de traducción y
+el texto visible ronda las 350 cadenas distintas —unas 500 apariciones— repartidas
+en más de sesenta ficheros. Se aborda aparte, y hasta que esté completo no se
+ofrece el selector: media aplicación en inglés y media en español es peor que una
+aplicación en español.

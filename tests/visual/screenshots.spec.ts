@@ -4188,17 +4188,68 @@ test.describe('configuracion', () => {
     await page.goto('/settings')
 
     /*
-     * La tentacion era rellenarlo con lo que suele haber en unos ajustes, y cada
-     * una habria sido un control que no controla nada: el tema no tiene paleta
-     * oscura propia -el bloque `.dark` es el de shadcn, sin bone ni ink-, la
-     * contraseña no la expone `AuthPort`, y no hay mas canal de avisos que la
-     * campana.
+     * Un ajuste entra cuando hay algo detras que ajustar. La contraseña no la
+     * expone `AuthPort` y no hay mas canal de avisos que la campana, que no se
+     * apaga: ofrecer cualquiera de las dos seria un control que no controla nada.
      */
-    await expect(page.getByText('Tema')).toHaveCount(0)
     await expect(page.getByText('Contraseña')).toHaveCount(0)
     await expect(page.getByText('Notificaciones')).toHaveCount(0)
 
     // Y los ajustes del EQUIPO no estan aqui: son de la casa, no de la persona.
     await expect(page.getByText('Aprobar quién entra')).toHaveCount(0)
+  })
+
+  test('el tema se elige, se aplica y sobrevive a recargar', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/settings')
+
+    const oscuro = page.getByRole('button', { name: 'Oscuro' })
+    await oscuro.click()
+
+    // La clase en <html> es lo que activa el bloque `.dark`; sin ella los tokens
+    // no cambian de valor y no cambia nada mas.
+    await expect(page.locator('html')).toHaveClass(/dark/)
+    await expect(oscuro).toHaveAttribute('aria-pressed', 'true')
+
+    // Y el fondo de verdad cambia: la clase por si sola no demuestra que la
+    // paleta oscura exista.
+    const fondoOscuro = await page.evaluate(
+      () => window.getComputedStyle(document.body).backgroundColor
+    )
+    expect(fondoOscuro).not.toBe('rgb(255, 255, 255)')
+
+    /*
+     * Recargar es la prueba que importa: la preferencia vive en el
+     * almacenamiento del navegador y la aplica un guion en linea de `index.html`
+     * ANTES del primer pintado. Si eso no funciona, cada arranque da un destello
+     * blanco.
+     */
+    await page.reload()
+    await expect(page.locator('html')).toHaveClass(/dark/)
+
+    await page.getByRole('button', { name: 'Claro' }).click()
+    await expect(page.locator('html')).not.toHaveClass(/dark/)
+  })
+
+  test('la barra del navegador acompaña al tema', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/settings')
+
+    // En una PWA instalada esta etiqueta tiñe la barra de estado del sistema.
+    // Con un valor fijo, el tema oscuro dejaba una franja azul sobre una
+    // aplicacion negra.
+    await page.getByRole('button', { name: 'Oscuro' }).click()
+    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute(
+      'content',
+      '#0d1017'
+    )
+
+    await page.getByRole('button', { name: 'Claro' }).click()
+    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute(
+      'content',
+      '#0b4bcc'
+    )
   })
 })

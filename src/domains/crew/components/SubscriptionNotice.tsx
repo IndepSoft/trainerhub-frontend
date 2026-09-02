@@ -28,7 +28,7 @@ export function SubscriptionNotice({ status }: SubscriptionNoticeProps) {
   const isPending = status === 'pending'
 
   return (
-    <section className="rounded-block border border-cobalt-tint-3 bg-white px-5 py-6">
+    <section className="rounded-block border border-cobalt-tint-3 bg-surface px-5 py-6">
       <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-ember-deep">
         <Lock aria-hidden="true" className="size-3.5" />
         {isPending ? 'Suscripción pendiente' : 'Suscripción suspendida'}

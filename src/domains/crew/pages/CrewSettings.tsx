@@ -184,7 +184,7 @@ function SettingToggle({ label, description, checked, onToggle }: SettingToggleP
       >
         <span
           className={cn(
-            'size-5 rounded-action bg-white transition-transform',
+            'size-5 rounded-action bg-surface transition-transform',
             checked && 'translate-x-4'
           )}
         />

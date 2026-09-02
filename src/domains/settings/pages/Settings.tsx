@@ -9,6 +9,7 @@ import { PageHeader } from '@/shared/components/PageHeader'
 import { getInitials } from '@/shared/lib/personName'
 import { cn } from '@/shared/lib/utils'
 import { useLogout } from '@/auth/hooks/useLogout'
+import { ThemeSelector } from '../components/ThemeSelector'
 import { useProfileEditor, type ProfileDraft } from '../hooks/useProfileEditor'
 
 const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
@@ -20,17 +21,14 @@ const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-
  * como ruta, y el «Perfil» del menú de usuario no llevaba a ninguna parte. Dos
  * puertas pintadas en la pared.
  *
- * LO QUE HAY AQUÍ ES LO QUE EXISTE DE VERDAD. La tentación era rellenarlo con lo
- * que suele haber en unos ajustes —tema, idioma, notificaciones, contraseña— y
- * cada una de esas habría sido un control que no controla nada:
+ * LO QUE HAY AQUÍ ES LO QUE EXISTE DE VERDAD. Un ajuste entra cuando hay algo
+ * detrás que ajustar, no porque suela aparecer en una pantalla de ajustes:
  *
- *  - TEMA: `next-themes` está instalado pero su proveedor no se monta, y el
- *    bloque `.dark` del CSS es el de shadcn por defecto, no el de este sistema:
- *    bone, ink, cobalt y ember no están redefinidos ahí. Un conmutador dejaría
- *    los componentes de la librería en oscuro y el resto de la aplicación en
- *    claro. Es trabajo de diseño, no una casilla.
- *  - CONTRASEÑA: `AuthPort` no expone cambiarla.
- *  - NOTIFICACIONES: no hay más canal que la campana, y ésa no se apaga.
+ *  - TEMA: sí, y no fue una casilla. El bloque `.dark` era el de shadcn por
+ *    defecto —sin bone, ink, cobalt ni ember—, así que hubo que escribir la
+ *    paleta oscura entera antes de que el conmutador significara algo.
+ *  - CONTRASEÑA: no. `AuthPort` no expone cambiarla.
+ *  - NOTIFICACIONES: no. No hay más canal que la campana, y ésa no se apaga.
  *
  * Los ajustes del EQUIPO no están aquí sino en `/crew/ajustes`: son de la casa,
  * no de la persona, y los cambia quien la gobierna. Mezclarlos haría que un
@@ -85,6 +83,22 @@ export default function Settings() {
                 onSave={save}
               />
             )}
+          </section>
+
+          <section aria-labelledby="apariencia-titulo" className="space-y-4">
+            <h2
+              id="apariencia-titulo"
+              className="border-b border-cobalt-tint-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60"
+            >
+              Apariencia
+            </h2>
+
+            <div>
+              <span className={cn('block', FIELD_LABEL)}>Tema</span>
+              <div className="mt-2">
+                <ThemeSelector />
+              </div>
+            </div>
           </section>
 
           <section aria-labelledby="cuenta-titulo" className="space-y-4">

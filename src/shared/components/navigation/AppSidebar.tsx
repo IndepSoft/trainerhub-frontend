@@ -99,7 +99,7 @@ export function AppSidebar({
 
       {/* Footer */}
       <SidebarFooter>
-        <div className="border-t bg-gray-50">
+        <div className="border-t bg-cobalt-tint-1">
           <p className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground">
             <GalleryVerticalEnd className="size-4" />
             <span>v1.0.0</span>
