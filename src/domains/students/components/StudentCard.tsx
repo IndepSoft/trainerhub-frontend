@@ -14,11 +14,20 @@ import { useLongPress } from '@/shared/hooks/useLongPress'
 import { cn } from '@/shared/lib/utils'
 import { ConfirmDeleteDialog } from '@/shared/components/ConfirmDeleteDialog'
 import { useStudentEditor } from '../hooks/useStudentEditor'
+import { StudentProgressStrip } from './StudentProgressStrip'
 import { LEVEL_BADGE } from '../libs/levelBadge'
+import type { StudentProgress } from '../hooks/useStudentsProgress'
 import type { Student } from '@/shared/domain/entities/student'
 
 interface StudentCardProps {
   student: Student
+  /**
+   * Cuánto ha entrenado. `undefined` mientras carga, `null` si nada.
+   *
+   * Llega por props y no se pide aquí: con veinte tarjetas serían veinte
+   * consultas. La página lo trae de una vez con `useStudentsProgress`.
+   */
+  progress: StudentProgress | null | undefined
   /** Abre el formulario de edición, que lo monta la página. */
   onEdit: (student: Student) => void
 }
@@ -37,7 +46,7 @@ interface StudentCardProps {
  * El corte se hace con una cuña de Ember al 10 %: mantiene el gesto sin
  * competir con el texto, que sobre Ember sólido perdía contraste.
  */
-export function StudentCard({ student, onEdit }: StudentCardProps) {
+export function StudentCard({ student, progress, onEdit }: StudentCardProps) {
   const navigate = useNavigate()
   const { deletionBlocker, deleteStudent } = useStudentEditor()
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
@@ -154,6 +163,8 @@ export function StudentCard({ student, onEdit }: StudentCardProps) {
           </dd>
         </div>
       </dl>
+
+      <StudentProgressStrip progress={progress} />
 
       <div className="mt-auto flex flex-wrap items-center gap-2 p-5 pt-4">
         <span

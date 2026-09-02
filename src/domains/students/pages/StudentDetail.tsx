@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Calendar, TrendingUp } from 'lucide-react'
+import { ArrowLeft, Calendar } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Button } from '@/shared/ui/button'
 import { PageHeader } from '@/shared/components/PageHeader'
@@ -8,6 +8,7 @@ import { PageSkeleton } from '@/shared/components/PageSkeleton'
 import { getInitials, getShortName } from '@/shared/lib/personName'
 import { useStudent } from '../hooks/useStudent'
 import { StudentAssignments } from '../components/StudentAssignments'
+import { StudentProgressSection } from '../components/StudentProgressSection'
 import { StudentSessions } from '../components/StudentSessions'
 import { ScheduleSessionDialog } from '../components/ScheduleSessionDialog'
 import { LEVEL_BADGE } from '../libs/levelBadge'
@@ -101,12 +102,9 @@ export default function StudentDetail() {
           </div>
 
           <PageHeader.Actions>
-            <Button asChild variant="outline" className="gap-2">
-              <Link to={`/progress?student=${student.id}`}>
-                <TrendingUp className="size-4" />
-                Ver progreso
-              </Link>
-            </Button>
+            {/* «Ver progreso» ya no lleva a ninguna parte: el progreso esta en
+                esta misma pagina, mas abajo. Un boton que baja la pagina no es
+                un destino, es ruido. */}
             <Button className="gap-2" onClick={() => setIsScheduleOpen(true)}>
               <Calendar className="size-4" />
               Agendar sesión
@@ -137,6 +135,8 @@ export default function StudentDetail() {
             ))}
           </div>
         </section>
+
+        <StudentProgressSection studentId={student.id} firstName={student.firstName} />
 
         <StudentAssignments student={student} />
 

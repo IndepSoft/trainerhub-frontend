@@ -1,8 +1,8 @@
 import type {
-  RankingEntry,
-  RankingPeriod,
-  RankingRepository,
-} from '@/shared/domain/ports/RankingRepository'
+  CrewMemberProgress,
+  ProgressPeriod,
+  CrewProgressRepository,
+} from '@/shared/domain/ports/CrewProgressRepository'
 import type { CrewScope } from '@/shared/domain/ports/CrewScope'
 import { completedBetween, completedSessions, totalExperience } from '@/shared/domain/experience'
 import { monthBounds, weekBounds } from '@/shared/lib/dateKey'
@@ -25,7 +25,7 @@ import type { FakeStudentRepository } from './FakeStudentRepository'
  * Los métodos que usa de ellas no están en ningún puerto. Con backend esto es
  * una consulta agregada.
  */
-export class FakeRankingRepository implements RankingRepository {
+export class FakeCrewProgressRepository implements CrewProgressRepository {
   private readonly sessions: FakeSessionRepository
   private readonly students: FakeStudentRepository
   private readonly scope: CrewScope
@@ -41,7 +41,7 @@ export class FakeRankingRepository implements RankingRepository {
     this.scope = scope
   }
 
-  async ofCrew(period: RankingPeriod): Promise<RankingEntry[]> {
+  async ofCrew(period: ProgressPeriod): Promise<CrewMemberProgress[]> {
     const crewId = this.scope.current()
     if (crewId === null) return []
 
@@ -49,7 +49,7 @@ export class FakeRankingRepository implements RankingRepository {
     const members = this.students.membersOf(crewId)
     const crewSessions = this.sessions.allOfCrew(crewId)
 
-    const entries = members.map((student): RankingEntry => {
+    const entries = members.map((student): CrewMemberProgress => {
       const own = crewSessions.filter((session) => session.studentId === student.id)
       const counted = range === null ? completedSessions(own) : completedBetween(own, range.from, range.to)
 
@@ -92,7 +92,7 @@ export class FakeRankingRepository implements RankingRepository {
  * un filtro que recorrer, y decir «sin límites» es más honesto que inventar uno
  * que nunca se alcanza.
  */
-function boundsFor(period: RankingPeriod): { from: string; to: string } | null {
+function boundsFor(period: ProgressPeriod): { from: string; to: string } | null {
   const today = new Date()
 
   if (period === 'week') return weekBounds(today)

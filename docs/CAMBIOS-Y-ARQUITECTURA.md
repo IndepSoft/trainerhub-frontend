@@ -1094,3 +1094,66 @@ ella, y ponerlo debajo obligaría a leerla entera para descubrir que falta algo.
 La lección se repite: un descarte silencioso no es un comportamiento neutro. Es
 la misma familia que el aviso que mentía en el padrón de alumnos —§12.4— y que
 los huecos mudos del panel —§8—.
+
+---
+
+## 16. El progreso deja de ser un módulo del entrenador (2 sep 2026)
+
+El progreso de un alumno vivía en `/progress`, con un selector para elegir a
+quién mirar. Eso obligaba a salir de la ficha, ir a otra pantalla y buscar de
+nuevo a la misma persona que ya se tenía delante. **Un dato que se consulta de un
+vistazo no puede vivir a dos clics.**
+
+Ahora está donde se pregunta por él:
+
+- **En la tarjeta**: nivel, barra de experiencia y sesiones completadas. Es la
+  pregunta que un entrenador se hace recorriendo la lista —quién está entrenando
+  y quién se ha caído— y ahora se responde sin abrir nada.
+- **En la ficha**: el registro entero, racha y sendero de hitos incluidos,
+  reutilizando los componentes del dominio `progress`. Son presentación pura, así
+  que dicen lo mismo aquí que en la pantalla del alumno; copiarlos habría creado
+  dos verdades del mismo esfuerzo.
+
+`/progress` se queda como **el progreso de uno mismo**. Desaparecen el selector
+de alumno y `useProgressStudent` entero.
+
+### 16.1 Quién ve el destino
+
+No es una capacidad —no autoriza una acción— ni un rango: un entrenador manda
+más que un alumno y aun así no tiene progreso propio en este equipo, porque no es
+él quien entrena.
+
+`ownTrainingOnly` lo ve **quien entrena aquí** —tiene ficha en el crew activo— y
+también **quien no pertenece a ningún equipo**. Lo segundo salió de probarlo: al
+principio bastaba con «tiene ficha», y con eso un recién registrado se quedaba
+con una sola entrada de navegación. Su progreso vacío ES la invitación a unirse
+—decisión de producto de §9—, así que esconderlo le dejaba sin ninguna razón para
+quedarse.
+
+Y quien entrena a otros y además entrena aquí lo ve, que es correcto: es
+progreso suyo.
+
+### 16.2 Una consulta para toda la lista
+
+Veinte tarjetas no pueden ser veinte consultas del historial —el N+1 clásico en
+cuanto haya servidor—, y no hacía falta ninguna nueva: el esfuerzo agregado del
+equipo ya se calculaba para el ranking, y es exactamente el mismo dato.
+
+Por eso el puerto **deja de llamarse `RankingRepository`**: lo que devuelve es
+cuánto ha entrenado cada miembro, y ordenar es una de las cosas que se hacen con
+eso, no lo que es. Pasa a `CrewProgressRepository`, con `CrewMemberProgress` y
+`ProgressPeriod`.
+
+El **nivel** se deriva en el cliente y no viaja en el agregado: cuánto cuesta
+cada nivel es una regla de producto que puede cambiar sin tocar lo que el
+servidor cuenta. Se guarda el esfuerzo; se interpreta el nivel.
+
+### 16.3 Una barra que mentía
+
+`calculateLevelCompletion` devuelve una **fracción de 0 a 1** y `Progress` espera
+un porcentaje. `GamificationHeader` multiplicaba por 100; la franja nueva no, así
+que salía vacía con 55 de 200 XP. Compilaba, pasaba el lint, y sólo se vio
+midiendo el `transform` del indicador en el navegador.
+
+De paso, la franja usaba el `bg-primary` de shadcn en vez del Cobalt del sistema:
+el nivel es azul en todas las demás pantallas.

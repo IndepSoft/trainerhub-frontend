@@ -299,6 +299,9 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
 - Props declaradas y sin conectar, marcadas con `TODO:` en gamification y
   calendar. `ChallengeCard.onUpdate` es la más grave: el padre le pasa un
   manejador real que nunca se invoca.
+- La ficha del alumno pinta su progreso con `useGamificationProfile`, que carga
+  su historial entero. En la lista eso sería N+1 —por eso las tarjetas usan el
+  agregado—, pero en la ficha es una sola persona y se deja así.
 - Los filtros de `TrainingFilters` y `StudentFilters` no filtran.
 - Las sesiones volcadas desde un plan no guardan de qué volcado salieron, así que
   no se pueden mover ni cancelar en bloque y volcar dos veces duplica.

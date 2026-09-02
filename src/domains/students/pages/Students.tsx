@@ -6,6 +6,7 @@ import { StudentFilters } from '../components/StudentFilters'
 import { StudentFormDialog } from '../components/StudentFormDialog'
 import { useStudents } from '../hooks/useStudents'
 import { useStudentEditor } from '../hooks/useStudentEditor'
+import { useStudentsProgress } from '../hooks/useStudentsProgress'
 import { Button } from '@/shared/ui/button'
 import type { NewStudent } from '@/shared/domain/ports/StudentRepository'
 import { canEnrollMembers } from '@/shared/domain/entities/crew'
@@ -15,6 +16,7 @@ import type { Student } from '@/shared/domain/entities/student'
 export default function Students() {
   const { students, loading } = useStudents()
   const { createStudent, updateStudent } = useStudentEditor()
+  const { progressById, loading: loadingProgress } = useStudentsProgress()
   const { active, can } = useViewerContext()
 
   /*
@@ -101,7 +103,15 @@ export default function Students() {
           <div className="space-y-6">
             <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
               {students.map((student) => (
-                <StudentCard key={student.id} student={student} onEdit={openForEdit} />
+                <StudentCard
+                  key={student.id}
+                  student={student}
+                  /* `undefined` mientras carga y `null` cuando no ha entrenado:
+                     la tarjeta pinta cosas distintas, y confundirlos enseñaria
+                     «sin sesiones» durante un instante a quien si las tiene. */
+                  progress={loadingProgress ? undefined : (progressById.get(student.id) ?? null)}
+                  onEdit={openForEdit}
+                />
               ))}
             </div>
 

@@ -3,15 +3,28 @@ import { PageHeader } from '@/shared/components/PageHeader'
 import { GamificationHeader } from '../components/GamificationHeader'
 import { MilestonePath } from '../components/MilestonePath'
 import { AchievementSystem } from '../components/AchievementSystem'
-import { StudentPicker } from '../components/StudentPicker'
 import { JoinCrewPrompt } from '../components/JoinCrewPrompt'
 import { useGamificationProfile } from '../hooks/useGamificationProfile'
-import { useProgressStudent } from '../hooks/useProgressStudent'
 import { useProgressOverview } from '../hooks/useProgressOverview'
-import { getShortName } from '@/shared/lib/personName'
+import { useViewerContext } from '@/app/ViewerContext'
 
+/**
+ * El progreso de quien lo mira. Sólo composición.
+ *
+ * ES DE UNO MISMO Y DE NADIE MÁS. Tuvo un selector de alumno para que el
+ * entrenador eligiera a quién mirar, y eso convertía la pantalla en un módulo
+ * aparte al que había que ir y buscar a la persona. El progreso de un alumno es
+ * un dato SUYO: pertenece a su tarjeta y a su ficha, que es donde el entrenador
+ * ya está mirando cuando se lo pregunta.
+ *
+ * Quien no entrena aquí no llega: la navegación no le ofrece el destino
+ * —`onlyIfTrainsHere`— y si escribe la dirección se encuentra la invitación a
+ * unirse, que es lo que le corresponde.
+ */
 export default function Progress() {
-  const { students, student, isOwnProgress, loading: loadingStudents, select } = useProgressStudent()
+  const { active, loading } = useViewerContext()
+  const student = active?.student ?? null
+
   const { profile, achievements, completedCount, levelCompletion, experienceToNextLevel } =
     useGamificationProfile(student?.id)
   const { overview } = useProgressOverview(achievements, completedCount)
@@ -25,29 +38,8 @@ export default function Progress() {
           brief exige visibles siempre; va `sticky` dentro del contenedor de
           desplazamiento, mas abajo. Esta solo nombra la pagina. */}
       <PageHeader className="pb-4">
-        <PageHeader.Content>
-          <div className="min-w-0">
-            {/* De quien es lo que se ve. Antes no se decia, y la pantalla
-                enseñaba una racha que no era de nadie. Al alumno no se le dice
-                «progreso de Lucia»: lo suyo es «tu evolucion». */}
-            <PageHeader.Eyebrow>
-              {isOwnProgress
-                ? 'Tu evolución'
-                : student === null
-                  ? 'Tu equipo'
-                  : `Progreso de ${getShortName(student.firstName, student.lastName)}`}
-            </PageHeader.Eyebrow>
-            <PageHeader.Title>Progreso</PageHeader.Title>
-          </div>
-
-          {/* El selector es solo del entrenador: un alumno se mira a si mismo, y
-              ofrecerle a sus compañeros seria enseñarle datos que no son suyos. */}
-          {!isOwnProgress && (
-            <PageHeader.Actions>
-              <StudentPicker students={students} selectedId={student?.id} onSelect={select} />
-            </PageHeader.Actions>
-          )}
-        </PageHeader.Content>
+        <PageHeader.Eyebrow>Tu evolución</PageHeader.Eyebrow>
+        <PageHeader.Title>Progreso</PageHeader.Title>
       </PageHeader>
 
       {/* Contenedor de scroll de la pagina. Es un div y no un <main> a
@@ -62,63 +54,48 @@ export default function Progress() {
           -nivel, racha, sendero- vacio, y todo le empuja a unirse. Cortarle el
           paso con una pantalla unica seria mas simple y explicaria menos.
         */}
-        {isOwnProgress && student === null && <JoinCrewPrompt />}
+        {!loading && student === null && <JoinCrewPrompt />}
 
-        {student === null && !isOwnProgress ? (
-          <p className="px-5 py-16 text-center text-sm text-ink/45">
-            {loadingStudents
-              ? 'Cargando…'
-              : 'Aún no tienes alumnos. El progreso se calcula a partir de sus sesiones completadas.'}
-          </p>
-        ) : (
-          <>
-            <GamificationHeader
-              streak={profile.streak}
-              level={profile.level}
-              levelCompletion={levelCompletion}
-              experienceToNextLevel={experienceToNextLevel}
-            />
+        <GamificationHeader
+          streak={profile.streak}
+          level={profile.level}
+          levelCompletion={levelCompletion}
+          experienceToNextLevel={experienceToNextLevel}
+        />
 
-            <MilestonePath milestones={profile.milestones} />
+        <MilestonePath milestones={profile.milestones} />
 
-            {/* Contadores en el registro sobrio, con reglas de 1 px en vez de
-                tarjetas. Los tres salen ahora de sesiones reales: antes eran
-                tres cifras escritas a mano —12 logros, 5 desafios, 87 % de
-                participacion— que no cambiaban nunca. */}
-            <div className="grid grid-cols-1 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-              {overview.stats.map((stat) => (
-                <MetricBlock
-                  key={stat.id}
-                  title={stat.label}
-                  indicator={stat.value}
-                  icon={stat.icon}
-                />
-              ))}
-            </div>
+        {/* Contadores en el registro sobrio, con reglas de 1 px en vez de
+            tarjetas. Los tres salen ahora de sesiones reales: antes eran
+            tres cifras escritas a mano —12 logros, 5 desafios, 87 % de
+            participacion— que no cambiaban nunca. */}
+        <div className="grid grid-cols-1 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+          {overview.stats.map((stat) => (
+            <MetricBlock key={stat.id} title={stat.label} indicator={stat.value} icon={stat.icon} />
+          ))}
+        </div>
 
-            <div className="ps-4 pe-4 pb-4 pt-6 max-w-8xl mx-auto space-y-6">
-              {/* Sin envoltura <Card>, por el mismo motivo que en Reportes: su
-                  contenido son a su vez tarjetas, que pagaban el relleno dos veces y
-                  caian a 277 px, bajo el minimo util de 280 de la regla 1.6. Un
-                  <h2> da la misma informacion sin ese nivel, y ademas es un
-                  encabezado de verdad para un lector de pantalla: CardTitle
-                  renderiza un <div>. */}
-              <section className="space-y-4">
-                {/*
-                  Sin pestanas. Quedaban tres -Logros, Desafios, Rachas- y las dos
-                  ultimas se han movido a Entrenamientos, porque son cosas que el
-                  entrenador CREA para luego asignarlas, no cosas que el estudiante
-                  consigue. Con una sola seccion, un control de navegacion de una
-                  pestana es cromo que no lleva a ningun sitio.
-                */}
-                <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-                  Logros
-                </h2>
-                <AchievementSystem achievements={achievements} />
-              </section>
-            </div>
-          </>
-        )}
+        <div className="ps-4 pe-4 pb-4 pt-6 max-w-8xl mx-auto space-y-6">
+          {/* Sin envoltura <Card>, por el mismo motivo que en Reportes: su
+              contenido son a su vez tarjetas, que pagaban el relleno dos veces y
+              caian a 277 px, bajo el minimo util de 280 de la regla 1.6. Un
+              <h2> da la misma informacion sin ese nivel, y ademas es un
+              encabezado de verdad para un lector de pantalla: CardTitle
+              renderiza un <div>. */}
+          <section className="space-y-4">
+            {/*
+              Sin pestanas. Quedaban tres -Logros, Desafios, Rachas- y las dos
+              ultimas se han movido a Entrenamientos, porque son cosas que el
+              entrenador CREA para luego asignarlas, no cosas que el estudiante
+              consigue. Con una sola seccion, un control de navegacion de una
+              pestana es cromo que no lleva a ningun sitio.
+            */}
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
+              Logros
+            </h2>
+            <AchievementSystem achievements={achievements} />
+          </section>
+        </div>
       </div>
     </div>
   )

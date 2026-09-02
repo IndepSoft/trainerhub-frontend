@@ -311,7 +311,12 @@ test('la barra inferior encaja a 375 px', async ({ page }) => {
 
   expect(medidas).not.toBeNull()
   expect(medidas!.desbordeDePagina).toBe(0)
-  expect(medidas!.pestanas).toHaveLength(5)
+  /*
+   * CUATRO, no cinco: Progreso salio de la navegacion del entrenador. El
+   * progreso de sus alumnos vive en sus tarjetas y en su ficha, que es donde se
+   * pregunta por el; el modulo aparte obligaba a salir y buscar a la persona.
+   */
+  expect(medidas!.pestanas).toHaveLength(4)
 
   for (const pestana of medidas!.pestanas) {
     expect(pestana.alto, `alto de «${pestana.texto}»`).toBeGreaterThanOrEqual(44)
@@ -573,11 +578,28 @@ test('el esqueleto se muestra mientras carga la ruta', async ({ page }) => {
  */
 test('placas de logro', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 })
-  await signIn(page)
-  await page.goto('/progress')
+
+  /*
+   * Como ALUMNA, no como entrenador: los logros son de quien entrena, y desde
+   * que Progreso dejo de ser un modulo del entrenador esta pantalla solo existe
+   * para su dueño. Maria ya tiene ficha en el equipo -su correo esta en la
+   * semilla-, asi que registrarse la reclama.
+   */
+  await page.goto('/authentication')
+  await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
+  await page.getByRole('tab', { name: 'Registrarme' }).click()
+  await page.getByRole('button', { name: 'Entreno', exact: true }).click()
+  await page.getByLabel('Nombre').fill('María')
+  await page.getByLabel('Apellido').fill('Gómez')
+  await page.getByLabel('Email').fill('mgomez@gmail.com')
+  await page.locator('input[type=password]').fill('secreto123')
+  await page.getByRole('button', { name: 'Crear cuenta' }).click()
+  await page.waitForURL(/\/progress/, { timeout: 20_000 })
   await page.waitForTimeout(2000)
 
-  const placa = page.getByRole('button', { name: /Conseguido/ }).first()
+  // Sin sesiones cerradas, Maria tiene la galeria entera BLOQUEADA, que es justo
+  // el contraste que esta captura documenta. El rotulo sale de `AchievementBadge`.
+  const placa = page.getByRole('button', { name: /Bloqueado/ }).first()
   await placa.scrollIntoViewIfNeeded()
   await page.waitForTimeout(500)
 
@@ -605,10 +627,11 @@ test('la navegacion con transicion llega a su destino', async ({ page }) => {
   // La pagina destino debe estar realmente pintada, no congelada a mitad.
   await expect(page.getByRole('heading', { name: 'Estudiantes' })).toBeVisible()
 
-  await page.getByRole('link', { name: /Progreso/ }).click()
-  await page.waitForURL(/\/progress/, { timeout: 15_000 })
+  // A Calendario y no a Progreso: el entrenador ya no tiene ese destino.
+  await page.getByRole('link', { name: /Calendario/ }).click()
+  await page.waitForURL(/\/calendar/, { timeout: 15_000 })
   await page.waitForTimeout(600)
-  await expect(page.getByRole('heading', { name: 'Progreso', level: 1 })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Agenda', level: 1 })).toBeVisible()
 })
 
 /**
@@ -2584,13 +2607,24 @@ test.describe('sesion en vivo', () => {
     /*
      * Se navega por la interfaz, sin `goto`: los adaptadores falsos viven en
      * memoria y recargar devolveria la sesion a su estado de semilla.
+     *
+     * Y se comprueba en la FICHA del alumno, que es donde vive ahora su
+     * progreso: el modulo aparte del entrenador se retiro porque obligaba a
+     * salir de la ficha para volver a buscar a la misma persona.
      */
-    await page.getByLabel('Ver el progreso de').selectOption('student-2')
-    await page.waitForTimeout(1200)
+    await page.getByRole('link', { name: /Estudiantes/ }).first().click()
+    await page.waitForURL(/\/students$/, { timeout: 15_000 })
 
-    // 20 XP por terminar la sesion mas 1 por cada una de las 5 series marcadas.
+    // En la TARJETA, de un vistazo: 20 XP por terminar mas 1 por cada una de
+    // las 5 series marcadas.
+    const tarjeta = page.getByRole('article').filter({ hasText: 'María Gómez' })
+    await expect(tarjeta).toContainText('25 / 100 XP')
+    await expect(tarjeta).toContainText('1 sesión')
+
+    // Y en su ficha, con el sendero: el primer hito ya cuenta una.
+    await tarjeta.getByRole('link', { name: 'María Gómez' }).click()
+    await page.waitForURL(/\/students\/student-2/, { timeout: 15_000 })
     await expect(page.getByText('25 / 100 XP')).toBeVisible()
-    // Y el primer hito ya cuenta una: el sendero mide sesiones cerradas.
     await expect(page.getByText('1/3')).toBeVisible()
   })
 
@@ -2798,81 +2832,83 @@ test.describe('alumnos', () => {
  * y era el mismo para cualquier alumno.
  */
 test.describe('progreso', () => {
-  test('la racha y el nivel salen del historial del alumno', async ({ page }) => {
+  test('la tarjeta de cada alumno lleva su progreso', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
-    await page.goto('/progress?student=student-1')
-    await page.waitForTimeout(1500)
+    await page.goto('/students')
 
     /*
-     * Las cifras se comprueban contra la regla, no contra un numero copiado.
+     * EN LA TARJETA, no en un modulo aparte. Es la pregunta que un entrenador se
+     * hace mirando la lista -quien esta entrenando y quien se ha caido- y hasta
+     * ahora exigia abrir otra pantalla y elegir a la persona en un desplegable.
      *
-     * La semilla de `student-1` son diez sesiones cerradas, 105 series en
-     * total. Con 20 XP por sesion y 1 por serie son 305 XP; descontando 100 del
-     * nivel 1 y 150 del 2, quedan 55 dentro del nivel 3, que cuesta 200.
+     * Las cifras se comprueban contra la regla, no contra un numero copiado: la
+     * semilla de `student-1` son diez sesiones cerradas y 105 series. Con 20 XP
+     * por sesion y 1 por serie son 305; descontando 100 del nivel 1 y 150 del 2,
+     * quedan 55 dentro del nivel 3, que cuesta 200.
      */
-    await expect(page.getByText('Nivel 3')).toBeVisible()
-    await expect(page.getByText('55 / 200 XP')).toBeVisible()
+    const juan = page.getByRole('article').filter({ hasText: 'Juan Pérez' })
+    await expect(juan).toContainText('Nivel 3')
+    await expect(juan).toContainText('55 / 200 XP')
+    await expect(juan).toContainText('10 sesiones')
 
-    // Siete dias seguidos hasta ayer. La racha NO se rompe por no haber
-    // entrenado hoy todavia: el dia no ha terminado.
-    await expect(page.getByText('días de racha')).toBeVisible()
+    // Quien no ha entrenado no lleva una barra a cero -se lee como un mal
+    // resultado- sino lo que de verdad significa.
+    const maria = page.getByRole('article').filter({ hasText: 'María Gómez' })
+    await expect(maria).toContainText('Todavía no ha completado ninguna sesión')
+    await expect(maria).not.toContainText('XP')
   })
 
-  test('cambiar de alumno cambia las cifras', async ({ page }) => {
-    await page.setViewportSize({ width: 1440, height: 900 })
-    await signIn(page)
-    await page.goto('/progress?student=student-1')
-    await page.waitForTimeout(1500)
-
-    await expect(page.getByText('Nivel 3')).toBeVisible()
-
-    // `student-2` no tiene ninguna sesion cerrada: empieza de cero.
-    await page.getByLabel('Ver el progreso de').selectOption('student-2')
-    await page.waitForTimeout(1500)
-
-    await expect(page.getByText('Nivel 1')).toBeVisible()
-    await expect(page.getByText('0 / 100 XP')).toBeVisible()
-    await expect(page.getByText('Aún no hay logros conseguidos')).toBeVisible()
-  })
-
-  test('los logros se consiguen por lo hecho, con su fecha real', async ({ page }) => {
-    await page.setViewportSize({ width: 1440, height: 900 })
-    await signIn(page)
-    await page.goto('/progress?student=student-1')
-    await page.waitForTimeout(1500)
-
-    /*
-     * «Semana Perfecta» se desbloquea sola: la condicion es una funcion sobre
-     * las sesiones, no una frase con una fecha de enero de 2024 escrita al lado.
-     */
-    const recientes = page.locator('section').filter({ hasText: 'Conseguidos recientemente' })
-    // Por su fila de la lista: el nombre aparece tres veces -en la insignia de
-    // la galeria, en la insignia pequeña de la fila y en el titulo-, asi que
-    // pedirlo por texto suelto resuelve a varios elementos.
-    const fila = recientes.getByRole('listitem').filter({ hasText: 'Semana Perfecta' })
-    await expect(fila).toHaveCount(1)
-    // Con SU fecha: el dia en el que se cumplio la condicion, no una escrita a
-    // mano. La semilla la deja en el ultimo dia entrenado, que es ayer.
-    const ayer = new Date()
-    ayer.setDate(ayer.getDate() - 1)
-    await expect(fila).toContainText(ayer.toLocaleDateString('es'))
-
-    // Y los que no hay de donde sacar ya no se ofrecen: sin registro corporal ni
-    // sistema de desafios, esas dos categorias desaparecen del filtro.
-    await expect(page.getByRole('button', { name: /Métricas/ })).toHaveCount(0)
-    await expect(page.getByRole('button', { name: /Desafíos/ })).toHaveCount(0)
-  })
-
-  test('«Ver progreso» desde la ficha lleva al progreso de ESE alumno', async ({ page }) => {
+  test('la ficha lleva el progreso entero, con su sendero', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
     await page.goto('/students/student-1')
 
-    await page.getByRole('link', { name: 'Ver progreso' }).click()
+    await expect(page.getByRole('heading', { name: 'Progreso' })).toBeVisible()
+    await expect(page.getByText('Nivel 3')).toBeVisible()
+    await expect(page.getByText('55 / 200 XP')).toBeVisible()
+    // Siete dias seguidos hasta ayer. La racha NO se rompe por no haber
+    // entrenado hoy todavia: el dia no ha terminado.
+    await expect(page.getByText('días de racha')).toBeVisible()
+    // Y el sendero, que es lo que da sentido a la cifra.
+    await expect(page.getByText('Tu camino')).toBeVisible()
+  })
 
-    await expect(page).toHaveURL(/\/progress\?student=student-1/)
-    await expect(page.getByText('Progreso de Juan Pérez')).toBeVisible()
+  test('el entrenador no tiene modulo de progreso', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+
+    /*
+     * NI EL DESTINO NI EL ATAJO. El progreso de un alumno es un dato suyo, y
+     * vive donde el entrenador ya esta mirando cuando se lo pregunta: su tarjeta
+     * y su ficha. Un modulo aparte obligaba a salir y volver a buscarle.
+     */
+    await expect(page.getByRole('link', { name: /Progreso/ })).toHaveCount(0)
+
+    await page.goto('/students/student-1')
+    await expect(page.getByRole('link', { name: 'Ver progreso' })).toHaveCount(0)
+  })
+
+  test('el alumno sigue teniendo el suyo, y sin selector', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+
+    // Maria ya tiene ficha en el equipo -su correo esta en la semilla-, asi que
+    // registrarse la reclama.
+    await page.goto('/authentication')
+    await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
+    await page.getByRole('tab', { name: 'Registrarme' }).click()
+    await page.getByRole('button', { name: 'Entreno', exact: true }).click()
+    await page.getByLabel('Nombre').fill('María')
+    await page.getByLabel('Apellido').fill('Gómez')
+    await page.getByLabel('Email').fill('mgomez@gmail.com')
+    await page.locator('input[type=password]').fill('secreto123')
+    await page.getByRole('button', { name: 'Crear cuenta' }).click()
+    await page.waitForURL(/\/progress/, { timeout: 20_000 })
+
+    await expect(page.getByText('Tu evolución')).toBeVisible()
+    // Sin selector: un alumno se mira a si mismo, y ofrecerle a sus compañeros
+    // seria enseñarle datos que no son suyos.
+    await expect(page.getByLabel('Ver el progreso de')).toHaveCount(0)
   })
   test('el formulario de alumno cumple las reglas de 375 px', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })

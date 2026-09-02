@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { container } from '@/app/container'
-import type { RankingEntry, RankingPeriod } from '@/shared/domain/ports/RankingRepository'
+import type { CrewMemberProgress, ProgressPeriod } from '@/shared/domain/ports/CrewProgressRepository'
 
 interface UseCrewRankingResult {
-  entries: RankingEntry[]
-  period: RankingPeriod
-  setPeriod: (period: RankingPeriod) => void
+  entries: CrewMemberProgress[]
+  period: ProgressPeriod
+  setPeriod: (period: ProgressPeriod) => void
   loading: boolean
 }
 
@@ -22,12 +22,12 @@ interface UseCrewRankingResult {
  * después del momento en el que a alguien le importa mirarla.
  */
 export function useCrewRanking(): UseCrewRankingResult {
-  const [period, setPeriod] = useState<RankingPeriod>('week')
-  const [entries, setEntries] = useState<RankingEntry[]>([])
+  const [period, setPeriod] = useState<ProgressPeriod>('week')
+  const [entries, setEntries] = useState<CrewMemberProgress[]>([])
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async (): Promise<void> => {
-    setEntries(await container.ranking.ofCrew(period))
+    setEntries(await container.crewProgress.ofCrew(period))
     setLoading(false)
   }, [period])
 
@@ -35,7 +35,7 @@ export function useCrewRanking(): UseCrewRankingResult {
     void load()
 
     const unsubscribes = [
-      container.ranking.onChange(() => void load()),
+      container.crewProgress.onChange(() => void load()),
       container.sessions.onChange(() => void load()),
     ]
 

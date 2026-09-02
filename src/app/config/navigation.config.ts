@@ -35,6 +35,23 @@ export interface NavigationItem {
    */
   capability?: Capability
   /**
+   * El progreso PROPIO: sólo para quien entrena, o para quien aún no es de nadie.
+   *
+   * No es una capacidad —no autoriza una acción— ni un rango: un entrenador
+   * manda más que un alumno y aun así no tiene progreso propio en este equipo,
+   * porque no es él quien entrena. El de sus alumnos lo ve en sus tarjetas y en
+   * su ficha, que es donde pertenece.
+   *
+   * QUIEN NO ESTÁ EN NINGÚN EQUIPO TAMBIÉN LO VE, y es deliberado: su progreso
+   * vacío —el nivel a cero, el sendero entero en gris— es lo que enseña qué va a
+   * tener, y de ahí sale la invitación a unirse. Esconderlo dejaría a un recién
+   * registrado con una sola pantalla y ninguna razón para quedarse.
+   *
+   * Quien además de entrenar a otros entrena aquí —tiene su ficha— lo ve, y es
+   * correcto: es progreso suyo.
+   */
+  ownTrainingOnly?: boolean
+  /**
    * El rango MÍNIMO que ve este destino, para lo que no es una sola capacidad.
    *
    * El panel y los informes son RESÚMENES de gestión: no autorizan una acción
@@ -112,6 +129,7 @@ export const navigationConfig: NavigationItem[] = [
     href: '/progress',
     icon: Award,
     requiresAuth: true,
+    ownTrainingOnly: true,
     showInSidebar: true,
     showInMobile: true,
   },
@@ -183,6 +201,10 @@ function matchesViewer(item: NavigationItem, viewer: NavigationViewer): boolean 
   // no depende de en qué equipo esté, ni de estar en alguno.
   if (item.platformOnly === true) return viewer.isPlatformAdmin
 
+  // Quien no gestiona nada -no pertenece a ningun equipo- tambien: su progreso
+  // vacio es la invitacion a unirse.
+  if (item.ownTrainingOnly === true) return viewer.role === null || viewer.trainsHere
+
   // La capacidad manda sobre el rango: incluye lo que el rol trae de serie Y lo
   // que se haya concedido aparte, que es lo que hace útil una concesión suelta.
   if (item.capability !== undefined) {
@@ -201,6 +223,8 @@ function matchesViewer(item: NavigationItem, viewer: NavigationViewer): boolean 
 /** Quien navega, en lo que hace falta para decidir qué se le ofrece. */
 export interface NavigationViewer {
   role: CrewRole | null
+  /** Si tiene ficha de alumno en el crew activo: si ENTRENA aquí. */
+  trainsHere: boolean
   /** Lo concedido por encima del rol. Ver `permissions.ts`. */
   extraCapabilities: Capability[]
   isPlatformAdmin: boolean

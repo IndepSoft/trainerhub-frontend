@@ -2,16 +2,16 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { getInitials, getShortName } from '@/shared/lib/personName'
 import { cn } from '@/shared/lib/utils'
 import { useCrewRanking } from '../hooks/useCrewRanking'
-import type { RankingPeriod } from '@/shared/domain/ports/RankingRepository'
+import type { ProgressPeriod } from '@/shared/domain/ports/CrewProgressRepository'
 
-const PERIOD_LABEL: Record<RankingPeriod, string> = {
+const PERIOD_LABEL: Record<ProgressPeriod, string> = {
   week: 'Esta semana',
   month: 'Este mes',
   all: 'Siempre',
 }
 
 /** De más reciente a más largo: lo ganable primero. */
-const PERIODS: RankingPeriod[] = ['week', 'month', 'all']
+const PERIODS: ProgressPeriod[] = ['week', 'month', 'all']
 
 interface CrewRankingProps {
   /** La ficha de quien mira, para señalar su fila. `null` si entrena. */

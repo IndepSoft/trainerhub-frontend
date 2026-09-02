@@ -36,6 +36,9 @@ export default function RootLayout() {
   const navigationViewer: NavigationViewer = {
     role: active?.role ?? null,
     extraCapabilities: active?.extraCapabilities ?? [],
+    // Tener ficha en este equipo ES entrenar aquí. Un entrenador sin ficha no
+    // tiene progreso propio que mirar.
+    trainsHere: active?.student !== null && active?.student !== undefined,
     isPlatformAdmin,
   }
 

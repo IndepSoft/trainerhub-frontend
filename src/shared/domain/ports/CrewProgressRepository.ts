@@ -1,7 +1,17 @@
 /**
- * Puerto del ranking del equipo.
+ * Puerto del esfuerzo agregado de un equipo.
  *
- * PUERTO PROPIO, Y POR UN MOTIVO DE PRIVACIDAD, no de orden. Un ranking se
+ * SE LLAMABA `RankingRepository` y el nombre se quedó corto en cuanto tuvo un
+ * segundo consumidor: las tarjetas de alumno enseñan el mismo agregado sin
+ * ordenar a nadie. Lo que devuelve es «cuánto ha entrenado cada miembro»; el
+ * ranking es UNA de las cosas que se hacen con eso, no lo que es.
+ *
+ * Reutilizarlo en vez de abrir un camino nuevo evita las dos cosas de siempre:
+ * una segunda consulta por alumno —N+1 en cuanto haya servidor— y una segunda
+ * definición de la misma cifra, que acabaría dando números distintos en dos
+ * pantallas.
+ *
+ * PUERTO PROPIO, Y POR UN MOTIVO DE PRIVACIDAD, no de orden. Esto se
  * calcula a partir de las sesiones de todo el equipo, y un alumno **no puede
  * leerlas**: su ámbito le deja ver las suyas y las de grupo, que es justo lo que
  * hay que proteger —con quién entrena el entrenador, a qué hora y dónde—.
@@ -14,9 +24,9 @@
  * Con backend esto es una consulta agregada o una vista; aquí lo resuelve el
  * adaptador falso, que sí ve el almacén entero.
  */
-export interface RankingRepository {
-  /** La clasificación del crew activo, de más a menos experiencia. */
-  ofCrew(period: RankingPeriod): Promise<RankingEntry[]>
+export interface CrewProgressRepository {
+  /** El esfuerzo de cada miembro del crew activo, de más a menos experiencia. */
+  ofCrew(period: ProgressPeriod): Promise<CrewMemberProgress[]>
 
   /** Avisa de que algo ha cambiado. Devuelve la función de baja. */
   onChange(listener: () => void): () => void
@@ -31,7 +41,7 @@ export interface RankingRepository {
  * el que motiva. El histórico se queda como vista secundaria, que es donde no
  * hace daño.
  */
-export type RankingPeriod = 'week' | 'month' | 'all'
+export type ProgressPeriod = 'week' | 'month' | 'all'
 
 /**
  * Una posición del ranking.
@@ -41,7 +51,7 @@ export type RankingPeriod = 'week' | 'month' | 'all'
  * de entrenamiento hace daño a la gente a la que más habría que cuidar, y no
  * mide el trabajo de nadie: la experiencia se gana entrenando, el peso no.
  */
-export interface RankingEntry {
+export interface CrewMemberProgress {
   studentId: string
   firstName: string
   lastName: string

@@ -22,8 +22,8 @@ import type { PlatformRepository } from '@/shared/domain/ports/PlatformRepositor
 import { FakePlatformRepository } from '@/shared/infrastructure/fake/FakePlatformRepository'
 import type { CrewPostRepository } from '@/shared/domain/ports/CrewPostRepository'
 import { FakeCrewPostRepository } from '@/shared/infrastructure/fake/FakeCrewPostRepository'
-import type { RankingRepository } from '@/shared/domain/ports/RankingRepository'
-import { FakeRankingRepository } from '@/shared/infrastructure/fake/FakeRankingRepository'
+import type { CrewProgressRepository } from '@/shared/domain/ports/CrewProgressRepository'
+import { FakeCrewProgressRepository } from '@/shared/infrastructure/fake/FakeCrewProgressRepository'
 import type { CrewStaffRepository } from '@/shared/domain/ports/CrewStaffRepository'
 import { FakeCrewStaffRepository } from '@/shared/infrastructure/fake/FakeCrewStaffRepository'
 import { crewScope } from './crewScope'
@@ -43,7 +43,7 @@ export interface Container {
   crews: CrewRepository
   crewStaff: CrewStaffRepository
   crewPosts: CrewPostRepository
-  ranking: RankingRepository
+  crewProgress: CrewProgressRepository
   platform: PlatformRepository
   trainers: TrainerRepository
   students: StudentRepository
@@ -109,7 +109,7 @@ export const container: Container = {
    * equipo, y el ambito de un alumno le deja ver solo las suyas. Lo que sale de
    * aqui es un agregado, no las sesiones de nadie.
    */
-  ranking: new FakeRankingRepository(fakeSessions, fakeStudents, crewScope),
+  crewProgress: new FakeCrewProgressRepository(fakeSessions, fakeStudents, crewScope),
   platform: new FakePlatformRepository(fakeCrews, fakeStudents, fakeCrewStaff, trainers),
   trainers,
   /*
