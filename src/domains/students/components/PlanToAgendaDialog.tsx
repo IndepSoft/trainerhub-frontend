@@ -123,6 +123,18 @@ export function PlanToAgendaDialog({
 
   const conflicting = countConflicting(planned)
 
+  /*
+   * LOS DÍAS SIN HORA NO SE AGENDAN, Y HAY QUE DECIRLO.
+   *
+   * `planSessions` los descarta en silencio —sin hora no hay sesión que
+   * construir—, y eso convertía un descuido en un misterio: quien rellenaba una
+   * sola hora obtenía una fecha y ninguna pantalla explicaba dónde estaban las
+   * demás. El recuento del botón dice CUÁNTAS salen; esto dice POR QUÉ no salen
+   * más, que es la pregunta que se hace de verdad.
+   */
+  const missingWeekdays = weekdays.filter((dayOfWeek) => timesByWeekday[dayOfWeek] === undefined)
+  const chosenCount = weekdays.length - missingWeekdays.length
+
   const handleConfirm = async () => {
     setIsSaving(true)
     // En serie y no en paralelo: el adaptador reemplaza su lista entera en cada
@@ -149,6 +161,15 @@ export function PlanToAgendaDialog({
         <div className="space-y-5 px-5 pb-5">
           <div className="space-y-3">
             <span className={cn('block', FIELD_LABEL)}>Hora de cada día</span>
+            <p className="text-xs text-ink/50">
+              {/* La forma del plan, en una línea: es de donde sale el total, y
+                  sin ella el número del botón parece salir de la nada. Un plan
+                  de una semana produce pocas sesiones y eso sorprende si no se
+                  ve escrito que tiene una. */}
+              El plan tiene {plan.weeks.length}{' '}
+              {plan.weeks.length === 1 ? 'semana' : 'semanas'} y entrena{' '}
+              {weekdays.length} {weekdays.length === 1 ? 'día' : 'días'} distintos.
+            </p>
             {weekdays.map((dayOfWeek) => (
               <div key={dayOfWeek} className="flex items-center gap-3">
                 <Label
@@ -195,6 +216,20 @@ export function PlanToAgendaDialog({
               </SelectContent>
             </Select>
           </div>
+
+          {/*
+            El aviso va antes de la previa, no dentro: se refiere a lo que NO
+            está en la lista, y ponerlo debajo obligaría a leer la lista entera
+            para descubrir que falta algo.
+          */}
+          {chosenCount > 0 && missingWeekdays.length > 0 && (
+            <p className="flex items-start gap-2 rounded-block border border-warning/40 bg-warning/5 px-3 py-2 text-xs text-ink/70">
+              <AlertTriangle aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 text-warning" />
+              <span>
+                Sin hora: {describeWeekdays(missingWeekdays)}. Esos días no se agendan.
+              </span>
+            </p>
+          )}
 
           {planned.length === 0 ? (
             <p className="rounded-block border border-cobalt-tint-3 px-4 py-6 text-center text-sm text-ink/45">
@@ -260,4 +295,18 @@ function addWeeks(dateKey: string, weeks: number): string {
   const resultMonth = String(result.getMonth() + 1).padStart(2, '0')
   const resultDay = String(result.getDate()).padStart(2, '0')
   return `${result.getFullYear()}-${resultMonth}-${resultDay}`
+}
+
+/**
+ * «miércoles, jueves y viernes».
+ *
+ * Con «y» antes del último y no una lista separada por comas hasta el final: se
+ * lee como una frase porque va dentro de una, no como un volcado de datos.
+ */
+function describeWeekdays(weekdays: number[]): string {
+  const names = weekdays.map(weekdayName)
+  if (names.length <= 1) return names.join('')
+
+  const last = names[names.length - 1]
+  return `${names.slice(0, -1).join(', ')} y ${last}`
 }

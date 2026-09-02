@@ -1059,3 +1059,38 @@ para que la migración sea mecánica en vez de arqueológica:
 Mientras tanto, lo que sí se ha ganado es que **cada regla tenga una sola
 definición**: están en `shared/domain`, las usan la pantalla y el adaptador, y
 portarlas es traducir esa función, no buscarla por la aplicación.
+
+---
+
+## 15. «Sólo se agenda una fecha» (2 sep 2026)
+
+Reportado desde el uso: asignar un plan, volcarlo, y que aparezca una sola
+sesión. No había ningún fallo de cálculo —hay una prueba que vuelca once y pasa
+desde hace semanas—, y ahí estaba el problema: **el comportamiento era correcto y
+el motivo, invisible**.
+
+El volcado pide una hora por cada día que el plan usa. Un día sin hora se
+descartaba **en silencio**: sin hora no hay sesión que construir. Así que
+rellenar una sola —lo más natural cuando hay cuatro selectores idénticos y sólo
+uno tiene el foco— producía una fecha por semana, y ninguna pantalla decía dónde
+estaban las demás.
+
+Con un plan de una semana, exactamente una fecha. Y el editor de planes **arranca
+con una semana**, así que quien no pulsa «Añadir semana» tiene un mesociclo de
+uno sin habérselo propuesto.
+
+Dos líneas lo cierran, y las dos responden a preguntas distintas:
+
+- **La forma del plan**, junto a las horas: «El plan tiene 4 semanas y entrena 4
+  días distintos». Es de donde sale el total, y sin ella el número del botón
+  parece salir de la nada.
+- **Lo que queda fuera**, antes de la previa: «Sin hora: miércoles, jueves y
+  viernes. Esos días no se agendan». El recuento del botón dice CUÁNTAS salen;
+  esto dice por qué no salen más, que es la pregunta que se hace de verdad.
+
+El aviso va **antes** de la lista y no dentro: se refiere a lo que NO está en
+ella, y ponerlo debajo obligaría a leerla entera para descubrir que falta algo.
+
+La lección se repite: un descarte silencioso no es un comportamiento neutro. Es
+la misma familia que el aviso que mentía en el padrón de alumnos —§12.4— y que
+los huecos mudos del panel —§8—.

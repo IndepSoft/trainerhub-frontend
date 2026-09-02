@@ -2190,6 +2190,38 @@ test.describe('volcar un plan a la agenda', () => {
     }
   }
 
+  test('dice por que salen menos sesiones de las esperadas', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students/student-2')
+    const dialogo = await abrirVolcado(page)
+
+    /*
+     * FALLO REPORTADO: «asigno un plan y solo se agenda una fecha».
+     *
+     * Un dia sin hora se descartaba EN SILENCIO -sin hora no hay sesion que
+     * construir-, asi que rellenar una sola convertia un descuido en un
+     * misterio: salia una fecha y ninguna pantalla decia donde estaban las
+     * demas. El recuento del boton dice CUANTAS salen; esto dice por que no
+     * salen mas, que es la pregunta que se hace de verdad.
+     */
+    await expect(dialogo).toContainText('El plan tiene 4 semanas y entrena 4 días distintos.')
+
+    await elegirDelDesplegable(page, desplegables(page, 'lunes'), '08:00')
+
+    await expect(dialogo).toContainText(
+      'Sin hora: miércoles, jueves y viernes. Esos días no se agendan.'
+    )
+    await expect(dialogo.getByRole('button', { name: 'Agendar 4 sesiones' })).toBeVisible()
+
+    // Con todas puestas, el aviso desaparece y salen las once.
+    for (const dia of ['miércoles', 'jueves', 'viernes']) {
+      await elegirDelDesplegable(page, desplegables(page, dia), '08:00')
+    }
+    await expect(dialogo.getByText(/Esos días no se agendan/)).toHaveCount(0)
+    await expect(dialogo.getByRole('button', { name: 'Agendar 11 sesiones' })).toBeVisible()
+  })
+
   test('pide una hora por cada dia que el plan usa, y no por los siete', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
