@@ -15,6 +15,8 @@ import { RoutineDraftSummary } from '../components/RoutineDraftSummary'
 import { RoutineIdentityFields } from '../components/RoutineIdentityFields'
 import type { BlockDraft } from '../types/routineDraft.types'
 import type { Routine } from '@/shared/domain/entities/routine'
+import { activeLocale } from '@/shared/i18n/activeLocale'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /**
  * Crear y editar una rutina. Sólo composición.
@@ -36,6 +38,7 @@ import type { Routine } from '@/shared/domain/entities/routine'
  * dura hora y media.
  */
 export default function RoutineForm() {
+  const { t } = useTranslation()
   const { routineId } = useParams<{ routineId: string }>()
   const { routine, loading } = useRoutine(routineId)
 
@@ -50,13 +53,13 @@ export default function RoutineForm() {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-bone px-6 text-center">
         <p className="font-display text-2xl font-extrabold uppercase text-ink">
-          Rutina no encontrada
+          {t('routine.notFound')}
         </p>
         <p className="text-sm text-ink/50">
-          El enlace puede haber caducado o la rutina ya no existe.
+          {t('routine.notFoundHint')}
         </p>
         <Button asChild variant="outline">
-          <Link to="/trainings">Volver a rutinas</Link>
+          <Link to="/trainings">{t('routine.back')}</Link>
         </Button>
       </div>
     )
@@ -79,6 +82,7 @@ interface RoutineFormFieldsProps {
 }
 
 function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { exercises } = useTrainingCatalog()
   const { createRoutine, updateRoutine } = useRoutineActions()
@@ -111,7 +115,7 @@ function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
   // Alfabético y con la intercalación del castellano, que es la que coloca la
   // eñe donde un hispanohablante la busca.
   const catalog = useMemo(
-    () => [...exercises].sort((left, right) => left.name.localeCompare(right.name, 'es')),
+    () => [...exercises].sort((left, right) => left.name.localeCompare(right.name, activeLocale())),
     [exercises]
   )
 
@@ -148,13 +152,15 @@ function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
           className="-ms-2 mb-3 inline-flex h-11 items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/45 transition-colors hover:text-cobalt"
         >
           <ArrowLeft className="size-4" />
-          {isEditing ? 'Volver a la ficha' : 'Rutinas'}
+          {isEditing ? t('routine.backToRecord') : t('routine.plural')}
         </Link>
 
         <PageHeader.Content>
           <div className="min-w-0">
-            <PageHeader.Eyebrow>Lo que asignas</PageHeader.Eyebrow>
-            <PageHeader.Title>{isEditing ? 'Editar rutina' : 'Nueva rutina'}</PageHeader.Title>
+            <PageHeader.Eyebrow>{t('trainings.eyebrow')}</PageHeader.Eyebrow>
+            <PageHeader.Title>
+              {isEditing ? t('routine.editTitle') : t('routine.newTitle')}
+            </PageHeader.Title>
           </div>
 
           <PageHeader.Actions>
@@ -163,9 +169,11 @@ function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
               variant="outline"
               onClick={() => navigate(isEditing ? `/trainings/${routineId}` : '/trainings')}
             >
-              Cancelar
+              {t('common.cancel')}
             </Button>
-            <Button type="submit">{isEditing ? 'Guardar cambios' : 'Guardar rutina'}</Button>
+            <Button type="submit">
+              {isEditing ? t('exercise.saveChanges') : t('routine.save')}
+            </Button>
           </PageHeader.Actions>
         </PageHeader.Content>
       </PageHeader>
@@ -201,7 +209,7 @@ function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
 
           <div>
             <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-              Bloques
+              {t('routine.blocks')}
             </h2>
 
             <ul className="space-y-4">
@@ -235,7 +243,7 @@ function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
             <div className="mt-1 flex flex-col gap-2 sm:flex-row">
               <Button type="button" variant="outline" className="flex-1 gap-2" onClick={addBlock}>
                 <Plus className="size-4" />
-                Añadir bloque
+                {t('routine.addBlock')}
               </Button>
               <Button
                 type="button"
@@ -244,7 +252,7 @@ function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
                 onClick={() => setIsPickerOpen(true)}
               >
                 <Library className="size-4" />
-                Insertar guardado
+                {t('routine.insertSaved')}
               </Button>
             </div>
           </div>

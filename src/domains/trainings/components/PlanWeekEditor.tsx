@@ -12,6 +12,7 @@ import { cn } from '@/shared/lib/utils'
 import { weekdayName } from '../libs/planDraft'
 import type { PlanWeekDraft } from '../types/planDraft.types'
 import type { Routine } from '../types/training.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /** Registro de etiqueta del formulario, igual que en el resto del dominio. */
 const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50'
@@ -54,6 +55,7 @@ export function PlanWeekEditor({
   onToggleDeload,
   onChangeDay,
 }: PlanWeekEditorProps) {
+  const { t } = useTranslation()
   const fieldId = useId()
 
   return (
@@ -63,7 +65,7 @@ export function PlanWeekEditor({
           {String(position).padStart(2, '0')}
         </span>
         <h3 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-          Semana
+          {t('plan.week')}
         </h3>
 
         <div className="ms-auto flex shrink-0 items-center gap-1">
@@ -83,14 +85,14 @@ export function PlanWeekEditor({
                 : 'border-cobalt-tint-3 text-ink/45 hover:border-cobalt/40 hover:text-ink'
             )}
           >
-            Descarga
+            {t('plan.deload')}
           </button>
 
           {canRemove && (
             <button
               type="button"
               onClick={onRemove}
-              aria-label={`Eliminar la semana ${position}`}
+              aria-label={t('plan.deleteWeekLabel', { position })}
               className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-danger-surface hover:text-danger"
             >
               <Trash2 className="size-4" />
@@ -145,7 +147,7 @@ export function PlanWeekEditor({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={REST_VALUE}>Descanso</SelectItem>
+                  <SelectItem value={REST_VALUE}>{t('plan.rest')}</SelectItem>
                   {routines.map((routine) => (
                     <SelectItem key={routine.id} value={routine.id}>
                       {routine.title}

@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
+import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 
 /**
  * Entidades del onboarding.
@@ -10,9 +11,15 @@ import type { LucideIcon } from 'lucide-react'
 export interface OnboardingStep {
   id: string
   /** Palabra corta sobre el titular. Va en Ember. */
-  eyebrow: string
-  /** Titular. Se parte en lineas a proposito para controlar el corte. */
-  headline: string[]
-  body: string
+  eyebrowKey: TranslationKey
+  /**
+   * Titular, una clave por linea.
+   *
+   * Se parte a proposito: donde corta una frase es una decision de composicion,
+   * y una sola cadena partida por espacios se rompe en cuanto un idioma use
+   * otro numero de palabras.
+   */
+  headlineKeys: TranslationKey[]
+  bodyKey: TranslationKey
   icon: LucideIcon
 }

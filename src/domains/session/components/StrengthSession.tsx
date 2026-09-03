@@ -1,6 +1,7 @@
 import { Check } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
-import { BLOCK_METHOD_LABELS, formatPrescription, formatRest } from '@/shared/lib/routineFormat'
+import { formatPrescription, formatRest } from '@/shared/lib/routineFormat'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { useSessionExercises } from '../hooks/useSessionExercises'
 import { SessionDuration } from './SessionDuration'
 import { SlideToAction } from './SlideToAction'
@@ -8,6 +9,7 @@ import { useStrengthSession } from '../hooks/useStrengthSession'
 import type { Routine } from '@/shared/domain/entities/routine'
 import { toLocalDateKey } from '@/shared/lib/dateKey'
 import type { Session, SessionResult } from '@/shared/domain/entities/session'
+import { BLOCK_METHOD_LABEL_KEY } from '@/shared/i18n/domainLabels'
 
 interface StrengthSessionProps {
   session: Session
@@ -36,6 +38,7 @@ export function StrengthSession({
   studentName,
   onFinish,
 }: StrengthSessionProps) {
+  const { t } = useTranslation()
   const exercisesById = useSessionExercises()
   const {
     elapsedSeconds,
@@ -85,7 +88,7 @@ export function StrengthSession({
       <div className="shrink-0 border-y border-cobalt-tint-3 px-5 py-3">
         <div className="flex items-baseline justify-between gap-3">
           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
-            Series
+            {t('liveSession.sets')}
           </span>
           <span className="metric-figures font-display text-xl font-bold text-ink">
             {doneSets}
@@ -97,7 +100,7 @@ export function StrengthSession({
           aria-valuemin={0}
           aria-valuemax={totalSets}
           aria-valuenow={doneSets}
-          aria-label="Series completadas"
+          aria-label={t('liveSession.setsDone')}
           className="mt-2 h-1.5 overflow-hidden rounded-full bg-cobalt-tint-2"
         >
           <div
@@ -110,7 +113,7 @@ export function StrengthSession({
       <div className="flex-1 overflow-auto">
         {routine === null ? (
           <p className="px-5 py-12 text-center text-sm text-ink/40">
-            Esta sesión no tiene ninguna rutina asignada. El cronómetro corre igual.
+            {t('liveSession.noRoutine')}
           </p>
         ) : (
           <ol className="divide-y divide-cobalt-tint-3">
@@ -128,10 +131,10 @@ export function StrengthSession({
                         : 'border-ember/40 text-ember-deep'
                     )}
                   >
-                    {BLOCK_METHOD_LABELS[block.method]}
+                    {t(BLOCK_METHOD_LABEL_KEY[block.method])}
                   </span>
                   <span className="metric-figures ms-auto shrink-0 text-xs text-ink/40">
-                    descanso {formatRest(block.restAfterSeconds)}
+                    {t('liveSession.blockRest', { rest: formatRest(block.restAfterSeconds) })}
                   </span>
                 </div>
 
@@ -143,7 +146,7 @@ export function StrengthSession({
                       <li key={prescribed.id}>
                         <div className="flex items-baseline justify-between gap-4 text-sm">
                           <span className="min-w-0 flex-1 truncate text-ink">
-                            {exercisesById.get(prescribed.exerciseId)?.name ?? 'Ejercicio'}
+                            {exercisesById.get(prescribed.exerciseId)?.name ?? t('liveSession.exercise')}
                           </span>
                           <span className="metric-figures shrink-0 font-semibold text-ink/55">
                             {formatPrescription(prescribed)}
@@ -165,7 +168,10 @@ export function StrengthSession({
                                 key={setIndex}
                                 type="button"
                                 aria-pressed={isDone}
-                                aria-label={`Serie ${setIndex + 1} de ${prescribed.sets}`}
+                                aria-label={t('liveSession.setNumberOf', {
+                                  number: setIndex + 1,
+                                  total: prescribed.sets,
+                                })}
                                 onClick={() =>
                                   isLastDone
                                     ? unmarkSet(prescribed.id)
@@ -203,15 +209,15 @@ export function StrengthSession({
         {!isRunning && (
           <SlideToAction
             variant="finish"
-            label="Desliza para finalizar"
-            accessibleLabel="Finalizar la sesión"
+            label={t('liveSession.slideToFinish')}
+            accessibleLabel={t('liveSession.finish')}
             onConfirm={handleFinish}
           />
         )}
 
         <SlideToAction
-          label={isRunning ? 'Desliza para pausar' : 'Desliza para reanudar'}
-          accessibleLabel={isRunning ? 'Pausar la sesión' : 'Reanudar la sesión'}
+          label={isRunning ? t('liveSession.slideToPause') : t('liveSession.slideToResume')}
+          accessibleLabel={isRunning ? t('liveSession.pause') : t('liveSession.resume')}
           onConfirm={isRunning ? pause : resume}
         />
       </div>

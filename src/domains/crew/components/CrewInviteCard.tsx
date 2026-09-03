@@ -4,6 +4,7 @@ import { Copy, RefreshCw } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { buildJoinUrl, formatJoinCode } from '../libs/joinLink'
 import type { Crew } from '@/shared/domain/entities/crew'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface CrewInviteCardProps {
   crew: Crew
@@ -25,6 +26,7 @@ interface CrewInviteCardProps {
  * alta dependa de que un hardware ajeno funcione.
  */
 export function CrewInviteCard({ crew, onRotate, rotating }: CrewInviteCardProps) {
+  const { t } = useTranslation()
   const [copied, setCopied] = useState(false)
   const joinUrl = buildJoinUrl(crew.joinToken)
 
@@ -45,7 +47,7 @@ export function CrewInviteCard({ crew, onRotate, rotating }: CrewInviteCardProps
         id="invitacion-titulo"
         className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60"
       >
-        Invitar al equipo
+        {t('crew.invite')}
       </h2>
 
       {/* Blanco de verdad, no `bg-surface`: es la ÚNICA superficie de la
@@ -66,7 +68,7 @@ export function CrewInviteCard({ crew, onRotate, rotating }: CrewInviteCardProps
       </div>
 
       <div className="text-center">
-        <p className="text-xs text-ink/50">O que escriba este código:</p>
+        <p className="text-xs text-ink/50">{t('crew.orThisCode')}</p>
         <p className="metric-figures mt-1 font-display text-3xl font-extrabold tracking-[0.1em] text-ink">
           {formatJoinCode(crew.joinToken)}
         </p>
@@ -75,7 +77,7 @@ export function CrewInviteCard({ crew, onRotate, rotating }: CrewInviteCardProps
       <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
         <Button variant="outline" className="gap-2" onClick={() => void handleCopy()}>
           <Copy className="size-4" />
-          {copied ? 'Enlace copiado' : 'Copiar enlace'}
+          {copied ? t('crew.linkCopied') : t('crew.copyLink')}
         </Button>
 
         <Button
@@ -85,14 +87,13 @@ export function CrewInviteCard({ crew, onRotate, rotating }: CrewInviteCardProps
           onClick={() => void onRotate()}
         >
           <RefreshCw className="size-4" />
-          {rotating ? 'Generando…' : 'Generar uno nuevo'}
+          {rotating ? t('crew.rotating') : t('crew.rotate')}
         </Button>
       </div>
 
       <p className="text-center text-xs text-ink/45">
         {/* El porqué del botón de rotar, dicho donde se decide usarlo. */}
-        Genera uno nuevo si el anterior se ha compartido de más: el viejo deja de
-        funcionar al instante.
+        {t('crew.rotateHint')}
       </p>
     </section>
   )

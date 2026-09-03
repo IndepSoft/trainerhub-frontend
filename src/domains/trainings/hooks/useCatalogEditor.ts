@@ -11,6 +11,7 @@ import {
 import type { Exercise } from '../types/training.types'
 import type { Equipment } from '../types/catalog.types'
 import type { DeletionResult } from '@/shared/domain/deletion'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface UseCatalogEditorResult {
   createExercise: (data: Omit<Exercise, 'id'>) => void
@@ -35,6 +36,7 @@ interface UseCatalogEditorResult {
  * copiar.
  */
 export function useCatalogEditor(): UseCatalogEditorResult {
+  const { plural } = useTranslation()
   const catalog = useCatalogStore()
   const { routines } = useRoutines()
 
@@ -58,7 +60,7 @@ export function useCatalogEditor(): UseCatalogEditorResult {
 
       if (enUso.length > 0) {
         // El verbo concuerda tambien, no solo el articulo.
-        const sujeto = enUso.length === 1 ? 'Lo usa la rutina' : 'Lo usan las rutinas'
+        const sujeto = plural('deletion.usedByRoutine', 'deletion.usedByRoutines', enUso.length)
         return {
           deleted: false,
           reason: `${sujeto} ${describeNames(enUso.map((routine) => routine.title))}.`,
@@ -68,7 +70,7 @@ export function useCatalogEditor(): UseCatalogEditorResult {
       void container.exercises.remove(exerciseId)
       return { deleted: true }
     },
-    [routines]
+    [routines, plural]
   )
 
   const deleteEquipment = useCallback(
@@ -76,7 +78,7 @@ export function useCatalogEditor(): UseCatalogEditorResult {
       const enUso = findExercisesUsingEquipment(exercises, equipmentId)
 
       if (enUso.length > 0) {
-        const sujeto = enUso.length === 1 ? 'Lo usa el ejercicio' : 'Lo usan los ejercicios'
+        const sujeto = plural('deletion.usedByExercise', 'deletion.usedByExercises', enUso.length)
         return {
           deleted: false,
           reason: `${sujeto} ${describeNames(enUso.map((exercise) => exercise.name))}.`,
@@ -86,7 +88,7 @@ export function useCatalogEditor(): UseCatalogEditorResult {
       removeEquipment(equipmentId)
       return { deleted: true }
     },
-    [exercises, removeEquipment]
+    [exercises, removeEquipment, plural]
   )
 
   return {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { container } from '@/app/container'
 import type { Routine } from '@/shared/domain/entities/routine'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface UseSchedulableRoutinesResult {
   routines: Routine[]
@@ -20,6 +21,7 @@ interface UseSchedulableRoutinesResult {
  * lo correcto.
  */
 export function useSchedulableRoutines(): UseSchedulableRoutinesResult {
+  const { t } = useTranslation()
   const [routines, setRoutines] = useState<Routine[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -34,7 +36,7 @@ export function useSchedulableRoutines(): UseSchedulableRoutinesResult {
           if (active) setRoutines(result)
         })
         .catch((cause: unknown) => {
-          if (active) setError(cause instanceof Error ? cause.message : 'Error al cargar rutinas')
+          if (active) setError(cause instanceof Error ? cause.message : t('calendar.routinesError'))
         })
         .finally(() => {
           if (active) setLoading(false)
@@ -48,7 +50,7 @@ export function useSchedulableRoutines(): UseSchedulableRoutinesResult {
       active = false
       unsubscribe()
     }
-  }, [])
+  }, [t])
 
   return { routines, loading, error }
 }

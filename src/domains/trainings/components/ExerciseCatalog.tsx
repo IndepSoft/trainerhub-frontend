@@ -9,6 +9,9 @@ import { useRoutines } from '../hooks/useRoutines'
 import { findRoutinesUsingExercise } from '../libs/usage'
 import { ExerciseFormDialog } from './ExerciseFormDialog'
 import type { Exercise } from '../types/training.types'
+import { activeLocale } from '@/shared/i18n/activeLocale'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { catalogLabel } from '@/shared/i18n/domainLabels'
 
 /**
  * El catálogo de ejercicios: listado, alta, edición y baja.
@@ -18,6 +21,12 @@ import type { Exercise } from '../types/training.types'
  * forma de prescribir la máquina que sí hay en el gimnasio.
  */
 export function ExerciseCatalog() {
+  const { t } = useTranslation()
+
+  /* La entrada puede no existir -un ejercicio que apunta a material borrado-, y
+     entonces se omite de la linea en vez de dejar un hueco. */
+  const catalogEntryLabel = (entry: { id: string; name: string } | undefined) =>
+    entry === undefined ? undefined : catalogLabel(entry.id, entry.name, t)
   const { exercises, muscleGroupsById, equipmentById, movementPatternsById } =
     useTrainingCatalog()
   const { routines } = useRoutines()
@@ -48,7 +57,7 @@ export function ExerciseCatalog() {
         ? exercises
         : exercises.filter((exercise) => exercise.name.toLowerCase().includes(needle))
 
-    return [...matching].sort((left, right) => left.name.localeCompare(right.name, 'es'))
+    return [...matching].sort((left, right) => left.name.localeCompare(right.name, activeLocale()))
   }, [exercises, search])
 
   const openForNew = () => {
@@ -74,7 +83,11 @@ export function ExerciseCatalog() {
 
   const handleDelete = (exercise: Exercise) => {
     const result = deleteExercise(exercise.id)
-    setBlockedReason(result.deleted ? null : `No se puede borrar «${exercise.name}». ${result.reason}`)
+    setBlockedReason(
+      result.deleted
+        ? null
+        : t('exercise.cannotDelete', { name: exercise.name, reason: result.reason })
+    )
   }
 
   return (
@@ -82,7 +95,7 @@ export function ExerciseCatalog() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0 flex-1 sm:max-w-xs">
           <Label htmlFor="busqueda-ejercicios" className="sr-only">
-            Buscar ejercicio
+            {t('exercise.search')}
           </Label>
           <div className="relative">
             <Search
@@ -93,7 +106,7 @@ export function ExerciseCatalog() {
               id="busqueda-ejercicios"
               type="search"
               className="ps-9"
-              placeholder="Buscar ejercicio"
+              placeholder={t('exercise.search')}
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
@@ -102,7 +115,7 @@ export function ExerciseCatalog() {
 
         <Button type="button" className="gap-2" onClick={openForNew}>
           <Plus className="size-4" />
-          Nuevo ejercicio
+          {t('exercise.new')}
         </Button>
       </div>
 
@@ -119,8 +132,8 @@ export function ExerciseCatalog() {
       {visible.length === 0 ? (
         <p className="py-10 text-center text-sm text-ink/40">
           {search.trim() === ''
-            ? 'Tu catálogo está vacío.'
-            : `Ningún ejercicio contiene «${search.trim()}».`}
+            ? t('exercise.emptyCatalog')
+            : t('exercise.noMatch', { search: search.trim() })}
         </p>
       ) : (
         <ul className="mt-4 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3">
@@ -133,9 +146,9 @@ export function ExerciseCatalog() {
                   <p className="font-semibold text-ink">{exercise.name}</p>
                   <p className="mt-0.5 text-xs text-ink/45">
                     {[
-                      muscleGroupsById.get(exercise.primaryMuscleGroupId)?.name,
-                      movementPatternsById.get(exercise.movementPatternId)?.name,
-                      equipmentById.get(exercise.equipmentId)?.name,
+                      catalogEntryLabel(muscleGroupsById.get(exercise.primaryMuscleGroupId)),
+                      catalogEntryLabel(movementPatternsById.get(exercise.movementPatternId)),
+                      catalogEntryLabel(equipmentById.get(exercise.equipmentId)),
                     ]
                       .filter((label) => label !== undefined)
                       .join(' · ')}
@@ -152,7 +165,7 @@ export function ExerciseCatalog() {
                   <button
                     type="button"
                     onClick={() => openForEdit(exercise)}
-                    aria-label={`Editar ${exercise.name}`}
+                    aria-label={t('exercise.editLabel', { name: exercise.name })}
                     className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-cobalt-tint hover:text-cobalt"
                   >
                     <Pencil className="size-4" />
@@ -160,7 +173,7 @@ export function ExerciseCatalog() {
                   <button
                     type="button"
                     onClick={() => handleDelete(exercise)}
-                    aria-label={`Eliminar ${exercise.name}`}
+                    aria-label={t('exercise.deleteLabel', { name: exercise.name })}
                     className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-danger-surface hover:text-danger"
                   >
                     <Trash2 className="size-4" />

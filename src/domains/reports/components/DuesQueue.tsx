@@ -11,6 +11,7 @@ import { duesReminderDraft } from '@/domains/students/libs/duesReminder'
 import { NoticeDialog } from '@/domains/students/components/NoticeDialog'
 import { useDuesQueue, type DuesEntry } from '../hooks/useDuesQueue'
 import type { NoticeKind } from '@/shared/domain/entities/notice'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /**
  * La cola de cobros. Solo composicion.
@@ -24,6 +25,7 @@ import type { NoticeKind } from '@/shared/domain/entities/notice'
  * lo que hace que deje de pasarla.
  */
 export function DuesQueue() {
+  const { t } = useTranslation()
   const { queue, loading } = useDuesQueue()
   const { can } = useViewerContext()
   const [reminding, setReminding] = useState<DuesEntry | null>(null)
@@ -33,7 +35,7 @@ export function DuesQueue() {
   if (loading) return null
 
   if (queue.length === 0) {
-    return <p className="py-8 text-sm text-ink/45">Todavía no hay alumnos en el equipo.</p>
+    return <p className="py-8 text-sm text-ink/45">{t('reports.noStudents')}</p>
   }
 
   return (
@@ -55,7 +57,7 @@ export function DuesQueue() {
               </p>
               {entry.paidThrough !== null && (
                 <p className="truncate text-xs text-ink/45">
-                  Pagado hasta el {formatDateKey(entry.paidThrough)}
+                  {t('reports.paidThrough', { date: formatDateKey(entry.paidThrough) })}
                 </p>
               )}
             </div>
@@ -70,7 +72,7 @@ export function DuesQueue() {
                   onClick={() => setReminding(entry)}
                 >
                   <BellRing className="size-4" />
-                  Avisar
+                  {t('reports.notify')}
                 </Button>
               )}
             </div>
@@ -84,7 +86,7 @@ export function DuesQueue() {
         draft={
           reminding === null
             ? ''
-            : duesReminderDraft(reminding.student.firstName, reminding.standing)
+            : duesReminderDraft(reminding.student.firstName, reminding.standing, t)
         }
         kind="dues"
         onOpenChange={(open) => {

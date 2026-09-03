@@ -2,11 +2,13 @@ import { IndicatorList } from '../components/IndicatorList'
 import { UpcomingSessions } from '../components/UpcomingSessions'
 import { RecentActivity } from '../components/RecentActivity'
 import { useDashboardSummary } from '../hooks/useDashboardSummary'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { usePullToRefresh } from '@/shared/hooks/usePullToRefresh'
 import { PullToRefreshIndicator } from '@/shared/components/PullToRefreshIndicator'
 import { PageHeader } from '@/shared/components/PageHeader'
 
 export default function Dashboard() {
+  const { t } = useTranslation()
   const { summary, refresh } = useDashboardSummary()
   const { pullDistance, isRefreshing, willRefresh, handlers } = usePullToRefresh({
     onRefresh: refresh,
@@ -15,8 +17,8 @@ export default function Dashboard() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
       <PageHeader>
-        <PageHeader.Eyebrow>Tu actividad</PageHeader.Eyebrow>
-        <PageHeader.Title>Dashboard</PageHeader.Title>
+        <PageHeader.Eyebrow>{t('dashboard.eyebrow')}</PageHeader.Eyebrow>
+        <PageHeader.Title>{t('dashboard.title')}</PageHeader.Title>
       </PageHeader>
 
       {/* Contenedor de scroll de la pagina. Es un div y no un <main>: el

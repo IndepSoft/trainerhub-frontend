@@ -1,5 +1,6 @@
 import { Dumbbell, Footprints, type LucideIcon } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type { SessionModality } from '@/shared/domain/entities/session'
 
 interface SessionModalityPickerProps {
@@ -20,17 +21,19 @@ interface SessionModalityPickerProps {
  * conviene verlas las dos a la vez.
  */
 export function SessionModalityPicker({ value, onChange }: SessionModalityPickerProps) {
+  const { t } = useTranslation()
+
   return (
-    <div role="group" aria-label="Tipo de entrenamiento" className="grid grid-cols-2 gap-2">
+    <div role="group" aria-label={t('session.modality.label')} className="grid grid-cols-2 gap-2">
       <ModalityOption
         icon={Dumbbell}
-        label="Fuerza"
+        label={t('session.modality.strength')}
         isSelected={value === 'strength'}
         onSelect={() => onChange('strength')}
       />
       <ModalityOption
         icon={Footprints}
-        label="Cardio"
+        label={t('session.modality.cardio')}
         isSelected={value === 'cardio'}
         onSelect={() => onChange('cardio')}
       />

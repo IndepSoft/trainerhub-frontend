@@ -11,6 +11,17 @@ export default defineConfig({
   timeout: 60_000,
   use: {
     baseURL: 'http://localhost:5178',
+    /*
+     * La suite comprueba la aplicacion EN ESPAÑOL, y sus aserciones estan
+     * escritas asi: `getByRole('button', { name: 'Iniciar sesion' })`.
+     *
+     * Sin esto, Playwright arranca en `en-US`, `LanguageProvider` detecta ingles
+     * -que es lo que debe hacer- y los ciento setenta casos fallan a la vez por
+     * un motivo que no es el que estan probando. Fijar el idioma aqui es
+     * declarar contra que version se prueba, no esconder nada: el conmutador
+     * tiene sus propias pruebas.
+     */
+    locale: 'es-ES',
   },
   webServer: {
     command: 'npm run dev -- --port 5178 --strictPort',

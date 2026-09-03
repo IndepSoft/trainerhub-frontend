@@ -1,6 +1,7 @@
 import { cn } from '@/shared/lib/utils'
-import { describeStanding } from '@/shared/domain/subscriptionRules'
+import { describeStanding } from '@/shared/i18n/duesWording'
 import type { SubscriptionStanding } from '@/shared/domain/entities/studentSubscription'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /**
  * Cada estado con su color, y sólo dos llaman la atención.
@@ -33,6 +34,7 @@ interface SubscriptionBadgeProps {
  * enseña al lado, para quien la necesite.
  */
 export function SubscriptionBadge({ standing, className }: SubscriptionBadgeProps) {
+  const { t } = useTranslation()
   return (
     <span
       className={cn(
@@ -41,7 +43,7 @@ export function SubscriptionBadge({ standing, className }: SubscriptionBadgeProp
         className
       )}
     >
-      {describeStanding(standing)}
+      {describeStanding(standing, t)}
     </span>
   )
 }

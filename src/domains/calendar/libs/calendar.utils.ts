@@ -5,6 +5,8 @@
  * había tres copias suyas repartidas por el proyecto.
  */
 
+import { activeLocale } from '@/shared/i18n/activeLocale'
+
 /** Los siete días de la semana que contiene `date`, empezando en lunes. */
 export function getWeekDates(date: Date): Date[] {
   const startOfWeek = new Date(date)
@@ -32,11 +34,11 @@ export function isToday(date: Date): boolean {
 }
 
 export function formatWeekRange(weekDates: Date[]): string {
-  const first = weekDates[0].toLocaleDateString('es-ES', {
+  const first = weekDates[0].toLocaleDateString(activeLocale(), {
     day: 'numeric',
     month: 'long',
   })
-  const last = weekDates[6].toLocaleDateString('es-ES', {
+  const last = weekDates[6].toLocaleDateString(activeLocale(), {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -45,7 +47,7 @@ export function formatWeekRange(weekDates: Date[]): string {
 }
 
 export function formatFullDate(date: Date): string {
-  return date.toLocaleDateString('es-ES', {
+  return date.toLocaleDateString(activeLocale(), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -89,7 +91,7 @@ export function parseLocalDateKey(key: string): Date {
  */
 export function formatCompactDate(date: Date): string {
   return date
-    .toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })
+    .toLocaleDateString(activeLocale(), { weekday: 'short', day: 'numeric', month: 'short' })
     .replace(/\./g, '')
 }
 
@@ -97,6 +99,6 @@ export function formatCompactDate(date: Date): string {
 export function formatCompactWeekRange(weekDates: Date[]): string {
   const first = weekDates[0].getDate()
   const last = weekDates[6]
-  const month = last.toLocaleDateString('es-ES', { month: 'short' }).replace('.', '')
+  const month = last.toLocaleDateString(activeLocale(), { month: 'short' }).replace('.', '')
   return `${first} - ${last.getDate()} ${month}`
 }

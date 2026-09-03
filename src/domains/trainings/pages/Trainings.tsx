@@ -11,6 +11,8 @@ import { ComingSoon } from '@/shared/components/ComingSoon'
 import { useRoutines } from '../hooks/useRoutines'
 import { usePlans } from '../hooks/usePlans'
 import type { Routine } from '../types/training.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
+import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 
 /**
  * Orden de las pestañas, junto a los `TabsTrigger` para que añadir una no
@@ -39,7 +41,7 @@ function isTabValue(value: string | null): value is TabValue {
 }
 
 interface PrimaryAction {
-  label: string
+  labelKey: TranslationKey
   to: string
 }
 
@@ -53,10 +55,10 @@ interface PrimaryAction {
  * incoherencia de tener a mano la acción principal de la sección.
  */
 const PRIMARY_ACTION: Record<TabValue, PrimaryAction> = {
-  rutinas: { label: 'Nueva Rutina', to: '/trainings/new' },
-  planes: { label: 'Nuevo Plan', to: '/trainings/plans/new' },
-  desafios: { label: 'Nueva Rutina', to: '/trainings/new' },
-  rachas: { label: 'Nueva Rutina', to: '/trainings/new' },
+  rutinas: { labelKey: 'trainings.newRoutine', to: '/trainings/new' },
+  planes: { labelKey: 'trainings.newPlan', to: '/trainings/plans/new' },
+  desafios: { labelKey: 'trainings.newRoutine', to: '/trainings/new' },
+  rachas: { labelKey: 'trainings.newRoutine', to: '/trainings/new' },
 }
 
 /**
@@ -68,6 +70,7 @@ const PRIMARY_ACTION: Record<TabValue, PrimaryAction> = {
  * consigue.
  */
 export default function Trainings() {
+  const { t } = useTranslation()
   const { routines } = useRoutines()
   const { plans } = usePlans()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -97,8 +100,8 @@ export default function Trainings() {
       <PageHeader>
         <PageHeader.Content>
           <div>
-            <PageHeader.Eyebrow>Lo que asignas</PageHeader.Eyebrow>
-            <PageHeader.Title>Entrenamientos</PageHeader.Title>
+            <PageHeader.Eyebrow>{t('trainings.eyebrow')}</PageHeader.Eyebrow>
+            <PageHeader.Title>{t('trainings.title')}</PageHeader.Title>
           </div>
           <PageHeader.Actions>
             {/* El catalogo es secundario y va en `outline`: se entra a el de vez
@@ -107,13 +110,13 @@ export default function Trainings() {
             <Button asChild variant="outline" className="gap-2">
               <Link to="/trainings/catalog">
                 <Library className="h-4 w-4" />
-                Catálogo
+                {t('trainings.catalog')}
               </Link>
             </Button>
             <Button asChild className="gap-2">
               <Link to={PRIMARY_ACTION[activeTab].to}>
                 <Plus className="h-4 w-4" />
-                {PRIMARY_ACTION[activeTab].label}
+                {t(PRIMARY_ACTION[activeTab].labelKey)}
               </Link>
             </Button>
           </PageHeader.Actions>
@@ -132,10 +135,14 @@ export default function Trainings() {
             <TabsList className="w-full md:grid md:grid-cols-4">
               {/* Los contadores salen del dato: antes estaban escritos a mano y
                   mentian. */}
-              <TabsTrigger value="rutinas">Rutinas ({routines.length})</TabsTrigger>
-              <TabsTrigger value="planes">Planes ({plans.length})</TabsTrigger>
-              <TabsTrigger value="desafios">Desafíos</TabsTrigger>
-              <TabsTrigger value="rachas">Rachas</TabsTrigger>
+              <TabsTrigger value="rutinas">
+                {t('trainings.tab.routines', { count: routines.length })}
+              </TabsTrigger>
+              <TabsTrigger value="planes">
+                {t('trainings.tab.plans', { count: plans.length })}
+              </TabsTrigger>
+              <TabsTrigger value="desafios">{t('trainings.challenges')}</TabsTrigger>
+              <TabsTrigger value="rachas">{t('trainings.streaks')}</TabsTrigger>
             </TabsList>
           </div>
 
@@ -143,7 +150,7 @@ export default function Trainings() {
               pero no habia `TabsContent`, asi que la lista era SIEMPRE la
               misma. */}
           <TabsContent value="rutinas" className="mt-4">
-            <RoutineList routines={routines} emptyLabel="Aún no has creado ninguna rutina." />
+            <RoutineList routines={routines} emptyLabel={t('trainings.noRoutines')} />
           </TabsContent>
 
           {/*
@@ -155,7 +162,7 @@ export default function Trainings() {
           <TabsContent value="planes" className="mt-4">
             {plans.length === 0 ? (
               <p className="px-4 py-10 text-center text-sm text-ink/40">
-                Aún no has creado ningún plan.
+                {t('trainings.noPlans')}
               </p>
             ) : (
               <div className="grid grid-cols-1 gap-4 px-4 pb-4 lg:grid-cols-2 xl:grid-cols-3">
@@ -175,16 +182,16 @@ export default function Trainings() {
           <TabsContent value="desafios" className="mt-4">
             <ComingSoon
               icon={Target}
-              title="Desafíos"
-              description="Podrás crear retos personalizados y asignarlos a tus estudiantes desde su ficha."
+              title={t('trainings.challenges')}
+              description={t('trainings.challengesHint')}
             />
           </TabsContent>
 
           <TabsContent value="rachas" className="mt-4">
             <ComingSoon
               icon={Flame}
-              title="Rachas"
-              description="Podrás definir hábitos y hacer seguimiento de la constancia de cada estudiante."
+              title={t('trainings.streaks')}
+              description={t('trainings.streaksHint')}
             />
           </TabsContent>
         </Tabs>

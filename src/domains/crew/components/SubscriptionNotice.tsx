@@ -1,5 +1,6 @@
 import { Lock } from 'lucide-react'
 import type { SubscriptionStatus } from '@/shared/domain/entities/crew'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface SubscriptionNoticeProps {
   status: SubscriptionStatus
@@ -17,6 +18,7 @@ interface SubscriptionNoticeProps {
  * texto haría que quien pagó y se quedó fuera pensara que nunca llegó a activar.
  */
 export function SubscriptionNotice({ status }: SubscriptionNoticeProps) {
+  const { t } = useTranslation()
   /*
    * Con la suscripcion activa esto no se pinta. Quien lo monta ya lo comprueba
    * con `canEnrollMembers`, asi que este caso no ocurre; se cubre igualmente
@@ -31,17 +33,15 @@ export function SubscriptionNotice({ status }: SubscriptionNoticeProps) {
     <section className="rounded-block border border-cobalt-tint-3 bg-surface px-5 py-6">
       <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-ember-deep">
         <Lock aria-hidden="true" className="size-3.5" />
-        {isPending ? 'Suscripción pendiente' : 'Suscripción suspendida'}
+        {isPending ? t('crew.subscriptionPending') : t('crew.subscriptionSuspended')}
       </p>
 
       <h2 className="mt-2 font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
-        Todavía no puedes invitar
+        {t('crew.cannotInviteYet')}
       </h2>
 
       <p className="mt-2 text-sm text-ink/60">
-        {isPending
-          ? 'Tu equipo está creado y puedes montar tu catálogo, tus rutinas y tus planes. Para incorporar alumnos hace falta activar la suscripción.'
-          : 'La suscripción de este equipo está suspendida. Tus alumnos siguen aquí y puedes seguir trabajando, pero no se puede incorporar a nadie más.'}
+        {isPending ? t('crew.pendingHint') : t('crew.suspendedHint')}
       </p>
     </section>
   )

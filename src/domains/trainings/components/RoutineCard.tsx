@@ -12,7 +12,6 @@ import { useLongPress } from '@/shared/hooks/useLongPress'
 import { cn } from '@/shared/lib/utils'
 import { LEVEL_BADGE } from '../libs/levelBadge'
 import {
-  BLOCK_METHOD_LABELS,
   countExercises,
   estimateRoutineMinutes,
   flattenPrescribedExercises,
@@ -22,6 +21,11 @@ import { useTrainingCatalog } from '../hooks/useTrainingCatalog'
 import { useTrainingDeletion } from '../hooks/useTrainingDeletion'
 import { ConfirmDeleteDialog } from '@/shared/components/ConfirmDeleteDialog'
 import type { Routine } from '../types/training.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
+import {
+  BLOCK_METHOD_LABEL_KEY,
+  STUDENT_LEVEL_LABEL_KEY,
+} from '@/shared/i18n/domainLabels'
 
 interface RoutineCardProps {
   routine: Routine
@@ -41,6 +45,7 @@ const VISIBLE_EXERCISES = 3
  * El enlace estirado envuelve el título y el menú queda por encima con `z-10`.
  */
 export function RoutineCard({ routine }: RoutineCardProps) {
+  const { t, plural } = useTranslation()
   const navigate = useNavigate()
 
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -67,7 +72,7 @@ export function RoutineCard({ routine }: RoutineCardProps) {
     ...new Set(
       routine.blocks
         .filter((block) => block.method !== 'simple')
-        .map((block) => BLOCK_METHOD_LABELS[block.method])
+        .map((block) => t(BLOCK_METHOD_LABEL_KEY[block.method]))
     ),
   ]
 
@@ -91,7 +96,7 @@ export function RoutineCard({ routine }: RoutineCardProps) {
         */}
         <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-ink/45">
           <Dumbbell className="size-3.5" />
-          Rutina
+          {t('routine.title')}
         </span>
 
         {/* `relative z-10` para quedar por encima del enlace estirado.
@@ -109,21 +114,21 @@ export function RoutineCard({ routine }: RoutineCardProps) {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onSelect={() => navigate(`/trainings/${routine.id}`)}>
               <Dumbbell className="me-2 size-4" />
-              Ver rutina
+              {t('routine.view')}
             </DropdownMenuItem>
             <DropdownMenuItem
               onSelect={() => navigate(`/calendar?routine=${routine.id}`)}
             >
               <Copy className="me-2 size-4" />
-              Usar en una sesión
+              {t('routine.useInSession')}
             </DropdownMenuItem>
             <DropdownMenuItem>
               <Play className="me-2 size-4" />
-              Vista previa
+              {t('routine.preview')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => navigate(`/trainings/${routine.id}/edit`)}>
-              Editar
+              {t('common.edit')}
             </DropdownMenuItem>
             {/*
               `preventDefault` para que el menu no se cierre antes de abrir el
@@ -139,7 +144,7 @@ export function RoutineCard({ routine }: RoutineCardProps) {
                 setIsDeleteOpen(true)
               }}
             >
-              Eliminar
+              {t('common.delete')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -157,7 +162,7 @@ export function RoutineCard({ routine }: RoutineCardProps) {
       <dl className="mt-5 grid grid-cols-2 divide-x divide-cobalt-tint-3 border-y border-cobalt-tint-3">
         <div className="px-5 py-3">
           <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">
-            Ejercicios
+            {t('routine.exercises')}
           </dt>
           <dd className="metric-figures font-display text-xl font-bold text-ink">
             {countExercises(routine)}
@@ -165,11 +170,11 @@ export function RoutineCard({ routine }: RoutineCardProps) {
         </div>
         <div className="px-5 py-3">
           <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">
-            Duración
+            {t('routine.duration')}
           </dt>
           <dd className="metric-figures font-display text-xl font-bold text-ink">
             {estimateRoutineMinutes(routine)}
-            <span className="ml-1 text-xs font-semibold text-ink/40">min</span>
+            <span className="ml-1 text-xs font-semibold text-ink/40">{t('routine.minutes')}</span>
           </dd>
         </div>
       </dl>
@@ -180,7 +185,7 @@ export function RoutineCard({ routine }: RoutineCardProps) {
         {visible.map((item) => (
           <li key={item.id} className="flex items-baseline justify-between gap-4 text-sm">
             <span className="min-w-0 truncate text-ink/70">
-              {exercisesById.get(item.exerciseId)?.name ?? 'Ejercicio'}
+              {exercisesById.get(item.exerciseId)?.name ?? t('exercise.fallback')}
             </span>
             <span className="metric-figures shrink-0 text-ink/40">
               {formatPrescription(item)}
@@ -190,7 +195,7 @@ export function RoutineCard({ routine }: RoutineCardProps) {
 
         {remaining > 0 && (
           <li className="metric-figures text-xs text-ink/35">
-            +{remaining} {remaining === 1 ? 'ejercicio más' : 'ejercicios más'}
+            {plural('routine.moreOne', 'routine.moreOther', remaining, { count: remaining })}
           </li>
         )}
       </ul>
@@ -202,7 +207,7 @@ export function RoutineCard({ routine }: RoutineCardProps) {
             LEVEL_BADGE[routine.level]
           )}
         >
-          {routine.level}
+          {t(STUDENT_LEVEL_LABEL_KEY[routine.level])}
         </span>
 
         {methods.map((method) => (

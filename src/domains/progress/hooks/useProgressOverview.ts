@@ -3,6 +3,7 @@ import { Flame, Target, Trophy } from 'lucide-react'
 import { unlockedAchievements } from '../libs/achievementEvaluation'
 import type { Achievement } from '../types/achievement.types'
 import type { ProgressOverview } from '../types/progress.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface UseProgressOverviewResult {
   overview: ProgressOverview
@@ -27,6 +28,7 @@ export function useProgressOverview(
   achievements: Achievement[],
   completedCount: number
 ): UseProgressOverviewResult {
+  const { t } = useTranslation()
   const overview = useMemo<ProgressOverview>(() => {
     const unlocked = unlockedAchievements(achievements).length
 
@@ -35,14 +37,14 @@ export function useProgressOverview(
         {
           id: 'achievements',
           icon: Trophy,
-          label: 'Logros conseguidos',
+          label: t('progress.stat.achievements'),
           value: `${unlocked}/${achievements.length}`,
         },
-        { id: 'sessions', icon: Flame, label: 'Sesiones completadas', value: completedCount },
+        { id: 'sessions', icon: Flame, label: t('progress.stat.sessions'), value: completedCount },
         {
           id: 'experience',
           icon: Target,
-          label: 'Experiencia de logros',
+          label: t('progress.stat.experience'),
           // La suma de lo que dan los logros ya conseguidos. Es un número
           // distinto del nivel —el nivel sale de las series— y por eso se
           // etiqueta aparte: dos cifras llamadas «XP» a media pantalla una de
@@ -54,7 +56,7 @@ export function useProgressOverview(
         },
       ],
     }
-  }, [achievements, completedCount])
+  }, [achievements, completedCount, t])
 
   return { overview }
 }

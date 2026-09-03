@@ -1,5 +1,7 @@
 import { SESSION_STATUS } from '../libs/sessionStatus'
 import type { SessionStatus } from '../types/calendar.types'
+import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /**
  * Resumen de sesiones por estado.
@@ -10,13 +12,13 @@ import type { SessionStatus } from '../types/calendar.types'
  */
 const SUMMARY_ITEMS: {
   status: SessionStatus
-  heading: string
+  headingKey: TranslationKey
   className: string
 }[] = [
-  { status: 'pending', heading: 'Pendientes', className: 'text-warning' },
-  { status: 'confirmed', heading: 'Confirmadas', className: 'text-success' },
-  { status: 'completed', heading: 'Completadas', className: 'text-cobalt' },
-  { status: 'cancelled', heading: 'Canceladas', className: 'text-danger' },
+  { status: 'pending', headingKey: 'calendar.summary.pending', className: 'text-warning' },
+  { status: 'confirmed', headingKey: 'calendar.summary.confirmed', className: 'text-success' },
+  { status: 'completed', headingKey: 'calendar.summary.completed', className: 'text-cobalt' },
+  { status: 'cancelled', headingKey: 'calendar.summary.cancelled', className: 'text-danger' },
 ]
 
 interface SessionSummaryProps {
@@ -24,6 +26,7 @@ interface SessionSummaryProps {
 }
 
 export function SessionSummary({ countByStatus }: SessionSummaryProps) {
+  const { t } = useTranslation()
   return (
     /*
      * Dos por fila en movil y cuatro desde `sm`: cuatro columnas a 375 px dejan
@@ -36,7 +39,7 @@ export function SessionSummary({ countByStatus }: SessionSummaryProps) {
         <div key={item.status} className="flex flex-col gap-2 px-4 py-5 sm:px-5">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/50 sm:text-[11px]">
-              {item.heading}
+              {t(item.headingKey)}
             </span>
             <span className={item.className}>{SESSION_STATUS[item.status].icon}</span>
           </div>

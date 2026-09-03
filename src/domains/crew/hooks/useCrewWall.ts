@@ -3,6 +3,7 @@ import { container } from '@/app/container'
 import { useAuthStore } from '@/app/stores/authStore'
 import { AppError } from '@/shared/domain/errors'
 import type { CrewPost } from '@/shared/domain/entities/crewPost'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface UseCrewWallResult {
   posts: CrewPost[]
@@ -26,6 +27,7 @@ interface UseCrewWallResult {
  * pantalla y tiene que responder sin recargar.
  */
 export function useCrewWall(): UseCrewWallResult {
+  const { t } = useTranslation()
   const user = useAuthStore((state) => state.user)
   const [posts, setPosts] = useState<CrewPost[]>([])
   const [loading, setLoading] = useState(true)
@@ -35,11 +37,11 @@ export function useCrewWall(): UseCrewWallResult {
     try {
       setPosts(await container.crewPosts.findAll())
     } catch (caught) {
-      setError(AppError.is(caught) ? caught.message : 'Error al cargar el muro')
+      setError(AppError.is(caught) ? caught.message : t('crew.wallError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     void load()

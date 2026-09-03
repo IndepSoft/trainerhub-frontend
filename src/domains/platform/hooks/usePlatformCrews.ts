@@ -3,6 +3,7 @@ import { container } from '@/app/container'
 import { AppError } from '@/shared/domain/errors'
 import type { CrewOverview } from '@/shared/domain/ports/PlatformRepository'
 import type { SubscriptionStatus } from '@/shared/domain/entities/crew'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface UsePlatformCrewsResult {
   crews: CrewOverview[]
@@ -23,6 +24,7 @@ interface UsePlatformCrewsResult {
  * crear un crew desde otra pestaña debería aparecer aquí.
  */
 export function usePlatformCrews(): UsePlatformCrewsResult {
+  const { t } = useTranslation()
   const [crews, setCrews] = useState<CrewOverview[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -31,11 +33,11 @@ export function usePlatformCrews(): UsePlatformCrewsResult {
     try {
       setCrews(await container.platform.listCrews())
     } catch (caught) {
-      setError(AppError.is(caught) ? caught.message : 'Error al cargar los equipos')
+      setError(AppError.is(caught) ? caught.message : t('platform.crews.error'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     void load()

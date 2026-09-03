@@ -1,6 +1,7 @@
 import { Progress } from '@/shared/ui/progress'
 import { calculateLevelCompletion } from '@/domains/progress/libs/gamification.utils'
 import type { StudentProgress } from '../hooks/useStudentsProgress'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface StudentProgressStripProps {
   /** `undefined` mientras carga; `null` cuando no ha entrenado nada. */
@@ -20,13 +21,14 @@ interface StudentProgressStripProps {
  * dice con palabras, que es lo que significa.
  */
 export function StudentProgressStrip({ progress }: StudentProgressStripProps) {
+  const { t, plural } = useTranslation()
   // Mientras carga no se pinta nada: un «Sin sesiones» que dura un instante y se
   // corrige solo es peor que un hueco, porque se lee y se cree.
   if (progress === undefined) return null
 
   if (progress === null || progress.completedSessions === 0) {
     return (
-      <p className="px-5 pt-4 text-xs text-ink/40">Todavía no ha completado ninguna sesión.</p>
+      <p className="px-5 pt-4 text-xs text-ink/40">{t('studentProgress.noSessions')}</p>
     )
   }
 
@@ -36,11 +38,15 @@ export function StudentProgressStrip({ progress }: StudentProgressStripProps) {
     <div className="px-5 pt-4">
       <div className="flex items-baseline justify-between gap-3">
         <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">
-          Nivel {progress.level.level}
+          {t('progress.level', { level: progress.level.level })}
         </span>
         <span className="metric-figures text-xs text-ink/45">
-          {progress.completedSessions}{' '}
-          {progress.completedSessions === 1 ? 'sesión' : 'sesiones'}
+          {plural(
+            'studentProgress.sessionCount.one',
+            'studentProgress.sessionCount.other',
+            progress.completedSessions,
+            { count: progress.completedSessions }
+          )}
         </span>
       </div>
 

@@ -45,6 +45,13 @@
             (elegido === 'system' &&
               window.matchMedia('(prefers-color-scheme: dark)').matches)
           if (oscuro) document.documentElement.classList.add('dark')
+
+          // El idioma, por el mismo motivo: `lang` decide como parte palabras
+          // el navegador y que voz usa un lector de pantalla, y estaba fijo en
+          // `es` mas arriba. La clave la comparte con `LanguageProvider`.
+          var idioma = window.localStorage.getItem('trainerhub.idioma')
+          var etiquetas = { es: 'es-ES', en: 'en-US', pt: 'pt-BR' }
+          if (etiquetas[idioma]) document.documentElement.lang = etiquetas[idioma]
         } catch (error) {
           // Sin acceso al almacenamiento -ventana privada, permisos bloqueados-
           // se arranca en claro. Es una preferencia, no un dato: perderla no

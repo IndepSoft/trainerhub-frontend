@@ -18,6 +18,7 @@ import type {
 import { copyBlockToDraft } from '../libs/blockLibrary'
 import type { Block, Routine, TrainingLevel } from '../types/training.types'
 import type { NewRoutine } from '@/shared/domain/ports/RoutineRepository'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface UseRoutineDraftResult {
   draft: RoutineDraft
@@ -64,14 +65,15 @@ interface UseRoutineDraftResult {
  * siguiente envío.
  */
 export function useRoutineDraft(initial: Routine | null): UseRoutineDraftResult {
+  const { t } = useTranslation()
   const [draft, setDraft] = useState<RoutineDraft>(() =>
     initial === null ? createEmptyRoutineDraft() : toRoutineDraft(initial)
   )
   const [wasSubmitted, setWasSubmitted] = useState(false)
 
   const errors = useMemo(
-    () => (wasSubmitted ? validateRoutineDraft(draft) : {}),
-    [draft, wasSubmitted]
+    () => (wasSubmitted ? validateRoutineDraft(draft, t) : {}),
+    [draft, wasSubmitted, t]
   )
 
   const preview = useMemo(() => toRoutinePreview(draft), [draft])
@@ -167,11 +169,11 @@ export function useRoutineDraft(initial: Routine | null): UseRoutineDraftResult 
   const submit = useCallback((): NewRoutine | null => {
     setWasSubmitted(true)
 
-    const validation = validateRoutineDraft(draft)
+    const validation = validateRoutineDraft(draft, t)
     if (hasErrors(validation)) return null
 
     return toRoutineData(draft)
-  }, [draft])
+  }, [draft, t])
 
   return {
     draft,

@@ -7,6 +7,8 @@
  * construya por partes.
  */
 
+import { activeLocale } from '@/shared/i18n/activeLocale'
+
 /** `new Date(2026, 8, 8)` → `2026-09-08`. */
 export function toDateKey(date: Date): string {
   const year = date.getFullYear()
@@ -23,7 +25,7 @@ export function toDateKey(date: Date): string {
  */
 export function formatDateKey(key: string): string {
   const [year, month, day] = key.split('-').map(Number)
-  return new Date(year, month - 1, day).toLocaleDateString('es-ES', {
+  return new Date(year, month - 1, day).toLocaleDateString(activeLocale(), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',

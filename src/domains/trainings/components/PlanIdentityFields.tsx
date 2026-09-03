@@ -12,6 +12,8 @@ import {
 import { useTrainingCatalog } from '../hooks/useTrainingCatalog'
 import type { PlanDraft, PlanDraftErrors } from '../types/planDraft.types'
 import type { TrainingLevel } from '../types/training.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { STUDENT_LEVEL_LABEL_KEY } from '@/shared/i18n/domainLabels'
 
 /** Registro de etiqueta del formulario, igual que en el resto del dominio. */
 const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50'
@@ -43,6 +45,7 @@ export function PlanIdentityFields({
   onChange,
   onLevelChange,
 }: PlanIdentityFieldsProps) {
+  const { t } = useTranslation()
   const fieldId = useId()
   const { objectivesById, splitsById } = useTrainingCatalog()
 
@@ -53,17 +56,17 @@ export function PlanIdentityFields({
   return (
     <section className="rounded-block border border-cobalt-tint-3 bg-surface p-4 sm:p-5">
       <h2 className="border-b border-cobalt-tint-3 pb-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-        El mesociclo
+        {t('plan.identity')}
       </h2>
 
       <div className="mt-4">
         <Label htmlFor={`${fieldId}-title`} className={FIELD_LABEL}>
-          Nombre
+          {t('exercise.name')}
         </Label>
         <Input
           id={`${fieldId}-title`}
           className="mt-1.5"
-          placeholder="Base de fuerza · 4 semanas"
+          placeholder={t('plan.namePlaceholder')}
           value={draft.title}
           onChange={(event) => onChange({ title: event.target.value })}
           aria-invalid={errors.title !== undefined}
@@ -78,13 +81,13 @@ export function PlanIdentityFields({
 
       <div className="mt-4">
         <Label htmlFor={`${fieldId}-description`} className={FIELD_LABEL}>
-          Descripción
+          {t('exercise.description')}
         </Label>
         <Textarea
           id={`${fieldId}-description`}
           className="mt-1.5"
           rows={2}
-          placeholder="Qué persigue el bloque y para quién es."
+          placeholder={t('plan.descriptionPlaceholder')}
           value={draft.description}
           onChange={(event) => onChange({ description: event.target.value })}
         />
@@ -93,7 +96,7 @@ export function PlanIdentityFields({
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor={`${fieldId}-objective`} className={FIELD_LABEL}>
-            Objetivo
+            {t('plan.objective')}
           </Label>
           <Select
             value={draft.objectiveId}
@@ -104,7 +107,7 @@ export function PlanIdentityFields({
               className="mt-1.5 w-full"
               aria-invalid={errors.objectiveId !== undefined}
             >
-              <SelectValue placeholder="Qué se persigue" />
+              <SelectValue placeholder={t('plan.objectivePlaceholder')} />
             </SelectTrigger>
             <SelectContent>
               {objectives.map((objective) => (
@@ -121,7 +124,7 @@ export function PlanIdentityFields({
 
         <div>
           <Label htmlFor={`${fieldId}-split`} className={FIELD_LABEL}>
-            División
+            {t('plan.split')}
           </Label>
           <Select value={draft.splitId} onValueChange={(splitId) => onChange({ splitId })}>
             <SelectTrigger
@@ -129,7 +132,7 @@ export function PlanIdentityFields({
               className="mt-1.5 w-full"
               aria-invalid={errors.splitId !== undefined}
             >
-              <SelectValue placeholder="Cómo se reparte" />
+              <SelectValue placeholder={t('plan.splitPlaceholder')} />
             </SelectTrigger>
             <SelectContent>
               {splits.map((split) => (
@@ -154,7 +157,7 @@ export function PlanIdentityFields({
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor={`${fieldId}-frequency`} className={FIELD_LABEL}>
-            Frecuencia semanal
+            {t('plan.weeklyFrequency')}
           </Label>
           {/* Cuántas veces se entrena cada músculo por microciclo. NO es lo
               mismo que las sesiones de la división. */}
@@ -169,7 +172,7 @@ export function PlanIdentityFields({
             aria-invalid={errors.weeklyFrequency !== undefined}
           />
           {errors.weeklyFrequency === undefined ? (
-            <p className="mt-1.5 text-xs text-ink/40">Veces por semana que se toca cada músculo.</p>
+            <p className="mt-1.5 text-xs text-ink/40">{t('plan.frequencyHint')}</p>
           ) : (
             <p className="mt-1.5 text-sm text-danger">{errors.weeklyFrequency}</p>
           )}
@@ -177,7 +180,7 @@ export function PlanIdentityFields({
 
         <div>
           <Label htmlFor={`${fieldId}-level`} className={FIELD_LABEL}>
-            Nivel
+            {t('routine.level')}
           </Label>
           <Select value={draft.level} onValueChange={(value) => onLevelChange(value as TrainingLevel)}>
             <SelectTrigger id={`${fieldId}-level`} className="mt-1.5 w-full">
@@ -186,7 +189,7 @@ export function PlanIdentityFields({
             <SelectContent>
               {TRAINING_LEVELS.map((candidate) => (
                 <SelectItem key={candidate} value={candidate}>
-                  {candidate}
+                  {t(STUDENT_LEVEL_LABEL_KEY[candidate])}
                 </SelectItem>
               ))}
             </SelectContent>

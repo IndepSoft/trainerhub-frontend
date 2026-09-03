@@ -1,8 +1,9 @@
 import type { Block, Exercise } from '../types/training.types'
 import type { BlockDraft } from '../types/routineDraft.types'
-import { BLOCK_METHOD_LABELS } from './routine.utils'
+import { BLOCK_METHOD_LABEL_KEY } from '@/shared/i18n/domainLabels'
 import { toBlockDraft } from './routineDraft'
 import { describeNames } from './usage'
+import type { Translate } from '@/shared/i18n/LanguageContext'
 
 /**
  * La biblioteca de bloques: copiar y nombrar. Funciones puras.
@@ -55,10 +56,15 @@ export function canSaveBlockDraft(draft: BlockDraft): boolean {
  * es exactamente como lo describiría el entrenador, y se puede cambiar después
  * desde la biblioteca.
  */
-export function describeBlock(block: Block, exercisesById: Map<string, Exercise>): string {
+export function describeBlock(
+  block: Block,
+  exercisesById: Map<string, Exercise>,
+  /* Traducir llega por parametro: es una funcion pura, no un componente. */
+  t: Translate
+): string {
   const names = block.exercises.map(
-    (prescribed) => exercisesById.get(prescribed.exerciseId)?.name ?? 'Ejercicio'
+    (prescribed) => exercisesById.get(prescribed.exerciseId)?.name ?? t('exercise.fallback')
   )
 
-  return `${BLOCK_METHOD_LABELS[block.method]} · ${describeNames(names)}`
+  return `${t(BLOCK_METHOD_LABEL_KEY[block.method])} · ${describeNames(names)}`
 }

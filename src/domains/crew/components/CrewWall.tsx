@@ -7,6 +7,7 @@ import { CREW_POST_MAX_LENGTH } from '@/shared/domain/entities/crewPost'
 import { useCrewWall } from '../hooks/useCrewWall'
 import { describePostTime } from '../libs/postTime'
 import type { CrewPost } from '@/shared/domain/entities/crewPost'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface CrewWallProps {
   /** Si quien mira es del equipo técnico. Cambia lo que dice el muro vacío. */
@@ -32,6 +33,7 @@ interface CrewWallProps {
  * con el «me gusta», que basta para saber si algo se ha leído.
  */
 export function CrewWall({ isStaff, canPublish, authorName }: CrewWallProps) {
+  const { t } = useTranslation()
   const { posts, loading, publish, toggleLike, removePost, isLikedByViewer } = useCrewWall()
   const [draft, setDraft] = useState('')
 
@@ -49,13 +51,13 @@ export function CrewWall({ isStaff, canPublish, authorName }: CrewWallProps) {
         id="muro-titulo"
         className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60"
       >
-        Muro
+        {t('crew.wall')}
       </h2>
 
       {canPublish && (
         <form onSubmit={handleSubmit} className="space-y-2">
           <label htmlFor="muro-anuncio" className="sr-only">
-            Escribe un anuncio para tu equipo
+            {t('crew.wallCompose')}
           </label>
           <Textarea
             id="muro-anuncio"
@@ -63,7 +65,7 @@ export function CrewWall({ isStaff, canPublish, authorName }: CrewWallProps) {
             onChange={(event) => setDraft(event.target.value)}
             maxLength={CREW_POST_MAX_LENGTH}
             rows={3}
-            placeholder="Cuéntale algo a tu equipo…"
+            placeholder={t('crew.wallPlaceholder')}
             className="resize-none"
           />
 
@@ -73,13 +75,13 @@ export function CrewWall({ isStaff, canPublish, authorName }: CrewWallProps) {
                 vez de a escribir lo que hace falta. */}
             <span className="text-xs text-ink/40">
               {draft.length > CREW_POST_MAX_LENGTH - 80
-                ? `${CREW_POST_MAX_LENGTH - draft.length} caracteres`
+                ? t('crew.wallRemaining', { count: CREW_POST_MAX_LENGTH - draft.length })
                 : ''}
             </span>
 
             <Button type="submit" className="gap-2" disabled={draft.trim() === ''}>
               <Megaphone className="size-4" />
-              Publicar
+              {t('crew.wallPublish')}
             </Button>
           </div>
         </form>
@@ -88,8 +90,8 @@ export function CrewWall({ isStaff, canPublish, authorName }: CrewWallProps) {
       {!loading && posts.length === 0 ? (
         <p className="py-6 text-sm text-ink/45">
           {isStaff
-            ? 'Todavía no has publicado nada. Aquí es donde tu equipo se entera de lo que pasa.'
-            : 'Tu entrenador todavía no ha publicado nada.'}
+            ? t('crew.wallEmptyTrainer')
+            : t('crew.wallEmptyStudent')}
         </p>
       ) : (
         <ul className="space-y-4">
@@ -127,6 +129,7 @@ function PostCard({
   onToggleLike,
   onDelete,
 }: PostCardProps) {
+  const { t } = useTranslation()
   const likeCount = post.likedBy.length
 
   return (
@@ -135,7 +138,7 @@ function PostCard({
         <p className="truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
           {authorName}
         </p>
-        <p className="shrink-0 text-xs text-ink/40">{describePostTime(post.createdAt)}</p>
+        <p className="shrink-0 text-xs text-ink/40">{describePostTime(post.createdAt, t)}</p>
       </div>
 
       {/* `whitespace-pre-line`: quien escribe un anuncio separa los parrafos con
@@ -146,7 +149,7 @@ function PostCard({
         <button
           type="button"
           aria-pressed={liked}
-          aria-label={liked ? 'Quitar me gusta' : 'Me gusta'}
+          aria-label={liked ? t('crew.wallUnlike') : t('crew.wallLike')}
           onClick={onToggleLike}
           className={cn(
             'inline-flex min-h-11 items-center gap-2 rounded-action px-3 text-sm font-semibold transition-colors',
@@ -162,7 +165,7 @@ function PostCard({
         {canDelete && (
           <button
             type="button"
-            aria-label="Eliminar anuncio"
+            aria-label={t('crew.wallDelete')}
             onClick={onDelete}
             className="ms-auto inline-flex size-11 items-center justify-center rounded-action text-ink/30 transition-colors hover:text-danger"
           >

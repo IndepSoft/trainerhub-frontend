@@ -10,6 +10,7 @@ import { useViewerContext } from '@/app/ViewerContext'
 import { useCrewEditor } from '../hooks/useCrewEditor'
 import { NotAllowedHere } from '../components/NotAllowedHere'
 import { CREW_DENOMINATIONS, type CrewDenomination } from '@/shared/domain/entities/crew'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
 
@@ -25,6 +26,7 @@ const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-
  * se compite. Las tres las cambia quien gobierna, no quien entrena.
  */
 export default function CrewSettings() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { active, can, loading: loadingViewer } = useViewerContext()
   const { updateCrew, saving, error } = useCrewEditor()
@@ -42,7 +44,7 @@ export default function CrewSettings() {
   if (loadingViewer) return null
   if (crew === null || !can('crew.settings')) {
     return (
-      <NotAllowedHere description="Los ajustes del equipo los cambia quien lo administra." />
+      <NotAllowedHere description={t('crew.settingsNotAllowed')} />
     )
   }
 
@@ -67,7 +69,7 @@ export default function CrewSettings() {
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
       <PageHeader className="pb-4">
         <PageHeader.Eyebrow>{crew.name}</PageHeader.Eyebrow>
-        <PageHeader.Title>Ajustes</PageHeader.Title>
+        <PageHeader.Title>{t('crew.settings')}</PageHeader.Title>
       </PageHeader>
 
       <div className="flex-1 overflow-auto">
@@ -82,11 +84,11 @@ export default function CrewSettings() {
             <div>
               <div className="flex items-baseline justify-between gap-2">
                 <Label htmlFor="ajustes-nombre" className={FIELD_LABEL}>
-                  Nombre
+                  {t('crew.name')}
                 </Label>
                 {missingName && (
                   <span className="text-[11px] font-semibold text-danger">
-                    Falta este campo
+                    {t('common.missingField')}
                   </span>
                 )}
               </div>
@@ -101,8 +103,8 @@ export default function CrewSettings() {
               />
             </div>
 
-            <div role="group" aria-label="Cómo lo llamas">
-              <span className={cn('block', FIELD_LABEL)}>Cómo lo llamas</span>
+            <div role="group" aria-label={t('crew.denomination')}>
+              <span className={cn('block', FIELD_LABEL)}>{t('crew.denomination')}</span>
               <div className="mt-2 flex flex-wrap gap-2">
                 {CREW_DENOMINATIONS.map((candidate) => (
                   <button
@@ -124,25 +126,25 @@ export default function CrewSettings() {
             </div>
 
             <SettingToggle
-              label="Aprobar quién entra"
-              description="Quien escanee el QR queda esperando tu visto bueno. Sin esto, entra directo: un QR fotografiado mete a cualquiera."
+              label={t('crew.approvalLabel')}
+              description={t('crew.approvalHint')}
               checked={requiresApproval}
               onToggle={() => setRequiresApproval((current) => !current)}
             />
 
             <SettingToggle
-              label="Ranking visible"
-              description="Compara sesiones y experiencia, nunca peso ni medidas. En un grupo de rehabilitación o de salud puede hacer más daño que bien."
+              label={t('crew.rankingLabel')}
+              description={t('crew.rankingHint')}
               checked={rankingEnabled}
               onToggle={() => setRankingEnabled((current) => !current)}
             />
 
             <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:justify-end">
               <Button type="button" variant="outline" onClick={() => navigate('/crew')}>
-                Cancelar
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={saving}>
-                {saving ? 'Guardando…' : 'Guardar'}
+                {saving ? t('common.saving') : t('common.save')}
               </Button>
             </div>
           </form>

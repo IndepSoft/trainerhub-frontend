@@ -3,6 +3,7 @@ import { Button } from '@/shared/ui/button'
 import { container } from '@/app/container'
 import { CardioSession } from '../components/CardioSession'
 import { StrengthSession } from '../components/StrengthSession'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { useSessionToRun } from '../hooks/useSessionToRun'
 import type { SessionResult } from '@/shared/domain/entities/session'
 
@@ -23,6 +24,7 @@ import type { SessionResult } from '@/shared/domain/entities/session'
  * lo que ocurre aquí vuelve a la agenda y a la ficha del alumno.
  */
 export default function LiveSession() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { sessionId } = useParams<{ sessionId: string }>()
   const { session, routine, studentName, loading } = useSessionToRun(sessionId)
@@ -35,13 +37,13 @@ export default function LiveSession() {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-bone px-6 text-center">
         <p className="font-display text-2xl font-extrabold uppercase text-ink">
-          Sesión no encontrada
+          {t('liveSession.notFound')}
         </p>
         <p className="text-sm text-ink/50">
-          El enlace puede haber caducado o la sesión ya no existe.
+          {t('liveSession.notFoundHint')}
         </p>
         <Button asChild variant="outline">
-          <Link to="/calendar">Volver a la agenda</Link>
+          <Link to="/calendar">{t('liveSession.backToCalendar')}</Link>
         </Button>
       </div>
     )

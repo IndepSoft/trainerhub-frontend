@@ -14,6 +14,7 @@ import type {
   PrescribedExerciseDraft,
   PrescribedExerciseDraftChanges,
 } from '../types/routineDraft.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /** Registro de etiqueta del formulario, igual que el de las métricas. */
 const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50'
@@ -50,6 +51,7 @@ export function PrescribedExerciseFields({
   onChange,
   onRemove,
 }: PrescribedExerciseFieldsProps) {
+  const { t } = useTranslation()
   const fieldId = useId()
 
   const exerciseFieldId = `${fieldId}-exercise`
@@ -74,14 +76,14 @@ export function PrescribedExerciseFields({
       <div className="flex items-end gap-2">
         <div className="min-w-0 flex-1">
           <Label htmlFor={exerciseFieldId} className={FIELD_LABEL}>
-            Ejercicio
+            {t('prescription.exercise')}
           </Label>
           <Select
             value={exercise.exerciseId}
             onValueChange={(exerciseId) => onChange({ exerciseId })}
           >
             <SelectTrigger id={exerciseFieldId} className="mt-1.5 w-full">
-              <SelectValue placeholder="Elige del catálogo" />
+              <SelectValue placeholder={t('prescription.exercisePlaceholder')} />
             </SelectTrigger>
             <SelectContent>
               {catalog.map((candidate) => (
@@ -118,7 +120,7 @@ export function PrescribedExerciseFields({
       <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div>
           <Label htmlFor={setsFieldId} className={FIELD_LABEL}>
-            Series
+            {t('prescription.sets')}
           </Label>
           <Input
             id={setsFieldId}
@@ -133,14 +135,14 @@ export function PrescribedExerciseFields({
 
         <div>
           <Label htmlFor={repsFieldId} className={FIELD_LABEL}>
-            Repeticiones
+            {t('prescription.reps')}
           </Label>
           {/* Texto y no número: «8-10» es una prescripción válida y corriente. */}
           <Input
             id={repsFieldId}
             type="text"
             className="mt-1.5"
-            placeholder="8-10"
+            placeholder={t('prescription.repsPlaceholder')}
             value={exercise.reps}
             onChange={(event) => onChange({ reps: event.target.value })}
           />
@@ -157,7 +159,7 @@ export function PrescribedExerciseFields({
             inputMode="numeric"
             min={0}
             className="mt-1.5"
-            placeholder="No aplica"
+            placeholder={t('prescription.rirPlaceholder')}
             value={exercise.rir}
             onChange={(event) => onChange({ rir: event.target.value })}
           />
@@ -165,7 +167,7 @@ export function PrescribedExerciseFields({
 
         <div>
           <Label htmlFor={restFieldId} className={FIELD_LABEL}>
-            Descanso (s)
+            {t('prescription.rest')}
           </Label>
           <Input
             id={restFieldId}

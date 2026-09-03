@@ -6,6 +6,8 @@
  * concepto distinto con su propio ciclo de vida.
  */
 
+import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
+
 export interface StreakStatus {
   currentDays: number
   bestDays: number
@@ -30,8 +32,8 @@ export type MilestoneState = 'completed' | 'active' | 'locked'
 
 export interface Milestone {
   id: string
-  title: string
-  description: string
+  titleKey: TranslationKey
+  descriptionKey: TranslationKey
   state: MilestoneState
   /** Sesiones hechas y exigidas. La fracción se deriva, no se almacena. */
   completedSessions: number

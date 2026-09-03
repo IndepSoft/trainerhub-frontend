@@ -10,6 +10,7 @@ import {
 } from '@/shared/ui/dialog'
 import { Textarea } from '@/shared/ui/textarea'
 import { NOTICE_MAX_LENGTH, type NoticeKind } from '@/shared/domain/entities/notice'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface NoticeDialogProps {
   open: boolean
@@ -43,15 +44,16 @@ export function NoticeDialog({
   onOpenChange,
   onSend,
 }: NoticeDialogProps) {
+  const { t } = useTranslation()
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto">
         <DialogHeader className="text-left">
           <DialogTitle className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
-            Avisar a {studentFirstName}
+            {t('notice.title', { name: studentFirstName })}
           </DialogTitle>
           <DialogDescription className="text-sm text-ink/50">
-            Sólo lo ve {studentFirstName}, en su campana. No aparece en el muro.
+            {t('notice.hint', { name: studentFirstName })}
           </DialogDescription>
         </DialogHeader>
 
@@ -78,6 +80,7 @@ interface NoticeFieldsProps {
 }
 
 function NoticeFields({ draft, kind, onSend, onCancel }: NoticeFieldsProps) {
+  const { t } = useTranslation()
   const [body, setBody] = useState(draft)
   const [sending, setSending] = useState(false)
 
@@ -94,7 +97,7 @@ function NoticeFields({ draft, kind, onSend, onCancel }: NoticeFieldsProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <label htmlFor="aviso-texto" className="sr-only">
-        Texto del aviso
+        {t('notice.textLabel')}
       </label>
       <Textarea
         id="aviso-texto"
@@ -107,11 +110,11 @@ function NoticeFields({ draft, kind, onSend, onCancel }: NoticeFieldsProps) {
 
       <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
+          {t('common.cancel')}
         </Button>
         <Button type="submit" className="gap-2" disabled={sending || body.trim() === ''}>
           <Send className="size-4" />
-          {sending ? 'Enviando…' : 'Enviar aviso'}
+          {sending ? t('notice.sending') : t('notice.send')}
         </Button>
       </div>
     </form>

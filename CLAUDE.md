@@ -273,11 +273,12 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   vuelve la semilla.
 - No se puede cambiar la contraseña: `AuthPort` no expone esa operación, así que
   Configuración no la ofrece en vez de fingirla.
-- La aplicación sólo habla español. No hay infraestructura de traducción y el
-  texto visible ronda las 350 cadenas distintas repartidas en más de sesenta
-  ficheros, con diecisiete `'es-ES'` escritos a mano en las funciones de fecha.
-  Hasta que la traducción esté completa no se ofrece selector de idioma: media
-  aplicación en inglés es peor que una aplicación en español.
+- La traducción cubre lo que escribe la aplicación —español, inglés y
+  portugués—, no lo que escribe una persona: los nombres de rutinas, los
+  anuncios del muro y el título de una sesión ya creada se quedan en el idioma en
+  que se escribieron. Está dicho en el propio selector. Toda cadena nueva se
+  añade a los TRES diccionarios: `Dictionary` es `Record<TranslationKey, string>`
+  y una clave que falte no compila.
 - `GuestRoute` está implementado pero no cableado: falta `withGuestRoute`.
 - La página del equipo tiene miembros, solicitudes, QR, muro y ranking.
   **Faltan los eventos.** Los entrenamientos grupales NO son una entidad nueva

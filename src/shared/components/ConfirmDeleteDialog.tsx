@@ -1,5 +1,6 @@
 import { AlertCircle } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 import {
   Dialog,
   DialogContent,
@@ -44,6 +45,7 @@ export function ConfirmDeleteDialog({
   onOpenChange,
   onConfirm,
 }: ConfirmDeleteDialogProps) {
+  const { t } = useTranslation()
   const isBlocked = blockedReason !== undefined
 
   return (
@@ -51,31 +53,29 @@ export function ConfirmDeleteDialog({
       <DialogContent className="max-w-md">
         <DialogHeader className="text-left">
           <DialogTitle className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
-            {isBlocked ? `No se puede eliminar` : `¿Eliminar ${kind}?`}
+            {isBlocked ? t('confirmDelete.blockedTitle') : t('confirmDelete.title', { kind })}
           </DialogTitle>
           <DialogDescription className="text-sm text-ink/60">
             {isBlocked ? (
               <span className="flex items-start gap-2 text-danger">
                 <AlertCircle className="mt-0.5 size-4 shrink-0" />
                 <span>
-                  «{name}» no se puede eliminar. {blockedReason}
+                  {t('confirmDelete.blockedBody', { name, reason: blockedReason })}
                 </span>
               </span>
             ) : (
-              <>
-                Se eliminará «{name}». Esta acción no se puede deshacer.
-              </>
+              <>{t('confirmDelete.body', { name })}</>
             )}
           </DialogDescription>
         </DialogHeader>
 
         <DialogFooter className="gap-2 sm:justify-end">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            {isBlocked ? 'Entendido' : 'Cancelar'}
+            {isBlocked ? t('common.understood') : t('common.cancel')}
           </Button>
           {!isBlocked && (
             <Button type="button" variant="destructive" onClick={onConfirm}>
-              Eliminar
+              {t('common.delete')}
             </Button>
           )}
         </DialogFooter>

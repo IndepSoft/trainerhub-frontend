@@ -8,6 +8,7 @@ import {
 } from '../libs/catalogDraft'
 import type { Exercise } from '../types/training.types'
 import type { ExerciseDraft, ExerciseDraftErrors } from '../types/catalogDraft.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 type ExerciseDraftChanges = Partial<Omit<ExerciseDraft, 'secondaryMuscleGroupIds'>>
 
@@ -33,14 +34,15 @@ interface UseExerciseDraftResult {
  * motivo que en `useRoutineDraft`.
  */
 export function useExerciseDraft(initial: Exercise | null): UseExerciseDraftResult {
+  const { t } = useTranslation()
   const [draft, setDraft] = useState<ExerciseDraft>(() =>
     initial === null ? createEmptyExerciseDraft() : toExerciseDraft(initial)
   )
   const [wasSubmitted, setWasSubmitted] = useState(false)
 
   const errors = useMemo(
-    () => (wasSubmitted ? validateExerciseDraft(draft) : {}),
-    [draft, wasSubmitted]
+    () => (wasSubmitted ? validateExerciseDraft(draft, t) : {}),
+    [draft, wasSubmitted, t]
   )
 
   const update = useCallback((changes: ExerciseDraftChanges) => {
@@ -62,11 +64,11 @@ export function useExerciseDraft(initial: Exercise | null): UseExerciseDraftResu
   const submit = useCallback((): Omit<Exercise, 'id'> | null => {
     setWasSubmitted(true)
 
-    const validation = validateExerciseDraft(draft)
+    const validation = validateExerciseDraft(draft, t)
     if (hasExerciseDraftErrors(validation)) return null
 
     return toExerciseData(draft)
-  }, [draft])
+  }, [draft, t])
 
   return { draft, errors, update, toggleSecondaryMuscleGroup, submit }
 }

@@ -11,6 +11,7 @@ import {
 import type { NewPlan } from '@/shared/domain/ports/PlanRepository'
 import type { PlanDraft, PlanDraftErrors } from '../types/planDraft.types'
 import type { TrainingLevel, TrainingPlan } from '../types/training.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 type PlanIdentityChanges = Partial<
   Pick<
@@ -46,14 +47,15 @@ interface UsePlanDraftResult {
  * formulario sirve para las dos cosas sin una condición dentro.
  */
 export function usePlanDraft(initial: TrainingPlan | null): UsePlanDraftResult {
+  const { t } = useTranslation()
   const [draft, setDraft] = useState<PlanDraft>(() =>
     initial === null ? createEmptyPlanDraft() : toPlanDraft(initial)
   )
   const [wasSubmitted, setWasSubmitted] = useState(false)
 
   const errors = useMemo(
-    () => (wasSubmitted ? validatePlanDraft(draft) : {}),
-    [draft, wasSubmitted]
+    () => (wasSubmitted ? validatePlanDraft(draft, t) : {}),
+    [draft, wasSubmitted, t]
   )
 
   const preview = useMemo(() => toPlanPreview(draft), [draft])
@@ -109,11 +111,11 @@ export function usePlanDraft(initial: TrainingPlan | null): UsePlanDraftResult {
   const submit = useCallback((): NewPlan | null => {
     setWasSubmitted(true)
 
-    const validation = validatePlanDraft(draft)
+    const validation = validatePlanDraft(draft, t)
     if (hasPlanDraftErrors(validation)) return null
 
     return toPlanData(draft)
-  }, [draft])
+  }, [draft, t])
 
   return {
     draft,

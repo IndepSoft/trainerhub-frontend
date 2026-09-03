@@ -30,8 +30,8 @@ const EARLIEST_SLOT = '08:00'
 export const achievementCatalog: AchievementDefinition[] = [
   {
     id: 'perfect-week',
-    name: 'Semana Perfecta',
-    description: 'Entrena 7 días seguidos',
+    nameKey: 'achievement.perfectWeek.name',
+    descriptionKey: 'achievement.perfectWeek.description',
     icon: 'trophy',
     category: 'attendance',
     rarity: 'common',
@@ -40,8 +40,8 @@ export const achievementCatalog: AchievementDefinition[] = [
   },
   {
     id: 'monthly-warrior',
-    name: 'Guerrero del Mes',
-    description: 'Completa más de 20 sesiones en 30 días',
+    nameKey: 'achievement.monthlyWarrior.name',
+    descriptionKey: 'achievement.monthlyWarrior.description',
     icon: 'medal',
     category: 'attendance',
     rarity: 'rare',
@@ -53,8 +53,8 @@ export const achievementCatalog: AchievementDefinition[] = [
   },
   {
     id: 'never-miss-monday',
-    name: 'Todos los Lunes',
-    description: 'Entrena 4 lunes seguidos',
+    nameKey: 'achievement.neverMissMonday.name',
+    descriptionKey: 'achievement.neverMissMonday.description',
     icon: 'star',
     category: 'attendance',
     rarity: 'common',
@@ -63,8 +63,8 @@ export const achievementCatalog: AchievementDefinition[] = [
   },
   {
     id: 'early-bird',
-    name: 'Madrugador',
-    description: 'Completa 10 sesiones a primera hora',
+    nameKey: 'achievement.earlyBird.name',
+    descriptionKey: 'achievement.earlyBird.description',
     icon: 'award',
     category: 'attendance',
     rarity: 'rare',
@@ -75,8 +75,8 @@ export const achievementCatalog: AchievementDefinition[] = [
   },
   {
     id: 'habit-former',
-    name: 'Hábito Formado',
-    description: 'Mantén una racha de 21 días',
+    nameKey: 'achievement.habitFormer.name',
+    descriptionKey: 'achievement.habitFormer.description',
     icon: 'flame',
     category: 'consistency',
     rarity: 'rare',
@@ -85,8 +85,8 @@ export const achievementCatalog: AchievementDefinition[] = [
   },
   {
     id: 'unstoppable',
-    name: 'Imparable',
-    description: 'Alcanza una racha de 50 días',
+    nameKey: 'achievement.unstoppable.name',
+    descriptionKey: 'achievement.unstoppable.description',
     icon: 'flame',
     category: 'consistency',
     rarity: 'epic',
@@ -95,8 +95,8 @@ export const achievementCatalog: AchievementDefinition[] = [
   },
   {
     id: 'legend',
-    name: 'Leyenda',
-    description: 'Llega a una racha de 100 días',
+    nameKey: 'achievement.legend.name',
+    descriptionKey: 'achievement.legend.description',
     icon: 'flame',
     category: 'consistency',
     rarity: 'legendary',
@@ -105,8 +105,8 @@ export const achievementCatalog: AchievementDefinition[] = [
   },
   {
     id: 'iron-will',
-    name: 'Voluntad de Hierro',
-    description: 'Completa el 90 % de tus sesiones, con al menos 10 a la espalda',
+    nameKey: 'achievement.ironWill.name',
+    descriptionKey: 'achievement.ironWill.description',
     icon: 'target',
     category: 'consistency',
     rarity: 'epic',

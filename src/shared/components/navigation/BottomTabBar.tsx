@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { getMobileRoutes } from '@/app/config/navigation.config'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { cn } from '@/shared/lib/utils'
 import type { NavigationViewer } from '@/app/config/navigation.config'
 
@@ -26,11 +27,12 @@ interface BottomTabBarProps {
 }
 
 export function BottomTabBar({ navigationViewer }: BottomTabBarProps) {
+  const { t } = useTranslation()
   const routes = getMobileRoutes(navigationViewer)
 
   return (
     <nav
-      aria-label="Navegación principal"
+      aria-label={t('nav.main')}
       className="shrink-0 border-t border-cobalt-tint-3 bg-bone md:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
@@ -72,7 +74,7 @@ export function BottomTabBar({ navigationViewer }: BottomTabBarProps) {
                   )}
 
                   <span className="text-[10px] font-semibold uppercase tracking-wider">
-                    {route.label}
+                    {t(route.labelKey)}
                   </span>
                 </>
               )}

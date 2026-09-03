@@ -5,8 +5,11 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { LoginForm } from '../components/LoginForm'
 import { RegisterForm } from '../components/RegisterForm'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 export default function AuthenticationPage() {
+  const { t } = useTranslation()
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="w-full max-w-lg p-4">
@@ -15,14 +18,14 @@ export default function AuthenticationPage() {
             <Tabs 
               defaultValue="login" 
               className="w-full"
-              aria-label="Formularios de autenticación"
+              aria-label={t('auth.tabs')}
             >
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">
-                  Iniciar sesión
+                  {t('auth.signIn')}
                 </TabsTrigger>
                 <TabsTrigger value="register">
-                  Registrarme
+                  {t('auth.register')}
                 </TabsTrigger>
               </TabsList>
 

@@ -18,6 +18,8 @@ import { StudentProgressStrip } from './StudentProgressStrip'
 import { LEVEL_BADGE } from '../libs/levelBadge'
 import type { StudentProgress } from '../hooks/useStudentsProgress'
 import type { Student } from '@/shared/domain/entities/student'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { STUDENT_LEVEL_LABEL_KEY, goalLabel } from '@/shared/i18n/domainLabels'
 
 interface StudentCardProps {
   student: Student
@@ -47,6 +49,7 @@ interface StudentCardProps {
  * competir con el texto, que sobre Ember sólido perdía contraste.
  */
 export function StudentCard({ student, progress, onEdit }: StudentCardProps) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { deletionBlocker, deleteStudent } = useStudentEditor()
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
@@ -87,7 +90,7 @@ export function StudentCard({ student, progress, onEdit }: StudentCardProps) {
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              aria-label={`Acciones para ${fullName}`}
+              aria-label={t('studentCard.actions', { name: fullName })}
               className="relative z-10 -me-2 -mt-2 inline-flex size-11 shrink-0 items-center justify-center rounded-action text-ink/35 transition-colors hover:text-ink"
             >
               <MoreHorizontal className="size-5" />
@@ -96,14 +99,14 @@ export function StudentCard({ student, progress, onEdit }: StudentCardProps) {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onSelect={() => navigate(`/students/${student.id}`)}>
               <TrendingUp className="me-2 size-4" />
-              Ver ficha
+              {t('studentCard.viewRecord')}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => navigate(`/students/${student.id}?agendar`)}>
               <Calendar className="me-2 size-4" />
-              Agendar sesión
+              {t('studentCard.scheduleSession')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => onEdit(student)}>Editar</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onEdit(student)}>{t('common.edit')}</DropdownMenuItem>
             {/*
               «Duplicar» se quita en vez de implementarse: duplicar a una
               persona no significa nada -saldrian dos fichas con el mismo
@@ -126,7 +129,7 @@ export function StudentCard({ student, progress, onEdit }: StudentCardProps) {
                 })
               }}
             >
-              Eliminar
+              {t('common.delete')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -146,16 +149,16 @@ export function StudentCard({ student, progress, onEdit }: StudentCardProps) {
       <dl className="mt-5 grid grid-cols-2 divide-x divide-cobalt-tint-3 border-y border-cobalt-tint-3">
         <div className="px-5 py-3">
           <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">
-            Edad
+            {t('studentCard.age')}
           </dt>
           <dd className="metric-figures font-display text-xl font-bold text-ink">
             {student.age}
-            <span className="ml-1 text-xs font-semibold text-ink/40">años</span>
+            <span className="ml-1 text-xs font-semibold text-ink/40">{t('studentCard.years')}</span>
           </dd>
         </div>
         <div className="px-5 py-3">
           <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">
-            Grasa
+            {t('studentCard.bodyFat')}
           </dt>
           <dd className="metric-figures font-display text-xl font-bold text-ink">
             {student.bodyFatPercentage}
@@ -173,7 +176,7 @@ export function StudentCard({ student, progress, onEdit }: StudentCardProps) {
             LEVEL_BADGE[student.level]
           )}
         >
-          {student.level}
+          {t(STUDENT_LEVEL_LABEL_KEY[student.level])}
         </span>
 
         {student.goals.map((goal) => (
@@ -181,7 +184,7 @@ export function StudentCard({ student, progress, onEdit }: StudentCardProps) {
             key={goal}
             className="rounded-action border border-cobalt-tint-3 px-2.5 py-0.5 text-[10px] uppercase tracking-wider text-ink/50"
           >
-            {goal}
+            {goalLabel(goal, t)}
           </span>
         ))}
 
@@ -194,7 +197,7 @@ export function StudentCard({ student, progress, onEdit }: StudentCardProps) {
       <ConfirmDeleteDialog
         open={isDeleteOpen}
         name={fullName}
-        kind="al alumno"
+        kind={t('studentCard.kind')}
         blockedReason={blockedReason}
         onOpenChange={setIsDeleteOpen}
         onConfirm={() => {

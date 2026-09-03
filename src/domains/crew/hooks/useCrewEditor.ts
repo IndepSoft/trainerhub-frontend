@@ -4,6 +4,7 @@ import { setActiveCrew } from '@/app/crewScope'
 import { AppError } from '@/shared/domain/errors'
 import type { Crew, CrewDenomination } from '@/shared/domain/entities/crew'
 import type { CrewSettings } from '@/shared/domain/ports/CrewRepository'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface CreateCrewInput {
   name: string
@@ -31,6 +32,7 @@ interface UseCrewEditorResult {
  * una puerta abierta para siempre.
  */
 export function useCrewEditor(): UseCrewEditorResult {
+  const { t } = useTranslation()
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -41,12 +43,12 @@ export function useCrewEditor(): UseCrewEditorResult {
     try {
       return await operation()
     } catch (caught) {
-      setError(AppError.is(caught) ? caught.message : 'No se pudo guardar el equipo')
+      setError(AppError.is(caught) ? caught.message : t('crew.saveError'))
       return null
     } finally {
       setSaving(false)
     }
-  }, [])
+  }, [t])
 
   const createCrew = useCallback(
     (input: CreateCrewInput) =>

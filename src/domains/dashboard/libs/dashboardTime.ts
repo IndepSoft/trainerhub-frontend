@@ -1,4 +1,5 @@
 import { weekBounds } from '@/shared/lib/dateKey'
+import { activeLocale } from '@/shared/i18n/activeLocale'
 
 // Se reexporta para no tocar a quien ya la importaba de aqui: subio a
 // `shared/lib` al necesitarla tambien el ranking semanal.
@@ -28,11 +29,17 @@ export function describeTimeAgo(dateKey: string): string {
 
   const days = Math.round((midnight.getTime() - when.getTime()) / 86_400_000)
 
-  if (days <= 0) return 'Hoy'
-  if (days === 1) return 'Ayer'
-  if (days < 7) return `Hace ${days} dias`
-  if (days < 14) return 'Hace una semana'
-  return `Hace ${Math.floor(days / 7)} semanas`
+  /*
+   * ERAN CINCO CADENAS ESCRITAS A MANO -«Hoy», «Ayer», «Hace 3 dias»...-. El
+   * navegador ya sabe decir esto en cualquier idioma, y ademas mejor: con
+   * `numeric: 'auto'` elige la palabra -«ayer»- en vez del numero -«hace 1
+   * dia»- donde el idioma la tiene, y cada lengua decide donde la tiene.
+   */
+  const relative = new Intl.RelativeTimeFormat(activeLocale(), { numeric: 'auto' })
+
+  if (days <= 0) return relative.format(0, 'day')
+  if (days < 7) return relative.format(-days, 'day')
+  return relative.format(-Math.floor(days / 7), 'week')
 }
 
 /**
@@ -43,7 +50,7 @@ export function describeTimeAgo(dateKey: string): string {
  */
 export function formatStamp(dateKey: string): string {
   const [year, month, day] = dateKey.split('-').map(Number)
-  return new Date(year, month - 1, day).toLocaleDateString('es-ES', {
+  return new Date(year, month - 1, day).toLocaleDateString(activeLocale(), {
     weekday: 'short',
     day: 'numeric',
     month: 'short',

@@ -26,18 +26,25 @@ import { useSchedulableStudents } from '../hooks/useSchedulableStudents'
 import { useSchedulableRoutines } from '../hooks/useSchedulableRoutines'
 import { container } from '@/app/container'
 import { toLocalDateKey } from '@/shared/lib/dateKey'
+import { activeLocale } from '@/shared/i18n/activeLocale'
 import { ScheduleConflictNotice } from '@/shared/components/ScheduleConflictNotice'
 import { SessionModalityPicker } from '@/shared/components/SessionModalityPicker'
 import { describeOverlap, findOverlappingSessions } from '@/shared/domain/sessionScheduling'
 import type { Session, SessionModality } from '@/shared/domain/entities/session'
 import { SESSION_LOCATIONS, TIME_SLOTS } from '../data/calendarOptions'
+import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 const SESSION_TYPES = [
-  { value: 'personal', label: 'Entrenamiento personal', icon: User },
-  { value: 'evaluation', label: 'Evaluación inicial', icon: User },
-  { value: 'followup', label: 'Seguimiento', icon: User },
-  { value: 'group', label: 'Clase grupal', icon: Users },
-] as const
+  { value: 'personal', labelKey: 'sessionType.personal', icon: User },
+  { value: 'evaluation', labelKey: 'sessionType.evaluation', icon: User },
+  { value: 'followup', labelKey: 'sessionType.followup', icon: User },
+  { value: 'group', labelKey: 'sessionType.group', icon: Users },
+] as const satisfies ReadonlyArray<{
+  value: string
+  labelKey: TranslationKey
+  icon: typeof User
+}>
 
 const DURATIONS = ['30', '45', '60', '90'] as const
 
@@ -90,6 +97,7 @@ export function CreateSessionModal({
   open,
   onOpenChange,
 }: CreateSessionModalProps = {}) {
+  const { t, plural } = useTranslation()
   const { students } = useSchedulableStudents()
   const { routines } = useSchedulableRoutines()
 
@@ -167,9 +175,9 @@ export function CreateSessionModal({
 
     if (faltan.length > 0) {
       toast.error(
-        faltan.length === 1
-          ? 'Falta un campo por completar'
-          : `Faltan ${faltan.length} campos por completar`
+        plural('newSession.missingOne', 'newSession.missingMany', faltan.length, {
+          count: faltan.length,
+        })
       )
       return
     }
@@ -199,23 +207,31 @@ export function CreateSessionModal({
   const scheduleSession = () => {
     const student = students.find((candidate) => candidate.id === studentId)
     const quien = isGroupSession
-      ? 'la clase grupal'
+      ? t('newSession.theGroupClass')
       : getShortName(student?.firstName, student?.lastName)
 
     const routine = routines.find((candidate) => candidate.id === routineId)
+    /*
+     * La categoria y el titulo se GUARDAN, asi que quedan en el idioma de quien
+     * creo la sesion. Es deliberado y es lo que dice el aviso del selector de
+     * idioma: cambia lo que escribe la aplicacion, no lo que ya se escribio.
+     * Traducirlos al leer exigiria guardar la clave en vez del texto, y eso es
+     * una migracion del dato, no una traduccion.
+     */
     const category =
-      SESSION_TYPES.find((candidate) => candidate.value === sessionType)?.label ?? 'Sesión'
+      SESSION_TYPES.find((candidate) => candidate.value === sessionType)?.labelKey ??
+      'sessionType.fallback'
 
     void container.sessions.create({
       // El titulo lo pone la rutina cuando la hay: es lo que se lee en la
       // agenda, y «Full body · Principiante» dice mas que «Entrenamiento
       // personal». NO lleva el nombre del alumno dentro: eso se resuelve desde
       // `studentId`, y meterlo aqui seria una copia que envejece.
-      title: routine?.title ?? category,
+      title: routine?.title ?? t(category),
       studentId: isGroupSession ? null : studentId,
       kind: isGroupSession ? 'group' : 'individual',
       modality,
-      category,
+      category: t(category),
       date: toLocalDateKey(date!),
       time,
       durationMinutes: Number(duration),
@@ -231,7 +247,11 @@ export function CreateSessionModal({
     })
 
     toast.success(
-      `Sesión con ${quien} el ${date!.toLocaleDateString('es-ES')} a las ${time}`
+      t('newSession.scheduled', {
+        who: quien,
+        date: date!.toLocaleDateString(activeLocale()),
+        time,
+      })
     )
 
     resetForm()
@@ -241,7 +261,7 @@ export function CreateSessionModal({
   /** Marca de campo pendiente. Se muestra junto al campo, no sólo en un aviso. */
   const fieldError = (field: FieldName) =>
     missing.includes(field) ? (
-      <span className="text-[11px] font-semibold text-danger">Falta este campo</span>
+      <span className="text-[11px] font-semibold text-danger">{t('common.missingField')}</span>
     ) : null
 
   return (
@@ -255,17 +275,17 @@ export function CreateSessionModal({
       <DialogTrigger asChild>
         <Button className="h-11 gap-2 sm:h-9">
           <Plus className="size-4" />
-          Nueva Sesión
+          {t('newSession.open')}
         </Button>
       </DialogTrigger>
 
       <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto p-0">
         <DialogHeader className="px-5 pt-5 text-left">
           <DialogTitle className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
-            Nueva sesión
+            {t('newSession.title')}
           </DialogTitle>
           <DialogDescription className="text-sm text-ink/50">
-            Elige el tipo, con quién y cuándo.
+            {t('newSession.hint')}
           </DialogDescription>
         </DialogHeader>
 
@@ -273,7 +293,7 @@ export function CreateSessionModal({
           <fieldset className="space-y-2">
             <div className="flex items-baseline justify-between gap-3">
               <legend className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
-                Tipo
+                {t('newSession.type')}
               </legend>
               {fieldError('sessionType')}
             </div>
@@ -297,7 +317,7 @@ export function CreateSessionModal({
                   />
                   <type.icon className="size-4 shrink-0 text-ink/40 peer-checked:text-cobalt" />
                   <span className="text-sm font-medium leading-tight text-ink peer-checked:text-cobalt">
-                    {type.label}
+                    {t(type.labelKey)}
                   </span>
                 </label>
               ))}
@@ -312,7 +332,7 @@ export function CreateSessionModal({
                   htmlFor="new-session-student"
                   className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60"
                 >
-                  Alumno
+                  {t('newSession.student')}
                 </Label>
                 {fieldError('student')}
               </div>
@@ -321,7 +341,7 @@ export function CreateSessionModal({
                   id="new-session-student"
                   className={cn('w-full', missing.includes('student') && 'border-danger')}
                 >
-                  <SelectValue placeholder="Elige un alumno" />
+                  <SelectValue placeholder={t('newSession.studentPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {students.map((student) => (
@@ -340,7 +360,7 @@ export function CreateSessionModal({
                   apuntar -detras hay una rejilla de dias- y una etiqueta sin
                   asociar es peor que ninguna. */}
               <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
-                Fecha
+                {t('newSession.date')}
               </span>
               {fieldError('date')}
             </div>
@@ -374,7 +394,7 @@ export function CreateSessionModal({
                   htmlFor="new-session-time"
                   className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60"
                 >
-                  Hora
+                  {t('newSession.time')}
                 </Label>
                 {fieldError('time')}
               </div>
@@ -406,7 +426,7 @@ export function CreateSessionModal({
                         {slot}
                         {ocupadoPor.length > 0 && (
                           <span className="ms-2 text-xs text-warning">
-                            ocupado · {ocupadoPor[0].title}
+                            {t('newSession.busySlot', { title: ocupadoPor[0].title })}
                           </span>
                         )}
                       </SelectItem>
@@ -421,7 +441,7 @@ export function CreateSessionModal({
                 htmlFor="new-session-duration"
                 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60"
               >
-                Duración
+                {t('newSession.duration')}
               </Label>
               <Select
                 value={duration}
@@ -446,7 +466,7 @@ export function CreateSessionModal({
 
           <div className="space-y-2">
             <Label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
-              Tipo de entrenamiento
+              {t('session.modality.label')}
             </Label>
             <SessionModalityPicker
               value={modality}
@@ -469,14 +489,14 @@ export function CreateSessionModal({
               htmlFor="new-session-routine"
               className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60"
             >
-              Rutina
+              {t('newSession.routine')}
             </Label>
             <Select value={routineId} onValueChange={setRoutineId}>
               <SelectTrigger id="new-session-routine" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={NO_ROUTINE}>Sin rutina</SelectItem>
+                <SelectItem value={NO_ROUTINE}>{t('newSession.noRoutine')}</SelectItem>
                 {routines.map((candidate) => (
                   <SelectItem key={candidate.id} value={candidate.id}>
                     {candidate.title}
@@ -493,7 +513,7 @@ export function CreateSessionModal({
                 htmlFor="new-session-location"
                 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60"
               >
-                Ubicación
+                {t('newSession.location')}
               </Label>
               {fieldError('location')}
             </div>
@@ -502,7 +522,7 @@ export function CreateSessionModal({
                 id="new-session-location"
                 className={cn('w-full', missing.includes('location') && 'border-danger')}
               >
-                <SelectValue placeholder="Elige una ubicación" />
+                <SelectValue placeholder={t('newSession.locationPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
                 {SESSION_LOCATIONS.map((place) => (
@@ -519,13 +539,16 @@ export function CreateSessionModal({
               htmlFor="new-session-notes"
               className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60"
             >
-              Notas <span className="font-normal normal-case text-ink/35">(opcional)</span>
+              {t('newSession.notes')}{' '}
+              <span className="font-normal normal-case text-ink/35">
+                {t('newSession.optional')}
+              </span>
             </Label>
             <Textarea
               id="new-session-notes"
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
-              placeholder="Qué trabajar en esta sesión"
+              placeholder={t('newSession.notesPlaceholder')}
               rows={3}
             />
           </div>
@@ -539,7 +562,7 @@ export function CreateSessionModal({
             className="h-14 w-full gap-2 font-display text-base font-extrabold uppercase tracking-[0.14em]"
           >
             <CalendarCheck className="size-5" />
-            Programar sesión
+            {t('newSession.submit')}
           </Button>
         </div>
       </DialogContent>

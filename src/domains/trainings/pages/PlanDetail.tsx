@@ -13,6 +13,9 @@ import { estimateRoutineMinutes } from '../libs/routine.utils'
 import { LEVEL_BADGE } from '../libs/levelBadge'
 import { PlanSummary } from '../components/PlanSummary'
 import { ConfirmDeleteDialog } from '@/shared/components/ConfirmDeleteDialog'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
+import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
+import { catalogLabel, STUDENT_LEVEL_LABEL_KEY } from '@/shared/i18n/domainLabels'
 
 /**
  * Ficha de un plan. Sólo composición.
@@ -23,6 +26,13 @@ import { ConfirmDeleteDialog } from '@/shared/components/ConfirmDeleteDialog'
  * Aterrizar en el formulario obligaba a leer entre desplegables.
  */
 export default function PlanDetail() {
+  const { t } = useTranslation()
+
+  /* La entrada de catalogo, traducida, o el aviso de que no hay ninguna. */
+  const catalogEntry = (
+    entry: { id: string; name: string } | undefined,
+    emptyKey: TranslationKey
+  ) => (entry === undefined ? t(emptyKey) : catalogLabel(entry.id, entry.name, t))
   const navigate = useNavigate()
   const { planId } = useParams<{ planId: string }>()
   const { plan, loading } = usePlan(planId)
@@ -44,13 +54,13 @@ export default function PlanDetail() {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-bone px-6 text-center">
         <p className="font-display text-2xl font-extrabold uppercase text-ink">
-          Plan no encontrado
+          {t('plan.notFound')}
         </p>
         <p className="text-sm text-ink/50">
-          El enlace puede haber caducado o el plan ya no existe.
+          {t('plan.notFoundHint')}
         </p>
         <Button asChild variant="outline">
-          <Link to="/trainings?tab=planes">Volver a planes</Link>
+          <Link to="/trainings?tab=planes">{t('plan.back')}</Link>
         </Button>
       </div>
     )
@@ -81,12 +91,12 @@ export default function PlanDetail() {
               onClick={() => setIsDeleteOpen(true)}
             >
               <Trash2 className="size-4" />
-              Eliminar
+              {t('common.delete')}
             </Button>
             <Button asChild className="gap-2">
               <Link to={`/trainings/plans/${plan.id}/edit`}>
                 <Pencil className="size-4" />
-                Editar
+                {t('common.edit')}
               </Link>
             </Button>
           </PageHeader.Actions>
@@ -99,23 +109,23 @@ export default function PlanDetail() {
         <dl className="grid grid-cols-1 gap-x-6 gap-y-3 px-5 py-6 sm:grid-cols-3">
           <div>
             <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
-              Objetivo
+              {t('plan.objective')}
             </dt>
             <dd className="mt-1 text-sm text-ink">
-              {objectivesById.get(plan.objectiveId)?.name ?? 'Sin objetivo'}
+              {catalogEntry(objectivesById.get(plan.objectiveId), 'plan.noObjective')}
             </dd>
           </div>
           <div>
             <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
-              División
+              {t('plan.split')}
             </dt>
             <dd className="mt-1 text-sm text-ink">
-              {splitsById.get(plan.splitId)?.name ?? 'Sin división'}
+              {catalogEntry(splitsById.get(plan.splitId), 'plan.noSplit')}
             </dd>
           </div>
           <div>
             <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
-              Nivel
+              {t('routine.level')}
             </dt>
             <dd className="mt-1">
               <span
@@ -124,7 +134,7 @@ export default function PlanDetail() {
                   LEVEL_BADGE[plan.level]
                 )}
               >
-                {plan.level}
+                {t(STUDENT_LEVEL_LABEL_KEY[plan.level])}
               </span>
             </dd>
           </div>
@@ -132,7 +142,7 @@ export default function PlanDetail() {
 
         <section className="px-5 pb-8">
           <h2 className="mb-1 border-b border-cobalt-tint-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-            Microciclos
+            {t('plan.microcycles')}
           </h2>
 
           <ol className="divide-y divide-cobalt-tint-3">
@@ -143,11 +153,11 @@ export default function PlanDetail() {
                     {String(week.number).padStart(2, '0')}
                   </span>
                   <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
-                    Semana
+                    {t('plan.week')}
                   </span>
                   {week.isDeload && (
                     <span className="rounded-action border border-ember/40 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-ember-deep">
-                      Descarga
+                      {t('plan.deload')}
                     </span>
                   )}
                 </div>
@@ -180,7 +190,7 @@ export default function PlanDetail() {
                         </span>
 
                         {routine === undefined ? (
-                          <span className="min-w-0 flex-1 text-ink/30">Descanso</span>
+                          <span className="min-w-0 flex-1 text-ink/30">{t('plan.rest')}</span>
                         ) : (
                           <>
                             {/* Mide 44 px por si mismo ADEMAS de estirarse: un

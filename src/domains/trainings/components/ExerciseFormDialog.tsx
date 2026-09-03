@@ -21,6 +21,8 @@ import { cn } from '@/shared/lib/utils'
 import { useExerciseDraft } from '../hooks/useExerciseDraft'
 import { useTrainingCatalog } from '../hooks/useTrainingCatalog'
 import type { Exercise } from '../types/training.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { catalogLabel } from '@/shared/i18n/domainLabels'
 
 /** Registro de etiqueta del formulario, igual que en el resto del dominio. */
 const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50'
@@ -48,17 +50,18 @@ export function ExerciseFormDialog({
   onOpenChange,
   onSave,
 }: ExerciseFormDialogProps) {
+  const { t } = useTranslation()
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto p-0">
         <DialogHeader className="px-5 pt-5 text-left">
           <DialogTitle className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
-            {exercise === null ? 'Nuevo ejercicio' : 'Editar ejercicio'}
+            {exercise === null ? t('exercise.newTitle') : t('exercise.editTitle')}
           </DialogTitle>
           <DialogDescription className="text-sm text-ink/50">
             {exercise === null
-              ? 'Se añade a tu catálogo y queda disponible al componer rutinas.'
-              : 'Los cambios se ven en todas las rutinas que lo prescriben.'}
+              ? t('exercise.newHint')
+              : t('exercise.editHint')}
           </DialogDescription>
         </DialogHeader>
 
@@ -80,6 +83,7 @@ interface ExerciseFormProps {
 }
 
 function ExerciseForm({ exercise, onSave, onCancel }: ExerciseFormProps) {
+  const { t } = useTranslation()
   const fieldId = useId()
   const { equipment, muscleGroupsById, movementPatternsById } = useTrainingCatalog()
   const { draft, errors, update, toggleSecondaryMuscleGroup, submit } = useExerciseDraft(exercise)
@@ -100,12 +104,12 @@ function ExerciseForm({ exercise, onSave, onCancel }: ExerciseFormProps) {
     <form onSubmit={handleSubmit} className="space-y-4 px-5 pb-5">
       <div>
         <Label htmlFor={`${fieldId}-name`} className={FIELD_LABEL}>
-          Nombre
+          {t('exercise.name')}
         </Label>
         <Input
           id={`${fieldId}-name`}
           className="mt-1.5"
-          placeholder="Press de banca con barra"
+          placeholder={t('exercise.namePlaceholder')}
           value={draft.name}
           onChange={(event) => update({ name: event.target.value })}
           aria-invalid={errors.name !== undefined}
@@ -121,8 +125,8 @@ function ExerciseForm({ exercise, onSave, onCancel }: ExerciseFormProps) {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <CatalogSelect
           id={`${fieldId}-equipment`}
-          label="Equipamiento"
-          placeholder="Con qué se ejecuta"
+          label={t('exercise.equipment')}
+          placeholder={t('exercise.equipmentPlaceholder')}
           value={draft.equipmentId}
           error={errors.equipmentId}
           options={equipment}
@@ -131,8 +135,8 @@ function ExerciseForm({ exercise, onSave, onCancel }: ExerciseFormProps) {
 
         <CatalogSelect
           id={`${fieldId}-pattern`}
-          label="Patrón de movimiento"
-          placeholder="Qué gesto es"
+          label={t('exercise.pattern')}
+          placeholder={t('exercise.patternPlaceholder')}
           value={draft.movementPatternId}
           error={errors.movementPatternId}
           options={movementPatterns}
@@ -142,8 +146,8 @@ function ExerciseForm({ exercise, onSave, onCancel }: ExerciseFormProps) {
 
       <CatalogSelect
         id={`${fieldId}-primary`}
-        label="Grupo muscular principal"
-        placeholder="El que hace el trabajo"
+        label={t('exercise.primaryMuscle')}
+        placeholder={t('exercise.primaryMusclePlaceholder')}
         value={draft.primaryMuscleGroupId}
         error={errors.primaryMuscleGroupId}
         options={muscleGroups}
@@ -155,10 +159,10 @@ function ExerciseForm({ exercise, onSave, onCancel }: ExerciseFormProps) {
         desplegable: el material y el patron son uno solo, pero los secundarios
         son varios y verlos todos a la vez es lo que permite decidir.
       */}
-      <div role="group" aria-label="Grupos musculares secundarios">
-        <span className={cn('block', FIELD_LABEL)}>Grupos secundarios</span>
+      <div role="group" aria-label={t('exercise.secondaryMusclesLabel')}>
+        <span className={cn('block', FIELD_LABEL)}>{t('exercise.secondaryMuscles')}</span>
         <p className="mt-1 text-xs text-ink/40">
-          Los que acompañan. El principal no cuenta aquí.
+          {t('exercise.secondaryHint')}
         </p>
         <div className="mt-2 flex flex-wrap gap-2">
           {muscleGroups
@@ -178,7 +182,7 @@ function ExerciseForm({ exercise, onSave, onCancel }: ExerciseFormProps) {
                       : 'border-cobalt-tint-3 text-ink/50 hover:border-cobalt/40 hover:text-ink'
                   )}
                 >
-                  {muscleGroup.name}
+                  {catalogLabel(muscleGroup.id, muscleGroup.name, t)}
                 </button>
               )
             })}
@@ -187,13 +191,13 @@ function ExerciseForm({ exercise, onSave, onCancel }: ExerciseFormProps) {
 
       <div>
         <Label htmlFor={`${fieldId}-description`} className={FIELD_LABEL}>
-          Descripción
+          {t('exercise.description')}
         </Label>
         <Textarea
           id={`${fieldId}-description`}
           className="mt-1.5"
           rows={2}
-          placeholder="Para qué sirve y cuándo usarlo."
+          placeholder={t('exercise.descriptionPlaceholder')}
           value={draft.description}
           onChange={(event) => update({ description: event.target.value })}
         />
@@ -201,14 +205,14 @@ function ExerciseForm({ exercise, onSave, onCancel }: ExerciseFormProps) {
 
       <div>
         <Label htmlFor={`${fieldId}-instructions`} className={FIELD_LABEL}>
-          Instrucciones
+          {t('exercise.instructions')}
         </Label>
-        <p className="mt-1 text-xs text-ink/40">Una por línea.</p>
+        <p className="mt-1 text-xs text-ink/40">{t('exercise.instructionsHint')}</p>
         <Textarea
           id={`${fieldId}-instructions`}
           className="mt-1.5"
           rows={4}
-          placeholder={'Barra sobre el trapecio, pies al ancho de los hombros.\nBaja controlando hasta el paralelo.'}
+          placeholder={t('exercise.instructionsPlaceholder')}
           value={draft.instructions}
           onChange={(event) => update({ instructions: event.target.value })}
         />
@@ -216,10 +220,10 @@ function ExerciseForm({ exercise, onSave, onCancel }: ExerciseFormProps) {
 
       <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:justify-end">
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
+          {t('common.cancel')}
         </Button>
         <Button type="submit">
-          {exercise === null ? 'Añadir al catálogo' : 'Guardar cambios'}
+          {exercise === null ? t('exercise.addToCatalog') : t('exercise.saveChanges')}
         </Button>
       </div>
     </form>
@@ -262,6 +266,7 @@ function CatalogSelect({
   options,
   onChange,
 }: CatalogSelectProps) {
+  const { t } = useTranslation()
   return (
     <div>
       <Label htmlFor={id} className={FIELD_LABEL}>
@@ -274,7 +279,7 @@ function CatalogSelect({
         <SelectContent>
           {options.map((option) => (
             <SelectItem key={option.id} value={option.id}>
-              {option.name}
+              {catalogLabel(option.id, option.name, t)}
             </SelectItem>
           ))}
         </SelectContent>

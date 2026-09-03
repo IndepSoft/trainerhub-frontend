@@ -8,19 +8,16 @@ import type { Exercise, Routine } from '../types/training.types'
  * el volcado de un plan, desde `students`, y la sesión en vivo, que mide el
  * avance en series. Se reexportan para no cambiar a sus consumidores.
  *
- * Y LOS FORMATOS TAMPOCO. `BLOCK_METHOD_LABELS`, `formatPrescription` y
- * `formatRest` estan en `shared/lib/routineFormat.ts`, por lo mismo: los usa
- * tambien la sesion en vivo. Se reexportan desde aqui.
+ * Y LOS FORMATOS TAMPOCO. `formatPrescription` y `formatRest` estan en
+ * `shared/lib/routineFormat.ts`, por lo mismo: los usa tambien la sesion en
+ * vivo. Se reexportan desde aqui. El rotulo del metodo se fue mas lejos: es
+ * texto, y vive en `shared/i18n/domainLabels.ts`.
  *
  * Aquí se queda sólo lo que necesita el catálogo de ejercicios.
  */
 import { flattenPrescribedExercises } from '@/shared/domain/routineMetrics'
 
-export {
-  BLOCK_METHOD_LABELS,
-  formatPrescription,
-  formatRest,
-} from '@/shared/lib/routineFormat'
+export { formatPrescription, formatRest } from '@/shared/lib/routineFormat'
 
 export {
   countExercises,

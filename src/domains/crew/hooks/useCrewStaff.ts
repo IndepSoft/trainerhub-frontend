@@ -4,6 +4,7 @@ import { AppError } from '@/shared/domain/errors'
 import { lastAdminBlocker } from '@/shared/domain/permissions'
 import type { Capability } from '@/shared/domain/permissions'
 import type { CrewRole, CrewStaff } from '@/shared/domain/entities/crew'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface UseCrewStaffResult {
   staff: CrewStaff[]
@@ -31,6 +32,7 @@ interface UseCrewStaffResult {
  * para poder explicarla; allí se impone para que no dependa de que se pregunte.
  */
 export function useCrewStaff(): UseCrewStaffResult {
+  const { t } = useTranslation()
   const [staff, setStaff] = useState<CrewStaff[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -39,11 +41,11 @@ export function useCrewStaff(): UseCrewStaffResult {
     try {
       setStaff(await container.crewStaff.findAll())
     } catch (caught) {
-      setError(AppError.is(caught) ? caught.message : 'Error al cargar el equipo técnico')
+      setError(AppError.is(caught) ? caught.message : t('crew.staffError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     void load()
@@ -62,9 +64,9 @@ export function useCrewStaff(): UseCrewStaffResult {
       await operation()
       setError(null)
     } catch (caught) {
-      setError(AppError.is(caught) ? caught.message : 'No se pudo guardar el cambio')
+      setError(AppError.is(caught) ? caught.message : t('crew.staffSaveError'))
     }
-  }, [])
+  }, [t])
 
   const updateMembership = useCallback(
     async (staffId: string, role: CrewRole, extraCapabilities: Capability[]) => {

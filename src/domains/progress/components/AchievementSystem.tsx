@@ -3,6 +3,9 @@ import { AchievementBadge } from './AchievementBadge'
 import { cn } from '@/shared/lib/utils'
 import { unlockedAchievements } from '../libs/achievementEvaluation'
 import type { Achievement, AchievementCategory } from '../types/achievement.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
+import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
+import { activeLocale } from '@/shared/i18n/activeLocale'
 
 interface AchievementSystemProps {
   /**
@@ -20,24 +23,25 @@ interface AchievementSystemProps {
 type CategoryFilter = 'all' | Achievement['category']
 type RarityFilter = 'all' | Achievement['rarity']
 
-const CATEGORY_LABELS: Record<AchievementCategory, string> = {
-  attendance: 'Asistencia',
-  consistency: 'Constancia',
-  metrics: 'Métricas',
-  challenges: 'Desafíos',
+const CATEGORY_LABEL_KEY: Record<AchievementCategory, TranslationKey> = {
+  attendance: 'achievement.category.attendance',
+  consistency: 'achievement.category.consistency',
+  metrics: 'achievement.category.metrics',
+  challenges: 'achievement.category.challenges',
 }
 
-const RARITY_LABELS: Record<RarityFilter, string> = {
-  all: 'Cualquier rareza',
-  common: 'Común',
-  rare: 'Raro',
-  epic: 'Épico',
-  legendary: 'Legendario',
+const RARITY_LABEL_KEY: Record<RarityFilter, TranslationKey> = {
+  all: 'achievement.rarity.all',
+  common: 'achievement.rarity.common',
+  rare: 'achievement.rarity.rare',
+  epic: 'achievement.rarity.epic',
+  legendary: 'achievement.rarity.legendary',
 }
 
 
 
 export function AchievementSystem({ achievements }: AchievementSystemProps) {
+  const { t } = useTranslation()
   const [category, setCategory] = useState<CategoryFilter>('all')
   const [rarity, setRarity] = useState<RarityFilter>('all')
 
@@ -95,19 +99,19 @@ export function AchievementSystem({ achievements }: AchievementSystemProps) {
       <section className="space-y-4">
         <div className="flex items-baseline justify-between gap-4 border-b border-cobalt-tint-3 pb-3">
           <h3 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-            Galería
+            {t('achievement.gallery')}
           </h3>
 
           <label className="flex items-center gap-2 text-xs text-ink/50">
-            <span className="sr-only">Filtrar por rareza</span>
+            <span className="sr-only">{t('achievement.filterByRarity')}</span>
             <select
               value={rarity}
               onChange={(event) => setRarity(event.target.value as RarityFilter)}
               className="h-11 rounded-none border-b border-cobalt-tint-3 bg-transparent pe-6 text-xs font-semibold uppercase tracking-wider text-ink/70"
             >
-              {Object.entries(RARITY_LABELS).map(([value, label]) => (
+              {Object.entries(RARITY_LABEL_KEY).map(([value, key]) => (
                 <option key={value} value={value}>
-                  {label}
+                  {t(key)}
                 </option>
               ))}
             </select>
@@ -123,7 +127,7 @@ export function AchievementSystem({ achievements }: AchievementSystemProps) {
         */}
         <div
           role="group"
-          aria-label="Filtrar por categoría"
+          aria-label={t('achievement.filterByCategory')}
           className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
         >
           {categoryFilters.map((value) => {
@@ -142,7 +146,9 @@ export function AchievementSystem({ achievements }: AchievementSystemProps) {
                     : 'border-cobalt-tint-3 text-ink/60 hover:border-cobalt/40'
                 )}
               >
-                {value === 'all' ? 'Todos' : CATEGORY_LABELS[value]}
+                {value === 'all'
+                  ? t('achievement.category.all')
+                  : t(CATEGORY_LABEL_KEY[value])}
                 <span className="metric-figures opacity-60">{count}</span>
               </button>
             )
@@ -162,19 +168,19 @@ export function AchievementSystem({ achievements }: AchievementSystemProps) {
 
         {filtered.length === 0 && (
           <p className="py-8 text-center text-sm text-ink/40">
-            Ningún logro coincide con este filtro.
+            {t('achievement.noneMatch')}
           </p>
         )}
       </section>
 
       <section className="space-y-4">
         <h3 className="border-b border-cobalt-tint-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-          Conseguidos recientemente
+          {t('achievement.recent')}
         </h3>
 
         {recent.length === 0 && (
           <p className="py-6 text-sm text-ink/40">
-            Aún no hay logros conseguidos. Se desbloquean solos al completar sesiones.
+            {t('achievement.noneYet')}
           </p>
         )}
 
@@ -184,10 +190,10 @@ export function AchievementSystem({ achievements }: AchievementSystemProps) {
               <AchievementBadge achievement={achievement} unlocked size="small" />
 
               <div className="min-w-0 flex-1">
-                <p className="font-semibold text-ink">{achievement.name}</p>
-                <p className="text-sm text-ink/50">{achievement.description}</p>
+                <p className="font-semibold text-ink">{t(achievement.nameKey)}</p>
+                <p className="text-sm text-ink/50">{t(achievement.descriptionKey)}</p>
                 <p className="metric-figures mt-1 text-[11px] uppercase tracking-wider text-ink/35">
-                  {achievement.unlockedAt?.toLocaleDateString('es')}
+                  {achievement.unlockedAt?.toLocaleDateString(activeLocale())}
                 </p>
               </div>
 

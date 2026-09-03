@@ -46,12 +46,12 @@ export const DEFAULT_PERIOD_DAYS = 30
  * verdad, y quien necesite otra cosa puede escribirla. Un desplegable de 1 a 365
  * no ayudaría a nadie.
  */
-export const SUBSCRIPTION_PERIODS: Array<{ days: number; label: string }> = [
-  { days: 30, label: 'Mensual' },
-  { days: 90, label: 'Trimestral' },
-  { days: 180, label: 'Semestral' },
-  { days: 365, label: 'Anual' },
-]
+/*
+ * CÓMO SE LLAMA CADA UNO no está aquí: los rótulos viven en
+ * `shared/i18n/domainLabels.ts`. El dominio dice cuántos días dura cada periodo,
+ * que es el dato; ponerle nombre es presentación.
+ */
+export const SUBSCRIPTION_PERIOD_DAYS: number[] = [30, 90, 180, 365]
 
 /**
  * En qué punto está una cuota.

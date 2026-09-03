@@ -9,6 +9,8 @@ import { PageHeader } from '@/shared/components/PageHeader'
 import { useViewerContext } from '@/app/ViewerContext'
 import { useJoinCrew, type JoinOutcome } from '../hooks/useJoinCrew'
 import { JOIN_CODE_PARAM } from '../libs/joinLink'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
+import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 
 /**
  * Unirse a un equipo con el código del QR.
@@ -24,6 +26,7 @@ import { JOIN_CODE_PARAM } from '../libs/joinLink'
  * con la pantalla rota.
  */
 export default function JoinCrew() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { selectCrew } = useViewerContext()
@@ -69,8 +72,8 @@ export default function JoinCrew() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
       <PageHeader className="pb-4">
-        <PageHeader.Eyebrow>Tu equipo</PageHeader.Eyebrow>
-        <PageHeader.Title>Unirse</PageHeader.Title>
+        <PageHeader.Eyebrow>{t('crew.eyebrow')}</PageHeader.Eyebrow>
+        <PageHeader.Title>{t('join.title')}</PageHeader.Title>
       </PageHeader>
 
       <div className="flex-1 overflow-auto">
@@ -92,7 +95,7 @@ export default function JoinCrew() {
                 htmlFor="codigo-equipo"
                 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60"
               >
-                Código del equipo
+                {t('join.code')}
               </Label>
               <Input
                 id="codigo-equipo"
@@ -112,7 +115,7 @@ export default function JoinCrew() {
 
             <Button type="submit" className="w-full gap-2" disabled={joining || code.trim() === ''}>
               <Users className="size-4" />
-              {joining ? 'Enviando…' : 'Unirme al equipo'}
+              {joining ? t('join.sending') : t('join.submit')}
             </Button>
           </form>
         </div>
@@ -134,16 +137,17 @@ interface JoinResultProps {
  * alumno volviera a escanear pensando que no funcionó.
  */
 function JoinResult({ outcome, onEnter }: JoinResultProps) {
-  const titles: Record<JoinOutcome['kind'], string> = {
-    joined: 'Ya estás dentro',
-    pending: 'Solicitud enviada',
-    already: 'Ya eras de este equipo',
+  const { t } = useTranslation()
+  const titleKeys: Record<JoinOutcome['kind'], TranslationKey> = {
+    joined: 'join.joined',
+    pending: 'join.pending',
+    already: 'join.already',
   }
 
-  const descriptions: Record<JoinOutcome['kind'], string> = {
-    joined: 'Tu entrenador ya puede asignarte entrenamientos y agendarte sesiones.',
-    pending: 'Tu entrenador tiene que aceptarte. Te avisaremos en cuanto lo haga.',
-    already: 'No hacía falta volver a escanear: sigues siendo miembro.',
+  const descriptionKeys: Record<JoinOutcome['kind'], TranslationKey> = {
+    joined: 'join.joinedHint',
+    pending: 'join.pendingHint',
+    already: 'join.alreadyHint',
   }
 
   return (
@@ -152,12 +156,12 @@ function JoinResult({ outcome, onEnter }: JoinResultProps) {
         {outcome.crew.denomination} · {outcome.crew.name}
       </p>
       <h1 className="font-display text-3xl font-extrabold uppercase leading-none tracking-tight text-ink">
-        {titles[outcome.kind]}
+        {t(titleKeys[outcome.kind])}
       </h1>
-      <p className="max-w-sm text-sm text-ink/55">{descriptions[outcome.kind]}</p>
+      <p className="max-w-sm text-sm text-ink/55">{t(descriptionKeys[outcome.kind])}</p>
 
       <Button className="mt-2" onClick={onEnter}>
-        {outcome.kind === 'pending' ? 'Entendido' : 'Ver mi progreso'}
+        {outcome.kind === 'pending' ? t('common.understood') : t('join.seeProgress')}
       </Button>
     </div>
   )

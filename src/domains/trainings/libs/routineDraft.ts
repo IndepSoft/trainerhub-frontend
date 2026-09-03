@@ -6,6 +6,7 @@ import type {
   RoutineDraft,
   RoutineDraftErrors,
 } from '../types/routineDraft.types'
+import type { Translate } from '@/shared/i18n/LanguageContext'
 
 /**
  * Traducción entre el borrador y la entidad, y su validación. Funciones puras,
@@ -206,15 +207,16 @@ export function toRoutinePreview(draft: RoutineDraft): Routine {
  * entrenador corrige uno, vuelve a guardar y ve el siguiente, que es como se
  * usa un formulario largo de verdad.
  */
-export function validateRoutineDraft(draft: RoutineDraft): RoutineDraftErrors {
+/* Traducir llega por parametro: son funciones puras, no componentes. */
+export function validateRoutineDraft(draft: RoutineDraft, t: Translate): RoutineDraftErrors {
   const errors: RoutineDraftErrors = {}
 
   if (draft.title.trim() === '') {
-    errors.title = 'Ponle un nombre a la rutina.'
+    errors.title = t('routine.needsName')
   }
 
   if (draft.blocks.length === 0) {
-    errors.blocks = 'Una rutina necesita al menos un bloque.'
+    errors.blocks = t('routine.needsBlock')
     return errors
   }
 

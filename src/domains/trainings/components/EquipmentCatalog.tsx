@@ -15,6 +15,8 @@ import { useCatalogEditor } from '../hooks/useCatalogEditor'
 import { findExercisesUsingEquipment } from '../libs/usage'
 import type { Equipment } from '../types/catalog.types'
 import type { EquipmentDraft } from '../types/catalogDraft.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { catalogEnumLabel, catalogLabel } from '@/shared/i18n/domainLabels'
 
 /** Registro de etiqueta del formulario, igual que en el resto del dominio. */
 const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50'
@@ -44,6 +46,7 @@ function createEmptyEquipmentDraft(): EquipmentDraft {
  * lento lo que debería ser instantáneo. El ejercicio tiene siete y sí lo pide.
  */
 export function EquipmentCatalog() {
+  const { t } = useTranslation()
   const fieldId = useId()
   const { equipment, exercises } = useTrainingCatalog()
   const { createEquipment, updateEquipment, deleteEquipment } = useCatalogEditor()
@@ -85,7 +88,11 @@ export function EquipmentCatalog() {
 
   const handleDelete = (item: Equipment) => {
     const result = deleteEquipment(item.id)
-    setBlockedReason(result.deleted ? null : `No se puede borrar «${item.name}». ${result.reason}`)
+    setBlockedReason(
+      result.deleted
+        ? null
+        : t('equipment.cannotDelete', { name: item.name, reason: result.reason })
+    )
   }
 
   return (
@@ -93,12 +100,12 @@ export function EquipmentCatalog() {
       <form onSubmit={handleCreate} className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="min-w-0 flex-1">
           <Label htmlFor={`${fieldId}-name`} className={FIELD_LABEL}>
-            Nuevo material
+            {t('equipment.new')}
           </Label>
           <Input
             id={`${fieldId}-name`}
             className="mt-1.5"
-            placeholder="Prensa de piernas"
+            placeholder={t('equipment.namePlaceholder')}
             value={newDraft.name}
             onChange={(event) => setNewDraft((current) => ({ ...current, name: event.target.value }))}
           />
@@ -106,7 +113,7 @@ export function EquipmentCatalog() {
 
         <div className="sm:w-48">
           <Label htmlFor={`${fieldId}-kind`} className={FIELD_LABEL}>
-            Tipo
+            {t('equipment.kind')}
           </Label>
           <Select
             value={newDraft.kind}
@@ -120,7 +127,7 @@ export function EquipmentCatalog() {
             <SelectContent>
               {EQUIPMENT_KINDS.map((kind) => (
                 <SelectItem key={kind} value={kind}>
-                  {kind}
+                  {catalogEnumLabel(kind, t)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -129,7 +136,7 @@ export function EquipmentCatalog() {
 
         <Button type="submit" className="gap-2" disabled={newDraft.name.trim() === ''}>
           <Plus className="size-4" />
-          Añadir
+          {t('equipment.add')}
         </Button>
       </form>
 
@@ -151,7 +158,7 @@ export function EquipmentCatalog() {
             return (
               <li key={item.id} className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center">
                 <Input
-                  aria-label={`Nombre de ${item.name}`}
+                  aria-label={t('equipment.nameOf', { name: item.name })}
                   className="min-w-0 flex-1"
                   value={editDraft.name}
                   onChange={(event) =>
@@ -164,13 +171,16 @@ export function EquipmentCatalog() {
                     setEditDraft((current) => ({ ...current, kind: kind as Equipment['kind'] }))
                   }
                 >
-                  <SelectTrigger aria-label={`Tipo de ${item.name}`} className="w-full sm:w-44">
+                  <SelectTrigger
+                    aria-label={t('equipment.kindOf', { name: item.name })}
+                    className="w-full sm:w-44"
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {EQUIPMENT_KINDS.map((kind) => (
                       <SelectItem key={kind} value={kind}>
-                        {kind}
+                        {catalogEnumLabel(kind, t)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -180,7 +190,7 @@ export function EquipmentCatalog() {
                   <button
                     type="button"
                     onClick={confirmEditing}
-                    aria-label="Guardar cambios"
+                    aria-label={t('equipment.saveName')}
                     className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-cobalt-tint hover:text-cobalt"
                   >
                     <Check className="size-4" />
@@ -188,7 +198,7 @@ export function EquipmentCatalog() {
                   <button
                     type="button"
                     onClick={() => setEditingId(null)}
-                    aria-label="Descartar cambios"
+                    aria-label={t('equipment.discard')}
                     className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:text-ink"
                   >
                     <X className="size-4" />
@@ -201,9 +211,9 @@ export function EquipmentCatalog() {
           return (
             <li key={item.id} className="flex items-center gap-3 py-4">
               <div className="min-w-0 flex-1">
-                <p className="font-semibold text-ink">{item.name}</p>
+                <p className="font-semibold text-ink">{catalogLabel(item.id, item.name, t)}</p>
                 <p className="mt-0.5 text-xs text-ink/45">
-                  {item.kind}
+                  {catalogEnumLabel(item.kind, t)}
                   {usedIn > 0 && ` · en ${usedIn} ${usedIn === 1 ? 'ejercicio' : 'ejercicios'}`}
                 </p>
               </div>
@@ -212,7 +222,7 @@ export function EquipmentCatalog() {
                 <button
                   type="button"
                   onClick={() => startEditing(item)}
-                  aria-label={`Editar ${item.name}`}
+                  aria-label={t('exercise.editLabel', { name: item.name })}
                   className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-cobalt-tint hover:text-cobalt"
                 >
                   <Pencil className="size-4" />
@@ -220,7 +230,7 @@ export function EquipmentCatalog() {
                 <button
                   type="button"
                   onClick={() => handleDelete(item)}
-                  aria-label={`Eliminar ${item.name}`}
+                  aria-label={t('exercise.deleteLabel', { name: item.name })}
                   className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-danger-surface hover:text-danger"
                 >
                   <Trash2 className="size-4" />

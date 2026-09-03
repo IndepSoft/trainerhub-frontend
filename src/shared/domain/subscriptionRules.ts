@@ -81,23 +81,9 @@ export function renewedThrough(
   return addDays(from, subscription.periodDays)
 }
 
-/**
- * Cómo se dice el estado, en palabras y no en una fecha suelta.
- *
- * «Vence el 12 de octubre» obliga a mirar el calendario para saber si eso es
- * pronto; «faltan 3 días» no. La fecha exacta se enseña al lado, para quien la
- * necesite.
+/*
+ * CÓMO SE DICE EL ESTADO NO ESTÁ AQUÍ, sino en `shared/i18n/duesWording.ts`.
+ * Esto calcula en qué punto está una cuota; ponerle palabras es presentación, y
+ * mientras el texto vivió aquí dentro el dominio habría tenido que conocer al
+ * diccionario para traducirse.
  */
-export function describeStanding(standing: SubscriptionStanding): string {
-  if (standing.state === 'never') return 'Sin cuota registrada'
-  if (standing.daysLeft === null) return 'Sin cuota registrada'
-
-  if (standing.daysLeft < 0) {
-    const days = Math.abs(standing.daysLeft)
-    return days === 1 ? 'Venció ayer' : `Venció hace ${days} días`
-  }
-
-  if (standing.daysLeft === 0) return 'Vence hoy'
-  if (standing.daysLeft === 1) return 'Vence mañana'
-  return `Vence en ${standing.daysLeft} días`
-}

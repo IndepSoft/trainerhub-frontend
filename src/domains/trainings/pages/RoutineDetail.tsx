@@ -7,7 +7,6 @@ import { cn } from '@/shared/lib/utils'
 import { useRoutine } from '../hooks/useRoutines'
 import { LEVEL_BADGE } from '../libs/levelBadge'
 import {
-  BLOCK_METHOD_LABELS,
   countExercises,
   countTotalSets,
   estimateRoutineMinutes,
@@ -17,11 +16,15 @@ import {
 import { useTrainingCatalog } from '../hooks/useTrainingCatalog'
 import { useTrainingDeletion } from '../hooks/useTrainingDeletion'
 import { ConfirmDeleteDialog } from '@/shared/components/ConfirmDeleteDialog'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { STUDENT_LEVEL_LABEL_KEY } from '@/shared/i18n/domainLabels'
+import { BLOCK_METHOD_LABEL_KEY } from '@/shared/i18n/domainLabels'
 
 /**
  * Ficha de una rutina. Sólo composición.
  */
 export default function RoutineDetail() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { routineId } = useParams<{ routineId: string }>()
   const { routine, loading } = useRoutine(routineId)
@@ -44,13 +47,13 @@ export default function RoutineDetail() {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-bone px-6 text-center">
         <p className="font-display text-2xl font-extrabold uppercase text-ink">
-          Rutina no encontrada
+          {t('routine.notFound')}
         </p>
         <p className="text-sm text-ink/50">
-          El enlace puede haber caducado o la rutina ya no existe.
+          {t('routine.notFoundHint')}
         </p>
         <Button asChild variant="outline">
-          <Link to="/trainings">Volver a rutinas</Link>
+          <Link to="/trainings">{t('routine.back')}</Link>
         </Button>
       </div>
     )
@@ -87,18 +90,18 @@ export default function RoutineDetail() {
               }}
             >
               <Trash2 className="size-4" />
-              Eliminar
+              {t('common.delete')}
             </Button>
             <Button asChild variant="outline" className="gap-2">
               <Link to={`/trainings/${routine.id}/edit`}>
                 <Pencil className="size-4" />
-                Editar
+                {t('common.edit')}
               </Link>
             </Button>
             <Button asChild className="gap-2">
               <Link to={`/calendar?routine=${routine.id}`}>
                 <Copy className="size-4" />
-                Usar en una sesión
+                {t('routine.useInSession')}
               </Link>
             </Button>
           </PageHeader.Actions>
@@ -109,7 +112,7 @@ export default function RoutineDetail() {
         <div className="grid grid-cols-1 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           <div className="flex flex-col gap-2 px-5 py-6">
             <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
-              Ejercicios
+              {t('routine.exercises')}
             </span>
             <p className="metric-figures font-display text-4xl font-extrabold leading-none text-ink">
               {countExercises(routine)}
@@ -118,17 +121,17 @@ export default function RoutineDetail() {
 
           <div className="flex flex-col gap-2 px-5 py-6">
             <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
-              Duración
+              {t('routine.duration')}
             </span>
             <p className="metric-figures font-display text-4xl font-extrabold leading-none text-ink">
               {estimateRoutineMinutes(routine)}
-              <span className="ml-1 text-xl font-bold text-ink/45">min</span>
+              <span className="ml-1 text-xl font-bold text-ink/45">{t('routine.minutes')}</span>
             </p>
           </div>
 
           <div className="flex flex-col gap-2 px-5 py-6">
             <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
-              Nivel
+              {t('routine.level')}
             </span>
             <span
               className={cn(
@@ -136,14 +139,14 @@ export default function RoutineDetail() {
                 LEVEL_BADGE[routine.level]
               )}
             >
-              {routine.level}
+              {t(STUDENT_LEVEL_LABEL_KEY[routine.level])}
             </span>
           </div>
         </div>
 
         <section className="px-5 py-8">
           <h2 className="mb-1 flex items-center justify-between border-b border-cobalt-tint-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-            Bloques
+            {t('routine.blocks')}
             <Dumbbell className="size-4 text-cobalt" />
           </h2>
 
@@ -169,7 +172,7 @@ export default function RoutineDetail() {
                         : 'border-ember/40 text-ember-deep'
                     )}
                   >
-                    {BLOCK_METHOD_LABELS[block.method]}
+                    {t(BLOCK_METHOD_LABEL_KEY[block.method])}
                   </span>
 
                   <span className="metric-figures ms-auto shrink-0 text-xs text-ink/40">
@@ -184,7 +187,7 @@ export default function RoutineDetail() {
                       className="flex items-baseline justify-between gap-4 text-sm"
                     >
                       <span className="min-w-0 flex-1 truncate text-ink">
-                        {exercisesById.get(item.exerciseId)?.name ?? 'Ejercicio'}
+                        {exercisesById.get(item.exerciseId)?.name ?? t('exercise.fallback')}
                       </span>
                       <span className="metric-figures shrink-0 font-semibold text-ink/55">
                         {formatPrescription(item)}

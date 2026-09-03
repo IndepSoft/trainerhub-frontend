@@ -4,6 +4,7 @@ import { SessionDuration } from './SessionDuration'
 import { SessionMetrics } from './SessionMetrics'
 import { SessionRouteMap } from './SessionRouteMap'
 import { SlideToAction } from './SlideToAction'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { toLocalDateKey } from '@/shared/lib/dateKey'
 import type { Session, SessionResult } from '@/shared/domain/entities/session'
 
@@ -25,6 +26,7 @@ interface CardioSessionProps {
  * qué sesión se trata y de quién es.
  */
 export function CardioSession({ session, studentName, onFinish }: CardioSessionProps) {
+  const { t } = useTranslation()
   const { session: simulated, metrics, state, paceSeconds, routeProgress, pause, resume, finish } =
     useLiveSession()
 
@@ -93,15 +95,15 @@ export function CardioSession({ session, studentName, onFinish }: CardioSessionP
         {!isRunning && (
           <SlideToAction
             variant="finish"
-            label="Desliza para finalizar"
-            accessibleLabel="Finalizar la sesión"
+            label={t('liveSession.slideToFinish')}
+            accessibleLabel={t('liveSession.finish')}
             onConfirm={handleFinish}
           />
         )}
 
         <SlideToAction
-          label={isRunning ? 'Desliza para pausar' : 'Desliza para reanudar'}
-          accessibleLabel={isRunning ? 'Pausar la sesión' : 'Reanudar la sesión'}
+          label={isRunning ? t('liveSession.slideToPause') : t('liveSession.slideToResume')}
+          accessibleLabel={isRunning ? t('liveSession.pause') : t('liveSession.resume')}
           onConfirm={isRunning ? pause : resume}
         />
       </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { container } from '@/app/container'
 import type { TrainingPlan } from '@/shared/domain/entities/plan'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface UseAssignablePlansResult {
   plans: TrainingPlan[]
@@ -16,6 +17,7 @@ interface UseAssignablePlansResult {
  * mismo.
  */
 export function useAssignablePlans(): UseAssignablePlansResult {
+  const { t } = useTranslation()
   const [plans, setPlans] = useState<TrainingPlan[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -30,7 +32,7 @@ export function useAssignablePlans(): UseAssignablePlansResult {
           if (active) setPlans(result)
         })
         .catch((cause: unknown) => {
-          if (active) setError(cause instanceof Error ? cause.message : 'Error al cargar planes')
+          if (active) setError(cause instanceof Error ? cause.message : t('students.plansError'))
         })
         .finally(() => {
           if (active) setLoading(false)
@@ -44,7 +46,7 @@ export function useAssignablePlans(): UseAssignablePlansResult {
       active = false
       unsubscribe()
     }
-  }, [])
+  }, [t])
 
   return { plans, loading, error }
 }

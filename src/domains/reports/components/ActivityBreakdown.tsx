@@ -1,4 +1,5 @@
 import { useCrewActivity } from '../hooks/useCrewActivity'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /**
  * Cuándo se entrena, por franja horaria. Sólo composición.
@@ -13,6 +14,7 @@ import { useCrewActivity } from '../hooks/useCrewActivity'
  * comparación que importa.
  */
 export function ActivityBreakdown() {
+  const { t } = useTranslation()
   const { byHour, loading } = useCrewActivity()
 
   if (loading) return null
@@ -20,8 +22,7 @@ export function ActivityBreakdown() {
   if (byHour.length === 0) {
     return (
       <p className="py-8 text-sm text-ink/45">
-        Todavía no hay sesiones completadas. La ocupación se calcula a partir de
-        ellas.
+        {t('reports.activity.empty')}
       </p>
     )
   }

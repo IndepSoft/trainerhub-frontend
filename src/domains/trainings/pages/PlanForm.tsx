@@ -11,6 +11,8 @@ import { PlanIdentityFields } from '../components/PlanIdentityFields'
 import { PlanWeekEditor } from '../components/PlanWeekEditor'
 import { PlanSummary } from '../components/PlanSummary'
 import type { TrainingPlan } from '@/shared/domain/entities/plan'
+import { activeLocale } from '@/shared/i18n/activeLocale'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /**
  * Crear y editar un plan. Sólo composición.
@@ -23,6 +25,7 @@ import type { TrainingPlan } from '@/shared/domain/entities/plan'
  * que el plan existe—.
  */
 export default function PlanForm() {
+  const { t } = useTranslation()
   const { planId } = useParams<{ planId: string }>()
   const { plan, loading } = usePlan(planId)
 
@@ -36,13 +39,13 @@ export default function PlanForm() {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-bone px-6 text-center">
         <p className="font-display text-2xl font-extrabold uppercase text-ink">
-          Plan no encontrado
+          {t('plan.notFound')}
         </p>
         <p className="text-sm text-ink/50">
-          El enlace puede haber caducado o el plan ya no existe.
+          {t('plan.notFoundHint')}
         </p>
         <Button asChild variant="outline">
-          <Link to="/trainings?tab=planes">Volver a planes</Link>
+          <Link to="/trainings?tab=planes">{t('plan.back')}</Link>
         </Button>
       </div>
     )
@@ -63,6 +66,7 @@ interface PlanFormFieldsProps {
 }
 
 function PlanFormFields({ plan }: PlanFormFieldsProps) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { routines } = useRoutines()
   const { createPlan, updatePlan } = usePlanActions()
@@ -87,7 +91,7 @@ function PlanFormFields({ plan }: PlanFormFieldsProps) {
   // Alfabético, para que elegir la rutina de un día no sea buscar en el orden
   // en que se crearon.
   const sortedRoutines = useMemo(
-    () => [...routines].sort((left, right) => left.title.localeCompare(right.title, 'es')),
+    () => [...routines].sort((left, right) => left.title.localeCompare(right.title, activeLocale())),
     [routines]
   )
 
@@ -115,13 +119,13 @@ function PlanFormFields({ plan }: PlanFormFieldsProps) {
           className="-ms-2 mb-3 inline-flex h-11 items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/45 transition-colors hover:text-cobalt"
         >
           <ArrowLeft className="size-4" />
-          {isEditing ? 'Volver a la ficha' : 'Planes'}
+          {isEditing ? t('routine.backToRecord') : t('plan.plural')}
         </Link>
 
         <PageHeader.Content>
           <div className="min-w-0">
-            <PageHeader.Eyebrow>Lo que asignas</PageHeader.Eyebrow>
-            <PageHeader.Title>{isEditing ? 'Editar plan' : 'Nuevo plan'}</PageHeader.Title>
+            <PageHeader.Eyebrow>{t('trainings.eyebrow')}</PageHeader.Eyebrow>
+            <PageHeader.Title>{isEditing ? t('plan.editTitle') : t('plan.newTitle')}</PageHeader.Title>
           </div>
 
           <PageHeader.Actions>
@@ -132,9 +136,11 @@ function PlanFormFields({ plan }: PlanFormFieldsProps) {
                 navigate(isEditing ? `/trainings/plans/${planId}` : '/trainings?tab=planes')
               }
             >
-              Cancelar
+              {t('common.cancel')}
             </Button>
-            <Button type="submit">{isEditing ? 'Guardar cambios' : 'Guardar plan'}</Button>
+            <Button type="submit">
+              {isEditing ? t('exercise.saveChanges') : t('plan.save')}
+            </Button>
           </PageHeader.Actions>
         </PageHeader.Content>
       </PageHeader>
@@ -162,12 +168,12 @@ function PlanFormFields({ plan }: PlanFormFieldsProps) {
 
           <div>
             <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-              Microciclos
+              {t('plan.microcycles')}
             </h2>
 
             {routines.length === 0 ? (
               <p className="rounded-block border border-cobalt-tint-3 bg-surface px-4 py-6 text-center text-sm text-ink/45">
-                Todavía no hay rutinas que asignar. Crea una primero y vuelve.
+                {t('plan.noRoutines')}
               </p>
             ) : (
               <ul className="space-y-4">
@@ -193,7 +199,7 @@ function PlanFormFields({ plan }: PlanFormFieldsProps) {
                 estructura se repite. Ver `libs/planDraft.ts`. */}
             <Button type="button" variant="outline" className="mt-4 w-full gap-2" onClick={addWeek}>
               <CalendarPlus className="size-4" />
-              Añadir semana
+              {t('plan.addWeek')}
             </Button>
           </div>
         </div>

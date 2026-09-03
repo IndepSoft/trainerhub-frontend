@@ -1,5 +1,6 @@
 import { countDeloadWeeks, countPlanSessions } from '../libs/plan.utils'
 import type { TrainingPlan } from '../types/training.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface PlanSummaryProps {
   plan: TrainingPlan
@@ -16,13 +17,14 @@ interface PlanSummaryProps {
  * Las cifras son DERIVADAS, con las mismas funciones que usa la tarjeta.
  */
 export function PlanSummary({ plan }: PlanSummaryProps) {
+  const { t } = useTranslation()
   const deloadWeeks = countDeloadWeeks(plan)
 
   return (
     <dl className="grid grid-cols-1 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
       <div className="flex flex-col gap-2 px-5 py-5">
         <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
-          Semanas
+          {t('plan.weeks')}
         </dt>
         {/*
           La descarga va en su PROPIA LINEA. Al lado de la cifra de semanas se
@@ -43,7 +45,7 @@ export function PlanSummary({ plan }: PlanSummaryProps) {
 
       <div className="flex flex-col gap-2 px-5 py-5">
         <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
-          Sesiones
+          {t('plan.sessions')}
         </dt>
         <dd className="metric-figures font-display text-3xl font-extrabold leading-none text-ink">
           {countPlanSessions(plan)}
@@ -52,7 +54,7 @@ export function PlanSummary({ plan }: PlanSummaryProps) {
 
       <div className="flex flex-col gap-2 px-5 py-5">
         <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
-          Frecuencia
+          {t('plan.frequency')}
         </dt>
         <dd className="metric-figures font-display text-3xl font-extrabold leading-none text-ink">
           {plan.weeklyFrequency}

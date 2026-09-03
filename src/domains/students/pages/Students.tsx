@@ -12,8 +12,10 @@ import type { NewStudent } from '@/shared/domain/ports/StudentRepository'
 import { canEnrollMembers } from '@/shared/domain/entities/crew'
 import { useViewerContext } from '@/app/ViewerContext'
 import type { Student } from '@/shared/domain/entities/student'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 export default function Students() {
+  const { t } = useTranslation()
   const { students, loading } = useStudents()
   const { createStudent, updateStudent } = useStudentEditor()
   const { progressById, loading: loadingProgress } = useStudentsProgress()
@@ -56,9 +58,11 @@ export default function Students() {
                 aparecia un instante en cada visita y se leia como que no hay
                 nadie. */}
             <PageHeader.Eyebrow>
-              {loading ? 'Tu equipo' : `Tu equipo · ${students.length}`}
+              {loading
+                ? t('students.eyebrow')
+                : t('students.eyebrowCount', { count: students.length })}
             </PageHeader.Eyebrow>
-            <PageHeader.Title>Estudiantes</PageHeader.Title>
+            <PageHeader.Title>{t('students.title')}</PageHeader.Title>
           </div>
           <PageHeader.Actions>
             {/* Un solo boton. «Invitar» y «Agregar» eran dos y hacian lo mismo
@@ -67,7 +71,7 @@ export default function Students() {
                 alta ES invitar. */}
             <Button onClick={openForNew} disabled={!canEnroll}>
               <Plus className="w-4 h-4" />
-              <span>Añadir alumno</span>
+              <span>{t('students.add')}</span>
             </Button>
           </PageHeader.Actions>
         </PageHeader.Content>
@@ -84,8 +88,7 @@ export default function Students() {
       */}
       {can('crew.invite') && !canEnroll && active !== null && (
         <p className="ps-4 pe-4 pt-3 text-sm text-ink/55">
-          Para dar de alta a alguien hace falta activar la suscripción de{' '}
-          {active.crew.name}. Puedes seguir trabajando con quienes ya están.
+          {t('students.needsSubscription', { crew: active.crew.name })}
         </p>
       )}
 

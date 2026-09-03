@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { container } from '@/app/container'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type { Session } from '@/shared/domain/entities/session'
 import type { Routine } from '@/shared/domain/entities/routine'
 
@@ -25,9 +26,10 @@ interface UseSessionToRunResult {
  * dejado tres estados de carga que parpadean por separado.
  */
 export function useSessionToRun(sessionId: string | undefined): UseSessionToRunResult {
+  const { t } = useTranslation()
   const [session, setSession] = useState<Session | null>(null)
   const [routine, setRoutine] = useState<Routine | null>(null)
-  const [studentName, setStudentName] = useState('Clase grupal')
+  const [studentName, setStudentName] = useState(() => t('session.groupClass'))
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -60,7 +62,9 @@ export function useSessionToRun(sessionId: string | undefined): UseSessionToRunR
 
       setRoutine(itsRoutine)
       setStudentName(
-        itsStudent === null ? 'Clase grupal' : `${itsStudent.firstName} ${itsStudent.lastName}`
+        itsStudent === null
+          ? t('session.groupClass')
+          : `${itsStudent.firstName} ${itsStudent.lastName}`
       )
       setLoading(false)
     }
@@ -70,7 +74,7 @@ export function useSessionToRun(sessionId: string | undefined): UseSessionToRunR
     return () => {
       active = false
     }
-  }, [sessionId])
+  }, [sessionId, t])
 
   return { session, routine, studentName, loading }
 }

@@ -1,17 +1,19 @@
 import { Monitor, Moon, Sun, type LucideIcon } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { useThemePreference, type AppTheme } from '@/shared/hooks/useThemePreference'
+import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 
 interface ThemeOption {
   value: AppTheme
-  label: string
+  labelKey: TranslationKey
   icon: LucideIcon
 }
 
 const THEME_OPTIONS: ThemeOption[] = [
-  { value: 'light', label: 'Claro', icon: Sun },
-  { value: 'dark', label: 'Oscuro', icon: Moon },
-  { value: 'system', label: 'Sistema', icon: Monitor },
+  { value: 'light', labelKey: 'settings.theme.light', icon: Sun },
+  { value: 'dark', labelKey: 'settings.theme.dark', icon: Moon },
+  { value: 'system', labelKey: 'settings.theme.system', icon: Monitor },
 ]
 
 /**
@@ -26,10 +28,11 @@ const THEME_OPTIONS: ThemeOption[] = [
  * ya está a la vista sobra.
  */
 export function ThemeSelector() {
+  const { t } = useTranslation()
   const { theme, setTheme } = useThemePreference()
 
   return (
-    <div role="group" aria-label="Tema">
+    <div role="group" aria-label={t('settings.theme')}>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         {THEME_OPTIONS.map((option) => {
           const Icon = option.icon
@@ -49,7 +52,7 @@ export function ThemeSelector() {
               )}
             >
               <Icon className="size-4 shrink-0" />
-              {option.label}
+              {t(option.labelKey)}
             </button>
           )
         })}
@@ -57,7 +60,7 @@ export function ThemeSelector() {
 
       <p className="mt-2 text-xs text-ink/45">
         {/* El porqué de que exista «sistema», dicho donde se elige. */}
-        Con «Sistema» sigue al modo noche de tu teléfono y cambia solo.
+        {t('settings.theme.systemHint')}
       </p>
     </div>
   )

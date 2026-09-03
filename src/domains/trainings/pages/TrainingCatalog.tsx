@@ -8,6 +8,7 @@ import { ExerciseCatalog } from '../components/ExerciseCatalog'
 import { EquipmentCatalog } from '../components/EquipmentCatalog'
 import { BlockLibrary } from '../components/BlockLibrary'
 import { ReferenceCatalog } from '../components/ReferenceCatalog'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 const TAB_ORDER = ['ejercicios', 'equipamiento', 'bloques', 'referencia'] as const
 type TabValue = (typeof TAB_ORDER)[number]
@@ -26,6 +27,7 @@ type TabValue = (typeof TAB_ORDER)[number]
  * vocabulario del sistema y no se edita.
  */
 export default function TrainingCatalog() {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<TabValue>('ejercicios')
 
   const moveTab = (offset: number) => {
@@ -47,11 +49,11 @@ export default function TrainingCatalog() {
           className="-ms-2 mb-3 inline-flex h-11 items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/45 transition-colors hover:text-cobalt"
         >
           <ArrowLeft className="size-4" />
-          Entrenamientos
+          {t('trainings.title')}
         </Link>
 
-        <PageHeader.Eyebrow>Con lo que compones</PageHeader.Eyebrow>
-        <PageHeader.Title>Catálogo</PageHeader.Title>
+        <PageHeader.Eyebrow>{t('trainings.catalogEyebrow')}</PageHeader.Eyebrow>
+        <PageHeader.Title>{t('trainings.catalog')}</PageHeader.Title>
       </PageHeader>
 
       <div className="flex-1 overflow-auto">
@@ -62,10 +64,10 @@ export default function TrainingCatalog() {
         >
           <div className="px-4 pt-1">
             <TabsList className="w-full md:grid md:grid-cols-4">
-              <TabsTrigger value="ejercicios">Ejercicios</TabsTrigger>
-              <TabsTrigger value="equipamiento">Equipamiento</TabsTrigger>
-              <TabsTrigger value="bloques">Bloques</TabsTrigger>
-              <TabsTrigger value="referencia">Referencia</TabsTrigger>
+              <TabsTrigger value="ejercicios">{t('trainings.tab.exercises')}</TabsTrigger>
+              <TabsTrigger value="equipamiento">{t('trainings.tab.equipment')}</TabsTrigger>
+              <TabsTrigger value="bloques">{t('trainings.tab.blocks')}</TabsTrigger>
+              <TabsTrigger value="referencia">{t('trainings.tab.reference')}</TabsTrigger>
             </TabsList>
           </div>
 

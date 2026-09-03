@@ -3,6 +3,7 @@ import { Progress } from '@/shared/ui/progress'
 import { useCountUp } from '@/shared/hooks/useCountUp'
 import { cn } from '@/shared/lib/utils'
 import type { LevelProgress, StreakStatus } from '../types/gamification.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface GamificationHeaderProps {
   streak: StreakStatus
@@ -28,6 +29,7 @@ export function GamificationHeader({
   levelCompletion,
   experienceToNextLevel,
 }: GamificationHeaderProps) {
+  const { t } = useTranslation()
   const animatedStreak = useCountUp({ target: streak.currentDays })
   const animatedExperience = useCountUp({ target: level.currentExperience })
 
@@ -48,13 +50,13 @@ export function GamificationHeader({
           <span className="metric-figures font-display text-3xl font-extrabold leading-none text-ink">
             {Math.round(animatedStreak)}
           </span>
-          <span className="sr-only">días de racha</span>
+          <span className="sr-only">{t('progress.streakDays')}</span>
         </div>
 
         <div className="min-w-0 flex-1">
           <div className="mb-1.5 flex items-baseline justify-between gap-3">
             <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
-              Nivel {level.level}
+              {t('progress.level', { level: level.level })}
             </span>
             <span className="metric-figures text-[11px] font-semibold text-ink/40">
               {Math.round(animatedExperience)} / {level.experienceForNextLevel} XP
@@ -67,8 +69,10 @@ export function GamificationHeader({
           />
 
           <p className="mt-1.5 text-[11px] text-ink/40">
-            Faltan <span className="metric-figures font-semibold text-ink/60">{experienceToNextLevel}</span> XP
-            para el nivel {level.level + 1}
+            {t('progress.xpToLevel', {
+              amount: experienceToNextLevel,
+              level: level.level + 1,
+            })}
           </p>
         </div>
       </div>

@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom'
 import { LogOut, User } from 'lucide-react'
 import { getInitials, getShortName } from '@/shared/lib/personName'
 import { useLogout } from '@/auth/hooks/useLogout'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface UserMenuProps {
   /**
@@ -27,6 +28,7 @@ interface UserMenuProps {
 export function UserMenu({ person, loading }: UserMenuProps) {
   const navigate = useNavigate()
   const { handleLogout } = useLogout()
+  const { t } = useTranslation()
   
   const displayName = getShortName(person.firstName, person.lastName)
   const initials = getInitials(person.firstName, person.lastName)
@@ -37,7 +39,7 @@ export function UserMenu({ person, loading }: UserMenuProps) {
       <DropdownMenuTrigger asChild>
         <button 
           className="flex items-center space-x-2 p-2 text-ink/70 hover:text-ink hover:bg-cobalt-tint-1 rounded-md transition-colors"
-          aria-label="Menú de usuario"
+          aria-label={t('userMenu.label')}
         >
           <Avatar>
             <AvatarImage src={avatarUrl} alt={displayName} />
@@ -46,7 +48,7 @@ export function UserMenu({ person, loading }: UserMenuProps) {
 
           <div className="hidden md:flex flex-col gap-0.5 leading-none text-left">
             {loading ? (
-              <span className="text-sm text-ink/40">Cargando…</span>
+              <span className="text-sm text-ink/40">{t('common.loading')}</span>
             ) : (
               <span className="font-semibold text-sm">{displayName}</span>
             )}
@@ -55,17 +57,17 @@ export function UserMenu({ person, loading }: UserMenuProps) {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent className="w-56" align="end" sideOffset={8}>
-        <DropdownMenuLabel>Mi cuenta</DropdownMenuLabel>
+        <DropdownMenuLabel>{t('userMenu.account')}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {/* Lleva a Configuracion, que es donde vive el perfil. Era una entrada
             de menu sin `onClick` ni enlace: no hacia absolutamente nada. */}
         <DropdownMenuItem onSelect={() => navigate('/settings')}>
           <User className="mr-2 h-4 w-4" />
-          <span>Perfil</span>
+          <span>{t('userMenu.profile')}</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
-          <span>Cerrar sesión</span>
+          <span>{t('userMenu.logout')}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

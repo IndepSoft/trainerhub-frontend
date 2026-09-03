@@ -2,6 +2,7 @@ import { CREW_ROLE_RANK } from '@/shared/domain/entities/crew'
 import { can } from '@/shared/domain/permissions'
 import type { Capability } from '@/shared/domain/permissions'
 import type { CrewRole } from '@/shared/domain/entities/crew'
+import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 import {
   type LucideIcon,
   Home,
@@ -16,7 +17,14 @@ import {
 
 export interface NavigationItem {
   id: string
-  label: string
+  /**
+   * La CLAVE de la etiqueta, no la etiqueta.
+   *
+   * Esta lista es una constante de módulo: se evalúa una vez, al importar, donde
+   * no hay componente ni contexto del que sacar el idioma. Con el texto dentro,
+   * la barra lateral se quedaba en español para siempre. Traduce quien pinta.
+   */
+  labelKey: TranslationKey
   href: string
   icon?: LucideIcon
   badge?: string | number
@@ -87,7 +95,7 @@ export const navigationConfig: NavigationItem[] = [
   {
     id: 'dashboard',
     minRole: 'trainer',
-    label: 'Dashboard',
+    labelKey: 'nav.dashboard',
     href: '/dashboard',
     icon: Home,
     requiresAuth: true,
@@ -97,7 +105,7 @@ export const navigationConfig: NavigationItem[] = [
   {
     id: 'students',
     capability: 'students.manage',
-    label: 'Estudiantes',
+    labelKey: 'nav.students',
     href: '/students',
     icon: Users,
     requiresAuth: true,
@@ -107,7 +115,7 @@ export const navigationConfig: NavigationItem[] = [
   {
     id: 'trainings',
     capability: 'training.manage',
-    label: 'Entrenamientos',
+    labelKey: 'nav.trainings',
     href: '/trainings',
     icon: Dumbbell,
     requiresAuth: true,
@@ -116,7 +124,7 @@ export const navigationConfig: NavigationItem[] = [
   },
   {
     id: 'calendar',
-    label: 'Calendario',
+    labelKey: 'nav.calendar',
     href: '/calendar',
     icon: Calendar,
     requiresAuth: true,
@@ -125,7 +133,7 @@ export const navigationConfig: NavigationItem[] = [
   },
   {
     id: 'progress',
-    label: 'Progreso',
+    labelKey: 'nav.progress',
     href: '/progress',
     icon: Award,
     requiresAuth: true,
@@ -136,7 +144,7 @@ export const navigationConfig: NavigationItem[] = [
   {
     id: 'reports',
     minRole: 'trainer',
-    label: 'Reportes',
+    labelKey: 'nav.reports',
     href: '/reports',
     icon: BarChart3,
     requiresAuth: true,
@@ -145,7 +153,7 @@ export const navigationConfig: NavigationItem[] = [
   },
   {
     id: 'settings',
-    label: 'Configuración',
+    labelKey: 'nav.settings',
     href: '/settings',
     icon: Settings,
     requiresAuth: true,
@@ -158,7 +166,7 @@ export const navigationConfig: NavigationItem[] = [
 
   {
     id: 'admin',
-    label: 'Plataforma',
+    labelKey: 'nav.platform',
     href: '/admin',
     icon: ShieldCheck,
     requiresAuth: true,
@@ -172,7 +180,7 @@ export const navigationConfig: NavigationItem[] = [
   // Rutas de guest (sin auth)
   {
     id: 'authentication',
-    label: 'Autenticación',
+    labelKey: 'nav.authentication',
     href: '/authentication',
     guestOnly: true, // ← Solo para GuestRoute
     showInSidebar: false,

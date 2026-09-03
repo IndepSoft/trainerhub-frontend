@@ -4,6 +4,7 @@ import { SessionCard } from './SessionCard'
 import type { Student } from '@/shared/domain/entities/student'
 import { resolveSessionStudentName } from '../libs/sessionStudent'
 import type { Session } from '../types/calendar.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /** Alto de cada tramo de 30 minutos en la vista de día. */
 const SLOT_HEIGHT = 64
@@ -32,6 +33,7 @@ export function DayView({
   onSelectSession,
   studentsById,
 }: DayViewProps) {
+  const { t } = useTranslation()
   return (
     <div className="flex border-y border-cobalt-tint-3">
       <div className="w-14 shrink-0 border-e border-cobalt-tint-3">
@@ -54,7 +56,7 @@ export function DayView({
         slotHeight={SLOT_HEIGHT}
         renderSession={(session, isCompact) => (
           <SessionCard
-            studentName={resolveSessionStudentName(session, studentsById)}
+            studentName={resolveSessionStudentName(session, studentsById, t)}
             session={session}
             onSelect={onSelectSession}
             variant={isCompact ? 'compact' : 'full'}

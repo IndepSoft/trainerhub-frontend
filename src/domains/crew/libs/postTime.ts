@@ -8,18 +8,26 @@
  * Pasadas las 48 horas se pasa a la fecha escrita. «Hace 9 días» obliga a contar
  * hacia atrás para saber cuándo fue; a partir de ahí la fecha informa más.
  */
-export function describePostTime(createdAt: string, now: Date = new Date()): string {
+
+import { activeLocale } from '@/shared/i18n/activeLocale'
+import type { Translate } from '@/shared/i18n/LanguageContext'
+
+export function describePostTime(
+  createdAt: string,
+  t: Translate,
+  now: Date = new Date()
+): string {
   const published = new Date(createdAt)
   const minutes = Math.floor((now.getTime() - published.getTime()) / 60_000)
 
   // Un reloj adelantado en el dispositivo daría minutos negativos y un «hace -3
   // minutos». Se trata como recién publicado, que es lo que quiere decir.
-  if (minutes < 1) return 'Ahora mismo'
-  if (minutes < 60) return `Hace ${minutes} min`
+  if (minutes < 1) return t('postTime.justNow')
+  if (minutes < 60) return t('postTime.minutes', { count: minutes })
 
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `Hace ${hours} h`
-  if (hours < 48) return 'Ayer'
+  if (hours < 24) return t('postTime.hours', { count: hours })
+  if (hours < 48) return t('postTime.yesterday')
 
-  return published.toLocaleDateString('es', { day: 'numeric', month: 'long' })
+  return published.toLocaleDateString(activeLocale(), { day: 'numeric', month: 'long' })
 }

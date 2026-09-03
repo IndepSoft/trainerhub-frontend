@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { Clock, QrCode } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { useViewerContext } from '@/app/ViewerContext'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /**
  * La invitación a unirse a un equipo, sobre el progreso vacío.
@@ -15,6 +16,7 @@ import { useViewerContext } from '@/app/ViewerContext'
  * un cero sin explicación se interpreta como que algo no ha cargado.
  */
 export function JoinCrewPrompt() {
+  const { t } = useTranslation()
   const { pending } = useViewerContext()
 
   /*
@@ -32,14 +34,13 @@ export function JoinCrewPrompt() {
         <div className="mx-auto flex max-w-xl flex-col items-start gap-3">
           <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/45">
             <Clock aria-hidden="true" className="size-3.5" />
-            Solicitud enviada
+            {t('joinCrew.requestSent')}
           </p>
           <h2 className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
-            Esperando a {waiting.crew.name}
+            {t('joinCrew.waitingFor', { crew: waiting.crew.name })}
           </h2>
           <p className="text-sm text-ink/60">
-            Tu entrenador tiene que aceptarte. En cuanto lo haga, esto se llena
-            con tus sesiones.
+            {t('joinCrew.waitingHint')}
           </p>
         </div>
       </section>
@@ -50,20 +51,19 @@ export function JoinCrewPrompt() {
     <section className="border-b border-cobalt-tint-3 bg-cobalt-tint/40 px-5 py-6">
       <div className="mx-auto flex max-w-xl flex-col items-start gap-3">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cobalt">
-          Empieza aquí
+          {t('joinCrew.startHere')}
         </p>
         <h2 className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
-          Únete a un equipo
+          {t('joinCrew.title')}
         </h2>
         <p className="text-sm text-ink/60">
-          Tu progreso se llena con las sesiones que entrenas. Escanea el QR de tu
-          entrenador, o escribe su código.
+          {t('joinCrew.hint')}
         </p>
 
         <Button asChild className="mt-1 gap-2">
           <Link to="/crew/unirse">
             <QrCode className="size-4" />
-            Tengo un código
+            {t('joinCrew.haveCode')}
           </Link>
         </Button>
       </div>

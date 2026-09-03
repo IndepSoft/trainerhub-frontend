@@ -1,5 +1,6 @@
 import type { Exercise } from '../types/training.types'
 import type { ExerciseDraft, ExerciseDraftErrors } from '../types/catalogDraft.types'
+import type { Translate } from '@/shared/i18n/LanguageContext'
 
 /**
  * Traducción y validación del borrador de ejercicio. Funciones puras.
@@ -67,23 +68,24 @@ export function toExerciseData(draft: ExerciseDraft): Omit<Exercise, 'id'> {
  * no se puede equilibrar una sesión; sin equipamiento no se sabe con qué se
  * ejecuta. La descripción y las instrucciones son texto de ayuda y no lo son.
  */
-export function validateExerciseDraft(draft: ExerciseDraft): ExerciseDraftErrors {
+/* Traducir llega por parametro: son funciones puras, no componentes. */
+export function validateExerciseDraft(draft: ExerciseDraft, t: Translate): ExerciseDraftErrors {
   const errors: ExerciseDraftErrors = {}
 
   if (draft.name.trim() === '') {
-    errors.name = 'Ponle un nombre al ejercicio.'
+    errors.name = t('exercise.needsName')
   }
 
   if (draft.equipmentId === '') {
-    errors.equipmentId = 'Elige con qué se ejecuta.'
+    errors.equipmentId = t('exercise.needsEquipment')
   }
 
   if (draft.movementPatternId === '') {
-    errors.movementPatternId = 'Elige el patrón de movimiento.'
+    errors.movementPatternId = t('exercise.needsPattern')
   }
 
   if (draft.primaryMuscleGroupId === '') {
-    errors.primaryMuscleGroupId = 'Elige el grupo muscular principal.'
+    errors.primaryMuscleGroupId = t('exercise.needsMuscle')
   }
 
   return errors

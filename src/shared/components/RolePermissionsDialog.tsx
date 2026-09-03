@@ -11,12 +11,15 @@ import { cn } from '@/shared/lib/utils'
 import {
   ALL_CAPABILITIES,
   CAPABILITIES_BY_ROLE,
-  CAPABILITY_LABEL,
-  ROLE_DESCRIPTION,
-  ROLE_LABEL,
   type Capability,
 } from '@/shared/domain/permissions'
 import type { CrewRole } from '@/shared/domain/entities/crew'
+import {
+  CAPABILITY_LABEL_KEY,
+  ROLE_DESCRIPTION_KEY,
+  ROLE_LABEL_KEY,
+} from '@/shared/i18n/domainLabels'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /**
  * A quién se le está cambiando el papel.
@@ -107,6 +110,7 @@ function MembershipFields({
   onSave,
   onCancel,
 }: MembershipFieldsProps) {
+  const { t } = useTranslation()
   const [role, setRole] = useState<CrewRole>(subject.role)
   const [extras, setExtras] = useState<Capability[]>(subject.extraCapabilities)
   const [saving, setSaving] = useState(false)
@@ -130,9 +134,9 @@ function MembershipFields({
 
   return (
     <div className="space-y-5">
-      <div role="group" aria-label="Rol">
+      <div role="group" aria-label={t('roleDialog.role')}>
         <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
-          Rol
+          {t('roleDialog.role')}
         </span>
 
         <div className="mt-2 space-y-2">
@@ -149,22 +153,21 @@ function MembershipFields({
                   : 'border-cobalt-tint-3 hover:border-cobalt/40'
               )}
             >
-              <span className="text-sm font-semibold text-ink">{ROLE_LABEL[candidate]}</span>
-              <span className="text-xs text-ink/50">{ROLE_DESCRIPTION[candidate]}</span>
+              <span className="text-sm font-semibold text-ink">{t(ROLE_LABEL_KEY[candidate])}</span>
+              <span className="text-xs text-ink/50">{t(ROLE_DESCRIPTION_KEY[candidate])}</span>
             </button>
           ))}
         </div>
       </div>
 
-      <div role="group" aria-label="Permisos">
+      <div role="group" aria-label={t('roleDialog.permissions')}>
         <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
-          Permisos
+          {t('roleDialog.permissions')}
         </span>
         <p className="mt-1 text-xs text-ink/45">
           {/* El invariante, dicho donde se decide: es lo que hace que la
               pregunta «¿qué puede hacer éste?» siga teniendo respuesta corta. */}
-          Los del rol vienen marcados y no se pueden quitar. Lo que añadas aquí
-          suma por encima.
+          {t('roleDialog.permissionsHint')}
         </p>
 
         <ul className="mt-2 space-y-1">
@@ -189,9 +192,13 @@ function MembershipFields({
                       : 'hover:bg-cobalt-tint/40'
                   )}
                 >
-                  <span>{CAPABILITY_LABEL[capability]}</span>
+                  <span>{t(CAPABILITY_LABEL_KEY[capability])}</span>
                   <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.12em]">
-                    {fromRole ? 'Del rol' : granted ? 'Concedido' : 'No'}
+                    {fromRole
+                      ? t('roleDialog.fromRole')
+                      : granted
+                        ? t('roleDialog.granted')
+                        : t('roleDialog.notGranted')}
                   </span>
                 </button>
               </li>
@@ -208,14 +215,14 @@ function MembershipFields({
 
       <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
+          {t('common.cancel')}
         </Button>
         <Button
           type="button"
           disabled={saving || blockedReason !== undefined}
           onClick={() => void handleSave()}
         >
-          {saving ? 'Guardando…' : 'Guardar'}
+          {saving ? t('common.saving') : t('common.save')}
         </Button>
       </div>
     </div>

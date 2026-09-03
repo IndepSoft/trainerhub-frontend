@@ -1,5 +1,6 @@
 import { StudentProgressStrip } from './StudentProgressStrip'
 import { useStudentsProgress } from '../hooks/useStudentsProgress'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface StudentProgressSectionProps {
   studentId: string
@@ -24,6 +25,7 @@ interface StudentProgressSectionProps {
  * consulta más.
  */
 export function StudentProgressSection({ studentId }: StudentProgressSectionProps) {
+  const { t } = useTranslation()
   const { progressById, loading } = useStudentsProgress()
 
   return (
@@ -32,7 +34,7 @@ export function StudentProgressSection({ studentId }: StudentProgressSectionProp
         id="progreso-titulo"
         className="mb-4 border-b border-cobalt-tint-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60"
       >
-        Progreso
+        {t('studentProgress.title')}
       </h2>
 
       {/* Sin el relleno lateral de la tarjeta: aquí la sección ya lo pone, y

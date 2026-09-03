@@ -1,5 +1,6 @@
 import { Timeline, TimelineEntry } from '@/shared/components/Timeline'
 import { SectionHeading } from './SectionHeading'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type { RecentActivityEntry } from '../types/dashboard.types'
 
 interface RecentActivityProps {
@@ -14,15 +15,17 @@ interface RecentActivityProps {
  * lo que la seccion promete.
  */
 export function RecentActivity({ activities }: RecentActivityProps) {
+  const { t } = useTranslation()
+
   return (
     <section className="flex-1">
-      <SectionHeading>Actividad reciente</SectionHeading>
+      <SectionHeading>{t('dashboard.recentActivity')}</SectionHeading>
 
       {/* Vacia se explica, en vez de dejar un titulo suelto: al empezar no hay
           nada completado todavia, y un hueco mudo se lee como un fallo. */}
       {activities.length === 0 && (
         <p className="pt-5 text-sm text-ink/40">
-          Aún no hay sesiones completadas. Al terminar una, aparecerá aquí.
+          {t('dashboard.recentEmpty')}
         </p>
       )}
 

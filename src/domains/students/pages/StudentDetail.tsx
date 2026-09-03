@@ -14,11 +14,14 @@ import { StudentSessions } from '../components/StudentSessions'
 import { ScheduleSessionDialog } from '../components/ScheduleSessionDialog'
 import { LEVEL_BADGE } from '../libs/levelBadge'
 import { cn } from '@/shared/lib/utils'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { STUDENT_LEVEL_LABEL_KEY, goalLabel } from '@/shared/i18n/domainLabels'
 
 /**
  * Ficha de un estudiante. Sólo composición.
  */
 export default function StudentDetail() {
+  const { t } = useTranslation()
   const { studentId } = useParams<{ studentId: string }>()
   const { student, loading } = useStudent(studentId)
 
@@ -60,13 +63,13 @@ export default function StudentDetail() {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-bone px-6 text-center">
         <p className="font-display text-2xl font-extrabold uppercase text-ink">
-          Estudiante no encontrado
+          {t('students.notFound')}
         </p>
         <p className="text-sm text-ink/50">
-          El enlace puede haber caducado o el estudiante ya no existe.
+          {t('students.notFoundHint')}
         </p>
         <Button asChild variant="outline">
-          <Link to="/students">Volver a estudiantes</Link>
+          <Link to="/students">{t('students.backToStudents')}</Link>
         </Button>
       </div>
     )
@@ -85,7 +88,7 @@ export default function StudentDetail() {
           className="-ms-2 mb-3 inline-flex h-11 items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/45 transition-colors hover:text-cobalt"
         >
           <ArrowLeft className="size-4" />
-          Estudiantes
+          {t('students.title')}
         </Link>
 
         <PageHeader.Content>
@@ -108,7 +111,7 @@ export default function StudentDetail() {
                 un destino, es ruido. */}
             <Button className="gap-2" onClick={() => setIsScheduleOpen(true)}>
               <Calendar className="size-4" />
-              Agendar sesión
+              {t('studentCard.scheduleSession')}
             </Button>
           </PageHeader.Actions>
         </PageHeader.Content>
@@ -116,14 +119,22 @@ export default function StudentDetail() {
 
       <div className="flex-1 overflow-auto">
         <div className="grid grid-cols-1 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-          <Metric label="Edad" value={`${student.age}`} unit="años" />
-          <Metric label="Grasa corporal" value={`${student.bodyFatPercentage}`} unit="%" />
-          <Metric label="Nivel" value={student.level} badgeClassName={LEVEL_BADGE[student.level]} />
+          <Metric
+            label={t('studentCard.age')}
+            value={`${student.age}`}
+            unit={t('studentCard.years')}
+          />
+          <Metric label={t('studentDetail.bodyFat')} value={`${student.bodyFatPercentage}`} unit="%" />
+          <Metric
+            label={t('studentDetail.level')}
+            value={t(STUDENT_LEVEL_LABEL_KEY[student.level])}
+            badgeClassName={LEVEL_BADGE[student.level]}
+          />
         </div>
 
         <section className="px-5 py-8">
           <h2 className="mb-4 border-b border-cobalt-tint-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-            Objetivos
+            {t('studentDetail.goals')}
           </h2>
           <div className="flex flex-wrap gap-2">
             {student.goals.map((goal) => (
@@ -131,7 +142,7 @@ export default function StudentDetail() {
                 key={goal}
                 className="rounded-action border border-cobalt-tint-3 px-3 py-1.5 text-sm text-ink/70"
               >
-                {goal}
+                {goalLabel(goal, t)}
               </span>
             ))}
           </div>

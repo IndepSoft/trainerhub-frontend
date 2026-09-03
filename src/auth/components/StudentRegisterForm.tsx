@@ -6,6 +6,7 @@ import { FormField } from './FormField'
 import { FormInput } from './FormInput'
 import { RegisterFields } from './RegisterFields'
 import { useRegisterForm } from '../hooks/useRegisterForm'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface StudentRegisterFormProps {
   onBack: () => void
@@ -27,6 +28,7 @@ interface StudentRegisterFormProps {
  * por mensaje.
  */
 export function StudentRegisterForm({ onBack }: StudentRegisterFormProps) {
+  const { t } = useTranslation()
   const { formData, isValid, loading, error, isRequired, setField, submit } =
     useRegisterForm('student')
 
@@ -39,9 +41,9 @@ export function StudentRegisterForm({ onBack }: StudentRegisterFormProps) {
   return (
     <>
       <CardHeader className="text-center">
-        <CardTitle className="text-xl font-semibold">Crear cuenta</CardTitle>
+        <CardTitle className="text-xl font-semibold">{t('register.student.title')}</CardTitle>
         <CardDescription>
-          Para seguir tu progreso y lo que te asigne tu entrenador.
+          {t('register.student.hint')}
         </CardDescription>
       </CardHeader>
 
@@ -58,7 +60,7 @@ export function StudentRegisterForm({ onBack }: StudentRegisterFormProps) {
 
             <FormField
               htmlFor="register-join-code"
-              label="Código del equipo (opcional)"
+              label={t('register.student.joinCode')}
               required={false}
             >
               <FormInput
@@ -71,17 +73,16 @@ export function StudentRegisterForm({ onBack }: StudentRegisterFormProps) {
             </FormField>
 
             <p className="text-xs text-ink/45">
-              Si no lo tienes, no pasa nada: puedes unirte a un equipo más tarde,
-              escaneando el QR de tu entrenador.
+              {t('register.student.joinCodeHint')}
             </p>
 
             <Button type="submit" className="mt-6 w-full" disabled={!isValid || loading}>
-              {loading ? 'Creando cuenta…' : 'Crear cuenta'}
+              {loading ? t('register.creatingAccount') : t('register.createAccount')}
             </Button>
 
             <Button type="button" variant="ghost" className="w-full gap-2" onClick={onBack}>
               <ArrowLeft className="size-4" />
-              Entreno a gente
+              {t('register.student.backToTrainer')}
             </Button>
           </div>
         </form>

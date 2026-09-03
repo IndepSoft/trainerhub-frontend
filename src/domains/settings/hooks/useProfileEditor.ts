@@ -3,6 +3,7 @@ import { container } from '@/app/container'
 import { AppError } from '@/shared/domain/errors'
 import { useViewerContext } from '@/app/ViewerContext'
 import { useAuthStore } from '@/app/stores/authStore'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /** Lo que se puede cambiar de uno mismo, sea cual sea la ficha. */
 export interface ProfileDraft {
@@ -62,6 +63,7 @@ interface UseProfileEditorResult {
  */
 export function useProfileEditor(): UseProfileEditorResult {
   const { trainer, active } = useViewerContext()
+  const { t } = useTranslation()
   const user = useAuthStore((state) => state.user)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -118,13 +120,13 @@ export function useProfileEditor(): UseProfileEditorResult {
 
         return false
       } catch (caught) {
-        setError(AppError.is(caught) ? caught.message : 'No se pudo guardar el perfil')
+        setError(AppError.is(caught) ? caught.message : t('settings.profile.error'))
         return false
       } finally {
         setSaving(false)
       }
     },
-    [trainer, student]
+    [trainer, student, t]
   )
 
   return {

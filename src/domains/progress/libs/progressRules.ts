@@ -1,4 +1,5 @@
 import { toLocalDateKey } from '@/shared/lib/dateKey'
+import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 // La experiencia vive en `shared/domain` desde que la necesita tambien el
 // ranking del equipo: dos formulas para la misma cifra darian dos numeros.
 import { completedSessions, totalExperience } from '@/shared/domain/experience'
@@ -165,8 +166,9 @@ const nextDayKey = (dayKey: string): string => shiftDayKey(dayKey, 1)
  */
 interface MilestoneStep {
   id: string
-  title: string
-  description: string
+  /* Claves, no textos: esta escalera se evalua al importar. Ver el catalogo. */
+  titleKey: TranslationKey
+  descriptionKey: TranslationKey
   requiredSessions: number
   experienceReward: number
 }
@@ -174,36 +176,36 @@ interface MilestoneStep {
 const MILESTONE_LADDER: MilestoneStep[] = [
   {
     id: 'first-steps',
-    title: 'Primeros pasos',
-    description: 'Tres sesiones para coger el ritmo',
+    titleKey: 'milestone.firstSteps.title',
+    descriptionKey: 'milestone.firstSteps.description',
     requiredSessions: 3,
     experienceReward: 100,
   },
   {
     id: 'consistency',
-    title: 'Constancia',
-    description: 'Siete sesiones completadas',
+    titleKey: 'milestone.consistency.title',
+    descriptionKey: 'milestone.consistency.description',
     requiredSessions: 7,
     experienceReward: 150,
   },
   {
     id: 'load',
-    title: 'Subir la carga',
-    description: 'Doce sesiones a las espaldas',
+    titleKey: 'milestone.load.title',
+    descriptionKey: 'milestone.load.description',
     requiredSessions: 12,
     experienceReward: 200,
   },
   {
     id: 'endurance',
-    title: 'Resistencia',
-    description: 'Veinte sesiones sin abandonar',
+    titleKey: 'milestone.endurance.title',
+    descriptionKey: 'milestone.endurance.description',
     requiredSessions: 20,
     experienceReward: 250,
   },
   {
     id: 'milestone',
-    title: 'Meta del mes',
-    description: 'Treinta sesiones completadas',
+    titleKey: 'milestone.monthGoal.title',
+    descriptionKey: 'milestone.monthGoal.description',
     requiredSessions: 30,
     experienceReward: 400,
   },

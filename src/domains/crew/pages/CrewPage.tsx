@@ -13,6 +13,8 @@ import { CrewWall } from '../components/CrewWall'
 import { CrewRanking } from '../components/CrewRanking'
 import { canEnrollMembers } from '@/shared/domain/entities/crew'
 import type { Student } from '@/shared/domain/entities/student'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { STUDENT_LEVEL_LABEL_KEY } from '@/shared/i18n/domainLabels'
 
 /**
  * La página del equipo. Sólo composición.
@@ -34,6 +36,7 @@ import type { Student } from '@/shared/domain/entities/student'
  * quedada, sí lo es.
  */
 export default function CrewPage() {
+  const { t } = useTranslation()
   const { active, trainer, can, loading: loadingViewer } = useViewerContext()
   const { members, pending, loading, approve, reject } = useCrewMembers()
   const { rotateJoinToken, saving } = useCrewEditor()
@@ -73,7 +76,7 @@ export default function CrewPage() {
                 <Button asChild variant="outline" className="gap-2">
                   <Link to="/crew/equipo">
                     <Users className="size-4" />
-                    Equipo técnico
+                    {t('crew.staff')}
                   </Link>
                 </Button>
               )}
@@ -82,7 +85,7 @@ export default function CrewPage() {
                 <Button asChild variant="outline" className="gap-2">
                   <Link to="/crew/ajustes">
                     <Settings className="size-4" />
-                    Ajustes
+                    {t('crew.settings')}
                   </Link>
                 </Button>
               )}
@@ -91,7 +94,7 @@ export default function CrewPage() {
                 <Button asChild variant="outline" className="gap-2">
                   <Link to="/students">
                     <UserPlus className="size-4" />
-                    Gestionar alumnos
+                    {t('crew.manageStudents')}
                   </Link>
                 </Button>
               )}
@@ -170,13 +173,12 @@ export default function CrewPage() {
               id="miembros-titulo"
               className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60"
             >
-              Miembros
+              {t('crew.members')}
             </h2>
 
             {!loading && members.length === 0 ? (
               <p className="py-8 text-sm text-ink/45">
-                Todavía no entrena nadie aquí. Enseña el QR de abajo para que se
-                unan.
+                {t('crew.membersEmpty')}
               </p>
             ) : (
               <ul className="divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3">
@@ -187,7 +189,9 @@ export default function CrewPage() {
                       <p className="truncate font-semibold text-ink">
                         {getShortName(student.firstName, student.lastName)}
                       </p>
-                      <p className="truncate text-xs text-ink/45">{student.level}</p>
+                      <p className="truncate text-xs text-ink/45">
+                        {t(STUDENT_LEVEL_LABEL_KEY[student.level])}
+                      </p>
                     </div>
 
                     {/*
@@ -199,7 +203,7 @@ export default function CrewPage() {
                     */}
                     {student.profileId === null && (
                       <span className="shrink-0 rounded-action border border-cobalt-tint-3 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-ink/40">
-                        Sin cuenta
+                        {t('crew.noAccount')}
                       </span>
                     )}
                   </li>
@@ -250,25 +254,25 @@ function MemberAvatar({ student }: { student: Student }) {
  * las dos deja a la mitad de la gente sin camino.
  */
 function NoCrew() {
+  const { t } = useTranslation()
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-bone px-6 text-center">
       <h1 className="font-display text-3xl font-extrabold uppercase leading-none tracking-tight text-ink">
-        Todavía no tienes equipo
+        {t('crew.none')}
       </h1>
       <p className="max-w-sm text-sm text-ink/55">
-        Tus alumnos, tus rutinas y tu agenda pertenecen a un equipo. Crea el tuyo,
-        o únete al de tu entrenador con su código.
+        {t('crew.noneHint')}
       </p>
 
       <div className="mt-2 flex flex-col gap-2 sm:flex-row">
         <Button asChild className="gap-2">
           <Link to="/crew/nuevo">
             <Plus className="size-4" />
-            Crear un equipo
+            {t('crew.create')}
           </Link>
         </Button>
         <Button asChild variant="outline">
-          <Link to="/crew/unirse">Tengo un código</Link>
+          <Link to="/crew/unirse">{t('joinCrew.haveCode')}</Link>
         </Button>
       </div>
     </div>

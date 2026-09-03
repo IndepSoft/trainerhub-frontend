@@ -5,6 +5,7 @@ import { describeBlock } from '../libs/blockLibrary'
 import { toBlock } from '../libs/routineDraft'
 import type { BlockDraft } from '../types/routineDraft.types'
 import type { SavedBlock } from '../types/training.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface UseBlockLibraryResult {
   savedBlocks: SavedBlock[]
@@ -22,6 +23,7 @@ interface UseBlockLibraryResult {
  * no tiene que saber ninguna de las dos.
  */
 export function useBlockLibrary(): UseBlockLibraryResult {
+  const { t } = useTranslation()
   const savedBlocks = useBlockLibraryStore((state) => state.savedBlocks)
   const saveBlock = useBlockLibraryStore((state) => state.saveBlock)
   const renameBlock = useBlockLibraryStore((state) => state.renameBlock)
@@ -31,9 +33,9 @@ export function useBlockLibrary(): UseBlockLibraryResult {
   const saveFromDraft = useCallback(
     (draft: BlockDraft): SavedBlock => {
       const block = toBlock(draft)
-      return saveBlock(describeBlock(block, exercisesById), block)
+      return saveBlock(describeBlock(block, exercisesById, t), block)
     },
-    [saveBlock, exercisesById]
+    [saveBlock, exercisesById, t]
   )
 
   return { savedBlocks, saveFromDraft, renameBlock, deleteBlock }

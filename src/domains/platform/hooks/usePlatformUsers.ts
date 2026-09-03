@@ -6,6 +6,7 @@ import type {
   SetMembershipInput,
 } from '@/shared/domain/ports/PlatformRepository'
 import type { CrewRole } from '@/shared/domain/entities/crew'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /**
  * Cuántas cuentas por página.
@@ -39,6 +40,7 @@ interface UsePlatformUsersResult {
  * es el fallo clásico de las tablas paginadas, y se arregla con una línea.
  */
 export function usePlatformUsers(): UsePlatformUsersResult {
+  const { t } = useTranslation()
   const [users, setUsers] = useState<PlatformUser[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPageState] = useState(1)
@@ -59,11 +61,11 @@ export function usePlatformUsers(): UsePlatformUsersResult {
       setTotal(result.total)
       setError(null)
     } catch (caught) {
-      setError(AppError.is(caught) ? caught.message : 'Error al cargar las cuentas')
+      setError(AppError.is(caught) ? caught.message : t('platform.users.error'))
     } finally {
       setLoading(false)
     }
-  }, [page, search, role])
+  }, [page, search, role, t])
 
   useEffect(() => {
     void load()
@@ -77,9 +79,9 @@ export function usePlatformUsers(): UsePlatformUsersResult {
       await container.platform.setMembership(input)
       setError(null)
     } catch (caught) {
-      setError(AppError.is(caught) ? caught.message : 'No se pudo guardar el cambio')
+      setError(AppError.is(caught) ? caught.message : t('platform.users.saveError'))
     }
-  }, [])
+  }, [t])
 
   return {
     users,

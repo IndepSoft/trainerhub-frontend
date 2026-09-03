@@ -1,6 +1,7 @@
 import { Lock, Mail, User } from 'lucide-react'
 import { FormField } from './FormField'
 import { FormInput } from './FormInput'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type { RegisterFormData, RegisterFormField } from '../types/register.types'
 
 interface RegisterFieldsProps {
@@ -21,13 +22,19 @@ interface RegisterFieldsProps {
  * formularios, y meterlo detrás de condiciones los volvería a fundir en uno.
  */
 export function RegisterFields({ formData, isRequired, setField }: RegisterFieldsProps) {
+  const { t } = useTranslation()
+
   return (
     <>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <FormField htmlFor="register-first-name" label="Nombre" required={isRequired('firstName')}>
+        <FormField
+          htmlFor="register-first-name"
+          label={t('register.firstName')}
+          required={isRequired('firstName')}
+        >
           <FormInput
             id="register-first-name"
-            placeholder="Juan"
+            placeholder={t('register.firstNamePlaceholder')}
             value={formData.firstName}
             onChange={(value) => setField('firstName', value)}
             icon={User}
@@ -35,10 +42,14 @@ export function RegisterFields({ formData, isRequired, setField }: RegisterField
           />
         </FormField>
 
-        <FormField htmlFor="register-last-name" label="Apellido" required={isRequired('lastName')}>
+        <FormField
+          htmlFor="register-last-name"
+          label={t('register.lastName')}
+          required={isRequired('lastName')}
+        >
           <FormInput
             id="register-last-name"
-            placeholder="Pérez"
+            placeholder={t('register.lastNamePlaceholder')}
             value={formData.lastName}
             onChange={(value) => setField('lastName', value)}
             required
@@ -46,7 +57,7 @@ export function RegisterFields({ formData, isRequired, setField }: RegisterField
         </FormField>
       </div>
 
-      <FormField htmlFor="register-email" label="Email" required={isRequired('email')}>
+      <FormField htmlFor="register-email" label={t('auth.email')} required={isRequired('email')}>
         <FormInput
           id="register-email"
           type="email"
@@ -58,7 +69,11 @@ export function RegisterFields({ formData, isRequired, setField }: RegisterField
         />
       </FormField>
 
-      <FormField htmlFor="register-password" label="Contraseña" required={isRequired('password')}>
+      <FormField
+        htmlFor="register-password"
+        label={t('auth.password')}
+        required={isRequired('password')}
+      >
         <FormInput
           id="register-password"
           type="password"

@@ -3,6 +3,7 @@ import { container } from '@/app/container'
 import { evaluateAchievements, unlockedAchievements } from '../libs/achievementEvaluation'
 import { streakFrom } from '../libs/progressRules'
 import type { Achievement } from '../types/achievement.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface UseLatestAchievementResult {
   achievement: Achievement | null
@@ -26,6 +27,7 @@ interface UseLatestAchievementResult {
  * puntos van en letra pequeña, como recompensa.
  */
 export function useLatestAchievement(sessionId?: string): UseLatestAchievementResult {
+  const { t } = useTranslation()
   const [achievement, setAchievement] = useState<Achievement | null>(null)
   const [streakDays, setStreakDays] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -62,7 +64,7 @@ export function useLatestAchievement(sessionId?: string): UseLatestAchievementRe
   return {
     achievement,
     headlineValue: streakDays,
-    headlineLabel: 'días seguidos',
+    headlineLabel: t('progress.consecutiveDays'),
     loading,
   }
 }

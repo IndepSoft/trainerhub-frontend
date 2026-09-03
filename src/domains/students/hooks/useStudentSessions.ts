@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { container } from '@/app/container'
 import type { Session } from '@/shared/domain/entities/session'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface UseStudentSessionsResult {
   sessions: Session[]
@@ -20,6 +21,7 @@ interface UseStudentSessionsResult {
  * recargar, y también lo agendado desde la agenda.
  */
 export function useStudentSessions(studentId: string | undefined): UseStudentSessionsResult {
+  const { t } = useTranslation()
   const [sessions, setSessions] = useState<Session[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -40,7 +42,7 @@ export function useStudentSessions(studentId: string | undefined): UseStudentSes
           if (active) setSessions(result)
         })
         .catch((cause: unknown) => {
-          if (active) setError(cause instanceof Error ? cause.message : 'Error al cargar sesiones')
+          if (active) setError(cause instanceof Error ? cause.message : t('students.sessionsError'))
         })
         .finally(() => {
           if (active) setLoading(false)
@@ -54,7 +56,7 @@ export function useStudentSessions(studentId: string | undefined): UseStudentSes
       active = false
       unsubscribe()
     }
-  }, [studentId])
+  }, [studentId, t])
 
   return { sessions, loading, error }
 }

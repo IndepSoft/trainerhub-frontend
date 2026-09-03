@@ -1,6 +1,7 @@
 import { Award, Flame, Lock, Medal, Star, Target, Trophy } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import type { Achievement } from '../types/achievement.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 export type AchievementPlateSize = 'small' | 'medium' | 'large'
 
@@ -82,6 +83,7 @@ export function AchievementBadge({
   size = 'medium',
   onClick,
 }: AchievementBadgeProps) {
+  const { t } = useTranslation()
   const Icon = ICONS[achievement.icon as keyof typeof ICONS] ?? Trophy
   const isInteractive = onClick !== undefined
 
@@ -92,8 +94,11 @@ export function AchievementBadge({
       disabled={!isInteractive}
       aria-label={
         unlocked
-          ? `${achievement.name}. Conseguido. ${achievement.pointsReward} XP`
-          : `${achievement.name}. Bloqueado`
+          ? t('achievement.badge.unlocked', {
+              name: t(achievement.nameKey),
+              points: achievement.pointsReward,
+            })
+          : t('achievement.badge.locked', { name: t(achievement.nameKey) })
       }
       className={cn(
         'mx-auto flex flex-col items-center border-2 text-center transition-colors',
@@ -121,7 +126,7 @@ export function AchievementBadge({
           size === 'small' ? 'text-[11px]' : size === 'medium' ? 'text-xs' : 'text-sm'
         )}
       >
-        {achievement.name}
+        {t(achievement.nameKey)}
       </span>
 
       {unlocked && (

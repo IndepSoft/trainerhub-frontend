@@ -3,6 +3,7 @@ import { BicepsFlexed, CalendarDays, Users } from 'lucide-react'
 import { container } from '@/app/container'
 import { describeTimeAgo, weekBounds } from '../libs/dashboardTime'
 import { toLocalDateKey } from '@/shared/lib/dateKey'
+import { useTranslation, type Translate } from '@/shared/i18n/LanguageContext'
 import type { DashboardSummary, RecentActivityEntry, UpcomingSession } from '../types/dashboard.types'
 import type { Session } from '@/shared/domain/entities/session'
 import type { Student } from '@/shared/domain/entities/student'
@@ -40,6 +41,7 @@ const EMPTY_SUMMARY: DashboardSummary = {
  * dónde sacarla.
  */
 export function useDashboardSummary(): UseDashboardSummaryResult {
+  const { t } = useTranslation()
   const [summary, setSummary] = useState<DashboardSummary>(EMPTY_SUMMARY)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -56,14 +58,14 @@ export function useDashboardSummary(): UseDashboardSummaryResult {
         container.routines.findAll(),
       ])
 
-      setSummary(buildSummary(sessions, students, routines.length))
+      setSummary(buildSummary(sessions, students, routines.length, t))
       setError(null)
     } catch (cause: unknown) {
-      setError(cause instanceof Error ? cause.message : 'Error al cargar el panel')
+      setError(cause instanceof Error ? cause.message : t('dashboard.error'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     void load()
@@ -80,16 +82,20 @@ export function useDashboardSummary(): UseDashboardSummaryResult {
 function buildSummary(
   sessions: Session[],
   students: Student[],
-  routineCount: number
+  routineCount: number,
+  /* Traducir llega por parametro: esto es una funcion pura, no un componente. */
+  t: Translate
 ): DashboardSummary {
   const today = toLocalDateKey(new Date())
   const { from, to } = weekBounds(new Date())
 
   const studentsById = new Map(students.map((student) => [student.id, student]))
   const nameOf = (session: Session): string => {
-    if (session.studentId === null) return 'Clase grupal'
+    if (session.studentId === null) return t('session.groupClass')
     const student = studentsById.get(session.studentId)
-    return student === undefined ? 'Alumno no disponible' : `${student.firstName} ${student.lastName}`
+    return student === undefined
+      ? t('session.studentUnavailable')
+      : `${student.firstName} ${student.lastName}`
   }
 
   /*
@@ -130,19 +136,19 @@ function buildSummary(
     indicators: [
       {
         id: 'active-students',
-        title: 'Estudiantes',
+        title: t('dashboard.metric.students'),
         indicator: students.length,
         icon: Users,
       },
       {
         id: 'weekly-sessions',
-        title: 'Sesiones Esta Semana',
+        title: t('dashboard.metric.sessionsThisWeek'),
         indicator: weeklySessions,
         icon: CalendarDays,
       },
       {
         id: 'created-routines',
-        title: 'Rutinas Creadas',
+        title: t('dashboard.metric.routinesCreated'),
         indicator: routineCount,
         icon: BicepsFlexed,
       },

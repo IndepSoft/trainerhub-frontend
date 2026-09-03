@@ -1490,3 +1490,136 @@ el texto visible ronda las 350 cadenas distintas —unas 500 apariciones— repa
 en más de sesenta ficheros. Se aborda aparte, y hasta que esté completo no se
 ofrece el selector: media aplicación en inglés y media en español es peor que una
 aplicación en español.
+
+---
+
+## 20. Tres idiomas, y lo que la traducción destapó (2 sep 2026)
+
+### 20.1 La propiedad que hace esto viable
+
+`dictionaries/es.ts` es la fuente de la verdad de qué claves existen. Los otros
+dos se declaran `Record<TranslationKey, string>`, así que **una clave que falte
+en inglés o en portugués no compila**.
+
+No es un detalle de tipos: es lo único que impide publicar media traducción sin
+enterarse, que es el fallo que convierte una aplicación traducida en una
+aplicación rota a medias. Son 782 claves en los tres ficheros, y el compilador
+las cuadra en cada `npm run build`.
+
+Las claves nombran **el sitio y la intención**, nunca el texto: `common.save`, no
+`common.guardar`. Con el texto como clave, corregir una tilde en español obliga a
+tocar los tres ficheros.
+
+### 20.2 Sin librería, y por qué
+
+`react-i18next` no entra. Lo que aporta —carga por espacios de nombres, ICU,
+detección— o no hace falta aquí o ya está resuelto:
+
+- **La completitud la da TypeScript**, no la librería. i18next no comprueba nada
+  en tiempo de compilación: una clave que falte se ve en pantalla, en producción.
+- **Los tres diccionarios juntos pesan unos kilobytes.** Partirlos obligaría a
+  que cada pantalla supiera esperar al suyo, y en una PWA que arranca sin
+  conexión el idioma guardado tiene que estar disponible ya.
+- **El plural de las tres lenguas es el mismo reparto**: uno frente a todo lo
+  demás. `plural(unaClave, otraClave, cuenta)` recibe las dos claves explícitas
+  para que el compilador compruebe que las dos existen —justo lo que se pierde
+  construyendo la clave en tiempo de ejecución—. El día que entre una lengua con
+  dual, esto se cambia por `Intl.PluralRules` y las llamadas se quedan igual.
+
+### 20.3 Lo que traduce el navegador mejor que nosotros
+
+Tres sitios donde había texto escrito a mano y ahora hay `Intl`:
+
+- **«Hoy», «ayer», «hace 3 días»** en la actividad reciente. `Intl.RelativeTimeFormat`
+  con `numeric: 'auto'` elige la palabra donde el idioma la tiene y el número
+  donde no, y cada lengua decide dónde.
+- **Los siete días de la semana** de la rejilla del calendario. Eran `['Lun',
+  'Mar', 'Mié'…]`; ahora los da `Intl.DateTimeFormat`, que además sabe qué
+  abreviatura usa cada idioma.
+- **Los diecisiete `'es-ES'`** repartidos por fechas y ordenaciones pasan a
+  `activeLocale()`.
+
+### 20.4 `activeLocale`: estado de módulo, con un solo escritor
+
+Las funciones de fecha —`describeWeekRange`, `formatDateKey`, `describePostTime`—
+son puras y se llaman desde reductores, desde `map` y desde sitios donde no hay
+componente. No pueden usar un hook.
+
+Las dos salidas eran pasar el idioma como parámetro a cada una y desde ahí a cada
+una de sus llamadas —correcto en abstracto, y ruido en veinte firmas—, o un valor
+de módulo con **un solo escritor** (`LanguageProvider`) y muchos lectores. Se
+eligió lo segundo, y vive en su propio fichero para que quien importe `languages.ts`
+no se encuentre el escritor de paso.
+
+Para lo que sí compone texto fuera de React —`buildSummary` del panel,
+`duesReminderDraft`, los tres validadores de borrador— la traducción **llega por
+parámetro**, tipada como `Translate`. Es explícito en la firma y no depende de
+ningún ambiente.
+
+### 20.5 Lo que la traducción destapó
+
+Traducir obliga a preguntarse de quién es cada cadena, y ahí aparecieron cosas
+que llevaban tiempo en el sitio equivocado:
+
+**Texto dentro del dominio.** `shared/domain/permissions.ts` guardaba
+`ROLE_LABEL`, `ROLE_DESCRIPTION` y `CAPABILITY_LABEL` con el castellano dentro;
+`subscriptionRules.ts` tenía `describeStanding`, que redacta «vence en 3 días»;
+`studentSubscription.ts` llevaba los nombres de los periodos. El dominio no
+conoce a nadie por encima suyo, así que para traducirse habría tenido que conocer
+al diccionario. Todo eso baja a `shared/i18n/`: el dominio define **qué existe**,
+y cómo se dice es presentación.
+
+**Cuatro copias del mismo rótulo.** «Pendiente / Confirmada / Completada /
+Cancelada» estaba escrito en el panel, en la agenda, en la ficha del alumno y en
+el panel de plataforma, cada uno con su mapa. Los colores sí difieren de verdad
+entre pantallas y se quedan donde estaban; las palabras no, y cuatro copias son
+cuatro sitios donde olvidarse de traducir una. Ahora hay un
+`SESSION_STATUS_LABEL_KEY`.
+
+**Listas de datos con el texto dentro.** El catálogo de onboarding, los logros,
+los peldaños del sendero, los tipos de sesión, las especialidades del registro:
+constantes de módulo que se evalúan al importar, donde todavía no hay idioma que
+consultar. Todas pasan a guardar **la clave**, y traduce quien pinta.
+
+### 20.6 Dónde acaba la traducción, dicho en pantalla
+
+La línea es la que dice el propio selector: **cambia lo que escribe la
+aplicación, no lo que escribió una persona.** Sin decirlo, el primer alumno con
+la aplicación en inglés esperaría ver sus rutinas traducidas.
+
+Eso deja tres clases de texto que se quedan como están, y cada una por su motivo:
+
+- **Lo que escribe el entrenador** —nombres de rutinas, anuncios del muro, notas
+  de una sesión—. Es suyo.
+- **Lo que se guarda como identidad.** Un objetivo de alumno se guarda «Perder
+  peso» lo marque quien lo marque: si cambiara con el idioma, dos fichas con el
+  mismo objetivo dejarían de agruparse. Se guarda el valor y se traduce el
+  rótulo, que es lo mismo que se hace con el nivel y con el catálogo de
+  referencia.
+- **El título y la categoría de una sesión ya creada.** Se escriben al crearla y
+  se quedan en el idioma de quien la creó. Traducirlos al leer exigiría guardar
+  la clave en vez del texto, y eso es una migración del dato.
+
+El catálogo del entrenador se traduce **por identificador**, no por nombre: el
+ejercicio guarda `muscleGroupId`, así que traducir no toca ningún dato. Y lo que
+no está en el mapa —el material que da de alta un entrenador— se lee tal cual,
+que es exactamente lo que tiene que pasar.
+
+### 20.7 El idioma antes del primer pintado
+
+`lang` en `<html>` no es decoración: de él dependen el lector de pantalla para
+elegir la voz y el navegador para partir palabras al final de línea. Estaba fijo
+en `es`. Ahora lo pone el mismo guion en línea que ya aplicaba el tema, antes de
+que React monte.
+
+La primera vez el idioma **lo dice el navegador**. Preguntarlo sería peor: quien
+abre la aplicación con el teléfono en portugués ya respondió a esa pregunta al
+configurar el teléfono.
+
+### 20.8 La suite, fijada a español
+
+`playwright.config.ts` pasa a declarar `locale: 'es-ES'`. Sin eso, Playwright
+arranca en `en-US`, el proveedor detecta inglés —que es lo que debe hacer— y los
+ciento setenta casos fallan a la vez por un motivo que no es el que están
+probando. Fijar el idioma ahí es declarar contra qué versión se prueba; el
+conmutador tiene sus propias comprobaciones.

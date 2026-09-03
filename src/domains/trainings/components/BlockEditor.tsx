@@ -11,14 +11,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
-import { BLOCK_METHOD_LABELS } from '../libs/routine.utils'
+
 import { PrescribedExerciseFields } from './PrescribedExerciseFields'
 import type { BlockMethod, Exercise } from '../types/training.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type {
   BlockDraft,
   BlockDraftChanges,
   PrescribedExerciseDraftChanges,
 } from '../types/routineDraft.types'
+import { BLOCK_METHOD_LABEL_KEY } from '@/shared/i18n/domainLabels'
 
 /** Registro de etiqueta del formulario, igual que el de las métricas. */
 const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50'
@@ -64,6 +66,7 @@ export function BlockEditor({
   onRemoveExercise,
   onChangeExercise,
 }: BlockEditorProps) {
+  const { t } = useTranslation()
   const fieldId = useId()
 
   const methodFieldId = `${fieldId}-method`
@@ -79,7 +82,7 @@ export function BlockEditor({
           {String(position).padStart(2, '0')}
         </span>
         <h3 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-          Bloque
+          {t('block.title')}
         </h3>
 
         <div className="ms-auto flex shrink-0 items-center">
@@ -103,7 +106,7 @@ export function BlockEditor({
             <button
               type="button"
               onClick={onRemove}
-              aria-label={`Eliminar el bloque ${position}`}
+              aria-label={t('block.deleteLabel', { position })}
               className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-danger-surface hover:text-danger"
             >
               <Trash2 className="size-4" />
@@ -115,7 +118,7 @@ export function BlockEditor({
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <Label htmlFor={methodFieldId} className={FIELD_LABEL}>
-            Método
+            {t('block.method')}
           </Label>
           <Select
             value={block.method}
@@ -127,7 +130,7 @@ export function BlockEditor({
             <SelectContent>
               {BLOCK_METHODS.map((method) => (
                 <SelectItem key={method} value={method}>
-                  {BLOCK_METHOD_LABELS[method]}
+                  {t(BLOCK_METHOD_LABEL_KEY[method])}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -136,7 +139,7 @@ export function BlockEditor({
 
         <div>
           <Label htmlFor={restFieldId} className={FIELD_LABEL}>
-            Descanso tras la ronda (s)
+            {t('block.restAfterRound')}
           </Label>
           {/* En superserie y circuito éste es el único descanso que cuenta: los
               ejercicios de dentro se encadenan sin pausa entre ellos. */}
@@ -182,13 +185,13 @@ export function BlockEditor({
 
       <div className="mt-4">
         <Label htmlFor={notesFieldId} className={FIELD_LABEL}>
-          Notas del bloque
+          {t('block.notes')}
         </Label>
         <Textarea
           id={notesFieldId}
           className="mt-1.5"
           rows={2}
-          placeholder="Indicaciones de ejecución, material, avisos…"
+          placeholder={t('block.notesPlaceholder')}
           value={block.notes}
           onChange={(event) => onChange({ notes: event.target.value })}
         />

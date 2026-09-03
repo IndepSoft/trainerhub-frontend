@@ -1,5 +1,6 @@
 import { MilestoneNode } from './MilestoneNode'
 import type { Milestone } from '../types/gamification.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface MilestonePathProps {
   milestones: Milestone[]
@@ -13,13 +14,14 @@ interface MilestonePathProps {
  * punto donde estás; una línea con nodos lo dice sin una palabra.
  */
 export function MilestonePath({ milestones }: MilestonePathProps) {
+  const { t } = useTranslation()
   return (
     // Ancho acotado: un sendero es una lectura vertical. Estirado a lo ancho
     // de una pantalla de escritorio, las barras de progreso pasan de 250 a
     // 1000 px y dejan de leerse como una barra.
     <section className="mx-auto w-full max-w-2xl px-5 py-6">
       <h2 className="mb-6 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/50">
-        Tu camino
+        {t('progress.path')}
       </h2>
 
       <ol className="relative">

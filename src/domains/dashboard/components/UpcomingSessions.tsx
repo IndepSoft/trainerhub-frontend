@@ -3,6 +3,7 @@ import { Timeline, TimelineEntry } from '@/shared/components/Timeline'
 import { SectionHeading } from './SectionHeading'
 import { SessionItem } from './SessionItem'
 import { formatStamp } from '../libs/dashboardTime'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type { UpcomingSession } from '../types/dashboard.types'
 
 interface UpcomingSessionsProps {
@@ -15,13 +16,15 @@ interface UpcomingSessionsProps {
  * justo lo que una lista de cajas iguales no comunica.
  */
 export function UpcomingSessions({ sessions }: UpcomingSessionsProps) {
+  const { t } = useTranslation()
+
   return (
     <section className="flex-1">
-      <SectionHeading count={sessions.length}>Próximas sesiones</SectionHeading>
+      <SectionHeading count={sessions.length}>{t('dashboard.upcoming')}</SectionHeading>
 
       {sessions.length === 0 && (
         <p className="pt-5 text-sm text-ink/40">
-          No hay nada agendado a partir de hoy.
+          {t('dashboard.upcomingEmpty')}
         </p>
       )}
 

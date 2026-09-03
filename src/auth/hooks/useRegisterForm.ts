@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { container } from '@/app/container'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { useAuthStore } from '@/app/stores/authStore'
 import { AppError } from '@/shared/domain/errors'
 import { canEnrollMembers } from '@/shared/domain/entities/crew'
@@ -39,8 +40,9 @@ const REQUIRED_BY_INTENT: Record<RegisterIntent, RegisterFormField[]> = {
   student: ['firstName', 'lastName', 'email', 'password'],
 }
 
-const messageFor = (error: unknown) =>
-  AppError.is(error) ? error.message : 'No se pudo crear la cuenta'
+/* El mensaje de reserva llega de fuera. Ver `useLogin` para el porque. */
+const messageFor = (error: unknown, fallback: string) =>
+  AppError.is(error) ? error.message : fallback
 
 interface UseRegisterFormResult {
   formData: RegisterFormData
@@ -79,6 +81,7 @@ interface UseRegisterFormResult {
  * «ya existe ese correo».
  */
 export function useRegisterForm(intent: RegisterIntent): UseRegisterFormResult {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
   const setUser = useAuthStore((state) => state.setUser)
@@ -133,7 +136,7 @@ export function useRegisterForm(intent: RegisterIntent): UseRegisterFormResult {
       // raíz, que es donde `HomeRedirect` decide según el papel.
       navigate(readIntendedPath(location.state) ?? '/', { replace: true })
     } catch (caught) {
-      setError(messageFor(caught))
+      setError(messageFor(caught, t('register.error')))
     } finally {
       setLoading(false)
     }

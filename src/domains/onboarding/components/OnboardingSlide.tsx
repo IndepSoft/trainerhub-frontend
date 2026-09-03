@@ -1,4 +1,5 @@
 import { cn } from '@/shared/lib/utils'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type { OnboardingStep } from '../types/onboarding.types'
 
 interface OnboardingSlideProps {
@@ -19,6 +20,7 @@ interface OnboardingSlideProps {
  * de repintado.
  */
 export function OnboardingSlide({ step, mirrored }: OnboardingSlideProps) {
+  const { t } = useTranslation()
   const Icon = step.icon
 
   return (
@@ -40,21 +42,21 @@ export function OnboardingSlide({ step, mirrored }: OnboardingSlideProps) {
         <Icon className="mb-6 size-8 text-ember" strokeWidth={2.25} />
 
         <p className="font-display text-sm font-bold uppercase tracking-[0.3em] text-ember">
-          {step.eyebrow}
+          {t(step.eyebrowKey)}
         </p>
 
         {/* El titular llega ya partido en lineas desde los datos: donde corta
             una frase es una decision de composicion, y dejarsela al ancho
             disponible produce viudas y cortes en mitad de una idea. */}
         <h2 className="mt-3 font-display text-[3.25rem] font-extrabold uppercase leading-[0.88] tracking-tight text-white sm:text-6xl">
-          {step.headline.map((line, index) => (
-            <span key={index} className={cn('block', index === 1 && 'text-white/95')}>
-              {line}
+          {step.headlineKeys.map((key, index) => (
+            <span key={key} className={cn('block', index === 1 && 'text-white/95')}>
+              {t(key)}
             </span>
           ))}
         </h2>
 
-        <p className="mt-6 max-w-sm text-white/60">{step.body}</p>
+        <p className="mt-6 max-w-sm text-white/60">{t(step.bodyKey)}</p>
       </div>
     </div>
   )

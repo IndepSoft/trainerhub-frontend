@@ -19,8 +19,10 @@ import { useSchedulableStudents } from '../hooks/useSchedulableStudents'
 import { container } from '@/app/container'
 import { useViewerContext } from '@/app/ViewerContext'
 import type { CalendarViewMode, SessionStatus } from '../types/calendar.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 export default function Calendar() {
+  const { t } = useTranslation()
   const { can } = useViewerContext()
   /*
    * «Usar en una sesion» llega aqui como `/calendar?routine=<id>`: la ficha de
@@ -102,7 +104,7 @@ export default function Calendar() {
       <PageHeader className="pt-4 pb-3">
         <PageHeader.Content className="gap-3">
           <div className="min-w-0">
-            <PageHeader.Title>Agenda</PageHeader.Title>
+            <PageHeader.Title>{t('calendar.title')}</PageHeader.Title>
           </div>
           <PageHeader.Actions>
             {/* El selector solo aparece cuando hay algo que elegir: en movil el
@@ -116,8 +118,8 @@ export default function Calendar() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="week">Semana</SelectItem>
-                  <SelectItem value="day">Día</SelectItem>
+                  <SelectItem value="week">{t('calendar.week')}</SelectItem>
+                  <SelectItem value="day">{t('calendar.day')}</SelectItem>
                 </SelectContent>
               </Select>
             )}

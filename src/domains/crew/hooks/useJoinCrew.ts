@@ -4,6 +4,7 @@ import { useAuthStore } from '@/app/stores/authStore'
 import { AppError } from '@/shared/domain/errors'
 import { canEnrollMembers } from '@/shared/domain/entities/crew'
 import type { Crew } from '@/shared/domain/entities/crew'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /** Cómo acabó el intento, para que la pantalla sepa qué decir. */
 export type JoinOutcome =
@@ -35,6 +36,7 @@ interface UseJoinCrewResult {
  * acertó alguna vez.
  */
 export function useJoinCrew(): UseJoinCrewResult {
+  const { t } = useTranslation()
   const user = useAuthStore((state) => state.user)
   const [joining, setJoining] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -42,7 +44,7 @@ export function useJoinCrew(): UseJoinCrewResult {
   const join = useCallback(
     async (code: string): Promise<JoinOutcome | null> => {
       if (user === null) {
-        setError('Hay que entrar con una cuenta antes de unirse a un equipo.')
+        setError(t('join.needAccount'))
         return null
       }
 
@@ -52,7 +54,7 @@ export function useJoinCrew(): UseJoinCrewResult {
       try {
         const crew = await container.crews.findByJoinToken(code)
         if (crew === null) {
-          setError('Ese código no vale. Comprueba que esté bien escrito, o pide uno nuevo.')
+          setError(t('join.badCode'))
           return null
         }
 
@@ -69,7 +71,7 @@ export function useJoinCrew(): UseJoinCrewResult {
          * algo que pueda resolver.
          */
         if (!canEnrollMembers(crew)) {
-          setError('Ese equipo no está admitiendo gente ahora mismo. Habla con tu entrenador.')
+          setError(t('join.notAccepting'))
           return null
         }
 
@@ -88,13 +90,13 @@ export function useJoinCrew(): UseJoinCrewResult {
 
         return crew.requiresApproval ? { kind: 'pending', crew } : { kind: 'joined', crew }
       } catch (caught) {
-        setError(AppError.is(caught) ? caught.message : 'No se pudo completar la solicitud')
+        setError(AppError.is(caught) ? caught.message : t('join.error'))
         return null
       } finally {
         setJoining(false)
       }
     },
-    [user]
+    [user, t]
   )
 
   const clearError = useCallback(() => setError(null), [])

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { container } from '@/app/container'
 import type { Student } from '@/shared/domain/entities/student'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface UseStudentResult {
   student: Student | null
@@ -16,6 +17,7 @@ interface UseStudentResult {
  * pintarla. Es la misma semántica de lo ausente que declaran los puertos.
  */
 export function useStudent(studentId: string | undefined): UseStudentResult {
+  const { t } = useTranslation()
   const [student, setStudent] = useState<Student | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -36,7 +38,7 @@ export function useStudent(studentId: string | undefined): UseStudentResult {
         if (active) setStudent(result)
       })
       .catch((cause: unknown) => {
-        if (active) setError(cause instanceof Error ? cause.message : 'Error al cargar el estudiante')
+        if (active) setError(cause instanceof Error ? cause.message : t('students.loadOneError'))
       })
       .finally(() => {
         if (active) setLoading(false)
@@ -45,7 +47,7 @@ export function useStudent(studentId: string | undefined): UseStudentResult {
     return () => {
       active = false
     }
-  }, [studentId])
+  }, [studentId, t])
 
   return { student, loading, error }
 }

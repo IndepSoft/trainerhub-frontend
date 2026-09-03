@@ -21,11 +21,13 @@ import { ArrowUpRight, Clock, MapPin, MessageSquare, Pencil, Play, Trash2, User 
 import { useSchedulableRoutines } from '../hooks/useSchedulableRoutines'
 import { useSchedulableStudents } from '../hooks/useSchedulableStudents'
 import { resolveSessionStudentName } from '../libs/sessionStudent'
+import { activeLocale } from '@/shared/i18n/activeLocale'
 import { toast } from 'sonner'
 import { cn } from '@/shared/lib/utils'
 import { SESSION_STATUS, SESSION_STATUS_ENTRIES } from '../libs/sessionStatus'
 import { getStudentInitials, parseLocalDateKey } from '../libs/calendar.utils'
 import type { Session, SessionStatus } from '../types/calendar.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface SessionDetailsModalProps {
   session: Session
@@ -55,6 +57,7 @@ export function SessionDetailsModal({
   onStatusChange,
   onDelete,
 }: SessionDetailsModalProps) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [newStatus, setNewStatus] = useState<SessionStatus>(session.status)
   const [sessionNotes, setSessionNotes] = useState(session.notes)
@@ -74,7 +77,8 @@ export function SessionDetailsModal({
   const { students } = useSchedulableStudents()
   const studentName = resolveSessionStudentName(
     session,
-    new Map(students.map((student) => [student.id, student]))
+    new Map(students.map((student) => [student.id, student])),
+    t
   )
   const routine = routines.find((candidate) => candidate.id === session.routineId)
 
@@ -95,7 +99,11 @@ export function SessionDetailsModal({
     if (newStatus === session.status) return
 
     onStatusChange(session.id, newStatus)
-    toast.success(`Sesión marcada como ${SESSION_STATUS[newStatus].label.toLowerCase()}`)
+    toast.success(
+      t('sessionDetails.markedAs', {
+        status: t(SESSION_STATUS[newStatus].labelKey).toLowerCase(),
+      })
+    )
 
     /*
      * Se cierra al guardar. `session` es una instantanea tomada al abrir, asi
@@ -109,12 +117,12 @@ export function SessionDetailsModal({
   const handleDelete = () => {
     // Borra de verdad. Antes solo decia que lo habia hecho.
     onDelete(session.id)
-    toast.success('La sesión se ha eliminado')
+    toast.success(t('sessionDetails.deleted'))
     onOpenChange(false)
   }
 
   const handleSendReminder = () => {
-    toast.success(`Recordatorio enviado a ${studentName}`)
+    toast.success(t('sessionDetails.reminderSent', { student: studentName }))
   }
 
   return (
@@ -145,7 +153,7 @@ export function SessionDetailsModal({
               )}
             >
               {status.icon}
-              {status.label}
+              {t(status.labelKey)}
             </span>
           </div>
         </DialogHeader>
@@ -158,12 +166,12 @@ export function SessionDetailsModal({
             className="h-14 w-full gap-2 font-display text-base font-extrabold uppercase tracking-[0.14em]"
           >
             <Play className="size-5" />
-            Iniciar sesión
+            {t('sessionDetails.start')}
           </Button>
 
           {!canStart && (
             <p className="mt-2 text-center text-xs text-ink/45">
-              Una sesión cancelada no puede iniciarse.
+              {t('sessionDetails.cannotStart')}
             </p>
           )}
         </div>
@@ -171,7 +179,7 @@ export function SessionDetailsModal({
         <dl className="grid grid-cols-2 divide-x divide-cobalt-tint-3 border-y border-cobalt-tint-3">
           <div className="px-5 py-4">
             <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">
-              Cuándo
+              {t('sessionDetails.when')}
             </dt>
             <dd className="metric-figures mt-1 text-sm font-semibold text-ink">
               {session.time}
@@ -180,7 +188,7 @@ export function SessionDetailsModal({
               </span>
             </dd>
             <dd className="mt-0.5 text-xs text-ink/45">
-              {parseLocalDateKey(session.date).toLocaleDateString('es-ES', {
+              {parseLocalDateKey(session.date).toLocaleDateString(activeLocale(), {
                 weekday: 'long',
                 day: 'numeric',
                 month: 'long',
@@ -190,7 +198,7 @@ export function SessionDetailsModal({
 
           <div className="px-5 py-4">
             <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">
-              Dónde y con quién
+              {t('sessionDetails.whereWho')}
             </dt>
             <dd className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-ink">
               <MapPin className="size-3.5 shrink-0 text-cobalt" />
@@ -206,7 +214,7 @@ export function SessionDetailsModal({
         <div className="space-y-5 px-5 pb-5">
           <div className="space-y-2">
             <Label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
-              Estado
+              {t('sessionDetails.status')}
             </Label>
             <div className="flex gap-2">
               <Select
@@ -222,7 +230,7 @@ export function SessionDetailsModal({
                       y podían divergir. */}
                   {SESSION_STATUS_ENTRIES.map(([value, presentation]) => (
                     <SelectItem key={value} value={value}>
-                      {presentation.label}
+                      {t(presentation.labelKey)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -232,7 +240,7 @@ export function SessionDetailsModal({
                 onClick={handleStatusUpdate}
                 disabled={newStatus === session.status}
               >
-                Guardar
+                {t('common.save')}
               </Button>
             </div>
           </div>
@@ -240,7 +248,7 @@ export function SessionDetailsModal({
           {routine !== undefined && (
             <div className="space-y-2">
               <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
-                Rutina
+                {t('newSession.routine')}
               </span>
               <Link
                 to={`/trainings/${routine.id}`}
@@ -257,13 +265,13 @@ export function SessionDetailsModal({
               htmlFor="session-notes"
               className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60"
             >
-              Notas
+              {t('newSession.notes')}
             </Label>
             <Textarea
               id="session-notes"
               value={sessionNotes}
               onChange={(event) => setSessionNotes(event.target.value)}
-              placeholder="Qué trabajar, cómo llegó, qué observar"
+              placeholder={t('sessionDetails.notesPlaceholder')}
               rows={3}
             />
           </div>
@@ -273,11 +281,11 @@ export function SessionDetailsModal({
           <div className="flex flex-wrap gap-2 border-t border-cobalt-tint-3 pt-4">
             <Button variant="outline" onClick={handleSendReminder} className="gap-2">
               <MessageSquare className="size-4" />
-              Recordatorio
+              {t('sessionDetails.reminder')}
             </Button>
             <Button variant="outline" className="gap-2">
               <Pencil className="size-4" />
-              Editar
+              {t('common.edit')}
             </Button>
             <Button
               variant="ghost"
@@ -285,7 +293,7 @@ export function SessionDetailsModal({
               className="ms-auto gap-2 text-danger hover:bg-danger-surface hover:text-danger"
             >
               <Trash2 className="size-4" />
-              Eliminar
+              {t('common.delete')}
             </Button>
           </div>
 
@@ -293,7 +301,7 @@ export function SessionDetailsModal({
             <Clock className="size-3" />
             {/* TODO: ni el estado ni las notas se persisten: el cambio vive sólo
                 en memoria hasta que exista el repositorio. */}
-            Los cambios no se guardan todavía
+            {t('sessionDetails.notSaved')}
           </p>
         </div>
       </DialogContent>

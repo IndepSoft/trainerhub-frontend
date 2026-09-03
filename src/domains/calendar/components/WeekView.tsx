@@ -1,4 +1,4 @@
-import { TIME_SLOTS, WEEK_DAY_LABELS } from '../data/calendarOptions'
+import { TIME_SLOTS, weekDayLabels } from '../data/calendarOptions'
 import { isToday } from '../libs/calendar.utils'
 import { toLocalDateKey } from '@/shared/lib/dateKey'
 import { SessionLane } from './SessionLane'
@@ -7,6 +7,7 @@ import { cn } from '@/shared/lib/utils'
 import type { Student } from '@/shared/domain/entities/student'
 import { resolveSessionStudentName } from '../libs/sessionStudent'
 import type { Session } from '../types/calendar.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /** Alto de cada tramo de 30 minutos en la rejilla semanal. */
 const SLOT_HEIGHT = 48
@@ -36,6 +37,8 @@ export function WeekView({
   onSelectSession,
   studentsById,
 }: WeekViewProps) {
+  const { t } = useTranslation()
+  const dayLabels = weekDayLabels()
   return (
     <div className="border-y border-cobalt-tint-3">
       {/* Pegada arriba del contenedor de scroll: al desplazar la rejilla, saber
@@ -47,7 +50,7 @@ export function WeekView({
         {weekDates.map((date, index) => (
           <div key={toLocalDateKey(date)} className="min-w-0 flex-1 py-2 text-center">
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/50">
-              {WEEK_DAY_LABELS[index]}
+              {dayLabels[index]}
             </p>
             <p
               className={cn(
@@ -85,7 +88,7 @@ export function WeekView({
             renderSession={(session) => (
               <SessionCard
                 session={session}
-                studentName={resolveSessionStudentName(session, studentsById)}
+                studentName={resolveSessionStudentName(session, studentsById, t)}
                 onSelect={onSelectSession}
                 variant="compact"
               />

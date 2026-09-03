@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { container } from '@/app/container'
 import type { Routine } from '@/shared/domain/entities/routine'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface UseRoutinesResult {
   routines: Routine[]
@@ -22,6 +23,7 @@ interface UseRoutinesResult {
  * por la aplicación una responsabilidad del almacén.
  */
 export function useRoutines(): UseRoutinesResult {
+  const { t } = useTranslation()
   const [routines, setRoutines] = useState<Routine[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -39,7 +41,7 @@ export function useRoutines(): UseRoutinesResult {
           if (active) setRoutines(result)
         })
         .catch((cause: unknown) => {
-          if (active) setError(cause instanceof Error ? cause.message : 'Error al cargar rutinas')
+          if (active) setError(cause instanceof Error ? cause.message : t('routine.loadError'))
         })
         .finally(() => {
           if (active) setLoading(false)
@@ -53,7 +55,7 @@ export function useRoutines(): UseRoutinesResult {
       active = false
       unsubscribe()
     }
-  }, [])
+  }, [t])
 
   return { routines, loading, error }
 }
@@ -73,6 +75,7 @@ interface UseRoutineResult {
  * encontrada» durante el primer render de toda rutina.
  */
 export function useRoutine(routineId: string | undefined): UseRoutineResult {
+  const { t } = useTranslation()
   const [routine, setRoutine] = useState<Routine | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -93,7 +96,7 @@ export function useRoutine(routineId: string | undefined): UseRoutineResult {
         if (active) setRoutine(result)
       })
       .catch((cause: unknown) => {
-        if (active) setError(cause instanceof Error ? cause.message : 'Error al cargar la rutina')
+        if (active) setError(cause instanceof Error ? cause.message : t('routine.loadOneError'))
       })
       .finally(() => {
         if (active) setLoading(false)
@@ -102,7 +105,7 @@ export function useRoutine(routineId: string | undefined): UseRoutineResult {
     return () => {
       active = false
     }
-  }, [routineId])
+  }, [routineId, t])
 
   useEffect(() => {
     let cancel = load()

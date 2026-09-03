@@ -64,17 +64,12 @@ export const ALL_CAPABILITIES: Capability[] = [
   'students.manage',
 ]
 
-/** Cómo se llama cada una donde hay que elegirlas. */
-export const CAPABILITY_LABEL: Record<Capability, string> = {
-  'crew.settings': 'Ajustes del equipo',
-  'crew.staff': 'Equipo técnico',
-  'crew.invite': 'Invitar y dar de alta',
-  'crew.members': 'Aceptar y dar de baja',
-  'crew.wall': 'Publicar en el muro',
-  'training.manage': 'Rutinas y planes',
-  'schedule.manage': 'Agenda',
-  'students.manage': 'Fichas de alumnos',
-}
+/*
+ * CÓMO SE LLAMA CADA UNA NO ESTÁ AQUÍ. Las etiquetas de roles y capacidades
+ * viven en `shared/i18n/domainLabels.ts`: el dominio define QUÉ existe, y cómo
+ * se dice en cada idioma es presentación. Mientras el texto estuvo aquí dentro,
+ * traducirlo habría obligado al dominio a conocer al diccionario.
+ */
 
 /**
  * Lo que trae cada rol de serie.
@@ -100,19 +95,6 @@ export const CAPABILITIES_BY_ROLE: Record<CrewRole, Capability[]> = {
     'students.manage',
   ],
   student: [],
-}
-
-/** Qué distingue a un rol del anterior, para explicarlo donde se elige. */
-export const ROLE_LABEL: Record<CrewRole, string> = {
-  admin: 'Administrador',
-  trainer: 'Entrenador',
-  student: 'Alumno',
-}
-
-export const ROLE_DESCRIPTION: Record<CrewRole, string> = {
-  admin: 'Manda en el equipo: además de entrenar, cambia los ajustes y decide quién trabaja aquí.',
-  trainer: 'Entrena: alumnos, rutinas, agenda y muro. No toca los ajustes ni el equipo técnico.',
-  student: 'Entrena aquí. Ve su progreso, el muro y el ranking.',
 }
 
 /**

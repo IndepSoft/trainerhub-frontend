@@ -5,13 +5,17 @@ import { useStudentSessions } from '../hooks/useStudentSessions'
 import { formatDateKey } from '../libs/dateKey'
 import type { SessionStatus } from '@/shared/domain/entities/session'
 import type { Student } from '@/shared/domain/entities/student'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { SESSION_STATUS_LABEL_KEY } from '@/shared/i18n/domainLabels'
 
 /** Presentación de cada estado. Los mismos tres que usa la agenda. */
-const STATUS_BADGE: Record<SessionStatus, { label: string; className: string }> = {
-  pending: { label: 'Pendiente', className: 'border-warning/50 text-warning' },
-  confirmed: { label: 'Confirmada', className: 'border-success/50 text-success' },
-  completed: { label: 'Completada', className: 'border-cobalt/50 text-cobalt' },
-  cancelled: { label: 'Cancelada', className: 'border-danger/50 text-danger' },
+/* Solo el COLOR: el rotulo sale de `SESSION_STATUS_LABEL_KEY`, que es el mismo
+   para las cuatro pantallas que lo enseñan. */
+const STATUS_CLASS: Record<SessionStatus, string> = {
+  pending: 'border-warning/50 text-warning',
+  confirmed: 'border-success/50 text-success',
+  completed: 'border-cobalt/50 text-cobalt',
+  cancelled: 'border-danger/50 text-danger',
 }
 
 interface StudentSessionsProps {
@@ -31,6 +35,7 @@ interface StudentSessionsProps {
  * dominios importa nada del otro.
  */
 export function StudentSessions({ student }: StudentSessionsProps) {
+  const { t } = useTranslation()
   const { sessions, loading } = useStudentSessions(student.id)
 
   return (
@@ -39,12 +44,12 @@ export function StudentSessions({ student }: StudentSessionsProps) {
           accion, y duplicarla dejaba dos botones identicos en la misma pagina
           -uno de ellos, ademas, el que llevaba meses sin conectar-. */}
       <h2 className="mb-4 border-b border-cobalt-tint-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-        Sesiones
+        {t('studentSessions.title')}
       </h2>
 
       {loading ? null : sessions.length === 0 ? (
         <p className="py-8 text-center text-sm text-ink/40">
-          {student.firstName} no tiene sesiones agendadas.
+          {t('studentSessions.empty', { name: student.firstName })}
         </p>
       ) : (
         <ul className="divide-y divide-cobalt-tint-3">
@@ -68,10 +73,10 @@ export function StudentSessions({ student }: StudentSessionsProps) {
               <span
                 className={cn(
                   'shrink-0 rounded-action border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]',
-                  STATUS_BADGE[session.status].className
+                  STATUS_CLASS[session.status]
                 )}
               >
-                {STATUS_BADGE[session.status].label}
+                {t(SESSION_STATUS_LABEL_KEY[session.status])}
               </span>
             </li>
           ))}
@@ -84,7 +89,7 @@ export function StudentSessions({ student }: StudentSessionsProps) {
         to="/calendar"
         className="mt-4 inline-flex h-11 items-center text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/45 transition-colors hover:text-cobalt"
       >
-        Ver la agenda completa
+        {t('studentSessions.viewCalendar')}
       </Link>
     </section>
   )

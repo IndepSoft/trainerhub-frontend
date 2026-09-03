@@ -20,6 +20,8 @@ import { cn } from '@/shared/lib/utils'
 import { STUDENT_GOALS } from '../data/studentGoals'
 import type { NewStudent } from '@/shared/domain/ports/StudentRepository'
 import type { Student, StudentLevel } from '@/shared/domain/entities/student'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { STUDENT_LEVEL_LABEL_KEY, goalLabel } from '@/shared/i18n/domainLabels'
 
 /** Registro de etiqueta del formulario, igual que en el resto de la aplicación. */
 const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
@@ -55,17 +57,16 @@ export function StudentFormDialog({
   onOpenChange,
   onSave,
 }: StudentFormDialogProps) {
+  const { t } = useTranslation()
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto p-0">
         <DialogHeader className="px-5 pt-5 text-left">
           <DialogTitle className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
-            {student === null ? 'Nuevo alumno' : 'Editar alumno'}
+            {student === null ? t('studentForm.newTitle') : t('studentForm.editTitle')}
           </DialogTitle>
           <DialogDescription className="text-sm text-ink/50">
-            {student === null
-              ? 'Con su correo podrá entrar a ver su progreso cuando se registre.'
-              : 'Los cambios se ven en su ficha, en la agenda y en el panel.'}
+            {student === null ? t('studentForm.newHint') : t('studentForm.editHint')}
           </DialogDescription>
         </DialogHeader>
 
@@ -87,6 +88,7 @@ interface StudentFieldsProps {
 }
 
 function StudentFields({ student, onSave, onCancel }: StudentFieldsProps) {
+  const { t } = useTranslation()
   const fieldId = useId()
 
   const [firstName, setFirstName] = useState(student?.firstName ?? '')
@@ -145,7 +147,7 @@ function StudentFields({ student, onSave, onCancel }: StudentFieldsProps) {
 
   const fieldError = (field: FieldName) =>
     missing.includes(field) ? (
-      <span className="text-[11px] font-semibold text-danger">Falta este campo</span>
+      <span className="text-[11px] font-semibold text-danger">{t('common.missingField')}</span>
     ) : null
 
   return (
@@ -154,7 +156,7 @@ function StudentFields({ student, onSave, onCancel }: StudentFieldsProps) {
         <div>
           <div className="flex items-baseline justify-between gap-2">
             <Label htmlFor={`${fieldId}-first`} className={FIELD_LABEL}>
-              Nombre
+              {t('settings.profile.firstName')}
             </Label>
             {fieldError('firstName')}
           </div>
@@ -169,7 +171,7 @@ function StudentFields({ student, onSave, onCancel }: StudentFieldsProps) {
         <div>
           <div className="flex items-baseline justify-between gap-2">
             <Label htmlFor={`${fieldId}-last`} className={FIELD_LABEL}>
-              Apellidos
+              {t('settings.profile.lastName')}
             </Label>
             {fieldError('lastName')}
           </div>
@@ -185,7 +187,7 @@ function StudentFields({ student, onSave, onCancel }: StudentFieldsProps) {
       <div>
         <div className="flex items-baseline justify-between gap-2">
           <Label htmlFor={`${fieldId}-email`} className={FIELD_LABEL}>
-            Correo
+            {t('studentForm.email')}
           </Label>
           {fieldError('email')}
         </div>
@@ -193,19 +195,19 @@ function StudentFields({ student, onSave, onCancel }: StudentFieldsProps) {
           id={`${fieldId}-email`}
           type="email"
           className={cn('mt-1.5', missing.includes('email') && 'border-danger')}
-          placeholder="alumno@correo.com"
+          placeholder={t('studentForm.emailPlaceholder')}
           value={email}
           onChange={(event) => setEmail(event.target.value)}
         />
         <p className="mt-1 text-xs text-ink/40">
-          Con este correo se enlazará su cuenta cuando se registre.
+          {t('studentForm.emailHint')}
         </p>
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <div>
           <Label htmlFor={`${fieldId}-level`} className={FIELD_LABEL}>
-            Nivel
+            {t('studentDetail.level')}
           </Label>
           <Select value={level} onValueChange={(value) => setLevel(value as StudentLevel)}>
             <SelectTrigger id={`${fieldId}-level`} className="mt-1.5 w-full">
@@ -214,7 +216,7 @@ function StudentFields({ student, onSave, onCancel }: StudentFieldsProps) {
             <SelectContent>
               {STUDENT_LEVELS.map((candidate) => (
                 <SelectItem key={candidate} value={candidate}>
-                  {candidate}
+                  {t(STUDENT_LEVEL_LABEL_KEY[candidate])}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -223,7 +225,7 @@ function StudentFields({ student, onSave, onCancel }: StudentFieldsProps) {
 
         <div>
           <Label htmlFor={`${fieldId}-age`} className={FIELD_LABEL}>
-            Edad
+            {t('studentCard.age')}
           </Label>
           <Input
             id={`${fieldId}-age`}
@@ -238,7 +240,7 @@ function StudentFields({ student, onSave, onCancel }: StudentFieldsProps) {
 
         <div>
           <Label htmlFor={`${fieldId}-fat`} className={FIELD_LABEL}>
-            Grasa (%)
+            {t('studentForm.bodyFat')}
           </Label>
           <Input
             id={`${fieldId}-fat`}
@@ -254,8 +256,8 @@ function StudentFields({ student, onSave, onCancel }: StudentFieldsProps) {
 
       {/* Conmutadores y no texto libre: los objetivos se usan para filtrar y
           agrupar, y escritos a mano cada uno pondría el suyo. */}
-      <div role="group" aria-label="Objetivos">
-        <span className={cn('block', FIELD_LABEL)}>Objetivos</span>
+      <div role="group" aria-label={t('studentDetail.goals')}>
+        <span className={cn('block', FIELD_LABEL)}>{t('studentDetail.goals')}</span>
         <div className="mt-2 flex flex-wrap gap-2">
           {STUDENT_GOALS.map((goal) => {
             const isSelected = goals.includes(goal)
@@ -273,7 +275,7 @@ function StudentFields({ student, onSave, onCancel }: StudentFieldsProps) {
                     : 'border-cobalt-tint-3 text-ink/50 hover:border-cobalt/40 hover:text-ink'
                 )}
               >
-                {goal}
+                {goalLabel(goal, t)}
               </button>
             )
           })}
@@ -282,9 +284,11 @@ function StudentFields({ student, onSave, onCancel }: StudentFieldsProps) {
 
       <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:justify-end">
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
+          {t('common.cancel')}
         </Button>
-        <Button type="submit">{student === null ? 'Añadir alumno' : 'Guardar cambios'}</Button>
+        <Button type="submit">
+          {student === null ? t('students.add') : t('studentForm.saveChanges')}
+        </Button>
       </div>
     </form>
   )

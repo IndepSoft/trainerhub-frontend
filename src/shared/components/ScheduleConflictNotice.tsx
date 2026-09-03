@@ -1,5 +1,6 @@
 import { AlertTriangle } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface ScheduleConflictNoticeProps {
   /** Con qué choca, ya redactado por `describeOverlap`. */
@@ -21,6 +22,8 @@ interface ScheduleConflictNoticeProps {
  * será el tercero cuando la asignación masiva de planes genere sesiones.
  */
 export function ScheduleConflictNotice({ message, onOverride }: ScheduleConflictNoticeProps) {
+  const { t } = useTranslation()
+
   return (
     <div
       role="alert"
@@ -33,7 +36,7 @@ export function ScheduleConflictNotice({ message, onOverride }: ScheduleConflict
       {/* La anulación es el botón secundario: lo esperado es corregir la hora,
           no insistir. */}
       <Button type="button" variant="outline" className="w-full" onClick={onOverride}>
-        Agendar de todos modos
+        {t('schedule.conflict.override')}
       </Button>
     </div>
   )

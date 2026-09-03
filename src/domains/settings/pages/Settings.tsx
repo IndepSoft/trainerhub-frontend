@@ -8,11 +8,15 @@ import { Label } from '@/shared/ui/label'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { getInitials } from '@/shared/lib/personName'
 import { cn } from '@/shared/lib/utils'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { useLogout } from '@/auth/hooks/useLogout'
-import { ThemeSelector } from '../components/ThemeSelector'
 import { useProfileEditor, type ProfileDraft } from '../hooks/useProfileEditor'
+import { ThemeSelector } from '../components/ThemeSelector'
+import { LanguageSelector } from '../components/LanguageSelector'
 
 const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
+const SECTION_TITLE =
+  'border-b border-cobalt-tint-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60'
 
 /**
  * Configuración. Sólo composición.
@@ -27,6 +31,9 @@ const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-
  *  - TEMA: sí, y no fue una casilla. El bloque `.dark` era el de shadcn por
  *    defecto —sin bone, ink, cobalt ni ember—, así que hubo que escribir la
  *    paleta oscura entera antes de que el conmutador significara algo.
+ *  - IDIOMA: sí, y tampoco fue una casilla. Hubo que traducir la aplicación
+ *    entera antes: un selector sobre media traducción deja la mitad de cada
+ *    pantalla en el idioma que no se pidió.
  *  - CONTRASEÑA: no. `AuthPort` no expone cambiarla.
  *  - NOTIFICACIONES: no. No hay más canal que la campana, y ésa no se apaga.
  *
@@ -35,24 +42,22 @@ const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-
  * entrenador buscara su nombre entre las reglas del equipo.
  */
 export default function Settings() {
+  const { t } = useTranslation()
   const { owner, profileId, initial, email, saving, error, save } = useProfileEditor()
   const { handleLogout } = useLogout()
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
       <PageHeader className="pb-4">
-        <PageHeader.Eyebrow>Tu cuenta</PageHeader.Eyebrow>
-        <PageHeader.Title>Configuración</PageHeader.Title>
+        <PageHeader.Eyebrow>{t('settings.eyebrow')}</PageHeader.Eyebrow>
+        <PageHeader.Title>{t('settings.title')}</PageHeader.Title>
       </PageHeader>
 
       <div className="flex-1 overflow-auto">
         <div className="mx-auto max-w-md space-y-8 px-5 py-6">
           <section aria-labelledby="perfil-titulo" className="space-y-4">
-            <h2
-              id="perfil-titulo"
-              className="border-b border-cobalt-tint-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60"
-            >
-              Perfil
+            <h2 id="perfil-titulo" className={SECTION_TITLE}>
+              {t('settings.profile')}
             </h2>
 
             {error !== null && (
@@ -66,8 +71,7 @@ export default function Settings() {
                 {/* Estado legítimo, no un fallo: el nombre y la cara viven en la
                     ficha que a uno le corresponda, y quien no está en ningún
                     equipo todavía no tiene ninguna. */}
-                Tu perfil vive en tu ficha del equipo. Cuando te unas a uno,
-                podrás cambiar tu nombre y tu foto desde aquí.
+                {t('settings.profile.noRecord')}
               </p>
             ) : (
               /*
@@ -86,43 +90,43 @@ export default function Settings() {
           </section>
 
           <section aria-labelledby="apariencia-titulo" className="space-y-4">
-            <h2
-              id="apariencia-titulo"
-              className="border-b border-cobalt-tint-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60"
-            >
-              Apariencia
+            <h2 id="apariencia-titulo" className={SECTION_TITLE}>
+              {t('settings.appearance')}
             </h2>
 
             <div>
-              <span className={cn('block', FIELD_LABEL)}>Tema</span>
+              <span className={cn('block', FIELD_LABEL)}>{t('settings.theme')}</span>
               <div className="mt-2">
                 <ThemeSelector />
+              </div>
+            </div>
+
+            <div>
+              <span className={cn('block', FIELD_LABEL)}>{t('settings.language')}</span>
+              <div className="mt-2">
+                <LanguageSelector />
               </div>
             </div>
           </section>
 
           <section aria-labelledby="cuenta-titulo" className="space-y-4">
-            <h2
-              id="cuenta-titulo"
-              className="border-b border-cobalt-tint-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60"
-            >
-              Cuenta
+            <h2 id="cuenta-titulo" className={SECTION_TITLE}>
+              {t('settings.account')}
             </h2>
 
             <div>
-              <span className={cn('block', FIELD_LABEL)}>Correo</span>
+              <span className={cn('block', FIELD_LABEL)}>{t('settings.account.email')}</span>
               <p className="mt-1 text-sm text-ink/70">{email === '' ? '—' : email}</p>
               <p className="mt-1 text-xs text-ink/45">
                 {/* El porqué, donde se ve que no se puede cambiar. Un campo
                     apagado sin explicación se lee como un fallo. */}
-                No se cambia desde aquí: es la llave con la que se te reconoce, y
-                lo que enlazó tu cuenta con tu ficha.
+                {t('settings.account.emailHint')}
               </p>
             </div>
 
             <Button variant="outline" className="w-full gap-2" onClick={handleLogout}>
               <LogOut className="size-4" />
-              Cerrar sesión
+              {t('userMenu.logout')}
             </Button>
           </section>
         </div>
@@ -138,6 +142,7 @@ interface ProfileFieldsProps {
 }
 
 function ProfileFields({ initial, saving, onSave }: ProfileFieldsProps) {
+  const { t } = useTranslation()
   const [draft, setDraft] = useState(initial)
   const [justSaved, setJustSaved] = useState(false)
   const [missingName, setMissingName] = useState(false)
@@ -179,7 +184,7 @@ function ProfileFields({ initial, saving, onSave }: ProfileFieldsProps) {
 
         <div className="min-w-0 flex-1">
           <Label htmlFor="perfil-foto" className={FIELD_LABEL}>
-            Foto
+            {t('settings.profile.photo')}
           </Label>
           <Input
             id="perfil-foto"
@@ -195,10 +200,12 @@ function ProfileFields({ initial, saving, onSave }: ProfileFieldsProps) {
         <div>
           <div className="flex items-baseline justify-between gap-2">
             <Label htmlFor="perfil-nombre" className={FIELD_LABEL}>
-              Nombre
+              {t('settings.profile.firstName')}
             </Label>
             {missingName && (
-              <span className="text-[11px] font-semibold text-danger">Falta este campo</span>
+              <span className="text-[11px] font-semibold text-danger">
+                {t('common.missingField')}
+              </span>
             )}
           </div>
           <Input
@@ -211,7 +218,7 @@ function ProfileFields({ initial, saving, onSave }: ProfileFieldsProps) {
 
         <div>
           <Label htmlFor="perfil-apellidos" className={FIELD_LABEL}>
-            Apellidos
+            {t('settings.profile.lastName')}
           </Label>
           <Input
             id="perfil-apellidos"
@@ -224,7 +231,11 @@ function ProfileFields({ initial, saving, onSave }: ProfileFieldsProps) {
 
       <Button type="submit" className="w-full gap-2" disabled={saving}>
         {justSaved ? <Check className="size-4" /> : null}
-        {saving ? 'Guardando…' : justSaved ? 'Perfil guardado' : 'Guardar'}
+        {saving
+          ? t('common.saving')
+          : justSaved
+            ? t('settings.profile.saved')
+            : t('common.save')}
       </Button>
     </form>
   )

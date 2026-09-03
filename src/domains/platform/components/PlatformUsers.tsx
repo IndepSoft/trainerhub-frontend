@@ -4,7 +4,8 @@ import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { cn } from '@/shared/lib/utils'
-import { CAPABILITY_LABEL, ROLE_LABEL } from '@/shared/domain/permissions'
+import { CAPABILITY_LABEL_KEY, ROLE_LABEL_KEY } from '@/shared/i18n/domainLabels'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { usePlatformUsers } from '../hooks/usePlatformUsers'
 import { RolePermissionsDialog } from '@/shared/components/RolePermissionsDialog'
 import type { CrewRole } from '@/shared/domain/entities/crew'
@@ -28,6 +29,7 @@ const ROLE_BADGE: Record<CrewRole, string> = {
  * que el resto de los equipos siga siendo privado.
  */
 export function PlatformUsers() {
+  const { t } = useTranslation()
   const {
     users,
     total,
@@ -56,13 +58,13 @@ export function PlatformUsers() {
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Buscar por nombre o correo"
-            aria-label="Buscar cuentas"
+            placeholder={t('platform.users.search')}
+            aria-label={t('platform.users.searchLabel')}
             className="ps-9"
           />
         </div>
 
-        <div role="group" aria-label="Filtrar por rol" className="flex flex-wrap gap-1">
+        <div role="group" aria-label={t('platform.users.filterByRole')} className="flex flex-wrap gap-1">
           {ROLE_FILTERS.map((candidate) => (
             <button
               key={candidate ?? 'todos'}
@@ -76,7 +78,7 @@ export function PlatformUsers() {
                   : 'text-ink/45 hover:bg-cobalt-tint hover:text-cobalt'
               )}
             >
-              {candidate === null ? 'Todos' : ROLE_LABEL[candidate]}
+              {candidate === null ? t('platform.users.allRoles') : t(ROLE_LABEL_KEY[candidate])}
             </button>
           ))}
         </div>
@@ -93,8 +95,8 @@ export function PlatformUsers() {
           {/* Se distingue «no hay nadie» de «tu búsqueda no encuentra nada»: con
               un filtro puesto, lo segundo no es un problema de la plataforma. */}
           {search.trim() === '' && role === null
-            ? 'Todavía no hay ninguna cuenta.'
-            : 'Ninguna cuenta coincide con lo que buscas.'}
+            ? t('platform.users.empty')
+            : t('platform.users.noMatch')}
         </p>
       ) : (
         <ul className="divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3">
@@ -115,7 +117,7 @@ export function PlatformUsers() {
                   <p className="truncate text-xs text-cobalt">
                     +{' '}
                     {user.extraCapabilities
-                      .map((capability) => CAPABILITY_LABEL[capability])
+                      .map((capability) => t(CAPABILITY_LABEL_KEY[capability]))
                       .join(', ')}
                   </p>
                 )}
@@ -128,7 +130,7 @@ export function PlatformUsers() {
                     ROLE_BADGE[user.role]
                   )}
                 >
-                  {ROLE_LABEL[user.role]}
+                  {t(ROLE_LABEL_KEY[user.role])}
                 </span>
 
                 <Button
@@ -136,7 +138,7 @@ export function PlatformUsers() {
                   className="ms-auto shrink-0 sm:ms-0"
                   onClick={() => setEditing(user)}
                 >
-                  Permisos
+                  {t('platform.users.permissions')}
                 </Button>
               </div>
             </li>
@@ -149,13 +151,13 @@ export function PlatformUsers() {
       {pageCount > 1 && (
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs text-ink/45">
-            Página {page} de {pageCount} · {total} cuentas
+            {t('platform.users.page', { page, pages: pageCount, total })}
           </p>
 
           <div className="flex gap-1">
             <button
               type="button"
-              aria-label="Página anterior"
+              aria-label={t('platform.users.previousPage')}
               disabled={page === 1}
               onClick={() => setPage(page - 1)}
               className="inline-flex size-11 items-center justify-center rounded-action text-ink/50 transition-colors hover:bg-cobalt-tint hover:text-cobalt disabled:pointer-events-none disabled:opacity-30"
@@ -164,7 +166,7 @@ export function PlatformUsers() {
             </button>
             <button
               type="button"
-              aria-label="Página siguiente"
+              aria-label={t('platform.users.nextPage')}
               disabled={page === pageCount}
               onClick={() => setPage(page + 1)}
               className="inline-flex size-11 items-center justify-center rounded-action text-ink/50 transition-colors hover:bg-cobalt-tint hover:text-cobalt disabled:pointer-events-none disabled:opacity-30"

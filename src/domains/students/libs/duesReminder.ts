@@ -1,4 +1,5 @@
-import { describeStanding } from '@/shared/domain/subscriptionRules'
+import { describeStanding } from '@/shared/i18n/duesWording'
+import type { Translate } from '@/shared/i18n/LanguageContext'
 import type { SubscriptionStanding } from '@/shared/domain/entities/studentSubscription'
 
 /**
@@ -18,19 +19,25 @@ import type { SubscriptionStanding } from '@/shared/domain/entities/studentSubsc
  */
 export function duesReminderDraft(
   studentFirstName: string,
-  standing: SubscriptionStanding
+  standing: SubscriptionStanding,
+  /* Traducir llega por parametro: esto es una funcion pura, no un componente. */
+  t: Translate
 ): string {
+  const name = studentFirstName
+
   if (standing.state === 'overdue') {
-    return `Hola ${studentFirstName}, tu cuota ${describeStanding(standing).toLowerCase()}. Cuando puedas, la renovamos y seguimos.`
+    return t('dues.reminder.overdue', {
+      name,
+      standing: describeStanding(standing, t).toLowerCase(),
+    })
   }
 
-  if (standing.state === 'never') {
-    return `Hola ${studentFirstName}, todavía no tenemos tu cuota registrada. Cuando quieras la ponemos al día.`
-  }
+  if (standing.state === 'never') return t('dues.reminder.never', { name })
 
-  if (standing.daysLeft === 0) {
-    return `Hola ${studentFirstName}, tu cuota vence hoy. Avísame y la renovamos.`
-  }
+  if (standing.daysLeft === 0) return t('dues.reminder.today', { name })
 
-  return `Hola ${studentFirstName}, tu cuota ${describeStanding(standing).toLowerCase()}. Te aviso con tiempo por si quieres renovarla.`
+  return t('dues.reminder.soon', {
+    name,
+    standing: describeStanding(standing, t).toLowerCase(),
+  })
 }

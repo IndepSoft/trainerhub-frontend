@@ -6,6 +6,7 @@ import {
   formatWeekRange,
 } from '../libs/calendar.utils'
 import type { CalendarViewMode } from '../types/calendar.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface CalendarNavigationProps {
   viewMode: CalendarViewMode
@@ -37,6 +38,7 @@ export function CalendarNavigation({
   onNext,
   onToday,
 }: CalendarNavigationProps) {
+  const { t } = useTranslation()
   const isWeek = viewMode === 'week'
   const compact = isWeek ? formatCompactWeekRange(weekDates) : formatCompactDate(currentDate)
   const full = isWeek ? formatWeekRange(weekDates) : formatFullDate(currentDate)
@@ -46,7 +48,7 @@ export function CalendarNavigation({
       <button
         type="button"
         onClick={onPrevious}
-        aria-label="Periodo anterior"
+        aria-label={t('calendar.previousPeriod')}
         className="inline-flex size-11 shrink-0 items-center justify-center rounded-action text-ink/50 transition-colors hover:text-cobalt"
       >
         <ChevronLeft className="size-5" />
@@ -60,7 +62,7 @@ export function CalendarNavigation({
       <button
         type="button"
         onClick={onNext}
-        aria-label="Periodo siguiente"
+        aria-label={t('calendar.nextPeriod')}
         className="inline-flex size-11 shrink-0 items-center justify-center rounded-action text-ink/50 transition-colors hover:text-cobalt"
       >
         <ChevronRight className="size-5" />
@@ -71,7 +73,7 @@ export function CalendarNavigation({
         onClick={onToday}
         className="ms-1 inline-flex h-11 shrink-0 items-center rounded-action border border-cobalt-tint-3 px-3 text-xs font-semibold uppercase tracking-wider text-ink/60 transition-colors hover:border-cobalt/40 hover:text-cobalt"
       >
-        Hoy
+        {t('calendar.today')}
       </button>
     </div>
   )

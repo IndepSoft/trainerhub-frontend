@@ -10,6 +10,7 @@ import { AssignDialog } from './AssignDialog'
 import { PlanToAgendaDialog } from './PlanToAgendaDialog'
 import type { Assignment, PlanAssignment } from '@/shared/domain/entities/assignment'
 import type { Student } from '@/shared/domain/entities/student'
+import { useTranslation, type Translate } from '@/shared/i18n/LanguageContext'
 
 interface StudentAssignmentsProps {
   student: Student
@@ -27,6 +28,7 @@ interface StudentAssignmentsProps {
  * sesiones, que se listan en la sección de al lado.
  */
 export function StudentAssignments({ student }: StudentAssignmentsProps) {
+  const { t } = useTranslation()
   const { assignments, loading, assign, unassign } = useStudentAssignments(student.id)
   const { routines } = useAssignableRoutines()
   const { plans } = useAssignablePlans()
@@ -60,7 +62,7 @@ export function StudentAssignments({ student }: StudentAssignmentsProps) {
     <section className="px-5 py-8">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-cobalt-tint-3 pb-3">
         <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-          Asignado
+          {t('assignments.title')}
         </h2>
         <Button
           type="button"
@@ -69,13 +71,13 @@ export function StudentAssignments({ student }: StudentAssignmentsProps) {
           onClick={() => setIsAssignOpen(true)}
         >
           <Plus className="size-4" />
-          Asignar
+          {t('assign.title')}
         </Button>
       </div>
 
       {loading ? null : assignments.length === 0 ? (
         <p className="py-8 text-center text-sm text-ink/40">
-          {student.firstName} no tiene nada asignado todavía.
+          {t('assignments.empty', { name: student.firstName })}
         </p>
       ) : (
         <ul className="divide-y divide-cobalt-tint-3">
@@ -88,17 +90,17 @@ export function StudentAssignments({ student }: StudentAssignmentsProps) {
                   ) : (
                     <Dumbbell className="size-3.5" />
                   )}
-                  {assignment.kind === 'plan' ? 'Plan' : 'Rutina'}
+                  {assignment.kind === 'plan' ? t('assign.plan') : t('assign.routine')}
                 </span>
 
                 <Link
                   to={destinationOf(assignment)}
                   className="mt-1 flex min-h-11 items-center font-semibold text-ink underline-offset-4 hover:text-cobalt hover:underline"
                 >
-                  {titlesById.get(targetOf(assignment)) ?? 'Ya no disponible'}
+                  {titlesById.get(targetOf(assignment)) ?? t('assignments.gone')}
                 </Link>
 
-                <p className="text-xs text-ink/45">{describeWhen(assignment)}</p>
+                <p className="text-xs text-ink/45">{describeWhen(assignment, t)}</p>
 
                 {assignment.notes !== '' && (
                   <p className="mt-1 text-xs text-ink/40">{assignment.notes}</p>
@@ -116,7 +118,9 @@ export function StudentAssignments({ student }: StudentAssignmentsProps) {
                   <button
                     type="button"
                     onClick={() => setDumping(assignment)}
-                    aria-label={`Volcar a la agenda ${titlesById.get(assignment.planId) ?? 'el plan'}`}
+                    aria-label={t('assignments.dumpLabel', {
+                      title: titlesById.get(assignment.planId) ?? t('assignments.thePlan'),
+                    })}
                     className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-cobalt-tint hover:text-cobalt"
                   >
                     <CalendarCheck className="size-4" />
@@ -126,7 +130,9 @@ export function StudentAssignments({ student }: StudentAssignmentsProps) {
               <button
                 type="button"
                 onClick={() => void unassign(assignment.id)}
-                aria-label={`Quitar la asignación de ${titlesById.get(targetOf(assignment)) ?? 'este elemento'}`}
+                aria-label={t('assignments.removeLabel', {
+                  title: titlesById.get(targetOf(assignment)) ?? t('assignments.thisItem'),
+                })}
                 className="inline-flex size-11 shrink-0 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-danger-surface hover:text-danger"
               >
                 <Trash2 className="size-4" />
@@ -176,11 +182,11 @@ function destinationOf(assignment: Assignment): string {
  * Es la diferencia entre «lo tiene» y «lo está haciendo», y sin distinguirlas la
  * lista mentiría sobre lo segundo.
  */
-function describeWhen(assignment: Assignment): string {
+function describeWhen(assignment: Assignment, t: Translate): string {
   if (assignment.kind === 'routine') {
-    return `Asignada el ${formatDateKey(assignment.assignedOn)}`
+    return t('assignments.routineOn', { date: formatDateKey(assignment.assignedOn) })
   }
 
-  if (assignment.startDate === null) return 'Asignado, sin fecha de inicio'
-  return `Empieza el ${formatDateKey(assignment.startDate)}`
+  if (assignment.startDate === null) return t('assignments.noStart')
+  return t('assignments.startsOn', { date: formatDateKey(assignment.startDate) })
 }

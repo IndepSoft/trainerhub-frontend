@@ -24,6 +24,7 @@ import { useAssignablePlans } from '../hooks/useAssignablePlans'
 import { toDateKey } from '../libs/dateKey'
 import type { NewAssignment, AssignmentKind } from '@/shared/domain/entities/assignment'
 import type { Student } from '@/shared/domain/entities/student'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /** Registro de etiqueta del formulario, igual que en el resto de la aplicación. */
 const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
@@ -44,6 +45,7 @@ interface AssignDialogProps {
  * quien asigna un plan para que el alumno lo siga por su cuenta.
  */
 export function AssignDialog({ student, open, onOpenChange, onAssign }: AssignDialogProps) {
+  const { t } = useTranslation()
   const fieldId = useId()
   const { routines } = useAssignableRoutines()
   const { plans } = useAssignablePlans()
@@ -118,11 +120,10 @@ export function AssignDialog({ student, open, onOpenChange, onAssign }: AssignDi
       <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto p-0">
         <DialogHeader className="px-5 pt-5 text-left">
           <DialogTitle className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
-            Asignar
+            {t('assign.title')}
           </DialogTitle>
           <DialogDescription className="text-sm text-ink/50">
-            A {student.firstName} {student.lastName}. Asignar no agenda nada: las sesiones se
-            ponen después.
+            {t('assign.hint', { name: `${student.firstName} ${student.lastName}` })}
           </DialogDescription>
         </DialogHeader>
 
@@ -132,18 +133,18 @@ export function AssignDialog({ student, open, onOpenChange, onAssign }: AssignDi
             opciones y cambian el resto del formulario, asi que conviene verlas
             las dos a la vez.
           */}
-          <div role="group" aria-label="Qué se asigna">
-            <span className={cn('block', FIELD_LABEL)}>Qué</span>
+          <div role="group" aria-label={t('assign.whatLabel')}>
+            <span className={cn('block', FIELD_LABEL)}>{t('assign.what')}</span>
             <div className="mt-1.5 grid grid-cols-2 gap-2">
               <KindOption
                 icon={CalendarRange}
-                label="Plan"
+                label={t('assign.plan')}
                 isSelected={isPlan}
                 onSelect={() => changeKind('plan')}
               />
               <KindOption
                 icon={Dumbbell}
-                label="Rutina"
+                label={t('assign.routine')}
                 isSelected={!isPlan}
                 onSelect={() => changeKind('routine')}
               />
@@ -153,10 +154,10 @@ export function AssignDialog({ student, open, onOpenChange, onAssign }: AssignDi
           <div className="space-y-2">
             <div className="flex items-baseline justify-between gap-3">
               <Label htmlFor={`${fieldId}-target`} className={FIELD_LABEL}>
-                {isPlan ? 'Plan' : 'Rutina'}
+                {isPlan ? t('assign.plan') : t('assign.routine')}
               </Label>
               {missingTarget && (
-                <span className="text-[11px] font-semibold text-danger">Falta este campo</span>
+                <span className="text-[11px] font-semibold text-danger">{t('common.missingField')}</span>
               )}
             </div>
             <Select
@@ -170,7 +171,7 @@ export function AssignDialog({ student, open, onOpenChange, onAssign }: AssignDi
                 id={`${fieldId}-target`}
                 className={cn('w-full', missingTarget && 'border-danger')}
               >
-                <SelectValue placeholder={isPlan ? 'Elige un plan' : 'Elige una rutina'} />
+                <SelectValue placeholder={isPlan ? t('assign.pickPlan') : t('assign.pickRoutine')} />
               </SelectTrigger>
               <SelectContent>
                 {isPlan
@@ -195,9 +196,9 @@ export function AssignDialog({ student, open, onOpenChange, onAssign }: AssignDi
           */}
           {isPlan && (
             <div className="space-y-2">
-              <span className={cn('block', FIELD_LABEL)}>Fecha de inicio</span>
+              <span className={cn('block', FIELD_LABEL)}>{t('assign.startDate')}</span>
               <p className="text-xs text-ink/40">
-                Opcional. Sin ella, el plan queda asignado pero sin empezar.
+                {t('assign.startDateHint')}
               </p>
               <div className="rounded-block border border-cobalt-tint-3 p-2">
                 <Calendar
@@ -212,12 +213,12 @@ export function AssignDialog({ student, open, onOpenChange, onAssign }: AssignDi
 
           <div className="space-y-2">
             <Label htmlFor={`${fieldId}-notes`} className={FIELD_LABEL}>
-              Notas
+              {t('newSession.notes')}
             </Label>
             <Textarea
               id={`${fieldId}-notes`}
               rows={2}
-              placeholder="Por qué se le asigna, avisos…"
+              placeholder={t('assign.notesPlaceholder')}
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
             />
@@ -227,7 +228,7 @@ export function AssignDialog({ student, open, onOpenChange, onAssign }: AssignDi
             type="submit"
             className="h-14 w-full gap-2 font-display text-base font-extrabold uppercase tracking-[0.14em]"
           >
-            Asignar
+            {t('assign.title')}
           </Button>
         </form>
       </DialogContent>

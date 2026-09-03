@@ -5,9 +5,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
-import { BLOCK_METHOD_LABELS, formatPrescription } from '../libs/routine.utils'
+import { formatPrescription } from '../libs/routine.utils'
 import { useTrainingCatalog } from '../hooks/useTrainingCatalog'
 import type { SavedBlock } from '../types/training.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { BLOCK_METHOD_LABEL_KEY } from '@/shared/i18n/domainLabels'
 
 interface SavedBlockPickerProps {
   open: boolean
@@ -30,6 +32,7 @@ export function SavedBlockPicker({
   onOpenChange,
   onInsert,
 }: SavedBlockPickerProps) {
+  const { t } = useTranslation()
   const { exercisesById } = useTrainingCatalog()
 
   return (
@@ -37,10 +40,10 @@ export function SavedBlockPicker({
       <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto p-0">
         <DialogHeader className="px-5 pt-5 text-left">
           <DialogTitle className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
-            Insertar bloque
+            {t('block.insert')}
           </DialogTitle>
           <DialogDescription className="text-sm text-ink/50">
-            Se añade una copia. Editarla después no toca la entrada guardada.
+            {t('block.insertHint')}
           </DialogDescription>
         </DialogHeader>
 
@@ -60,7 +63,7 @@ export function SavedBlockPicker({
                 >
                   <span className="block font-semibold text-ink">{saved.name}</span>
                   <span className="mt-0.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-ember-deep">
-                    {BLOCK_METHOD_LABELS[saved.block.method]}
+                    {t(BLOCK_METHOD_LABEL_KEY[saved.block.method])}
                   </span>
                   <span className="mt-2 block space-y-1">
                     {saved.block.exercises.map((prescribed) => (
@@ -69,7 +72,7 @@ export function SavedBlockPicker({
                         className="flex items-baseline justify-between gap-4 text-sm"
                       >
                         <span className="min-w-0 truncate text-ink/70">
-                          {exercisesById.get(prescribed.exerciseId)?.name ?? 'Ejercicio'}
+                          {exercisesById.get(prescribed.exerciseId)?.name ?? t('exercise.fallback')}
                         </span>
                         <span className="metric-figures shrink-0 text-ink/45">
                           {formatPrescription(prescribed)}

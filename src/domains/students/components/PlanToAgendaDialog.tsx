@@ -31,6 +31,8 @@ import { formatDateKey } from '../libs/dateKey'
 import type { Session } from '@/shared/domain/entities/session'
 import type { TrainingPlan } from '@/shared/domain/entities/plan'
 import type { Student } from '@/shared/domain/entities/student'
+import { activeLocale } from '@/shared/i18n/activeLocale'
+import { useTranslation, type Translate } from '@/shared/i18n/LanguageContext'
 
 /** Registro de etiqueta del formulario, igual que en el resto de la aplicación. */
 const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
@@ -40,7 +42,7 @@ const MONDAY_ANCHOR = Date.UTC(2024, 0, 1)
 
 function weekdayName(dayOfWeek: number): string {
   const date = new Date(MONDAY_ANCHOR + (dayOfWeek - 1) * 86_400_000)
-  return date.toLocaleDateString('es-ES', { weekday: 'long', timeZone: 'UTC' })
+  return date.toLocaleDateString(activeLocale(), { weekday: 'long', timeZone: 'UTC' })
 }
 
 interface PlanToAgendaDialogProps {
@@ -76,6 +78,7 @@ export function PlanToAgendaDialog({
   open,
   onOpenChange,
 }: PlanToAgendaDialogProps) {
+  const { t, plural } = useTranslation()
   const fieldId = useId()
   const { routines } = useAssignableRoutines()
 
@@ -151,24 +154,36 @@ export function PlanToAgendaDialog({
       <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto p-0">
         <DialogHeader className="px-5 pt-5 text-left">
           <DialogTitle className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
-            Volcar a la agenda
+            {t('planDump.title')}
           </DialogTitle>
           <DialogDescription className="text-sm text-ink/50">
-            «{plan.title}» para {student.firstName}, desde el {formatDateKey(startDate)}.
+            {t('planDump.hint', {
+              plan: plan.title,
+              name: student.firstName,
+              date: formatDateKey(startDate),
+            })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5 px-5 pb-5">
           <div className="space-y-3">
-            <span className={cn('block', FIELD_LABEL)}>Hora de cada día</span>
+            <span className={cn('block', FIELD_LABEL)}>{t('planDump.timePerDay')}</span>
             <p className="text-xs text-ink/50">
               {/* La forma del plan, en una línea: es de donde sale el total, y
                   sin ella el número del botón parece salir de la nada. Un plan
                   de una semana produce pocas sesiones y eso sorprende si no se
                   ve escrito que tiene una. */}
-              El plan tiene {plan.weeks.length}{' '}
-              {plan.weeks.length === 1 ? 'semana' : 'semanas'} y entrena{' '}
-              {weekdays.length} {weekdays.length === 1 ? 'día' : 'días'} distintos.
+              {t('planDump.shape', {
+                weeks: plural(
+                  'planDump.weekCount.one',
+                  'planDump.weekCount.other',
+                  plan.weeks.length,
+                  { count: plan.weeks.length }
+                ),
+                days: plural('planDump.dayCount.one', 'planDump.dayCount.other', weekdays.length, {
+                  count: weekdays.length,
+                }),
+              })}
             </p>
             {weekdays.map((dayOfWeek) => (
               <div key={dayOfWeek} className="flex items-center gap-3">
@@ -201,7 +216,7 @@ export function PlanToAgendaDialog({
 
           <div className="space-y-2">
             <Label htmlFor={`${fieldId}-location`} className={FIELD_LABEL}>
-              Ubicación
+              {t('newSession.location')}
             </Label>
             <Select value={location} onValueChange={setLocation}>
               <SelectTrigger id={`${fieldId}-location`} className="w-full">
@@ -226,23 +241,25 @@ export function PlanToAgendaDialog({
             <p className="flex items-start gap-2 rounded-block border border-warning/40 bg-warning/5 px-3 py-2 text-xs text-ink/70">
               <AlertTriangle aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 text-warning" />
               <span>
-                Sin hora: {describeWeekdays(missingWeekdays)}. Esos días no se agendan.
+                {t('planDump.missingTimes', { days: describeWeekdays(missingWeekdays, t) })}
               </span>
             </p>
           )}
 
           {planned.length === 0 ? (
             <p className="rounded-block border border-cobalt-tint-3 px-4 py-6 text-center text-sm text-ink/45">
-              Elige la hora de al menos un día para ver qué se va a agendar.
+              {t('planDump.pickAtLeastOne')}
             </p>
           ) : (
             <div>
               <p className="metric-figures mb-2 flex flex-wrap items-baseline gap-x-3 text-sm text-ink/60">
-                <span className="font-semibold text-ink">{planned.length} sesiones</span>
+                <span className="font-semibold text-ink">
+                  {t('planDump.sessionCount', { count: planned.length })}
+                </span>
                 {conflicting > 0 && (
                   <span className="flex items-center gap-1.5 text-warning">
                     <AlertTriangle aria-hidden="true" className="size-3.5" />
-                    {conflicting} en conflicto
+                    {t('planDump.conflicting', { count: conflicting })}
                   </span>
                 )}
               </p>
@@ -265,7 +282,7 @@ export function PlanToAgendaDialog({
                       )}
                     >
                       {formatDateKey(entry.session.date)} · {entry.session.time}
-                      {entry.conflicts.length > 0 && ' · ocupado'}
+                      {entry.conflicts.length > 0 && t('planDump.busy')}
                     </span>
                   </li>
                 ))}
@@ -280,7 +297,9 @@ export function PlanToAgendaDialog({
             className="h-14 w-full gap-2 font-display text-base font-extrabold uppercase tracking-[0.14em]"
           >
             <CalendarCheck className="size-5" />
-            {planned.length === 0 ? 'Agendar' : `Agendar ${planned.length} sesiones`}
+            {planned.length === 0
+              ? t('planDump.confirm')
+              : t('planDump.confirmCount', { count: planned.length })}
           </Button>
         </div>
       </DialogContent>
@@ -303,10 +322,10 @@ function addWeeks(dateKey: string, weeks: number): string {
  * Con «y» antes del último y no una lista separada por comas hasta el final: se
  * lee como una frase porque va dentro de una, no como un volcado de datos.
  */
-function describeWeekdays(weekdays: number[]): string {
+function describeWeekdays(weekdays: number[], t: Translate): string {
   const names = weekdays.map(weekdayName)
   if (names.length <= 1) return names.join('')
 
   const last = names[names.length - 1]
-  return `${names.slice(0, -1).join(', ')} y ${last}`
+  return t('planDump.and', { list: names.slice(0, -1).join(', '), last })
 }

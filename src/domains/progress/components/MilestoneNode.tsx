@@ -3,6 +3,7 @@ import { Progress } from '@/shared/ui/progress'
 import { cn } from '@/shared/lib/utils'
 import { calculateMilestoneCompletion } from '../libs/gamification.utils'
 import type { Milestone, MilestoneState } from '../types/gamification.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface MilestoneNodeProps {
   milestone: Milestone
@@ -40,6 +41,7 @@ export function MilestoneNode({
   isLast,
   leadsToLocked,
 }: MilestoneNodeProps) {
+  const { t } = useTranslation()
   const completion = calculateMilestoneCompletion(milestone)
   const isLocked = milestone.state === 'locked'
   const isActive = milestone.state === 'active'
@@ -94,7 +96,7 @@ export function MilestoneNode({
       <div className="min-w-0 flex-1 pt-1">
         <div className="flex items-baseline justify-between gap-3">
           <h3 className={cn('font-semibold', TITLE_STYLES[milestone.state])}>
-            {milestone.title}
+            {t(milestone.titleKey)}
           </h3>
           <span
             className={cn(
@@ -107,7 +109,7 @@ export function MilestoneNode({
         </div>
 
         <p className={cn('text-sm', isLocked ? 'text-ink/30' : 'text-ink/50')}>
-          {milestone.description}
+          {t(milestone.descriptionKey)}
         </p>
 
         {!isLocked && (

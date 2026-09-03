@@ -1,5 +1,6 @@
 import { RefreshCw } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface PullToRefreshIndicatorProps {
   pullDistance: number
@@ -22,6 +23,8 @@ export function PullToRefreshIndicator({
   isRefreshing,
   willRefresh,
 }: PullToRefreshIndicatorProps) {
+  const { t } = useTranslation()
+
   if (pullDistance === 0 && !isRefreshing) return null
 
   const height = isRefreshing ? 56 : Math.min(pullDistance, 96)
@@ -42,7 +45,11 @@ export function PullToRefreshIndicator({
         style={isRefreshing ? undefined : { transform: `rotate(${pullDistance * 3}deg)` }}
       />
       <span className="sr-only">
-        {isRefreshing ? 'Actualizando' : willRefresh ? 'Suelta para actualizar' : 'Tira para actualizar'}
+        {isRefreshing
+          ? t('common.refreshing')
+          : willRefresh
+            ? t('common.releaseToRefresh')
+            : t('common.pullToRefresh')}
       </span>
     </div>
   )

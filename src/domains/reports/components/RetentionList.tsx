@@ -3,6 +3,7 @@ import { getShortName } from '@/shared/lib/personName'
 import { cn } from '@/shared/lib/utils'
 import { formatDateKey } from '@/domains/students/libs/dateKey'
 import { AT_RISK_DAYS, useRetention } from '../hooks/useRetention'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /**
  * Quien ha dejado de venir. Solo composicion.
@@ -13,12 +14,13 @@ import { AT_RISK_DAYS, useRetention } from '../hooks/useRetention'
  * cuota vencida llega tarde; esto llega antes.
  */
 export function RetentionList() {
+  const { t } = useTranslation()
   const { entries, loading } = useRetention()
 
   if (loading) return null
 
   if (entries.length === 0) {
-    return <p className="py-8 text-sm text-ink/45">Todavía no hay alumnos en el equipo.</p>
+    return <p className="py-8 text-sm text-ink/45">{t('reports.noStudents')}</p>
   }
 
   return (
@@ -39,8 +41,8 @@ export function RetentionList() {
               </p>
               <p className="truncate text-xs text-ink/45">
                 {entry.lastTrained === null
-                  ? 'No ha entrenado nunca'
-                  : `Última sesión el ${formatDateKey(entry.lastTrained)}`}
+                  ? t('reports.neverTrained')
+                  : t('reports.lastSession', { date: formatDateKey(entry.lastTrained) })}
               </p>
             </div>
 
@@ -55,8 +57,8 @@ export function RetentionList() {
               {entry.daysSince === null
                 ? '—'
                 : entry.daysSince === 0
-                  ? 'Hoy'
-                  : `${entry.daysSince} d`}
+                  ? t('reports.today')
+                  : t('reports.daysShort', { count: entry.daysSince })}
             </span>
           </li>
         )

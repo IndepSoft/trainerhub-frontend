@@ -6,7 +6,8 @@ import { PageHeader } from '@/shared/components/PageHeader'
 import { ConfirmDeleteDialog } from '@/shared/components/ConfirmDeleteDialog'
 import { RolePermissionsDialog } from '@/shared/components/RolePermissionsDialog'
 import { cn } from '@/shared/lib/utils'
-import { CAPABILITY_LABEL, ROLE_LABEL } from '@/shared/domain/permissions'
+import { CAPABILITY_LABEL_KEY, ROLE_LABEL_KEY } from '@/shared/i18n/domainLabels'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { useViewerContext } from '@/app/ViewerContext'
 import { useCrewStaff } from '../hooks/useCrewStaff'
 import { NotAllowedHere } from '../components/NotAllowedHere'
@@ -31,6 +32,7 @@ const ROLE_BADGE: Record<CrewRole, string> = {
  */
 export default function CrewStaffPage() {
   const { active, can, loading: loadingViewer } = useViewerContext()
+  const { t } = useTranslation()
   const { staff, loading, error, blockerFor, updateMembership, removeStaff } = useCrewStaff()
 
   const [editing, setEditing] = useState<CrewStaff | null>(null)
@@ -39,7 +41,7 @@ export default function CrewStaffPage() {
   if (loadingViewer) return null
   if (active === null || !can('crew.staff')) {
     return (
-      <NotAllowedHere description="Quién trabaja aquí lo decide quien administra el equipo." />
+      <NotAllowedHere description={t('crew.staffNotAllowed')} />
     )
   }
 
@@ -47,7 +49,7 @@ export default function CrewStaffPage() {
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
       <PageHeader className="pb-4">
         <PageHeader.Eyebrow>{active.crew.name}</PageHeader.Eyebrow>
-        <PageHeader.Title>Equipo técnico</PageHeader.Title>
+        <PageHeader.Title>{t('crew.staff')}</PageHeader.Title>
       </PageHeader>
 
       <div className="flex-1 overflow-auto">
@@ -67,7 +69,7 @@ export default function CrewStaffPage() {
 
           {!loading && staff.length === 0 ? (
             <p className="py-8 text-sm text-ink/45">
-              Todavía no hay nadie en el equipo técnico.
+              {t('crew.staffEmpty')}
             </p>
           ) : (
             <ul className="divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3">
@@ -86,7 +88,7 @@ export default function CrewStaffPage() {
                         <p className="truncate text-xs text-cobalt">
                           +{' '}
                           {post.extraCapabilities
-                            .map((capability) => CAPABILITY_LABEL[capability])
+                            .map((capability) => t(CAPABILITY_LABEL_KEY[capability]))
                             .join(', ')}
                         </p>
                       )}
@@ -99,7 +101,7 @@ export default function CrewStaffPage() {
                           ROLE_BADGE[post.role]
                         )}
                       >
-                        {ROLE_LABEL[post.role]}
+                        {t(ROLE_LABEL_KEY[post.role])}
                       </span>
 
                       <Button
@@ -107,7 +109,7 @@ export default function CrewStaffPage() {
                         className="ms-auto shrink-0 sm:ms-0"
                         onClick={() => setEditing(post)}
                       >
-                        Permisos
+                        {t('roleDialog.permissions')}
                       </Button>
 
                       {/*

@@ -32,6 +32,7 @@ import { useAssignableRoutines } from '../hooks/useAssignableRoutines'
 import { toDateKey } from '../libs/dateKey'
 import type { Session, SessionModality } from '@/shared/domain/entities/session'
 import type { Student } from '@/shared/domain/entities/student'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /** Registro de etiqueta del formulario, igual que en el resto de la aplicación. */
 const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
@@ -67,6 +68,7 @@ export function ScheduleSessionDialog({
   open,
   onOpenChange,
 }: ScheduleSessionDialogProps) {
+  const { t } = useTranslation()
   const fieldId = useId()
   const { routines } = useAssignableRoutines()
 
@@ -158,11 +160,14 @@ export function ScheduleSessionDialog({
       // El titulo lo pone la rutina cuando la hay. No lleva el nombre del alumno
       // dentro: se resuelve desde `studentId`, y meterlo aqui seria una copia
       // que envejece en cuanto el alumno se renombre.
-      title: routine?.title ?? 'Sesión de entrenamiento',
+      title: routine?.title ?? t('scheduleSession.defaultTitle'),
       studentId: student.id,
       kind: 'individual',
       modality,
-      category: routine === undefined ? 'Entrenamiento' : 'Entrenamiento Personal',
+      /* Se guarda, asi que queda en el idioma de quien agendo. Ver el mismo
+         comentario en `CreateSessionModal`. */
+      category:
+        routine === undefined ? t('scheduleSession.category') : t('scheduleSession.personal'),
       date: toDateKey(date!),
       time,
       durationMinutes: Number(duration),
@@ -183,7 +188,7 @@ export function ScheduleSessionDialog({
 
   const fieldError = (field: FieldName) =>
     missing.includes(field) ? (
-      <span className="text-[11px] font-semibold text-danger">Falta este campo</span>
+      <span className="text-[11px] font-semibold text-danger">{t('common.missingField')}</span>
     ) : null
 
   return (
@@ -197,7 +202,7 @@ export function ScheduleSessionDialog({
       <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto p-0">
         <DialogHeader className="px-5 pt-5 text-left">
           <DialogTitle className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
-            Agendar sesión
+            {t('scheduleSession.title')}
           </DialogTitle>
           <DialogDescription className="text-sm text-ink/50">
             Para {student.firstName} {student.lastName}. Aparecerá en el calendario.
@@ -206,7 +211,7 @@ export function ScheduleSessionDialog({
 
         <form onSubmit={handleSubmit} className="space-y-5 px-5 pb-5">
           <div className="space-y-2">
-            <span className={cn('block', FIELD_LABEL)}>Tipo de entrenamiento</span>
+            <span className={cn('block', FIELD_LABEL)}>{t('session.modality.label')}</span>
             <SessionModalityPicker
               value={modality}
               onChange={(next) => {
@@ -221,14 +226,14 @@ export function ScheduleSessionDialog({
           {modality === 'strength' && (
           <div className="space-y-2">
             <Label htmlFor={`${fieldId}-routine`} className={FIELD_LABEL}>
-              Rutina
+              {t('newSession.routine')}
             </Label>
             <Select value={routineId} onValueChange={setRoutineId}>
               <SelectTrigger id={`${fieldId}-routine`} className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={NO_ROUTINE}>Sin rutina</SelectItem>
+                <SelectItem value={NO_ROUTINE}>{t('newSession.noRoutine')}</SelectItem>
                 {routines.map((routine) => (
                   <SelectItem key={routine.id} value={routine.id}>
                     {routine.title}
@@ -243,7 +248,7 @@ export function ScheduleSessionDialog({
             <div className="flex items-baseline justify-between gap-3">
               {/* `<span>` y no `<Label>`: detras hay una rejilla de dias, no un
                   control unico al que apuntar. */}
-              <span className={FIELD_LABEL}>Fecha</span>
+              <span className={FIELD_LABEL}>{t('newSession.date')}</span>
               {fieldError('date')}
             </div>
             <div
@@ -271,7 +276,7 @@ export function ScheduleSessionDialog({
             <div className="space-y-2">
               <div className="flex items-baseline justify-between gap-2">
                 <Label htmlFor={`${fieldId}-time`} className={FIELD_LABEL}>
-                  Hora
+                  {t('newSession.time')}
                 </Label>
                 {fieldError('time')}
               </div>
@@ -319,7 +324,7 @@ export function ScheduleSessionDialog({
 
             <div className="space-y-2">
               <Label htmlFor={`${fieldId}-duration`} className={FIELD_LABEL}>
-                Duración
+                {t('newSession.duration')}
               </Label>
               <Select
                 value={duration}
@@ -345,7 +350,7 @@ export function ScheduleSessionDialog({
           <div className="space-y-2">
             <div className="flex items-baseline justify-between gap-3">
               <Label htmlFor={`${fieldId}-location`} className={FIELD_LABEL}>
-                Ubicación
+                {t('newSession.location')}
               </Label>
               {fieldError('location')}
             </div>
@@ -354,7 +359,7 @@ export function ScheduleSessionDialog({
                 id={`${fieldId}-location`}
                 className={cn('w-full', missing.includes('location') && 'border-danger')}
               >
-                <SelectValue placeholder="Elige una ubicación" />
+                <SelectValue placeholder={t('newSession.locationPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
                 {SESSION_LOCATIONS.map((place) => (
@@ -368,12 +373,12 @@ export function ScheduleSessionDialog({
 
           <div className="space-y-2">
             <Label htmlFor={`${fieldId}-notes`} className={FIELD_LABEL}>
-              Notas
+              {t('newSession.notes')}
             </Label>
             <Textarea
               id={`${fieldId}-notes`}
               rows={2}
-              placeholder="Qué trabajar, avisos, material…"
+              placeholder={t('scheduleSession.notesPlaceholder')}
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
             />
@@ -388,7 +393,7 @@ export function ScheduleSessionDialog({
             className="h-14 w-full gap-2 font-display text-base font-extrabold uppercase tracking-[0.14em]"
           >
             <CalendarCheck className="size-5" />
-            Agendar sesión
+            {t('scheduleSession.title')}
           </Button>
         </form>
       </DialogContent>

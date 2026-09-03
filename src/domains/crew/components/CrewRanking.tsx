@@ -3,11 +3,13 @@ import { getInitials, getShortName } from '@/shared/lib/personName'
 import { cn } from '@/shared/lib/utils'
 import { useCrewRanking } from '../hooks/useCrewRanking'
 import type { ProgressPeriod } from '@/shared/domain/ports/CrewProgressRepository'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
+import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 
-const PERIOD_LABEL: Record<ProgressPeriod, string> = {
-  week: 'Esta semana',
-  month: 'Este mes',
-  all: 'Siempre',
+const PERIOD_LABEL_KEY: Record<ProgressPeriod, TranslationKey> = {
+  week: 'crew.period.week',
+  month: 'crew.period.month',
+  all: 'crew.period.all',
 }
 
 /** De más reciente a más largo: lo ganable primero. */
@@ -35,6 +37,7 @@ interface CrewRankingProps {
  * es lo que hace falta.
  */
 export function CrewRanking({ viewerStudentId }: CrewRankingProps) {
+  const { t, plural } = useTranslation()
   const { entries, period, setPeriod, loading } = useCrewRanking()
 
   const withEffort = entries.filter((entry) => entry.completedSessions > 0)
@@ -46,10 +49,10 @@ export function CrewRanking({ viewerStudentId }: CrewRankingProps) {
           id="ranking-titulo"
           className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60"
         >
-          Ranking
+          {t('crew.ranking')}
         </h2>
 
-        <div role="group" aria-label="Periodo del ranking" className="flex gap-1">
+        <div role="group" aria-label={t('crew.rankingPeriod')} className="flex gap-1">
           {PERIODS.map((candidate) => (
             <button
               key={candidate}
@@ -63,7 +66,7 @@ export function CrewRanking({ viewerStudentId }: CrewRankingProps) {
                   : 'text-ink/45 hover:bg-cobalt-tint hover:text-cobalt'
               )}
             >
-              {PERIOD_LABEL[candidate]}
+              {t(PERIOD_LABEL_KEY[candidate])}
             </button>
           ))}
         </div>
@@ -75,8 +78,8 @@ export function CrewRanking({ viewerStudentId }: CrewRankingProps) {
               nunca»: en un ranking semanal, el lunes por la mañana está vacío
               siempre y eso no es un fallo. */}
           {period === 'all'
-            ? 'Todavía no hay sesiones completadas en el equipo.'
-            : 'Nadie ha entrenado en este periodo todavía. Se llena solo.'}
+            ? t('crew.rankingEmpty')
+            : t('crew.rankingPeriodEmpty')}
         </p>
       ) : (
         <ol className="divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3">
@@ -109,8 +112,12 @@ export function CrewRanking({ viewerStudentId }: CrewRankingProps) {
                     {getShortName(entry.firstName, entry.lastName)}
                   </p>
                   <p className="text-xs text-ink/45">
-                    {entry.completedSessions}{' '}
-                    {entry.completedSessions === 1 ? 'sesión' : 'sesiones'}
+                    {plural(
+                      'crew.sessionCount.one',
+                      'crew.sessionCount.other',
+                      entry.completedSessions,
+                      { count: entry.completedSessions }
+                    )}
                   </p>
                 </div>
 

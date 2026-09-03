@@ -1,4 +1,5 @@
 import type { Session } from '@/shared/domain/entities/session'
+import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 
 export type AchievementCategory = 'attendance' | 'consistency' | 'metrics' | 'challenges'
 
@@ -16,8 +17,12 @@ export type AchievementRarity = 'common' | 'rare' | 'epic' | 'legendary'
  */
 export interface AchievementDefinition {
   id: string
-  name: string
-  description: string
+  /*
+   * SON CLAVES, no textos: el catalogo es una constante de modulo, se evalua al
+   * importar y ahi todavia no hay idioma que consultar. Traduce quien pinta.
+   */
+  nameKey: TranslationKey
+  descriptionKey: TranslationKey
   icon: string
   category: AchievementCategory
   rarity: AchievementRarity

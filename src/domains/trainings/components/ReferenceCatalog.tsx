@@ -1,5 +1,11 @@
 import { Lock } from 'lucide-react'
 import { useTrainingCatalog } from '../hooks/useTrainingCatalog'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
+import {
+  catalogDescription,
+  catalogEnumLabel,
+  catalogLabel,
+} from '@/shared/i18n/domainLabels'
 
 /**
  * Las cuatro tablas que el entrenador NO edita.
@@ -16,6 +22,7 @@ import { useTrainingCatalog } from '../hooks/useTrainingCatalog'
  * siendo una lista que nadie sabe que existe.
  */
 export function ReferenceCatalog() {
+  const { t } = useTranslation()
   const { muscleGroupsById, movementPatternsById, objectivesById, splitsById } =
     useTrainingCatalog()
 
@@ -26,20 +33,18 @@ export function ReferenceCatalog() {
     <section className="space-y-8 px-4 pb-6">
       <p className="flex items-start gap-2 rounded-block border border-cobalt-tint-3 bg-cobalt-tint px-4 py-3 text-sm text-ink/60">
         <Lock aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-cobalt" />
-        Estas tablas no se editan. Son el vocabulario con el que se clasifica y se
-        cuenta: si cada entrenador lo escribiera a su manera, filtrar por grupo
-        muscular o equilibrar por patrón dejaría de funcionar.
+        {t('reference.locked')}
       </p>
 
       <div>
         <h3 className="border-b border-cobalt-tint-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-          Grupos musculares
+          {t('reference.muscleGroups')}
         </h3>
         <dl className="divide-y divide-cobalt-tint-3">
           {regions.map((region) => (
             <div key={region} className="py-4">
               <dt className="text-xs font-semibold uppercase tracking-wider text-ink/45">
-                {region}
+                {catalogEnumLabel(region, t)}
               </dt>
               <dd className="mt-2 flex flex-wrap gap-2">
                 {muscleGroups
@@ -49,7 +54,7 @@ export function ReferenceCatalog() {
                       key={muscleGroup.id}
                       className="rounded-action border border-cobalt-tint-3 px-2.5 py-1 text-xs text-ink/70"
                     >
-                      {muscleGroup.name}
+                      {catalogLabel(muscleGroup.id, muscleGroup.name, t)}
                     </span>
                   ))}
               </dd>
@@ -60,7 +65,7 @@ export function ReferenceCatalog() {
 
       <div>
         <h3 className="border-b border-cobalt-tint-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-          Patrones de movimiento
+          {t('reference.movementPatterns')}
         </h3>
         <div className="flex flex-wrap gap-2 pt-4">
           {[...movementPatternsById.values()].map((pattern) => (
@@ -68,7 +73,7 @@ export function ReferenceCatalog() {
               key={pattern.id}
               className="rounded-action border border-cobalt-tint-3 px-2.5 py-1 text-xs text-ink/70"
             >
-              {pattern.name}
+              {catalogLabel(pattern.id, pattern.name, t)}
             </span>
           ))}
         </div>
@@ -76,13 +81,15 @@ export function ReferenceCatalog() {
 
       <div>
         <h3 className="border-b border-cobalt-tint-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-          Objetivos
+          {t('reference.objectives')}
         </h3>
         <dl className="divide-y divide-cobalt-tint-3">
           {[...objectivesById.values()].map((objective) => (
             <div key={objective.id} className="py-4">
-              <dt className="font-semibold text-ink">{objective.name}</dt>
-              <dd className="mt-0.5 text-sm text-ink/50">{objective.description}</dd>
+              <dt className="font-semibold text-ink">{catalogLabel(objective.id, objective.name, t)}</dt>
+              <dd className="mt-0.5 text-sm text-ink/50">
+                {catalogDescription(objective.id, objective.description, t)}
+              </dd>
             </div>
           ))}
         </dl>
@@ -90,18 +97,20 @@ export function ReferenceCatalog() {
 
       <div>
         <h3 className="border-b border-cobalt-tint-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-          Divisiones
+          {t('reference.splits')}
         </h3>
         <dl className="divide-y divide-cobalt-tint-3">
           {[...splitsById.values()].map((split) => (
             <div key={split.id} className="py-4">
               <dt className="flex items-baseline justify-between gap-4 font-semibold text-ink">
-                {split.name}
+                {catalogLabel(split.id, split.name, t)}
                 <span className="metric-figures shrink-0 text-xs font-normal text-ink/45">
-                  {split.sessionsPerWeek} sesiones/sem
+                  {t('reference.sessionsPerWeek', { count: split.sessionsPerWeek })}
                 </span>
               </dt>
-              <dd className="mt-0.5 text-sm text-ink/50">{split.description}</dd>
+              <dd className="mt-0.5 text-sm text-ink/50">
+                {catalogDescription(split.id, split.description, t)}
+              </dd>
             </div>
           ))}
         </dl>

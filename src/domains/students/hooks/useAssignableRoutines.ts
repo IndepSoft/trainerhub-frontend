@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { container } from '@/app/container'
 import type { Routine } from '@/shared/domain/entities/routine'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface UseAssignableRoutinesResult {
   routines: Routine[]
@@ -16,6 +17,7 @@ interface UseAssignableRoutinesResult {
  * aunque los tres vean exactamente lo mismo.
  */
 export function useAssignableRoutines(): UseAssignableRoutinesResult {
+  const { t } = useTranslation()
   const [routines, setRoutines] = useState<Routine[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -30,7 +32,7 @@ export function useAssignableRoutines(): UseAssignableRoutinesResult {
           if (active) setRoutines(result)
         })
         .catch((cause: unknown) => {
-          if (active) setError(cause instanceof Error ? cause.message : 'Error al cargar rutinas')
+          if (active) setError(cause instanceof Error ? cause.message : t('students.routinesError'))
         })
         .finally(() => {
           if (active) setLoading(false)
@@ -44,7 +46,7 @@ export function useAssignableRoutines(): UseAssignableRoutinesResult {
       active = false
       unsubscribe()
     }
-  }, [])
+  }, [t])
 
   return { routines, loading, error }
 }

@@ -12,6 +12,7 @@ import {
 } from '@/shared/ui/sidebar'
 import { GalleryVerticalEnd } from 'lucide-react'
 import { getSidebarRoutes } from '@/app/config/navigation.config'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { NavItem } from './NavItem'
 import { CrewSwitcher } from './CrewSwitcher'
 import { Separator } from '@/shared/ui/separator'
@@ -45,6 +46,7 @@ export function AppSidebar({
 }: AppSidebarProps) {
   // Los destinos dependen del papel: el padron de alumnos y el catalogo son de
   // gestion, y un alumno no tiene nada que hacer ahi.
+  const { t } = useTranslation()
   const sidebarRoutes = getSidebarRoutes(navigationViewer)
 
   return (
@@ -89,7 +91,7 @@ export function AppSidebar({
                   badge={route.badge}
                   disabled={route.disabled}
                 >
-                  {route.label}
+                  {t(route.labelKey)}
                 </NavItem>
               ))}
             </nav>

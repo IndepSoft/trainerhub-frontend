@@ -10,6 +10,7 @@ import { useAuthStore } from '@/app/stores/authStore'
 import { useViewerContext } from '@/app/ViewerContext'
 import { useCrewEditor } from '../hooks/useCrewEditor'
 import { CREW_DENOMINATIONS, type CrewDenomination } from '@/shared/domain/entities/crew'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
 
@@ -26,6 +27,7 @@ const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-
  * se llama `Crew` en código y no cambia.
  */
 export default function NewCrew() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
   const { selectCrew, trainer } = useViewerContext()
@@ -66,8 +68,8 @@ export default function NewCrew() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
       <PageHeader className="pb-4">
-        <PageHeader.Eyebrow>Tu equipo</PageHeader.Eyebrow>
-        <PageHeader.Title>Crear</PageHeader.Title>
+        <PageHeader.Eyebrow>{t('crew.eyebrow')}</PageHeader.Eyebrow>
+        <PageHeader.Title>{t('crew.createTitle')}</PageHeader.Title>
       </PageHeader>
 
       <div className="flex-1 overflow-auto">
@@ -87,11 +89,11 @@ export default function NewCrew() {
             <div>
               <div className="flex items-baseline justify-between gap-2">
                 <Label htmlFor="crew-nombre" className={FIELD_LABEL}>
-                  Nombre
+                  {t('crew.name')}
                 </Label>
                 {missingName && (
                   <span className="text-[11px] font-semibold text-danger">
-                    Falta este campo
+                    {t('common.missingField')}
                   </span>
                 )}
               </div>
@@ -102,15 +104,15 @@ export default function NewCrew() {
                   setName(event.target.value)
                   setMissingName(false)
                 }}
-                placeholder="Hierro y Asfalto"
+                placeholder={t('crew.namePlaceholder')}
                 className={cn('mt-1.5', missingName && 'border-danger')}
               />
             </div>
 
-            <div role="group" aria-label="Cómo lo llamas">
-              <span className={cn('block', FIELD_LABEL)}>Cómo lo llamas</span>
+            <div role="group" aria-label={t('crew.denomination')}>
+              <span className={cn('block', FIELD_LABEL)}>{t('crew.denomination')}</span>
               <p className="mt-1 text-xs text-ink/45">
-                Sólo cambia cómo aparece escrito en la aplicación.
+                {t('crew.denominationHint')}
               </p>
 
               <div className="mt-2 flex flex-wrap gap-2">
@@ -138,7 +140,7 @@ export default function NewCrew() {
             </div>
 
             <Button type="submit" className="w-full" disabled={saving}>
-              {saving ? 'Creando…' : 'Crear equipo'}
+              {saving ? t('crew.creating') : t('crew.createSubmit')}
             </Button>
           </form>
         </div>

@@ -5,6 +5,7 @@ import { PageHeader } from '@/shared/components/PageHeader'
 import { useViewerContext } from '@/app/ViewerContext'
 import { PlatformCrews } from '../components/PlatformCrews'
 import { PlatformUsers } from '../components/PlatformUsers'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /**
  * El panel de la plataforma. Sólo composición.
@@ -24,6 +25,7 @@ import { PlatformUsers } from '../components/PlatformUsers'
  * en `PlatformRepository`.
  */
 export default function PlatformAdmin() {
+  const { t } = useTranslation()
   const { isPlatformAdmin, loading } = useViewerContext()
 
   if (loading) return null
@@ -32,8 +34,8 @@ export default function PlatformAdmin() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
       <PageHeader className="pb-4">
-        <PageHeader.Eyebrow>Plataforma</PageHeader.Eyebrow>
-        <PageHeader.Title>Administración</PageHeader.Title>
+        <PageHeader.Eyebrow>{t('platform.eyebrow')}</PageHeader.Eyebrow>
+        <PageHeader.Title>{t('platform.title')}</PageHeader.Title>
       </PageHeader>
 
       <div className="flex-1 overflow-auto">
@@ -42,8 +44,8 @@ export default function PlatformAdmin() {
             {/* Dos columnas y no `inline-flex`: a 375 px, dos pestañas en línea
                 dejaban la segunda pegada al borde. */}
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="equipos">Equipos</TabsTrigger>
-              <TabsTrigger value="cuentas">Cuentas</TabsTrigger>
+              <TabsTrigger value="equipos">{t('platform.tab.crews')}</TabsTrigger>
+              <TabsTrigger value="cuentas">{t('platform.tab.accounts')}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="equipos" className="mt-6">
@@ -68,16 +70,17 @@ export default function PlatformAdmin() {
  * sabe que existe, y al resto no se le ofrece el enlace.
  */
 function NotAllowed() {
+  const { t } = useTranslation()
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-bone px-6 text-center">
       <h1 className="font-display text-3xl font-extrabold uppercase leading-none tracking-tight text-ink">
-        Esto no es para ti
+        {t('platform.notAllowed')}
       </h1>
       <p className="max-w-sm text-sm text-ink/55">
-        El panel de la plataforma sólo lo abre quien la administra.
+        {t('platform.notAllowedHint')}
       </p>
       <Button asChild variant="outline">
-        <Link to="/">Volver</Link>
+        <Link to="/">{t('platform.back')}</Link>
       </Button>
     </div>
   )

@@ -5,12 +5,14 @@ import { HapticPattern, vibrate } from '@/shared/lib/haptics'
 import { useOnboarding } from '../hooks/useOnboarding'
 import { OnboardingSlide } from '../components/OnboardingSlide'
 import { OnboardingProgress } from '../components/OnboardingProgress'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /**
  * Onboarding. Sólo composición: el estado está en `useOnboarding` y el gesto en
  * `useSwipe`.
  */
 export default function Onboarding() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const {
     steps,
@@ -64,7 +66,7 @@ export default function Onboarding() {
             onClick={finish}
             className="-mr-2 flex h-11 items-center px-2 text-sm font-semibold uppercase tracking-wider text-white/50"
           >
-            Saltar
+            {t('onboarding.skip')}
           </button>
         )}
       </header>
@@ -86,7 +88,7 @@ export default function Onboarding() {
           onClick={advance}
           className="flex w-full items-center justify-center gap-3 bg-surface py-5 font-display text-lg font-extrabold uppercase tracking-[0.2em] text-ink transition-transform active:scale-[0.98]"
         >
-          {isLastStep ? 'Empezar' : 'Siguiente'}
+          {isLastStep ? t('onboarding.start') : t('onboarding.next')}
           <ArrowRight className="size-5" strokeWidth={2.5} />
         </button>
       </div>

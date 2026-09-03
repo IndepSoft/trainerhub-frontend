@@ -1,5 +1,6 @@
 import { Dumbbell, UserRound } from 'lucide-react'
 import { CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type { RegisterIntent } from '../types/register.types'
 
 interface RegisterIntentChooserProps {
@@ -20,24 +21,26 @@ interface RegisterIntentChooserProps {
  * los alumnos se registraran mal.
  */
 export function RegisterIntentChooser({ onChoose }: RegisterIntentChooserProps) {
+  const { t } = useTranslation()
+
   return (
     <>
       <CardHeader className="text-center">
-        <CardTitle className="text-xl font-semibold">Crear cuenta</CardTitle>
-        <CardDescription>¿Cómo vas a usar TrainerHub?</CardDescription>
+        <CardTitle className="text-xl font-semibold">{t('register.createAccount')}</CardTitle>
+        <CardDescription>{t('register.howWillYouUse')}</CardDescription>
       </CardHeader>
 
       <div className="grid grid-cols-1 gap-3 px-2 pb-2 sm:grid-cols-2">
         <IntentCard
           icon={<Dumbbell className="size-5" />}
-          title="Entreno a gente"
-          description="Monta tu equipo, tus rutinas y tu agenda."
+          title={t('register.intent.trainer')}
+          description={t('register.intent.trainerHint')}
           onClick={() => onChoose('trainer')}
         />
         <IntentCard
           icon={<UserRound className="size-5" />}
-          title="Entreno"
-          description="Sigue tu progreso y lo que te asigne tu entrenador."
+          title={t('register.intent.student')}
+          description={t('register.intent.studentHint')}
           onClick={() => onChoose('student')}
         />
       </div>

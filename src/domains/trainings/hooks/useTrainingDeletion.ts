@@ -3,6 +3,7 @@ import { container } from '@/app/container'
 import { usePlans } from './usePlans'
 import { describeNames, findPlansUsingRoutine } from '../libs/usage'
 import type { DeletionResult } from '@/shared/domain/deletion'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface UseTrainingDeletionResult {
   /**
@@ -33,6 +34,7 @@ interface UseTrainingDeletionResult {
  * colecciones y ningún componente debería tener que saberlo.
  */
 export function useTrainingDeletion(): UseTrainingDeletionResult {
+  const { plural } = useTranslation()
   const { plans } = usePlans()
 
 
@@ -44,10 +46,10 @@ export function useTrainingDeletion(): UseTrainingDeletionResult {
       // El verbo concuerda tambien, no solo el articulo: «La programan el plan»
       // se lee mal y es el tipo de detalle que delata un mensaje montado a
       // trozos.
-      const sujeto = enUso.length === 1 ? 'La programa el plan' : 'La programan los planes'
+      const sujeto = plural('deletion.usedByPlan', 'deletion.usedByPlans', enUso.length)
       return `${sujeto} ${describeNames(enUso.map((plan) => plan.title))}.`
     },
-    [plans]
+    [plans, plural]
   )
 
   const deleteRoutine = useCallback(

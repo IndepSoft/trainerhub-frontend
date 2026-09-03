@@ -13,6 +13,7 @@ import { evaluateAchievements } from '../libs/achievementEvaluation'
 import type { Achievement } from '../types/achievement.types'
 import type { Session } from '@/shared/domain/entities/session'
 import type { GamificationProfile } from '../types/gamification.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /**
  * El perfil de quien no ha entrenado nunca.
@@ -62,6 +63,7 @@ interface UseGamificationProfileResult {
  * sin recargar, igual que hace el panel.
  */
 export function useGamificationProfile(studentId?: string): UseGamificationProfileResult {
+  const { t } = useTranslation()
   const [profile, setProfile] = useState<GamificationProfile>(EMPTY_PROFILE)
   const [achievements, setAchievements] = useState<Achievement[]>(EMPTY_ACHIEVEMENTS)
   const [completedCount, setCompletedCount] = useState(0)
@@ -91,11 +93,11 @@ export function useGamificationProfile(studentId?: string): UseGamificationProfi
       setAchievements(evaluateAchievements(sessions))
       setCompletedCount(completedSessions(sessions).length)
     } catch (caught) {
-      setError(AppError.is(caught) ? caught.message : 'Error al cargar el progreso')
+      setError(AppError.is(caught) ? caught.message : t('progress.error'))
     } finally {
       setLoading(false)
     }
-  }, [studentId])
+  }, [studentId, t])
 
   useEffect(() => {
     void load()

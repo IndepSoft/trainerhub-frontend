@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { container } from '@/app/container'
 import type { TrainingPlan } from '@/shared/domain/entities/plan'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface UsePlansResult {
   plans: TrainingPlan[]
@@ -22,6 +23,7 @@ interface UsePlanResult {
  * mismo sitio y ninguno importa del otro. Misma costura que rutinas y sesiones.
  */
 export function usePlans(): UsePlansResult {
+  const { t } = useTranslation()
   const [plans, setPlans] = useState<TrainingPlan[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -36,7 +38,7 @@ export function usePlans(): UsePlansResult {
           if (active) setPlans(result)
         })
         .catch((cause: unknown) => {
-          if (active) setError(cause instanceof Error ? cause.message : 'Error al cargar planes')
+          if (active) setError(cause instanceof Error ? cause.message : t('plan.loadError'))
         })
         .finally(() => {
           if (active) setLoading(false)
@@ -50,7 +52,7 @@ export function usePlans(): UsePlansResult {
       active = false
       unsubscribe()
     }
-  }, [])
+  }, [t])
 
   return { plans, loading, error }
 }
@@ -62,6 +64,7 @@ export function usePlans(): UsePlansResult {
  * «no existe» hasta que `loading` es falso.
  */
 export function usePlan(planId: string | undefined): UsePlanResult {
+  const { t } = useTranslation()
   const [plan, setPlan] = useState<TrainingPlan | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -83,7 +86,7 @@ export function usePlan(planId: string | undefined): UsePlanResult {
           if (active) setPlan(result)
         })
         .catch((cause: unknown) => {
-          if (active) setError(cause instanceof Error ? cause.message : 'Error al cargar el plan')
+          if (active) setError(cause instanceof Error ? cause.message : t('plan.loadOneError'))
         })
         .finally(() => {
           if (active) setLoading(false)
@@ -97,7 +100,7 @@ export function usePlan(planId: string | undefined): UsePlanResult {
       active = false
       unsubscribe()
     }
-  }, [planId])
+  }, [planId, t])
 
   return { plan, loading, error }
 }

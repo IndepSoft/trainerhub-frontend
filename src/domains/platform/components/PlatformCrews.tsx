@@ -3,11 +3,13 @@ import { cn } from '@/shared/lib/utils'
 import { usePlatformCrews } from '../hooks/usePlatformCrews'
 import type { CrewOverview } from '@/shared/domain/ports/PlatformRepository'
 import type { SubscriptionStatus } from '@/shared/domain/entities/crew'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
+import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 
-const STATUS_LABEL: Record<SubscriptionStatus, string> = {
-  pending: 'Pendiente',
-  active: 'Activa',
-  suspended: 'Suspendida',
+const STATUS_LABEL_KEY: Record<SubscriptionStatus, TranslationKey> = {
+  pending: 'subscription.pending',
+  active: 'subscription.active',
+  suspended: 'subscription.suspended',
 }
 
 /**
@@ -32,6 +34,7 @@ const STATUS_BADGE: Record<SubscriptionStatus, string> = {
  * entrenador desde el primer minuto, porque es trabajo suyo que no ve nadie más.
  */
 export function PlatformCrews() {
+  const { t } = useTranslation()
   const { crews, loading, setSubscription } = usePlatformCrews()
 
   const waiting = crews.filter((entry) => entry.crew.subscriptionStatus === 'pending')
@@ -44,16 +47,16 @@ export function PlatformCrews() {
           {/* Lo que espera una decisión va primero y separado: es lo único de
               esta pantalla que se queda parado esperando a alguien. */}
           <CrewSection
-            title={`Esperando activación · ${waiting.length}`}
+            title={t('platform.crews.waiting', { count: waiting.length })}
             crews={waiting}
-            emptyMessage="No hay equipos esperando. Los que se creen aparecerán aquí."
+            emptyMessage={t('platform.crews.waitingEmpty')}
             onSetSubscription={setSubscription}
           />
 
           <CrewSection
-            title="El resto"
+            title={t('platform.crews.rest')}
             crews={rest}
-            emptyMessage="Todavía no hay ningún equipo activo."
+            emptyMessage={t('platform.crews.restEmpty')}
             onSetSubscription={setSubscription}
           />
         </>
@@ -70,6 +73,8 @@ interface CrewSectionProps {
 }
 
 function CrewSection({ title, crews, emptyMessage, onSetSubscription }: CrewSectionProps) {
+  const { t, plural } = useTranslation()
+
   return (
     <section className="space-y-3">
       <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
@@ -96,8 +101,13 @@ function CrewSection({ title, crews, emptyMessage, onSetSubscription }: CrewSect
                   {/* Sin dueño identificable se dice, en vez de dejar el hueco:
                       un equipo cuyo entrenador ya no tiene ficha es raro y
                       merece verse. */}
-                  {entry.ownerName ?? 'Sin entrenador'} · {entry.memberCount}{' '}
-                  {entry.memberCount === 1 ? 'miembro' : 'miembros'}
+                  {entry.ownerName ?? t('platform.crews.noOwner')} ·{' '}
+                  {plural(
+                    'platform.crews.memberCount.one',
+                    'platform.crews.memberCount.other',
+                    entry.memberCount,
+                    { count: entry.memberCount }
+                  )}
                 </p>
               </div>
 
@@ -108,7 +118,7 @@ function CrewSection({ title, crews, emptyMessage, onSetSubscription }: CrewSect
                     STATUS_BADGE[entry.crew.subscriptionStatus]
                   )}
                 >
-                  {STATUS_LABEL[entry.crew.subscriptionStatus]}
+                  {t(STATUS_LABEL_KEY[entry.crew.subscriptionStatus])}
                 </span>
 
                 {entry.crew.subscriptionStatus === 'active' ? (
@@ -117,14 +127,14 @@ function CrewSection({ title, crews, emptyMessage, onSetSubscription }: CrewSect
                     className="ms-auto shrink-0 sm:ms-0"
                     onClick={() => void onSetSubscription(entry.crew.id, 'suspended')}
                   >
-                    Suspender
+                    {t('platform.crews.suspend')}
                   </Button>
                 ) : (
                   <Button
                     className="ms-auto shrink-0 sm:ms-0"
                     onClick={() => void onSetSubscription(entry.crew.id, 'active')}
                   >
-                    Activar
+                    {t('platform.crews.activate')}
                   </Button>
                 )}
               </div>

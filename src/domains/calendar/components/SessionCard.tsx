@@ -4,6 +4,7 @@ import { getStudentInitials } from '../libs/calendar.utils'
 import { SESSION_STATUS } from '../libs/sessionStatus'
 import { cn } from '@/shared/lib/utils'
 import type { Session } from '../types/calendar.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 export type SessionCardVariant = 'full' | 'compact'
 
@@ -46,6 +47,7 @@ export function SessionCard({
   onSelect,
   variant = 'full',
 }: SessionCardProps) {
+  const { t } = useTranslation()
   const status = SESSION_STATUS[session.status]
   const statusTextClassName = status.outlineBadgeClassName.split(' ')[1]
   const isCompact = variant === 'compact'
@@ -60,7 +62,13 @@ export function SessionCard({
        * tipo, duracion y lugar como una sola frase. Asi dice lo que hace falta
        * para decidir si abrirla, y en el orden en que se decide.
        */
-      aria-label={`${session.title}. ${studentName}. ${status.label}. ${session.time}, ${session.durationMinutes} minutos`}
+      aria-label={t('session.card.label', {
+        title: session.title,
+        student: studentName,
+        status: t(status.labelKey),
+        time: session.time,
+        minutes: session.durationMinutes,
+      })}
       className={cn(
         'group relative isolate flex h-full w-full flex-col overflow-hidden rounded-block border border-cobalt-tint-3 bg-surface text-left transition-colors hover:border-cobalt/40',
         isCompact ? 'p-2' : 'p-3'
@@ -118,10 +126,12 @@ export function SessionCard({
                 status.outlineBadgeClassName
               )}
             >
-              {status.label}
+              {t(status.labelKey)}
             </span>
             <span className="rounded-action border border-cobalt-tint-3 px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-ink/50">
-              {session.kind === 'individual' ? 'Individual' : 'Grupal'}
+              {session.kind === 'individual'
+                ? t('session.kind.individual')
+                : t('session.kind.group')}
             </span>
           </div>
 

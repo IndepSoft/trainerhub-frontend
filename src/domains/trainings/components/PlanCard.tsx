@@ -5,6 +5,8 @@ import { LEVEL_BADGE } from '../libs/levelBadge'
 import { countDeloadWeeks, countPlanSessions } from '../libs/plan.utils'
 import { useTrainingCatalog } from '../hooks/useTrainingCatalog'
 import type { TrainingPlan } from '../types/training.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { catalogLabel, STUDENT_LEVEL_LABEL_KEY } from '@/shared/i18n/domainLabels'
 
 interface PlanCardProps {
   plan: TrainingPlan
@@ -19,6 +21,7 @@ interface PlanCardProps {
  * tarjeta sea el objetivo táctil y no sólo el título, igual que en la de rutina.
  */
 export function PlanCard({ plan }: PlanCardProps) {
+  const { t, plural } = useTranslation()
   const { objectivesById, splitsById } = useTrainingCatalog()
 
   const objective = objectivesById.get(plan.objectiveId)
@@ -36,7 +39,7 @@ export function PlanCard({ plan }: PlanCardProps) {
       <div className="p-5 pb-0">
         <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-ink/45">
           <CalendarRange className="size-3.5" />
-          Plan
+          {t('plan.title')}
         </span>
       </div>
 
@@ -56,7 +59,7 @@ export function PlanCard({ plan }: PlanCardProps) {
       <dl className="mt-5 grid grid-cols-3 divide-x divide-cobalt-tint-3 border-y border-cobalt-tint-3">
         <div className="px-4 py-3">
           <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">
-            Semanas
+            {t('plan.weeks')}
           </dt>
           <dd className="metric-figures font-display text-xl font-bold text-ink">
             {plan.weeks.length}
@@ -64,7 +67,7 @@ export function PlanCard({ plan }: PlanCardProps) {
         </div>
         <div className="px-4 py-3">
           <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">
-            Sesiones
+            {t('plan.sessions')}
           </dt>
           <dd className="metric-figures font-display text-xl font-bold text-ink">
             {countPlanSessions(plan)}
@@ -72,7 +75,7 @@ export function PlanCard({ plan }: PlanCardProps) {
         </div>
         <div className="px-4 py-3">
           <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">
-            Frecuencia
+            {t('plan.frequency')}
           </dt>
           <dd className="metric-figures font-display text-xl font-bold text-ink">
             {plan.weeklyFrequency}
@@ -83,20 +86,26 @@ export function PlanCard({ plan }: PlanCardProps) {
 
       <dl className="space-y-2 px-5 py-4 text-sm">
         <div className="flex items-baseline justify-between gap-4">
-          <dt className="text-ink/45">Objetivo</dt>
+          <dt className="text-ink/45">{t('plan.objective')}</dt>
           <dd className="min-w-0 truncate text-end text-ink/70">
-            {objective?.name ?? 'Sin objetivo'}
+            {objective === undefined
+              ? t('plan.noObjective')
+              : catalogLabel(objective.id, objective.name, t)}
           </dd>
         </div>
         <div className="flex items-baseline justify-between gap-4">
-          <dt className="text-ink/45">División</dt>
-          <dd className="min-w-0 truncate text-end text-ink/70">{split?.name ?? 'Sin división'}</dd>
+          <dt className="text-ink/45">{t('plan.split')}</dt>
+          <dd className="min-w-0 truncate text-end text-ink/70">
+            {split === undefined ? t('plan.noSplit') : catalogLabel(split.id, split.name, t)}
+          </dd>
         </div>
         {deloadWeeks > 0 && (
           <div className="flex items-baseline justify-between gap-4">
-            <dt className="text-ink/45">Descarga</dt>
+            <dt className="text-ink/45">{t('plan.deload')}</dt>
             <dd className="metric-figures text-end text-ink/70">
-              {deloadWeeks} {deloadWeeks === 1 ? 'semana' : 'semanas'}
+              {plural('plan.weekCount.one', 'plan.weekCount.other', deloadWeeks, {
+                count: deloadWeeks,
+              })}
             </dd>
           </div>
         )}
@@ -109,7 +118,7 @@ export function PlanCard({ plan }: PlanCardProps) {
             LEVEL_BADGE[plan.level]
           )}
         >
-          {plan.level}
+          {t(STUDENT_LEVEL_LABEL_KEY[plan.level])}
         </span>
 
         <ArrowUpRight

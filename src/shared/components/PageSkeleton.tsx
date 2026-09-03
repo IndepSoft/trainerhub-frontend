@@ -1,4 +1,5 @@
 import { Skeleton } from '@/shared/ui/skeleton'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /**
  * Esqueleto de una página mientras carga su fragmento.
@@ -14,9 +15,11 @@ import { Skeleton } from '@/shared/ui/skeleton'
  * tiempo lo muestran.
  */
 export function PageSkeleton() {
+  const { t } = useTranslation()
+
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-bone" aria-busy="true">
-      <span className="sr-only">Cargando</span>
+      <span className="sr-only">{t('common.loading')}</span>
 
       <header className="shrink-0 px-5 pt-6 pb-5">
         <Skeleton className="h-3 w-24" />

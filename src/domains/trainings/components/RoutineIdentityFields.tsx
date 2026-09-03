@@ -10,6 +10,8 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import type { TrainingLevel } from '../types/training.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { STUDENT_LEVEL_LABEL_KEY } from '@/shared/i18n/domainLabels'
 
 /** Registro de etiqueta del formulario, igual que el de las métricas. */
 const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50'
@@ -40,6 +42,7 @@ export function RoutineIdentityFields({
   onDescriptionChange,
   onLevelChange,
 }: RoutineIdentityFieldsProps) {
+  const { t } = useTranslation()
   const fieldId = useId()
 
   const titleFieldId = `${fieldId}-title`
@@ -50,17 +53,17 @@ export function RoutineIdentityFields({
   return (
     <section className="rounded-block border border-cobalt-tint-3 bg-surface p-4 sm:p-5">
       <h2 className="border-b border-cobalt-tint-3 pb-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-        La rutina
+        {t('routine.identity')}
       </h2>
 
       <div className="mt-4">
         <Label htmlFor={titleFieldId} className={FIELD_LABEL}>
-          Nombre
+          {t('exercise.name')}
         </Label>
         <Input
           id={titleFieldId}
           className="mt-1.5"
-          placeholder="Full body · Principiante"
+          placeholder={t('routine.namePlaceholder')}
           value={title}
           onChange={(event) => onTitleChange(event.target.value)}
           // `aria-describedby` sólo cuando hay mensaje: apuntar a un elemento
@@ -77,13 +80,13 @@ export function RoutineIdentityFields({
 
       <div className="mt-4">
         <Label htmlFor={descriptionFieldId} className={FIELD_LABEL}>
-          Descripción
+          {t('exercise.description')}
         </Label>
         <Textarea
           id={descriptionFieldId}
           className="mt-1.5"
           rows={2}
-          placeholder="Para qué sirve y a quién va dirigida."
+          placeholder={t('routine.descriptionPlaceholder')}
           value={description}
           onChange={(event) => onDescriptionChange(event.target.value)}
         />
@@ -98,7 +101,7 @@ export function RoutineIdentityFields({
       */}
       <div className="mt-4 sm:max-w-xs">
         <Label htmlFor={levelFieldId} className={FIELD_LABEL}>
-          Nivel
+          {t('routine.level')}
         </Label>
         <Select value={level} onValueChange={(value) => onLevelChange(value as TrainingLevel)}>
           <SelectTrigger id={levelFieldId} className="mt-1.5 w-full">
@@ -107,7 +110,7 @@ export function RoutineIdentityFields({
           <SelectContent>
             {TRAINING_LEVELS.map((candidate) => (
               <SelectItem key={candidate} value={candidate}>
-                {candidate}
+                {t(STUDENT_LEVEL_LABEL_KEY[candidate])}
               </SelectItem>
             ))}
           </SelectContent>

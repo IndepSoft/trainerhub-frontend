@@ -7,6 +7,7 @@ import { JoinCrewPrompt } from '../components/JoinCrewPrompt'
 import { useGamificationProfile } from '../hooks/useGamificationProfile'
 import { useProgressOverview } from '../hooks/useProgressOverview'
 import { useViewerContext } from '@/app/ViewerContext'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /**
  * El progreso de quien lo mira. Sólo composición.
@@ -22,6 +23,7 @@ import { useViewerContext } from '@/app/ViewerContext'
  * unirse, que es lo que le corresponde.
  */
 export default function Progress() {
+  const { t } = useTranslation()
   const { active, loading } = useViewerContext()
   const student = active?.student ?? null
 
@@ -38,8 +40,8 @@ export default function Progress() {
           brief exige visibles siempre; va `sticky` dentro del contenedor de
           desplazamiento, mas abajo. Esta solo nombra la pagina. */}
       <PageHeader className="pb-4">
-        <PageHeader.Eyebrow>Tu evolución</PageHeader.Eyebrow>
-        <PageHeader.Title>Progreso</PageHeader.Title>
+        <PageHeader.Eyebrow>{t('progress.eyebrow')}</PageHeader.Eyebrow>
+        <PageHeader.Title>{t('progress.title')}</PageHeader.Title>
       </PageHeader>
 
       {/* Contenedor de scroll de la pagina. Es un div y no un <main> a
@@ -91,7 +93,7 @@ export default function Progress() {
               pestana es cromo que no lleva a ningun sitio.
             */}
             <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-              Logros
+              {t('progress.achievements')}
             </h2>
             <AchievementSystem achievements={achievements} />
           </section>

@@ -3,6 +3,7 @@ import { container } from '@/app/container'
 import type { NewStudent } from '@/shared/domain/ports/StudentRepository'
 import type { Student } from '@/shared/domain/entities/student'
 import type { DeletionResult } from '@/shared/domain/deletion'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface UseStudentEditorResult {
   createStudent: (data: NewStudent) => Promise<Student>
@@ -26,6 +27,7 @@ interface UseStudentEditorResult {
  * romperla en silencio no es aceptable.
  */
 export function useStudentEditor(): UseStudentEditorResult {
+  const { plural } = useTranslation()
   const createStudent = useCallback(
     (data: NewStudent) => container.students.create(data),
     []
@@ -40,10 +42,10 @@ export function useStudentEditor(): UseStudentEditorResult {
     const sessions = await container.sessions.findByStudent(studentId)
     if (sessions.length === 0) return undefined
 
-    return sessions.length === 1
-      ? 'Tiene una sesión agendada.'
-      : `Tiene ${sessions.length} sesiones agendadas.`
-  }, [])
+    return plural('students.hasSession', 'students.hasSessions', sessions.length, {
+      count: sessions.length,
+    })
+  }, [plural])
 
   const deleteStudent = useCallback(
     async (studentId: string): Promise<DeletionResult> => {

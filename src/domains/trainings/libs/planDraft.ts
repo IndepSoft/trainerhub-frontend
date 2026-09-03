@@ -1,6 +1,8 @@
 import type { NewPlan } from '@/shared/domain/ports/PlanRepository'
 import type { TrainingPlan } from '../types/training.types'
 import type { PlanDraft, PlanDraftErrors, PlanWeekDraft } from '../types/planDraft.types'
+import { activeLocale } from '@/shared/i18n/activeLocale'
+import type { Translate } from '@/shared/i18n/LanguageContext'
 
 /**
  * Traducción y validación del borrador de plan. Funciones puras.
@@ -24,7 +26,7 @@ export function weekdayName(dayOfWeek: number): string {
   const date = new Date(MONDAY_ANCHOR + (dayOfWeek - 1) * MILLISECONDS_PER_DAY)
   // En UTC de punta a punta: sumar días sobre una fecha local se tuerce al
   // cruzar un cambio de hora.
-  return date.toLocaleDateString('es-ES', { weekday: 'long', timeZone: 'UTC' })
+  return date.toLocaleDateString(activeLocale(), { weekday: 'long', timeZone: 'UTC' })
 }
 
 function createRestingWeek(): PlanWeekDraft {
@@ -140,27 +142,28 @@ export function toPlanPreview(draft: PlanDraft): TrainingPlan {
  * sea un plan y no una lista de días: determinan cómo se prescribe y cómo se
  * reparte el cuerpo entre sesiones. La descripción no lo es.
  */
-export function validatePlanDraft(draft: PlanDraft): PlanDraftErrors {
+/* Traducir llega por parametro: son funciones puras, no componentes. */
+export function validatePlanDraft(draft: PlanDraft, t: Translate): PlanDraftErrors {
   const errors: PlanDraftErrors = {}
 
   if (draft.title.trim() === '') {
-    errors.title = 'Ponle un nombre al plan.'
+    errors.title = t('plan.needsName')
   }
 
   if (draft.objectiveId === '') {
-    errors.objectiveId = 'Elige el objetivo del mesociclo.'
+    errors.objectiveId = t('plan.needsObjective')
   }
 
   if (draft.splitId === '') {
-    errors.splitId = 'Elige cómo se reparte el cuerpo entre sesiones.'
+    errors.splitId = t('plan.needsSplit')
   }
 
   if (parseWholeNumber(draft.weeklyFrequency) < 1) {
-    errors.weeklyFrequency = 'La frecuencia tiene que ser al menos 1.'
+    errors.weeklyFrequency = t('plan.needsFrequency')
   }
 
   if (draft.weeks.length === 0) {
-    errors.weeks = 'Un plan necesita al menos una semana.'
+    errors.weeks = t('plan.needsWeek')
     return errors
   }
 
@@ -170,7 +173,7 @@ export function validatePlanDraft(draft: PlanDraft): PlanDraftErrors {
   )
 
   if (!hasAnySession) {
-    errors.weeks = 'Asigna al menos una rutina a algún día.'
+    errors.weeks = t('plan.needsRoutine')
   }
 
   return errors

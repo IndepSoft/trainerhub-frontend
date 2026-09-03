@@ -4,6 +4,7 @@ import {
   estimateRoutineMinutes,
 } from '../libs/routine.utils'
 import type { Routine } from '../types/training.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface RoutineDraftSummaryProps {
   /** La rutina tal y como quedaría si se guardase ahora. */
@@ -23,11 +24,12 @@ interface RoutineDraftSummaryProps {
  * rutina, para que crear y consultar se lean como la misma cosa.
  */
 export function RoutineDraftSummary({ routine }: RoutineDraftSummaryProps) {
+  const { t } = useTranslation()
   return (
     <dl className="grid grid-cols-1 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
       <div className="flex flex-col gap-2 px-5 py-5">
         <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
-          Ejercicios
+          {t('routine.exercises')}
         </dt>
         <dd className="metric-figures font-display text-3xl font-extrabold leading-none text-ink">
           {countExercises(routine)}
@@ -36,17 +38,17 @@ export function RoutineDraftSummary({ routine }: RoutineDraftSummaryProps) {
 
       <div className="flex flex-col gap-2 px-5 py-5">
         <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
-          Duración estimada
+          {t('routine.estimatedDuration')}
         </dt>
         <dd className="metric-figures font-display text-3xl font-extrabold leading-none text-ink">
           {estimateRoutineMinutes(routine)}
-          <span className="ml-1 text-lg font-bold text-ink/45">min</span>
+          <span className="ml-1 text-lg font-bold text-ink/45">{t('routine.minutes')}</span>
         </dd>
       </div>
 
       <div className="flex flex-col gap-2 px-5 py-5">
         <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
-          Series totales
+          {t('routine.totalSets')}
         </dt>
         <dd className="metric-figures font-display text-3xl font-extrabold leading-none text-ink">
           {countTotalSets(routine)}

@@ -564,7 +564,9 @@ test('el esqueleto se muestra mientras carga la ruta', async ({ page }) => {
   await page.goto('/progress', { waitUntil: 'commit' })
   await page.waitForTimeout(900)
 
-  const cargando = page.getByText('Cargando', { exact: true })
+  // Con puntos suspensivos: el esqueleto usa la misma cadena que el resto de
+  // la aplicacion -`common.loading`-, en vez de una suya.
+  const cargando = page.getByText('Cargando…', { exact: true })
   await expect(cargando).toBeAttached()
 
   await page.screenshot({ path: 'tests/visual/salida/esqueleto-mobile.png' })
@@ -850,7 +852,13 @@ test('la fila de dias sigue visible al desplazar la semana', async ({ page }) =>
   await page.goto('/calendar')
   await page.waitForTimeout(2000)
 
-  const sabado = page.getByText('Sáb', { exact: true })
+  /*
+   * Sin distinguir mayusculas: el rotulo del dia lo produce `Intl`, que usa la
+   * ortografia de cada lengua -«sab» en castellano, «Sat» en ingles- y la
+   * cabecera lo pinta en versalitas con CSS. Fijar la caja aqui seria fijar una
+   * decision del idioma, no del diseño.
+   */
+  const sabado = page.getByText(/^sáb\.?$/i)
   await expect(sabado).toBeInViewport()
 
   const desplazado = await scrollInnerContainerToBottom(page)
@@ -2764,7 +2772,10 @@ test.describe('panel', () => {
 
     const actividad = page.locator('section').filter({ hasText: 'Actividad reciente' })
     // La recien cerrada es de hoy, asi que entra en cabeza: es la mas nueva.
-    await expect(actividad.getByRole('listitem').first()).toContainText('Hoy')
+    // Sin distinguir mayusculas: «hoy» lo produce `Intl.RelativeTimeFormat`, que
+    // en castellano lo escribe en minuscula y en ingles no. La marca se pinta en
+    // versalitas con CSS.
+    await expect(actividad.getByRole('listitem').first()).toContainText(/hoy/i)
     await expect(actividad.getByRole('listitem').first()).not.toHaveText(cabezaAntes)
   })
 
@@ -4230,6 +4241,51 @@ test.describe('configuracion', () => {
 
     await page.getByRole('button', { name: 'Claro' }).click()
     await expect(page.locator('html')).not.toHaveClass(/dark/)
+  })
+
+  test('el idioma se elige, se aplica y sobrevive a recargar', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/settings')
+
+    // Cada idioma se ofrece EN SU PROPIO IDIOMA: quien abre esta pantalla porque
+    // la aplicacion esta en una lengua que no entiende necesita reconocer la suya.
+    await page.getByRole('button', { name: 'English' }).click()
+
+    await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Students' }).first()).toBeVisible()
+
+    /*
+     * `lang` no es decoracion: de el dependen el lector de pantalla para elegir
+     * la voz y el navegador para partir palabras al final de linea.
+     */
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en-US')
+
+    // Recargar es la prueba que importa: la preferencia vive en el
+    // almacenamiento del navegador.
+    await page.reload()
+    await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Português' }).click()
+    await expect(page.getByRole('heading', { name: 'Configurações' })).toBeVisible()
+    await expect(page.locator('html')).toHaveAttribute('lang', 'pt-BR')
+  })
+
+  test('el idioma no toca lo que escribio una persona', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/settings')
+    await page.getByRole('button', { name: 'English' }).click()
+
+    /*
+     * La linea es la que dice el propio selector: cambia lo que escribe la
+     * APLICACION, no lo que escribio una persona. El nombre de una rutina es
+     * suyo, y traducirlo seria reescribirle el trabajo.
+     */
+    await page.getByRole('link', { name: 'Training' }).first().click()
+    await page.waitForTimeout(1200)
+
+    await expect(page.getByText('Full body · Principiante').first()).toBeVisible()
   })
 
   test('la barra del navegador acompaña al tema', async ({ page }) => {

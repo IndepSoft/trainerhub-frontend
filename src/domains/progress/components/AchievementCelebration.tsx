@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { ConfettiBurst } from '@/shared/components/ConfettiBurst'
 import { HapticPattern, vibrate } from '@/shared/lib/haptics'
 import type { Achievement } from '../types/achievement.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface AchievementCelebrationProps {
   achievement: Achievement
@@ -29,8 +30,10 @@ export function AchievementCelebration({
   headlineValue,
   headlineLabel,
   onDismiss,
-  dismissLabel = 'Seguir',
+  dismissLabel,
 }: AchievementCelebrationProps) {
+  const { t } = useTranslation()
+
   useEffect(() => {
     // El resultado se ignora a proposito: en iOS no existe la Vibration API y la
     // celebracion tiene que funcionar igual. Ver shared/lib/haptics.
@@ -51,7 +54,7 @@ export function AchievementCelebration({
 
       <div className="relative flex flex-1 flex-col justify-center px-6 py-16">
         <p className="font-display text-sm font-bold uppercase tracking-[0.3em] text-ember">
-          Logro desbloqueado
+          {t('achievement.unlocked')}
         </p>
 
         <p className="metric-figures mt-2 font-display text-[7rem] font-extrabold leading-[0.82] tracking-tighter text-white sm:text-[9rem]">
@@ -64,9 +67,9 @@ export function AchievementCelebration({
 
         <div className="mt-10 max-w-sm">
           <h2 className="font-display text-2xl font-bold uppercase tracking-tight text-white">
-            {achievement.name}
+            {t(achievement.nameKey)}
           </h2>
-          <p className="mt-1 text-white/60">{achievement.description}</p>
+          <p className="mt-1 text-white/60">{t(achievement.descriptionKey)}</p>
           {/* Blanco y no Ember: este bloque puede caer sobre la banda naranja,
               y Ember sobre Ember no se ve. Se comprobo en captura. */}
           <p className="metric-figures mt-4 font-display text-2xl font-extrabold text-white">

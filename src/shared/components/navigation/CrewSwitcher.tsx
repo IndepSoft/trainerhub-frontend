@@ -8,7 +8,8 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
 import { cn } from '@/shared/lib/utils'
-import { ROLE_LABEL } from '@/shared/domain/permissions'
+import { ROLE_LABEL_KEY } from '@/shared/i18n/domainLabels'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type { Membership } from '@/shared/domain/entities/crew'
 
 interface CrewSwitcherProps {
@@ -33,6 +34,7 @@ interface CrewSwitcherProps {
  */
 export function CrewSwitcher({ memberships, active, loading, onSelect }: CrewSwitcherProps) {
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   if (loading) return <CrewSwitcherSkeleton />
 
@@ -46,8 +48,8 @@ export function CrewSwitcher({ memberships, active, loading, onSelect }: CrewSwi
           <Users className="size-4" />
         </span>
         <span className="min-w-0">
-          <span className="block text-sm font-semibold text-ink">Sin equipo</span>
-          <span className="block text-xs text-ink/45">Únete a uno para empezar</span>
+          <span className="block text-sm font-semibold text-ink">{t('crewSwitcher.noCrew')}</span>
+          <span className="block text-xs text-ink/45">{t('crewSwitcher.joinToStart')}</span>
         </span>
       </Link>
     )
@@ -68,7 +70,7 @@ export function CrewSwitcher({ memberships, active, loading, onSelect }: CrewSwi
             {/* El papel, salvo el de entrenador: es el corriente y decirlo en
                 cada pantalla es ruido. Administrador y alumno sí, porque
                 cambian lo que se puede hacer. */}
-            {active.role === 'trainer' ? '' : ` · ${ROLE_LABEL[active.role]}`}
+            {active.role === 'trainer' ? '' : ` · ${t(ROLE_LABEL_KEY[active.role])}`}
           </span>
         </span>
 
@@ -78,7 +80,7 @@ export function CrewSwitcher({ memberships, active, loading, onSelect }: CrewSwi
       <DropdownMenuContent align="start" className="w-60">
         <DropdownMenuItem onSelect={() => navigate('/crew')}>
           <Users className="me-2 size-4" />
-          Ver el equipo
+          {t('crewSwitcher.viewCrew')}
         </DropdownMenuItem>
 
         {memberships.length > 1 && (
@@ -107,7 +109,7 @@ export function CrewSwitcher({ memberships, active, loading, onSelect }: CrewSwi
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => navigate('/crew/unirse')}>
           <Plus className="me-2 size-4" />
-          Unirme a otro equipo
+          {t('crewSwitcher.joinAnother')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

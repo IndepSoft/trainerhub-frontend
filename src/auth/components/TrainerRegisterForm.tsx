@@ -7,7 +7,8 @@ import { FormInput } from './FormInput'
 import { SelectField } from './SelectField'
 import { RegisterFields } from './RegisterFields'
 import { useRegisterForm } from '../hooks/useRegisterForm'
-import { EXPERIENCE_RANGES, TRAINER_SPECIALTIES } from '../data/registerOptions'
+import { EXPERIENCE_RANGE_KEYS, TRAINER_SPECIALTY_KEYS } from '../data/registerOptions'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface TrainerRegisterFormProps {
   onBack: () => void
@@ -25,6 +26,7 @@ interface TrainerRegisterFormProps {
  * condición se lee como una trampa; leerlo antes, como un precio.
  */
 export function TrainerRegisterForm({ onBack }: TrainerRegisterFormProps) {
+  const { t } = useTranslation()
   const { formData, isValid, loading, error, isRequired, setField, submit } =
     useRegisterForm('trainer')
 
@@ -37,10 +39,9 @@ export function TrainerRegisterForm({ onBack }: TrainerRegisterFormProps) {
   return (
     <>
       <CardHeader className="text-center">
-        <CardTitle className="text-xl font-semibold">Crear cuenta de entrenador</CardTitle>
+        <CardTitle className="text-xl font-semibold">{t('register.trainer.title')}</CardTitle>
         <CardDescription>
-          Monta tu equipo y tus rutinas. Para incorporar alumnos hará falta activar
-          la suscripción.
+          {t('register.trainer.hint')}
         </CardDescription>
       </CardHeader>
 
@@ -57,37 +58,37 @@ export function TrainerRegisterForm({ onBack }: TrainerRegisterFormProps) {
 
             <FormField
               htmlFor="register-specialty"
-              label="Especialidad"
+              label={t('register.trainer.specialty')}
               required={isRequired('specialty')}
             >
               <SelectField
                 id="register-specialty"
-                placeholder="Selecciona tu especialidad"
+                placeholder={t('register.trainer.specialtyPlaceholder')}
                 value={formData.specialty}
                 onChange={(value) => setField('specialty', value)}
-                options={TRAINER_SPECIALTIES}
+                options={TRAINER_SPECIALTY_KEYS.map((key) => t(key))}
               />
             </FormField>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormField
                 htmlFor="register-experience"
-                label="Años de experiencia"
+                label={t('register.trainer.experience')}
                 required={isRequired('yearsOfExperience')}
               >
                 <SelectField
                   id="register-experience"
-                  placeholder="Años"
+                  placeholder={t('register.trainer.experiencePlaceholder')}
                   value={formData.yearsOfExperience}
                   onChange={(value) => setField('yearsOfExperience', value)}
-                  options={EXPERIENCE_RANGES}
+                  options={EXPERIENCE_RANGE_KEYS.map((key) => t(key))}
                   icon={Calendar}
                 />
               </FormField>
 
               <FormField
                 htmlFor="register-location"
-                label="Ubicación"
+                label={t('register.trainer.location')}
                 required={isRequired('location')}
               >
                 {/*
@@ -98,7 +99,7 @@ export function TrainerRegisterForm({ onBack }: TrainerRegisterFormProps) {
                 */}
                 <FormInput
                   id="register-location"
-                  placeholder="Ciudad, País"
+                  placeholder={t('register.trainer.locationPlaceholder')}
                   value={formData.location}
                   onChange={(value) => setField('location', value)}
                   icon={MapPin}
@@ -108,12 +109,12 @@ export function TrainerRegisterForm({ onBack }: TrainerRegisterFormProps) {
             </div>
 
             <Button type="submit" className="mt-6 w-full" disabled={!isValid || loading}>
-              {loading ? 'Creando cuenta…' : 'Crear cuenta'}
+              {loading ? t('register.creatingAccount') : t('register.createAccount')}
             </Button>
 
             <Button type="button" variant="ghost" className="w-full gap-2" onClick={onBack}>
               <ArrowLeft className="size-4" />
-              No entreno a nadie
+              {t('register.trainer.backToStudent')}
             </Button>
           </div>
         </form>

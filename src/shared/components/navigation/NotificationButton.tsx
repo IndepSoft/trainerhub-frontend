@@ -4,6 +4,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { container } from '@/app/container'
 import { useViewerContext } from '@/app/ViewerContext'
 import { cn } from '@/shared/lib/utils'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { activeLocale } from '@/shared/i18n/activeLocale'
 import type { Notice } from '@/shared/domain/entities/notice'
 
 /**
@@ -22,6 +24,7 @@ import type { Notice } from '@/shared/domain/entities/notice'
  */
 export function NotificationButton() {
   const { active } = useViewerContext()
+  const { t } = useTranslation()
   const studentId = active?.student?.id
 
   const [notices, setNotices] = useState<Notice[]>([])
@@ -61,7 +64,9 @@ export function NotificationButton() {
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger
         className="relative inline-flex size-11 items-center justify-center rounded-action text-ink/50 transition-colors hover:bg-cobalt-tint hover:text-cobalt"
-        aria-label={unread > 0 ? `Avisos, ${unread} sin leer` : 'Avisos'}
+        aria-label={
+          unread > 0 ? t('notices.unreadLabel', { count: unread }) : t('notices.title')
+        }
       >
         <Bell className="size-5" />
 
@@ -78,14 +83,12 @@ export function NotificationButton() {
 
       <PopoverContent align="end" className="w-80 p-0">
         <p className="border-b border-cobalt-tint-3 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-          Avisos
+          {t('notices.title')}
         </p>
 
         {notices.length === 0 ? (
           <p className="px-4 py-6 text-sm text-ink/45">
-            {studentId === undefined
-              ? 'Los avisos son para quien entrena. Aquí verás los tuyos cuando entrenes en un equipo.'
-              : 'No tienes ningún aviso.'}
+            {studentId === undefined ? t('notices.notYours') : t('notices.empty')}
           </p>
         ) : (
           <ul className="max-h-80 divide-y divide-cobalt-tint-3 overflow-y-auto">
@@ -98,7 +101,7 @@ export function NotificationButton() {
                   {notice.body}
                 </p>
                 <p className="mt-1 text-[11px] text-ink/40">
-                  {new Date(notice.createdAt).toLocaleDateString('es', {
+                  {new Date(notice.createdAt).toLocaleDateString(activeLocale(), {
                     day: 'numeric',
                     month: 'long',
                   })}

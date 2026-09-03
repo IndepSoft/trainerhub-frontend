@@ -1,8 +1,10 @@
 import { cn } from '@/shared/lib/utils'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { SESSION_STATUS_LABEL_KEY } from '@/shared/i18n/domainLabels'
 import type { Session, SessionStatus } from '@/shared/domain/entities/session'
 
 /**
- * Etiqueta y color de cada estado.
+ * El COLOR de cada estado. El rotulo sale de `SESSION_STATUS_LABEL_KEY`.
  *
  * El estado es un dato, no una accion, asi que no usa la marca: va a la escala
  * semantica. Si «Pendiente» usara Cobalt se leeria como un boton primario.
@@ -11,11 +13,11 @@ import type { Session, SessionStatus } from '@/shared/domain/entities/session'
  * el panel tenia su propia escala -`programmed | confirmed | canceled`- que ni
  * siquiera coincidia con la de las sesiones de verdad.
  */
-const STATUS_BADGE: Record<SessionStatus, { label: string; className: string }> = {
-  pending: { label: 'Pendiente', className: 'border-warning/40 text-warning' },
-  confirmed: { label: 'Confirmada', className: 'border-success/40 text-success' },
-  completed: { label: 'Completada', className: 'border-cobalt/40 text-cobalt' },
-  cancelled: { label: 'Cancelada', className: 'border-danger/40 text-danger' },
+const STATUS_CLASS: Record<SessionStatus, string> = {
+  pending: 'border-warning/40 text-warning',
+  confirmed: 'border-success/40 text-success',
+  completed: 'border-cobalt/40 text-cobalt',
+  cancelled: 'border-danger/40 text-danger',
 }
 
 interface SessionItemProps {
@@ -25,7 +27,7 @@ interface SessionItemProps {
 }
 
 export function SessionItem({ session, studentName }: SessionItemProps) {
-  const badge = STATUS_BADGE[session.status]
+  const { t } = useTranslation()
 
   return (
     <div className="flex items-start justify-between gap-3">
@@ -39,10 +41,10 @@ export function SessionItem({ session, studentName }: SessionItemProps) {
       <span
         className={cn(
           'shrink-0 rounded-action border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider',
-          badge.className
+          STATUS_CLASS[session.status]
         )}
       >
-        {badge.label}
+        {t(SESSION_STATUS_LABEL_KEY[session.status])}
       </span>
     </div>
   )

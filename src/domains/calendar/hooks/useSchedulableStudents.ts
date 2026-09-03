@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { container } from '@/app/container'
 import type { Student } from '@/shared/domain/entities/student'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface UseSchedulableStudentsResult {
   students: Student[]
@@ -20,6 +21,7 @@ interface UseSchedulableStudentsResult {
  * del otro.
  */
 export function useSchedulableStudents(): UseSchedulableStudentsResult {
+  const { t } = useTranslation()
   const [students, setStudents] = useState<Student[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -34,7 +36,7 @@ export function useSchedulableStudents(): UseSchedulableStudentsResult {
           if (active) setStudents(result)
         })
         .catch((cause: unknown) => {
-          if (active) setError(cause instanceof Error ? cause.message : 'Error al cargar alumnos')
+          if (active) setError(cause instanceof Error ? cause.message : t('calendar.studentsError'))
         })
         .finally(() => {
           if (active) setLoading(false)
@@ -49,7 +51,7 @@ export function useSchedulableStudents(): UseSchedulableStudentsResult {
       active = false
       unsubscribe()
     }
-  }, [])
+  }, [t])
 
   return { students, loading, error }
 }

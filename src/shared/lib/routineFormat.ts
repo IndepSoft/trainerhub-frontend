@@ -1,4 +1,4 @@
-import type { BlockMethod, PrescribedExercise } from '@/shared/domain/entities/routine'
+import type { PrescribedExercise } from '@/shared/domain/entities/routine'
 
 /**
  * Cómo se escribe una rutina. Funciones puras, sin React.
@@ -12,13 +12,11 @@ import type { BlockMethod, PrescribedExercise } from '@/shared/domain/entities/r
  * `session` a importar de otro dominio.
  */
 
-/** Etiqueta del método, para no repetir el mapa en cada vista. */
-export const BLOCK_METHOD_LABELS: Record<BlockMethod, string> = {
-  simple: 'Serie simple',
-  superserie: 'Superserie',
-  triserie: 'Triserie',
-  circuito: 'Circuito',
-}
+/*
+ * LA ETIQUETA DEL MÉTODO YA NO ESTÁ AQUÍ. Aquí se compone formato —cifras,
+ * separadores— y eso es igual en cualquier idioma; «Superserie» no lo es, así
+ * que vive en `shared/i18n/domainLabels.ts` como `BLOCK_METHOD_LABEL_KEY`.
+ */
 
 /**
  * Prescripción en una línea: «4 × 8-10 · RIR 2».
