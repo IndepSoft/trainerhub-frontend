@@ -851,7 +851,6 @@ export const portuguese: Dictionary = {
 
 
 
-  // -------------------------------------------- entrenamientos: acciones
 
   // -------------------------------------------- entrenamientos: pestañas
   'trainings.tab.routines': 'Rotinas ({count})',
@@ -872,4 +871,35 @@ export const portuguese: Dictionary = {
   // ---------------------------------------------------- metodo de bloque
   'liveSession.setNumberOf': 'Série {number} de {total}',
   'liveSession.blockRest': 'descanso {rest}',
+
+  // ------------------------------------------------------- sesion guiada
+  'liveSession.blockPosition': 'Bloco {position}',
+  'liveSession.setOf': 'Série {set} de {total}',
+  'liveSession.finishSet': 'Finalizar série',
+  'liveSession.startNextSet': 'Começar a próxima',
+  'liveSession.resting': 'Descanso',
+  'liveSession.repsLabel': 'Repetições desta série',
+  'liveSession.repNumber': 'Repetição {number}',
+  'liveSession.repsDone': '{done} de {prescribed} repetições',
+  'liveSession.expectedWork': 'Prevista em cerca de {seconds} s',
+  'liveSession.setDone': '{reps} de {prescribed} repetições em {seconds} s',
+  'liveSession.nextUp': 'A seguir: {exercise} · série {set} de {total}',
+  'liveSession.plan': 'A rotina',
+  'liveSession.allDone': 'Séries terminadas',
+  'liveSession.allDoneHint': 'Tudo o que estava prescrito está feito. Feche a sessão quando quiser.',
+  'liveSession.repsBelow': 'abaixo',
+  'liveSession.repsWithin': 'na faixa',
+  'liveSession.repsAbove': 'acima',
+  'liveSession.restShort': 'descanso curto',
+  'liveSession.restOnTarget': 'descanso no ponto',
+  'liveSession.restLong': 'descanso longo',
+  'liveSession.paceFast': 'rápida',
+  'liveSession.paceOnTarget': 'no ritmo',
+  'liveSession.paceSlow': 'lenta',
+
+  // ------------------------------------------------------- sesion guiada
+
+  // --------------------------------------------- sesion guiada: descanso
+  'liveSession.restOf': 'de {seconds} s',
+  'liveSession.previousSet': 'Anterior: {reps} de {prescribed} · {rest} s de descanso',
 }

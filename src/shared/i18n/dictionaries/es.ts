@@ -861,7 +861,6 @@ export const spanish = {
 
 
 
-  // -------------------------------------------- entrenamientos: acciones
 
   // -------------------------------------------- entrenamientos: pestañas
   'trainings.tab.routines': 'Rutinas ({count})',
@@ -882,6 +881,37 @@ export const spanish = {
   // ---------------------------------------------------- metodo de bloque
   'liveSession.setNumberOf': 'Serie {number} de {total}',
   'liveSession.blockRest': 'descanso {rest}',
+
+  // ------------------------------------------------------- sesion guiada
+  'liveSession.blockPosition': 'Bloque {position}',
+  'liveSession.setOf': 'Serie {set} de {total}',
+  'liveSession.finishSet': 'Finalizar serie',
+  'liveSession.startNextSet': 'Empezar la siguiente',
+  'liveSession.resting': 'Descanso',
+  'liveSession.repsLabel': 'Repeticiones de esta serie',
+  'liveSession.repNumber': 'Repetición {number}',
+  'liveSession.repsDone': '{done} de {prescribed} repeticiones',
+  'liveSession.expectedWork': 'Prevista en unos {seconds} s',
+  'liveSession.setDone': '{reps} de {prescribed} repeticiones en {seconds} s',
+  'liveSession.nextUp': 'Siguiente: {exercise} · serie {set} de {total}',
+  'liveSession.plan': 'La rutina',
+  'liveSession.allDone': 'Series terminadas',
+  'liveSession.allDoneHint': 'Ya está todo lo prescrito. Cierra la sesión cuando quieras.',
+  'liveSession.repsBelow': 'por debajo',
+  'liveSession.repsWithin': 'en rango',
+  'liveSession.repsAbove': 'por encima',
+  'liveSession.restShort': 'descanso corto',
+  'liveSession.restOnTarget': 'descanso en su sitio',
+  'liveSession.restLong': 'descanso largo',
+  'liveSession.paceFast': 'rápida',
+  'liveSession.paceOnTarget': 'a ritmo',
+  'liveSession.paceSlow': 'lenta',
+
+  // ------------------------------------------------------- sesion guiada
+
+  // --------------------------------------------- sesion guiada: descanso
+  'liveSession.restOf': 'de {seconds} s',
+  'liveSession.previousSet': 'Anterior: {reps} de {prescribed} · {rest} s de descanso',
 } as const
 
 /** Toda clave que la aplicación puede traducir. */

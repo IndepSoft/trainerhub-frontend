@@ -305,6 +305,11 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
 - Props declaradas y sin conectar, marcadas con `TODO:` en gamification y
   calendar. `ChallengeCard.onUpdate` es la más grave: el padre le pasa un
   manejador real que nunca se invoca.
+- La sesión guiada no avisa cuando termina el descanso —la cuenta atrás llega a
+  cero y sigue, pero nadie mira el teléfono los dos minutos enteros— y no deja
+  deshacer una serie cerrada. Tampoco registra el PESO: ni `PrescribedExercise`
+  ni `SetRecord` lo llevan, y añadirlo exige decidir antes si el peso es del
+  alumno o de la prescripción.
 - Los filtros de `TrainingFilters` y `StudentFilters` no filtran.
 - Las sesiones volcadas desde un plan no guardan de qué volcado salieron, así que
   no se pueden mover ni cancelar en bloque y volcar dos veces duplica.

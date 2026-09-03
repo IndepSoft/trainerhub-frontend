@@ -25,8 +25,12 @@ import type { Block, PrescribedExercise, Routine } from './entities/routine'
  * un ritmo de unos tres segundos por repetición, que es lo habitual en trabajo
  * de fuerza controlado. Se deja explícito para que quien lo lea sepa que es un
  * supuesto y pueda cambiarlo.
+ *
+ * Se EXPORTA porque la sesión guiada la necesita para decir si una serie fue
+ * rápida o lenta cuando la prescripción no trae cadencia. Con dos constantes,
+ * la ficha de la rutina y la sesión dirían cosas distintas del mismo ejercicio.
  */
-const SECONDS_PER_REP = 3
+export const SECONDS_PER_REP = 3
 
 /**
  * Un rango de repeticiones se resuelve por su extremo superior.

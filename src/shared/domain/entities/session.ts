@@ -48,6 +48,35 @@ export type SessionModality = 'strength' | 'cardio'
  * ajusten. Guardar el resultado del cálculo dejaría historiales que discrepan
  * entre sí.
  */
+/**
+ * Una serie tal y como OCURRIÓ, con lo que estaba prescrito al lado.
+ *
+ * Se guarda lo prescrito junto a lo hecho —no sólo lo hecho— porque la
+ * prescripción se puede editar después: si la rutina pasa de «8-10» a «6-8»
+ * mañana, la serie de ayer tiene que seguir diciendo contra qué se comparó. Sin
+ * eso, el historial cambiaría de significado cada vez que alguien retoca un
+ * bloque.
+ *
+ * NO LLEVA VEREDICTO. Si la serie fue rápida o lenta lo calcula
+ * `setPerformance` a partir de estos números, así que ajustar el criterio no
+ * reescribe lo que ya pasó. Es la misma razón por la que aquí no hay XP.
+ */
+export interface SetRecord {
+  /** Identifica la serie dentro del plan de la sesión: `<prescripción>-<n>`. */
+  stepId: string
+  prescribedId: string
+  exerciseId: string
+  setNumber: number
+  /** Repeticiones prescritas, tal y como estaban escritas: «8-10». */
+  prescribedReps: string
+  repsDone: number
+  /** Segundos de trabajo: de empezar la serie a darla por terminada. */
+  workSeconds: number
+  /** Descanso REAL tras la serie. Cero si no llegó a descansarse. */
+  restSeconds: number
+  prescribedRestSeconds: number
+}
+
 export interface SessionResult {
   /** Series marcadas. Cero en cardio, que no se programa en series. */
   completedSets: number
@@ -62,6 +91,15 @@ export interface SessionResult {
    * racha cuenta días de entrenamiento reales, así que mira esta.
    */
   completedAt: string
+  /**
+   * Cada serie, medida.
+   *
+   * OPCIONAL, y lo será mientras haya sesiones anteriores a esto: las que se
+   * cerraron con la pantalla vieja tienen `completedSets` y nada más. Cardio
+   * tampoco lo trae, porque no se programa en series. Ausente significa «no se
+   * midió», que es distinto de una lista vacía —«se midió y no hubo ninguna»—.
+   */
+  sets?: SetRecord[]
 }
 
 export interface Session {

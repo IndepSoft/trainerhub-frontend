@@ -748,7 +748,13 @@ test.describe('calendario: iniciar una sesion', () => {
     await iniciar.click()
 
     await page.waitForURL(/\/session/, { timeout: 15_000 })
-    await expect(page.getByText('Duración')).toBeVisible()
+    /*
+     * Por el control de pausa y no por el rotulo «Duracion»: ese era el reloj
+     * grande de la pantalla anterior, y en la sesion guiada el numero grande es
+     * el de la serie en curso. La sesion en marcha se puede pausar tenga rutina
+     * o no, asi que esto vale para las dos.
+     */
+    await expect(page.getByRole('button', { name: 'Pausar la sesión' })).toBeVisible()
   })
 
   test('los avisos de confirmacion se ven', async ({ page }) => {
@@ -2498,17 +2504,20 @@ test.describe('sesion en vivo', () => {
     await expect(page.getByText('María Gómez')).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Empuje · Intermedio' })).toBeVisible()
 
-    // Sus bloques, con metodo y prescripcion.
+    // La serie EN CURSO, que es lo que se viene a hacer: primer bloque, primer
+    // ejercicio, primera serie, con su prescripcion entera.
+    await expect(page.getByRole('heading', { name: 'Press de banca con barra' })).toBeVisible()
+    await expect(page.getByText('Serie 1 de 4 · 6-8 · RIR 2 · 3-1-1-0')).toBeVisible()
+
+    // Y la rutina entera debajo, como contexto: sus bloques con su metodo.
     await expect(page.getByText('Serie simple').first()).toBeVisible()
     await expect(page.getByText('Superserie').first()).toBeVisible()
-    await expect(page.getByText('Press de banca con barra')).toBeVisible()
-    await expect(page.getByText('4 × 6-8 · RIR 2')).toBeVisible()
 
     // Y NADA de la pantalla de carrera.
     await expect(page.getByText('GPS')).toHaveCount(0)
   })
 
-  test('marcar series avanza, y volver a pulsar la ultima desmarca', async ({ page }) => {
+  test('la serie se cronometra, se cierra, y detras viene el descanso', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await signIn(page)
     await page.goto('/session/session-1')
@@ -2518,17 +2527,64 @@ test.describe('sesion en vivo', () => {
     await expect(avance).toHaveAttribute('aria-valuemax', '14')
     await expect(avance).toHaveAttribute('aria-valuenow', '0')
 
-    const series = page.getByRole('button', { name: /^Serie \d+ de/ })
-    await series.nth(0).click()
-    await series.nth(1).click()
-    await expect(avance).toHaveAttribute('aria-valuenow', '2')
+    /*
+     * LOS CIRCULOS SON REPETICIONES, no series. Antes marcaban series hechas,
+     * que es un dato que se sabe igual contando; lo que solo sabe quien acaba de
+     * hacerla es cuantas repeticiones le salieron.
+     *
+     * Tocar el septimo marca hasta el septimo: diez toques por serie serian
+     * doscientos en una sesion.
+     */
+    await page.getByRole('button', { name: 'Repetición 7' }).click()
+    await expect(page.getByText('7 de 6-8 repeticiones', { exact: false })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Finalizar serie' }).click()
+
+    // Cerrar la serie abre el DESCANSO, con su propio reloj sobre el prescrito.
+    await expect(page.getByText('Descanso', { exact: true })).toBeVisible()
+    await expect(page.getByText('de 120 s')).toBeVisible()
+    await expect(avance).toHaveAttribute('aria-valuenow', '1')
+
+    // Y dice que viene despues, que es lo que hace falta para prepararlo.
+    await expect(page.getByText(/Siguiente: Press de banca con barra · serie 2 de 4/)).toBeVisible()
+
+    await page.getByRole('button', { name: 'Empezar la siguiente' }).click()
 
     /*
-     * Volver a pulsar la ultima marcada la desmarca: equivocarse contando series
-     * es lo mas normal del mundo y no puede costar reiniciar la sesion.
+     * La serie siguiente arranca con SU reloj a cero, y el resumen de la
+     * anterior lleva el veredicto de su descanso: ese ya ocurrio entero, asi que
+     * juzgarlo es un hecho y no una prisa.
      */
-    await series.nth(1).click()
-    await expect(avance).toHaveAttribute('aria-valuenow', '1')
+    await expect(page.getByText('Serie 2 de 4 · 6-8 · RIR 2 · 3-1-1-0')).toBeVisible()
+    await expect(page.getByText(/Anterior: 7 de 6-8/)).toBeVisible()
+    await expect(page.getByText('0 de 6-8 repeticiones')).toBeVisible()
+  })
+
+  test('la superserie se ejecuta por rondas, no ejercicio a ejercicio', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/session/session-1')
+
+    /*
+     * Es lo que significa el metodo: una serie de cada ejercicio encadenadas sin
+     * descanso, y el descanso al cerrar la ronda. Aplanarla en «todas las de uno
+     * y luego todas las del otro» la convertiria en dos ejercicios sueltos.
+     */
+    // `allInnerTexts` no espera: se aguarda antes a que el plan este pintado,
+    // que llega tras resolver los nombres del catalogo.
+    const filas = page.locator('ol ul > li')
+    await expect(filas).toHaveCount(14)
+
+    // Todas las series del plan, en su orden. Los dos primeros bloques son
+    // simples y aportan cuatro cada uno; la superserie empieza en la novena.
+    const orden = await filas.allInnerTexts()
+
+    expect(orden[8]).toContain('Press inclinado con mancuernas')
+    expect(orden[8]).toContain('Serie 1 de 3')
+    expect(orden[9]).toContain('Extensión de tríceps en polea')
+    expect(orden[9]).toContain('Serie 1 de 3')
+    expect(orden[10]).toContain('Press inclinado con mancuernas')
+    expect(orden[10]).toContain('Serie 2 de 3')
   })
 
   test('una sesion de cardio conserva su pantalla de carrera', async ({ page }) => {
@@ -2539,8 +2595,8 @@ test.describe('sesion en vivo', () => {
     await expect(page.getByRole('heading', { name: 'Carrera continua' })).toBeVisible()
     await expect(page.getByText('GPS')).toBeVisible()
 
-    // Y ninguna casilla de serie: no ejecuta una rutina de sala.
-    await expect(page.getByRole('button', { name: /^Serie \d+ de/ })).toHaveCount(0)
+    // Y ningun circulo de repeticion: no ejecuta una rutina de sala.
+    await expect(page.getByRole('button', { name: /^Repetición \d+/ })).toHaveCount(0)
   })
 
   test('terminar deja la sesion completada, y se ve en la agenda', async ({ page }) => {
@@ -2601,9 +2657,11 @@ test.describe('sesion en vivo', () => {
     const avance = page.getByRole('progressbar', { name: 'Series completadas' })
     await expect(avance).toHaveAttribute('aria-valuenow', '0')
 
-    const series = page.getByRole('button', { name: /Serie \d+ de/ })
-    for (let indice = 0; indice < 5; indice += 1) {
-      await series.nth(indice).click()
+    // Cinco series cerradas de verdad: cada una se finaliza y se sale de su
+    // descanso, que es el recorrido real.
+    for (let serie = 0; serie < 5; serie += 1) {
+      await page.getByRole('button', { name: 'Finalizar serie' }).click()
+      await page.getByRole('button', { name: 'Empezar la siguiente' }).click()
     }
     await expect(avance).toHaveAttribute('aria-valuenow', '5')
 
@@ -2655,8 +2713,7 @@ test.describe('sesion en vivo', () => {
      */
     await page.goto('/session/session-1')
 
-    const series = page.getByRole('button', { name: /Serie \d+ de/ })
-    await series.first().click()
+    await page.getByRole('button', { name: 'Finalizar serie' }).click()
 
     await page.getByRole('button', { name: 'Pausar la sesión' }).press('Enter')
     await page.getByRole('button', { name: 'Finalizar la sesión' }).press('Enter')

@@ -1623,3 +1623,127 @@ arranca en `en-US`, el proveedor detecta inglés —que es lo que debe hacer— 
 ciento setenta casos fallan a la vez por un motivo que no es el que están
 probando. Fijar el idioma ahí es declarar contra qué versión se prueba; el
 conmutador tiene sus propias comprobaciones.
+
+---
+
+## 21. La sesión deja de ser una lista de marcadores (3 sep 2026)
+
+### 21.1 Lo que había, y por qué no acompañaba
+
+La pantalla en vivo de fuerza pintaba la rutina entera con una casilla por serie.
+Servía para recordar lo que tocaba y para contar cuántas llevabas —que es un dato
+que se sabe igual mirando: si hay cuatro y llevas dos, llevas dos—. Lo que no
+hacía era acompañar mientras se entrena, que es el momento para el que existe.
+
+Y sólo producía una medida: «series marcadas». Nada sobre cómo salió ninguna.
+
+### 21.2 La unidad es la serie
+
+`buildSetPlan` aplana la rutina a la lista ordenada de series que hay que hacer,
+y ésa es la unidad de la sesión. La lista se calcula una vez: lo que cambia es en
+cuál se está. Un plan que se recalculara a cada paso podría reordenarse bajo los
+pies de quien entrena.
+
+**Respeta el método del bloque, que es lo que el método significa:**
+
+- `simple`: todas las series de un ejercicio y luego el siguiente. Entre series,
+  el descanso de la prescripción; al cerrar el ejercicio, el del bloque.
+- `superserie`, `triserie`, `circuito`: **por rondas**. Una serie de cada
+  ejercicio encadenadas sin descanso, y el descanso al cerrar la ronda. Aplanar
+  una superserie en «todas las de uno y luego todas las del otro» la convertiría
+  en dos ejercicios sueltos.
+
+Un ejercicio con menos series que el resto deja de aparecer en las últimas
+rondas, en vez de bloquearlas.
+
+### 21.3 Dos relojes, y cuál es el grande
+
+La serie en curso tiene **su propio cronómetro**, y es el número grande de la
+pantalla. El de la sesión entera baja a la cabecera, pequeño: responde a otra
+pregunta, y con los dos en el mismo cuerpo compiten.
+
+Al cerrar la serie arranca el **descanso**, que es una fase de pleno derecho y no
+un hueco: cuenta atrás sobre el prescrito, y pasado ése la cifra sigue corriendo
+en positivo, en Ember, para que un descanso de más se vea en lugar de esconderse
+en un cero.
+
+### 21.4 Los círculos son repeticiones
+
+Era el error de fondo de la pantalla anterior. Las series ya las cuenta la propia
+sesión; lo que **sólo sabe quien acaba de hacerla** es cuántas repeticiones le
+salieron —una serie prescrita a 8-10 puede salir a 7—.
+
+Tocar el círculo N marca hasta el N, y volver a tocarlo desmarca. Diez toques por
+serie serían doscientos en una sesión, y a la tercera nadie los da.
+
+### 21.5 Contra qué se contrasta, y contra qué no
+
+Sólo contra lo que de verdad está prescrito. Un veredicto sobre un número que
+nadie fijó no evalúa nada: lo aparenta.
+
+| Medida | Referencia |
+|---|---|
+| Repeticiones hechas | el rango prescrito, «8-10» |
+| Descanso real | `restSeconds` del bloque o de la prescripción |
+| Segundos de trabajo | la **cadencia** (`tempo`) cuando la hay: «3-1-1-0» son cinco segundos por repetición |
+
+Sin cadencia se cae a `SECONDS_PER_REP`, la estimación de tres segundos que el
+proyecto **ya declaraba** para calcular la duración de una rutina. Se exporta en
+vez de escribir otra: con dos constantes, la ficha de la rutina y la sesión
+dirían cosas distintas del mismo ejercicio.
+
+**Los márgenes son distintos a propósito.** El del descanso son quince segundos
+—por debajo de eso la diferencia es ruido de cronómetro: guardar el móvil,
+colocar la barra—. El del ritmo es un 40 %, más ancho, porque sin cadencia
+prescrita la referencia es una estimación, y estrechar el margen sobre un
+supuesto produce veredictos que suenan a medición.
+
+### 21.6 Cuándo se juzga
+
+Nunca a mitad. La primera versión pintaba «rápida» a los tres segundos de empezar
+la serie, y «descanso corto» al segundo uno de un descanso de dos minutos: las
+dos cosas eran trivialmente ciertas y se leían como un reproche.
+
+- El **ritmo de la serie** se juzga al cerrarla, en la pantalla de descanso.
+- El **descanso** se juzga cuando ha terminado, en la pantalla de la serie
+  siguiente: «Anterior: 7 de 6-8 · 117 s de descanso · descanso en su sitio».
+
+Y sólo se enciende lo que se sale de lo pactado. Pintar también de color lo que
+salió bien convertiría la pantalla en un semáforo donde lo urgente deja de
+destacar; es el mismo criterio que la insignia de cuota.
+
+### 21.7 Lo medido se guarda, lo juzgado no
+
+`SessionResult` gana `sets?: SetRecord[]`, y cada registro guarda **lo prescrito
+junto a lo hecho**: `prescribedReps` y `prescribedRestSeconds` además de
+`repsDone`, `workSeconds` y `restSeconds`.
+
+Es deliberado. La prescripción se puede editar después: si la rutina pasa de
+«8-10» a «6-8» mañana, la serie de ayer tiene que seguir diciendo contra qué se
+comparó. Sin eso, el historial cambiaría de significado cada vez que alguien
+retoca un bloque.
+
+Y **no lleva veredicto**. Si la serie fue rápida o lenta lo calcula
+`setPerformance` a partir de estos números, así que ajustar el criterio no
+reescribe lo que ya pasó. Es la misma razón por la que ahí no hay XP.
+
+El campo es opcional, y lo será: las sesiones cerradas con la pantalla anterior
+tienen `completedSets` y nada más, y cardio tampoco lo trae porque no se programa
+en series. Ausente significa «no se midió», que es distinto de una lista vacía.
+
+`completedSets` y `totalSets` se conservan tal cual: son lo que leen las reglas
+de progreso, y cambiarles la forma habría obligado a migrar el historial entero
+para no ganar nada.
+
+### 21.8 Lo que queda
+
+- **El descanso no avisa cuando termina.** La cuenta atrás llega a cero y sigue,
+  pero nadie mira el teléfono los dos minutos enteros. Un aviso sonoro o una
+  vibración es lo que falta, y es trabajo aparte —hay que decidir qué pasa con la
+  pantalla apagada—. Anotado con `TODO:` en `useGuidedStrengthSession`.
+- **No se puede volver atrás una serie.** Cerrar es definitivo dentro de la
+  sesión. Equivocarse es normal, y hoy la única salida es terminar y rehacer.
+- **El peso no se registra.** La prescripción no lo lleva —ni `PrescribedExercise`
+  ni `SetRecord`—, así que la sesión no puede preguntarlo sin inventarse el
+  campo. Es lo siguiente que pide un entrenador de fuerza, y exige decidir antes
+  si el peso es del alumno o de la prescripción.

@@ -851,7 +851,6 @@ export const english: Dictionary = {
 
 
 
-  // -------------------------------------------- entrenamientos: acciones
 
   // -------------------------------------------- entrenamientos: pestañas
   'trainings.tab.routines': 'Routines ({count})',
@@ -872,4 +871,35 @@ export const english: Dictionary = {
   // ---------------------------------------------------- metodo de bloque
   'liveSession.setNumberOf': 'Set {number} of {total}',
   'liveSession.blockRest': 'rest {rest}',
+
+  // ------------------------------------------------------- sesion guiada
+  'liveSession.blockPosition': 'Block {position}',
+  'liveSession.setOf': 'Set {set} of {total}',
+  'liveSession.finishSet': 'Finish set',
+  'liveSession.startNextSet': 'Start the next one',
+  'liveSession.resting': 'Rest',
+  'liveSession.repsLabel': 'Reps in this set',
+  'liveSession.repNumber': 'Rep {number}',
+  'liveSession.repsDone': '{done} of {prescribed} reps',
+  'liveSession.expectedWork': 'About {seconds} s expected',
+  'liveSession.setDone': '{reps} of {prescribed} reps in {seconds} s',
+  'liveSession.nextUp': 'Up next: {exercise} · set {set} of {total}',
+  'liveSession.plan': 'The routine',
+  'liveSession.allDone': 'All sets done',
+  'liveSession.allDoneHint': 'Everything prescribed is done. Close the session whenever you like.',
+  'liveSession.repsBelow': 'below',
+  'liveSession.repsWithin': 'on target',
+  'liveSession.repsAbove': 'above',
+  'liveSession.restShort': 'short rest',
+  'liveSession.restOnTarget': 'rest on target',
+  'liveSession.restLong': 'long rest',
+  'liveSession.paceFast': 'fast',
+  'liveSession.paceOnTarget': 'on pace',
+  'liveSession.paceSlow': 'slow',
+
+  // ------------------------------------------------------- sesion guiada
+
+  // --------------------------------------------- sesion guiada: descanso
+  'liveSession.restOf': 'of {seconds} s',
+  'liveSession.previousSet': 'Previous: {reps} of {prescribed} · {rest} s rest',
 }
