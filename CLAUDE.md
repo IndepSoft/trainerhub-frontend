@@ -305,19 +305,33 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
 - Props declaradas y sin conectar, marcadas con `TODO:` en gamification y
   calendar. `ChallengeCard.onUpdate` es la más grave: el padre le pasa un
   manejador real que nunca se invoca.
-- El aviso de fin de descanso es VIBRACIÓN y color, no sonido. En iOS no existe
-  la Vibration API, así que ahí sólo queda el color: al que tiene el teléfono en
-  el bolsillo no le llega nada. El sonido exige decidir dónde se apaga —un pitido
-  que no se puede silenciar en una sala compartida es peor que ninguno— y esa
-  preferencia vive en Ajustes.
-- El peso se REGISTRA por serie pero no se PRESCRIBE: la prescripción dice RIR,
-  que es «elige tú la carga», y poner además un peso absoluto la contradice.
-  Fijarlo arrastraría al editor de rutinas y al borrador de planes. Los pesos van
-  en kilos; ofrecer libras es una preferencia que no está decidida.
-- La progresión de cargas es una LISTA, sin gráfica y sin 1RM estimado. Con cinco
-  o seis puntos una lista se lee mejor, y añadir una librería de gráficos fue
-  justo lo que se quitó de Reportes; el 1RM es un modelo con su margen de error, y
-  aquí no se guarda nada calculado.
+- El aviso de fin de descanso son TRES señales y ninguna llega sola: color,
+  vibración y sonido. El color no sirve con el teléfono en el bolsillo; la
+  vibración no existe en iOS —Apple nunca implementó la Vibration API—; el sonido
+  se apaga desde Ajustes y por debajo manda el silenciador del teléfono. El
+  interruptor no acompaña al sonido, ES SU CONDICIÓN: un pitido que no se puede
+  callar en una sala compartida es peor que ninguno. El sonido se PROGRAMA en el
+  reloj de audio al empezar el descanso, no se dispara al cumplirse: los
+  temporizadores de una pestaña en segundo plano se estrangulan a uno por minuto
+  —medido— y el aviso llegaría tarde justo en el caso para el que se puso. Es la
+  única de las tres señales que sobrevive a eso; con la pantalla apagada, en iOS
+  no sobrevive ninguna y eso ya son notificaciones del sistema.
+- El TEMPO y las NOTAS de un ejercicio se conservan al editar una rutina pero no
+  se editan: no hay campo en el formulario y hoy sólo los trae la semilla. No
+  estaban en el borrador y editar los BORRABA en silencio; conservarlos era
+  obligatorio, darles interfaz es otra decisión.
+- El peso se prescribe como CARGA DE REFERENCIA, opcional, y no contradice al
+  RIR: el RIR prescribe esfuerzo y el peso dónde empezar. El historial va SIEMPRE
+  por delante de lo prescrito al rellenar el campo de la sesión —al revés, una
+  rutina vieja bajaría a alguien de 80 a 60 en silencio—, y lo prescrito se
+  sigue viendo para que una descarga deliberada se pueda seguir a mano. Los pesos
+  van en kilos; ofrecer libras es una preferencia que no está decidida.
+- La progresión de cargas tiene gráfica —dibujada a mano, sin librería— y 1RM
+  estimado por Epley, calculado al pintar y NUNCA almacenado. La gráfica dibuja
+  el peso medido y no la estimación, su eje horizontal son sesiones y no fechas,
+  y su eje vertical no arranca en cero: por eso la pendiente NO es comparable
+  entre dos ejercicios. El 1RM no se da por encima de diez repeticiones, donde la
+  fórmula se separa demasiado de la realidad.
 - Los filtros de `TrainingFilters` y `StudentFilters` no filtran.
 - Las sesiones volcadas desde un plan no guardan de qué volcado salieron, así que
   no se pueden mover ni cancelar en bloque y volcar dos veces duplica.

@@ -108,6 +108,9 @@ export const routinesSeed: Routine[] = [
             sets: 4,
             reps: '6-8',
             rir: 2,
+            // Carga de referencia: convive con el RIR porque dice dónde
+            // empezar, no cuánto esforzarse. Ver `PrescribedExercise.weightKg`.
+            weightKg: 60,
             restSeconds: 120,
             tempo: '3-1-1-0',
           },

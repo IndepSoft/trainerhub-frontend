@@ -936,6 +936,22 @@ export const spanish = {
   // ---------------------------------------- aviso de descanso y deshacer
   'liveSession.restOver': 'Descanso cumplido',
   'liveSession.undo': 'Deshacer la última serie',
+
+  // -------------------------------------------------------------- sonido
+  'settings.training': 'Entrenamiento',
+  'settings.sound': 'Sonido',
+  'settings.sound.restChime': 'Avisar al terminar el descanso',
+  'settings.sound.hint': 'Suena sólo si el teléfono no está en silencio. En iPhone es el único aviso que llega: Safari no puede vibrar.',
+
+  // ------------------------------------------------------ peso prescrito
+  'prescription.weight': 'Peso (kg)',
+  'prescription.weightPlaceholder': 'Opcional',
+  'liveSession.prescribedWeight': 'Prescrito: {weight} kg',
+
+  // --------------------------------------------- grafica de cargas y 1RM
+  'loads.chart': '{exercise}: de {from} a {to} kg en {sessions} sesiones',
+  'loads.oneRepMax': '1RM estimado',
+  'loads.oneRepMaxHint': 'Estimado sobre la serie más pesada con la fórmula de Epley. No es una medición y no se guarda.',
 } as const
 
 /** Toda clave que la aplicación puede traducir. */

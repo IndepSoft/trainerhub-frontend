@@ -2507,7 +2507,7 @@ test.describe('sesion en vivo', () => {
     // La serie EN CURSO, que es lo que se viene a hacer: primer bloque, primer
     // ejercicio, primera serie, con su prescripcion entera.
     await expect(page.getByRole('heading', { name: 'Press de banca con barra' })).toBeVisible()
-    await expect(page.getByText('Serie 1 de 4 · 6-8 · RIR 2 · 3-1-1-0')).toBeVisible()
+    await expect(page.getByText('Serie 1 de 4 · 6-8 · 60 kg · RIR 2 · 3-1-1-0')).toBeVisible()
 
     // Y la rutina entera debajo, como contexto: sus bloques con su metodo.
     await expect(page.getByText('Serie simple').first()).toBeVisible()
@@ -2555,7 +2555,7 @@ test.describe('sesion en vivo', () => {
      * anterior lleva el veredicto de su descanso: ese ya ocurrio entero, asi que
      * juzgarlo es un hecho y no una prisa.
      */
-    await expect(page.getByText('Serie 2 de 4 · 6-8 · RIR 2 · 3-1-1-0')).toBeVisible()
+    await expect(page.getByText('Serie 2 de 4 · 6-8 · 60 kg · RIR 2 · 3-1-1-0')).toBeVisible()
     await expect(page.getByText(/Anterior: 7 de 6-8/)).toBeVisible()
     await expect(page.getByText('0 de 6-8 repeticiones')).toBeVisible()
   })
@@ -2593,7 +2593,10 @@ test.describe('sesion en vivo', () => {
     await page.goto('/session/session-1')
 
     const peso = page.getByRole('textbox', { name: 'Peso' })
-    await expect(peso).toHaveValue('')
+    // Ya NO arranca vacio: `routine-2` prescribe 60 kg de carga de referencia
+    // para este ejercicio y el campo los trae puestos. Lo comprueba aparte «el
+    // peso prescrito llega puesto, y no se impone».
+    await expect(peso).toHaveValue('60')
 
     /*
      * A TOQUES, no tecleando. Entre serie y serie las manos estan sudadas y el
@@ -2602,7 +2605,7 @@ test.describe('sesion en vivo', () => {
      */
     await page.getByRole('button', { name: 'Subir 2,5 kg' }).click()
     await page.getByRole('button', { name: 'Subir 2,5 kg' }).click()
-    await expect(peso).toHaveValue('5')
+    await expect(peso).toHaveValue('65')
 
     // Y el campo sigue ahi para el salto grande.
     await peso.fill('62,5')
@@ -2693,13 +2696,47 @@ test.describe('sesion en vivo', () => {
     await page.getByRole('button', { name: 'Deshacer la última serie' }).click()
 
     // Vuelve la MISMA serie, con su peso y sus repeticiones puestos.
-    await expect(page.getByText('Serie 1 de 4 · 6-8 · RIR 2 · 3-1-1-0')).toBeVisible()
+    await expect(page.getByText('Serie 1 de 4 · 6-8 · 60 kg · RIR 2 · 3-1-1-0')).toBeVisible()
     await expect(page.getByRole('textbox', { name: 'Peso' })).toHaveValue('80')
     await expect(page.getByText('6 de 6-8 repeticiones', { exact: false })).toBeVisible()
     await expect(avance).toHaveAttribute('aria-valuenow', '0')
 
     // Y ya no hay nada que deshacer: el control desaparece en vez de apagarse.
     await expect(page.getByRole('button', { name: 'Deshacer la última serie' })).toHaveCount(0)
+  })
+
+  test('el peso prescrito llega puesto, y no se impone', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/session/session-1')
+
+    /*
+     * La carga de referencia es la respuesta a «cuanto pongo» el primer dia de
+     * un ejercicio, que es justo cuando el arrastre de la sesion anterior no
+     * tiene nada que arrastrar. `student-2` no ha entrenado nunca.
+     */
+    await expect(page.getByRole('textbox', { name: 'Peso' })).toHaveValue('60')
+    await expect(page.getByText('Prescrito: 60 kg')).toBeVisible()
+
+    // Y NO se impone: subir un disco por lado deja 62,5 y lo prescrito sigue a
+    // la vista, que es lo que permite seguir una descarga deliberada.
+    await page.getByRole('button', { name: 'Subir 2,5 kg' }).click()
+    await expect(page.getByRole('textbox', { name: 'Peso' })).toHaveValue('62,5')
+    await expect(page.getByText('Prescrito: 60 kg')).toBeVisible()
+
+    /*
+     * El segundo ejercicio de la rutina no lleva carga prescrita, y entonces no
+     * se inventa ninguna: el campo queda vacio y no hay linea que leer.
+     */
+    await page.getByRole('button', { name: 'Repetición 6' }).click()
+    for (let serie = 0; serie < 4; serie += 1) {
+      await page.getByRole('button', { name: 'Finalizar serie' }).click()
+      await page.getByRole('button', { name: 'Empezar la siguiente' }).click()
+    }
+
+    await expect(page.getByRole('heading', { name: 'Press militar con barra' })).toBeVisible()
+    await expect(page.getByRole('textbox', { name: 'Peso' })).toHaveValue('')
+    await expect(page.getByText(/^Prescrito:/)).toHaveCount(0)
   })
 
   test('una sesion de cardio conserva su pantalla de carrera', async ({ page }) => {
@@ -4311,6 +4348,97 @@ test.describe('progresion de cargas', () => {
     // Y el detalle dice cuantas series fueron, que es lo que da contexto al tope.
     await cargas.getByRole('button', { name: /Press de banca con barra/ }).click()
     await expect(cargas.getByText('75 kg × 6 · 2 series')).toBeVisible()
+  })
+})
+
+/**
+ * El aviso sonoro del descanso, y donde se apaga.
+ *
+ * EL INTERRUPTOR NO ACOMPAÑA A LA FUNCION: ES SU CONDICION. El sonido no se
+ * ponia por no poder callarlo -un pitido que no se apaga en una sala compartida
+ * es peor que ninguno-, asi que lo que hacia falta comprobar no es que suene,
+ * sino que se pueda dejar de oir y que la decision aguante una recarga.
+ */
+test.describe('sonido', () => {
+  test('el aviso del descanso se apaga desde ajustes, y se queda apagado', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/settings')
+
+    const aviso = page.getByRole('switch', { name: 'Avisar al terminar el descanso' })
+
+    // Encendido de fabrica: un aviso apagado por defecto no lo descubre nadie.
+    await expect(aviso).toHaveAttribute('aria-checked', 'true')
+
+    await aviso.click()
+    await expect(aviso).toHaveAttribute('aria-checked', 'false')
+
+    // Y aguanta la recarga, que es lo que distingue una preferencia de un
+    // estado de pantalla.
+    await page.reload()
+    await expect(
+      page.getByRole('switch', { name: 'Avisar al terminar el descanso' })
+    ).toHaveAttribute('aria-checked', 'false')
+  })
+})
+
+/**
+ * La gráfica y el maximo estimado, que es lo que quedaba de la progresion.
+ *
+ * `student-1` llega con diez sesiones cerradas en la semilla y con las cargas
+ * subiendo cada tres: sin historial, una progresion no tiene nada que dibujar y
+ * la pantalla se veria vacia el primer dia.
+ */
+test.describe('grafica de cargas', () => {
+  test('el detalle de un ejercicio dibuja la linea y estima el maximo', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/students/student-1')
+
+    const cargas = page.locator('section[aria-labelledby="cargas-titulo"]')
+    const sentadilla = cargas.getByRole('button', { name: /Sentadilla con barra/ })
+
+    // Plegado de partida: la pregunta corriente la contesta la fila cerrada.
+    await expect(sentadilla).toHaveAttribute('aria-expanded', 'false')
+    await expect(cargas.getByRole('img', { name: /Sentadilla con barra/ })).toHaveCount(0)
+
+    await sentadilla.click()
+
+    /*
+     * La grafica se describe para quien no la ve: de cuanto a cuanto y en
+     * cuantas sesiones. Un dibujo sin texto alternativo es un hueco.
+     */
+    await expect(
+      cargas.getByRole('img', { name: /Sentadilla con barra: de 70 a 77,5 kg en 10 sesiones/ })
+    ).toBeVisible()
+
+    /*
+     * Y el maximo estimado, con su nombre. 77,5 a 8 repeticiones por Epley:
+     * 77,5 × (1 + 8/30) = 98 kg redondeado al kilo, porque es una estimacion y
+     * un decimal fingiria una precision que la formula no tiene.
+     */
+    await expect(cargas.getByText('1RM estimado')).toBeVisible()
+    await expect(cargas.getByText('98', { exact: false }).first()).toBeVisible()
+    await expect(cargas.getByText(/fórmula de Epley/)).toBeVisible()
+
+    /*
+     * Y con el detalle ABIERTO se siguen cumpliendo las reglas de 375 px. La
+     * comprobacion de la ficha mira `student-2`, que no tiene historial: alli la
+     * grafica no llega a existir, asi que este bloque nuevo no lo veria nadie.
+     */
+    const medidas = await page.evaluate(() => {
+      const dibujo = document.querySelector('[role=img]')
+
+      return {
+        desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        anchoGrafica: dibujo === null ? 0 : Math.round(dibujo.getBoundingClientRect().width),
+      }
+    })
+
+    expect(medidas.desborde, 'desbordamiento horizontal').toBe(0)
+    expect(medidas.anchoGrafica, 'ancho de la grafica').toBeGreaterThanOrEqual(280)
+
+    await page.screenshot({ path: 'tests/visual/salida/cargas-grafica-mobile.png' })
   })
 })
 

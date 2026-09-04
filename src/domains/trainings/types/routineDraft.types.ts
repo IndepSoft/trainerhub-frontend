@@ -21,6 +21,23 @@ export interface PrescribedExerciseDraft {
   reps: string
   /** Vacío es «no aplica», que no es lo mismo que 0 —«al fallo»—. */
   rir: string
+  /** Carga de referencia. Vacío es «no se prescribe peso». */
+  weightKg: string
+  /**
+   * Cadencia y notas del ejercicio: SE CONSERVAN Y NO SE EDITAN todavía.
+   *
+   * No estaban en el borrador y ése era un defecto de verdad: `toBlockDraft` no
+   * los copiaba y `toPrescribedExercise` no los devolvía, así que abrir una
+   * rutina con tempo y volver a guardarla lo BORRABA sin decir nada. Sólo la
+   * semilla los produce hoy, y aun así una edición no puede destruir un dato
+   * que la aplicación sabe leer —la sesión pinta el tempo y lo usa para estimar
+   * lo que debería durar una serie—.
+   *
+   * Están como texto y no como campos del formulario porque darles interfaz es
+   * otra decisión; conservarlos no lo es.
+   */
+  tempo: string
+  notes: string
   restSeconds: string
 }
 
@@ -44,7 +61,10 @@ export type BlockDraftChanges = Partial<Pick<BlockDraft, 'method' | 'restAfterSe
 
 /** Lo que puede cambiar de un ejercicio prescrito. */
 export type PrescribedExerciseDraftChanges = Partial<
-  Pick<PrescribedExerciseDraft, 'exerciseId' | 'sets' | 'reps' | 'rir' | 'restSeconds'>
+  Pick<
+    PrescribedExerciseDraft,
+    'exerciseId' | 'sets' | 'reps' | 'rir' | 'weightKg' | 'restSeconds'
+  >
 >
 
 /**

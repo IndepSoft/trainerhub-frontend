@@ -214,6 +214,9 @@ export function SetTracker({
 
       <p className="metric-figures mt-1.5 text-sm text-ink/55">
         {t('liveSession.setOf', { set: step.setNumber, total: step.totalSets })} · {step.reps}
+        {/* El peso justo detrás de las repeticiones y por delante del RIR: con
+            la barra delante, la carga se decide antes que el esfuerzo. */}
+        {step.weightKg !== undefined && ` · ${formatKilos(step.weightKg)} kg`}
         {step.rir !== undefined && ` · RIR ${step.rir}`}
         {step.tempo !== undefined && ` · ${step.tempo}`}
       </p>
@@ -270,6 +273,7 @@ export function SetTracker({
         <SetWeightField
           weightKg={weightKg}
           lastWeightKg={lastWeightKg}
+          prescribedKg={step.weightKg ?? null}
           onChange={onSetWeight}
           onAdjust={onAdjustWeight}
         />

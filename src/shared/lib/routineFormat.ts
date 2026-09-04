@@ -20,14 +20,26 @@ import { activeLocale } from '@/shared/i18n/activeLocale'
  */
 
 /**
- * Prescripción en una línea: «4 × 8-10 · RIR 2».
+ * Prescripción en una línea: «4 × 8-10 · 60 kg · RIR 2».
  *
- * El RIR se omite cuando no está prescrito, en vez de mostrar «RIR 0», que se
- * leería como «al fallo» y es lo contrario de «no aplica».
+ * Lo que no está prescrito no se escribe, en vez de rellenarlo con un cero:
+ * «RIR 0» se leería como «al fallo», que es lo contrario de «no aplica», y
+ * «0 kg» como una barra vacía en vez de como «elige tú la carga».
+ *
+ * EL PESO VA ANTES QUE EL RIR porque es lo que se decide primero: con la barra
+ * delante, la carga se pone y el esfuerzo se comprueba después.
+ *
+ * «kg» va escrito aquí y no en los diccionarios, como «×» y como «RIR»: es el
+ * símbolo de una unidad del sistema internacional y se escribe igual en los
+ * tres idiomas. Traducir un símbolo invita a que alguien lo traduzca mal.
  */
 export function formatPrescription(exercise: PrescribedExercise): string {
-  const base = `${exercise.sets} × ${exercise.reps}`
-  return exercise.rir === undefined ? base : `${base} · RIR ${exercise.rir}`
+  const parts = [`${exercise.sets} × ${exercise.reps}`]
+
+  if (exercise.weightKg !== undefined) parts.push(`${formatKilos(exercise.weightKg)} kg`)
+  if (exercise.rir !== undefined) parts.push(`RIR ${exercise.rir}`)
+
+  return parts.join(' · ')
 }
 
 /** `90` → `1:30`. Para descansos, donde el minutero se lee mejor que los segundos. */

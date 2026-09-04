@@ -112,6 +112,41 @@ export function lastWeightByExercise(sessions: Session[]): Map<string, number> {
 }
 
 /**
+ * Hasta cuántas repeticiones vale la estimación de máximo.
+ *
+ * Por encima de diez las fórmulas se separan del resultado real muy deprisa: una
+ * serie de veinte mide resistencia, no fuerza máxima, y estimar un tope a partir
+ * de ella da una cifra que nadie levantaría. Antes que dar un número malo, no se
+ * da ninguno.
+ */
+export const ONE_REP_MAX_REPS_LIMIT = 10
+
+/**
+ * El máximo a una repetición que se deduce de una serie. `null` si no se deduce.
+ *
+ * ES UN MODELO, NO UNA MEDIDA. La fórmula es la de Epley —peso × (1 + reps/30)—,
+ * y como toda estimación de 1RM tiene su margen: sirve para comparar dos sesiones
+ * del mismo ejercicio, no para decidir a qué peso se intenta un récord.
+ *
+ * SE CALCULA AL PINTAR Y NO SE GUARDA EN NINGÚN SITIO, que es la regla de esta
+ * capa entera: nada derivado se almacena. Si mañana se cambia de fórmula, el
+ * historial no hay que migrarlo porque el historial son las series, no esto.
+ *
+ * A UNA REPETICIÓN NO SE ESTIMA NADA: el máximo es lo que se levantó. La fórmula
+ * daría ahí un 3 % de más, que es el error de aplicar un modelo al único caso
+ * que no lo necesita.
+ *
+ * Redondeado al kilo a propósito: un decimal fingiría una precisión que el
+ * modelo no tiene.
+ */
+export function estimatedOneRepMax(point: LoadPoint): number | null {
+  if (point.reps < 1 || point.reps > ONE_REP_MAX_REPS_LIMIT) return null
+  if (point.reps === 1) return point.topWeightKg
+
+  return Math.round(point.topWeightKg * (1 + point.reps / 30))
+}
+
+/**
  * Cuánto ha cambiado la carga entre las dos últimas veces, en kilos.
  *
  * `null` con un solo punto: con una sola sesión no hay progresión que medir, y

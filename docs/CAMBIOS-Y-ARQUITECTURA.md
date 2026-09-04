@@ -1978,3 +1978,219 @@ opcional, nada se quejó. Ahora es obligatoria.
 - **No hay 1RM estimado.** Es la cifra que normaliza peso y repeticiones, y es un
   MODELO —Epley, Brzycki— con su margen de error. Aquí no se ha guardado nunca
   nada calculado, y ésta no va a ser la primera.
+
+---
+
+## 24. Los tres puntos que quedaban abiertos (4 sep 2026)
+
+Los tres estaban escritos en §23.8 y en CLAUDE.md §6 como decisiones pendientes,
+no como trabajo por hacer: cada uno esperaba una decisión de producto. Aquí están
+las tres tomadas, con lo que cada una obligó a resolver.
+
+### 24.1 El sonido, y el interruptor que era su condición
+
+El aviso de fin de descanso eran dos señales y ninguna llegaba sola: el **color**
+no sirve con el teléfono en el bolsillo, y la **vibración** no existe en iOS
+—Apple nunca implementó la Vibration API—. Justo la postura normal durante un
+descanso de dos minutos se quedaba sin aviso.
+
+No se ponía sonido por una razón concreta: **un pitido que no se puede callar en
+una sala compartida es peor que ninguno**. Así que el interruptor de Ajustes no
+acompaña a la función, **es su condición**, y por eso se han hecho a la vez.
+
+**Se sintetiza, no se descarga.** `restChime.ts` genera dos tonos —La5 y Re6,
+una cuarta ascendente— con la Web Audio API. Un `.mp3` habría que servirlo,
+cachearlo para que sonara sin red —esto va a ser una PWA— y versionarlo con el
+resto; medio segundo de oscilador no necesita nada de eso. Dos tonos y no uno
+porque un pitido suelto se confunde con cualquier notificación del teléfono;
+ascendente porque lo que anuncia es volver a empezar.
+
+**El desbloqueo va en el gesto de cerrar la serie**, y ahí está el primero de los
+dos detalles que no se ven leyendo el código: los navegadores sólo reanudan un
+contexto de audio dentro del manejador de un evento del usuario. Pedirlo desde el
+temporizador que mide el descanso se resuelve sin error y **no suena nada**.
+Cerrar la serie es el gesto que siempre precede a un descanso —no hay descanso que
+no venga de ese toque—, así que cuando toque avisar el audio ya está corriendo.
+
+#### 24.1.1 Y el segundo: el pitido se PROGRAMA, no se dispara
+
+La primera versión lo tocaba desde el mismo efecto que ya vibraba y cambiaba el
+color, al cruzarse el descanso prescrito. **Medido en el navegador, con la
+pestaña en segundo plano: la cuenta atrás congelada en 0:08 durante quince
+segundos.** Los temporizadores de una pestaña oculta se estrangulan a uno por
+minuto.
+
+El valor nunca era incorrecto —los relojes miden marcas de tiempo desde §23.4—,
+pero lo que se **repinta** llega tarde, y con el repintado llegaba tarde el aviso.
+Justo en el caso para el que se puso el sonido: el teléfono guardado en el
+bolsillo.
+
+**El reloj de audio es otra cosa.** `AudioContext.currentTime` corre en el hilo de
+audio, que no se estrangula. Así que al empezar el descanso se programan los dos
+osciladores para dentro de los segundos que falten, y suenan a su hora aunque
+nadie haya mirado la pantalla. Comprobado en el navegador: al cerrar una serie
+con 120 s de descanso, los tonos quedan programados en +120 s y +120,3 s.
+
+De ahí sale todo lo demás del módulo:
+
+- **`cancelRestChime` en la limpieza del efecto.** Un descanso deja de existir de
+  tres formas —empezar la siguiente antes de tiempo, deshacer, pausar— y en las
+  tres hay que retirar lo programado. Un pitido a destiempo es peor que no
+  avisar, porque enseña a desconfiar del aviso. Comprobado: empezar la siguiente
+  detiene los dos tonos, pausar también, y **reanudar los reprograma con lo que
+  quedaba** —1:35 en pantalla, +95 s en el reloj de audio—.
+- **Una cuenta de generación.** Si el contexto está dormido hay que esperar a que
+  reanude para programar, y cancelar durante esa espera no cancelaría nada: la
+  promesa seguiría su curso. La generación descarta lo que ya no corresponde a
+  ningún descanso.
+- **El efecto NO depende de `phaseSeconds`.** Cambia cada segundo y reprogramaría
+  el aviso en cada tic. Depende del ancla del reloj, que sólo cambia cuando
+  cambia el descanso.
+
+**No es una cura completa**, y queda dicho: con la pantalla apagada iOS suspende
+el contexto y ahí no suena nada. Eso ya no es un problema de temporizadores sino
+de que la página deja de existir, y su solución son las notificaciones del
+sistema, que son otro trabajo y otro consentimiento.
+
+Y explica por qué el color y la vibración se quedan en el efecto de antes: las
+dos dependen del hilo principal y no hay forma de adelantarlas. **El sonido es la
+única de las tres señales que sobrevive a una pestaña en segundo plano**, que es
+una razón más para que sea la que se añadió.
+
+**Encendido de fábrica.** Un aviso apagado por defecto no lo descubre nadie, y el
+motivo por el que no se ponía deja de aplicar en cuanto hay dónde callarlo. Por
+debajo sigue mandando el silenciador del propio teléfono, que el navegador
+respeta.
+
+**Y suena al encenderlo**, en Ajustes. Un aviso sonoro que no se puede oír hasta
+que termine un descanso de dos minutos es un ajuste a ciegas.
+
+La preferencia es un **almacén externo** —`soundPreference.ts` con
+`useSyncExternalStore`— y no un `useState`: la leen dos sitios que no cuelgan uno
+del otro —el interruptor y la sesión en vivo—, y escucha el evento `storage`,
+que es lo que llega cuando se cambia en otra pestaña. Apagar un pitido molesto
+desde una segunda pestaña es exactamente cómo va a ocurrir.
+
+### 24.2 El peso prescrito, que no contradice al RIR
+
+El argumento para no prescribirlo era que el RIR ya dice «elige tú la carga».
+Sigue siendo cierto y por eso **conviven**: el RIR prescribe **esfuerzo** y el
+peso prescribe **dónde empezar**. Un entrenador escribe «4×8 a 60 kg, RIR 2»
+queriendo decir «empieza en 60 y ajusta hasta que te queden dos». Lo que sí sería
+contradictorio es tratar el peso como obligatorio, y por eso es **opcional** y se
+llama carga de **referencia**.
+
+Existe porque sin él la primera sesión de un ejercicio no tenía respuesta a
+«¿cuánto pongo?»: el arrastre de la sesión anterior sólo funciona a partir de la
+segunda.
+
+**EL HISTORIAL VA POR DELANTE DE LA PRESCRIPCIÓN.** Es la decisión que importa de
+las tres que toma `carriedWeight`:
+
+1. Lo hecho **hoy** en ese ejercicio. Es lo que hay puesto en la barra.
+2. La **última sesión**.
+3. Lo **prescrito**, si lo hay.
+
+Al revés, una rutina escrita hace tres meses bajaría a alguien de 80 a 60 cada
+vez que la abriera, en silencio y sin que nadie hubiera decidido bajarla. Así la
+prescripción hace lo que sí sabe hacer: contestar el primer día. Y **se sigue
+viendo siempre** —en la línea de la serie y debajo del campo—, que es lo que
+permite seguir una descarga deliberada a mano.
+
+La línea de debajo del campo **se calla si coincide con la última vez**: repetir
+la misma cifra con dos nombres distintos hace dudar de si son dos datos.
+
+### 24.3 Un defecto que apareció al tocar el borrador: editar borraba el tempo
+
+`PrescribedExerciseDraft` no tenía `tempo` ni `notes`. `toBlockDraft` no los
+copiaba y `toPrescribedExercise` no los devolvía, así que **abrir una rutina con
+tempo y volver a guardarla lo borraba**, sin decir nada y sin que nada fallara.
+
+Hoy sólo la semilla los produce, y aun así la sesión los lee: pinta el tempo y lo
+usa para estimar lo que debería durar una serie. Una edición no puede destruir un
+dato que la aplicación sabe leer. Ahora **se conservan**; darles interfaz es otra
+decisión y queda escrita como tal.
+
+Salió justo por hacer bien lo otro: al añadir `weightKg` al borrador había que
+recorrer los tres sitios donde un campo nuevo tiene que aparecer, y los dos que
+faltaban se vieron solos.
+
+### 24.4 La gráfica, sin librería
+
+Dos puntos de §23.8 caían juntos.
+
+**Sin librería de gráficos.** Una línea con diez puntos es una lista de
+coordenadas y un `polyline`. Traer una librería para eso sería repetir
+exactamente lo que se quitó de Reportes.
+
+**Dibuja el peso MEDIDO, no el 1RM estimado.** La gráfica es lo que más se mira y
+lo que menos se cuestiona, así que enseña hechos: la serie más pesada de cada
+día. La estimación va al lado, en cifra y con su nombre.
+
+**El eje horizontal son sesiones, no fechas.** Repartir por fecha real dejaría
+cuatro sesiones seguidas amontonadas a la izquierda tras un parón de dos meses, y
+la pregunta que se le hace a esto —«¿voy subiendo?»— se responde sesión a sesión.
+La fecha de cada punto está en la lista de debajo.
+
+**El eje vertical NO arranca en cero**, y es la decisión discutible de una
+gráfica de cargas: desde cero, una progresión de 70 a 77,5 kg sería una línea
+plana. Aquí la pregunta no es cuánto levanta —esa la contesta la cifra— sino si
+sube. A cambio, **la pendiente no es comparable entre dos ejercicios**, y por eso
+queda dicho.
+
+**Los puntos son HTML sobre el SVG**, no círculos dentro. El trazo se estira al
+ancho del contenedor con `preserveAspectRatio="none"`, que es lo que le permite
+ocupar cualquier ancho sin medir nada, pero esa misma deformación convertiría un
+círculo en un óvalo. Colocados por porcentaje quedan redondos a cualquier ancho.
+
+Va **dentro del pliegue**: quien abre el detalle ya ha decidido mirar ese
+ejercicio de cerca. Y con un solo punto no se pinta: un punto suelto en un
+recuadro vacío ocupa sitio sin decir nada.
+
+### 24.5 El 1RM estimado, con su nombre puesto
+
+`estimatedOneRepMax` aplica Epley —peso × (1 + reps/30)— y es la cifra que
+permite comparar 60×8 con 70×4.
+
+- **Se calcula al pintar y no se guarda en ningún sitio**, que es la regla de esa
+  capa entera. Cambiar de fórmula mañana no obliga a migrar nada, porque el
+  historial son las series.
+- **Por encima de diez repeticiones no se da.** Ahí las fórmulas se separan
+  mucho del resultado real: una serie de veinte mide resistencia, no fuerza
+  máxima. Antes que un número malo, ninguno.
+- **A una repetición no se estima**: el máximo es lo que se levantó. La fórmula
+  daría un 3 % de más, que es el error de aplicar un modelo al único caso que no
+  lo necesita.
+- **Redondeado al kilo.** Un decimal fingiría una precisión que el modelo no
+  tiene.
+- Y lleva **debajo, escrito**, que es una estimación y de qué fórmula sale. Es la
+  cifra más fácil de confundir con una medición.
+
+### 24.6 El historial simulado ya lleva pesos
+
+`student-1` tenía diez sesiones cerradas y ninguna con series anotadas, así que
+la progresión de cargas se veía **vacía al abrirla por primera vez**: la pantalla
+existía y la aplicación se enseñaba a sí misma como si nadie hubiera levantado
+nunca nada.
+
+Ahora las series se generan **derivadas de `routine-1`** en vez de escritas otra
+vez: editar la rutina y dejar el historial hablando de ejercicios que ya no tiene
+daría una progresión de algo que nadie entrena. Se generan tantas como diga
+`completedSets`, recorriendo la rutina en orden, así que una sesión cerrada a
+medias deja anotado lo que dio tiempo a hacer.
+
+Las cargas suben un disco por lado cada tres sesiones. Y **la plancha se guarda
+sin peso**: se mide en segundos, y eso distingue «no se levantó nada» de «se
+levantaron cero kilos» —y de paso es el caso que la progresión tiene que saber
+descartar—.
+
+### 24.7 Lo que sigue faltando
+
+- **El tempo y las notas del ejercicio se conservan pero no se editan.** No hay
+  campo en el editor de rutinas; hoy sólo los trae la semilla. Conservarlos era
+  obligatorio, darles interfaz es otra decisión.
+- **Los pesos van en kilos.** Ofrecer libras es una preferencia que no está
+  decidida, y arrastraría al editor, a la sesión y a la progresión.
+- **La gráfica no compara ejercicios entre sí.** Cada una escala a su propio
+  rango, así que dos pendientes iguales no significan lo mismo. Un eje común
+  aplastaría las progresiones pequeñas, que son las más.

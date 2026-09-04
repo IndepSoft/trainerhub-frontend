@@ -926,4 +926,20 @@ export const english: Dictionary = {
   // ---------------------------------------- aviso de descanso y deshacer
   'liveSession.restOver': 'Rest is up',
   'liveSession.undo': 'Undo the last set',
+
+  // -------------------------------------------------------------- sonido
+  'settings.training': 'Training',
+  'settings.sound': 'Sound',
+  'settings.sound.restChime': 'Alert me when rest is over',
+  'settings.sound.hint': 'It only plays if your phone is not on silent. On iPhone it is the only alert that gets through: Safari cannot vibrate.',
+
+  // ------------------------------------------------------ peso prescrito
+  'prescription.weight': 'Weight (kg)',
+  'prescription.weightPlaceholder': 'Optional',
+  'liveSession.prescribedWeight': 'Prescribed: {weight} kg',
+
+  // --------------------------------------------- grafica de cargas y 1RM
+  'loads.chart': '{exercise}: from {from} to {to} kg across {sessions} sessions',
+  'loads.oneRepMax': 'Estimated 1RM',
+  'loads.oneRepMaxHint': 'Estimated from the heaviest set with the Epley formula. It is not a measurement and it is not stored.',
 }

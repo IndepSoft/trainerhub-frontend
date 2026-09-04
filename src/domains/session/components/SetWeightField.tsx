@@ -20,6 +20,8 @@ interface SetWeightFieldProps {
   onAdjust: (delta: number) => void
   /** Lo que se levantó la última vez en este ejercicio, si se sabe. */
   lastWeightKg: number | null
+  /** La carga de referencia que prescribió la rutina, si la prescribió. */
+  prescribedKg: number | null
 }
 
 /**
@@ -40,6 +42,7 @@ export function SetWeightField({
   onChange,
   onAdjust,
   lastWeightKg,
+  prescribedKg,
 }: SetWeightFieldProps) {
   const { t } = useTranslation()
 
@@ -111,6 +114,24 @@ export function SetWeightField({
           )}
         >
           {t('liveSession.lastWeight', { weight: formatKilos(lastWeightKg) })}
+        </p>
+      )}
+
+      {/*
+        Lo prescrito, cuando dice algo que la otra línea no dice ya.
+
+        Se calla si coincide con la última vez, que es el caso corriente en
+        cuanto alguien lleva dos sesiones: repetir la misma cifra con dos
+        nombres distintos hace dudar de si son dos datos.
+
+        Y se enseña aunque el campo no arranque de aquí. La instrucción del
+        entrenador tiene que estar a la vista incluso cuando el historial manda:
+        es la única forma de que una bajada deliberada —una semana de descarga—
+        se pueda seguir.
+      */}
+      {prescribedKg !== null && prescribedKg !== lastWeightKg && (
+        <p className="mt-1 text-xs text-ink/45">
+          {t('liveSession.prescribedWeight', { weight: formatKilos(prescribedKg) })}
         </p>
       )}
     </div>

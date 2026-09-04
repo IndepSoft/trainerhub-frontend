@@ -4,6 +4,8 @@ import type { SetRecord } from '@/shared/domain/entities/session'
 import { buildSetPlan, maxReps, type SetStep } from '../libs/setPlan'
 import type { LiveSessionState } from '../types/session.types'
 import { HapticPattern, vibrate } from '@/shared/lib/haptics'
+import { cancelRestChime, primeRestChime, scheduleRestChime } from '@/shared/lib/restChime'
+import { useSoundPreference } from '@/shared/hooks/useSoundPreference'
 
 /**
  * En qué está la sesión ahora mismo.
@@ -83,14 +85,6 @@ const TICK_MILLISECONDS = 1000
  * LO MEDIDO SE GUARDA, LO JUZGADO NO. El hook no decide si una serie fue rápida
  * o lenta: eso lo calcula `setPerformance` a partir de estos números, y así un
  * cambio de criterio no reescribe el historial.
- *
- * TODO: el descanso no avisa cuando termina. La cuenta atrás llega a cero y
- * sigue, pero nadie mira el teléfono los dos minutos enteros. Falta un aviso
- * —sonido o vibración— y es trabajo aparte: hay que decidir qué pasa con la
- * pantalla apagada y con el permiso de sonido.
- *
- * TODO: no se puede deshacer una serie cerrada. Equivocarse es normal y hoy la
- * única salida es terminar la sesión y rehacerla.
  */
 export function useGuidedStrengthSession(
   routine: Routine | null,
@@ -103,6 +97,18 @@ export function useGuidedStrengthSession(
   lastWeights: Map<string, number> = new Map()
 ): UseGuidedStrengthSessionResult {
   const steps = useMemo(() => buildSetPlan(routine), [routine])
+  /*
+   * El sonido se consulta AQUÍ y no dentro de `scheduleRestChime`.
+   *
+   * Podría comprobarlo la propia función y ahorrarse esta línea, pero entonces
+   * el comportamiento del hook dependería de un estado global invisible desde
+   * su código. Leyéndola aquí, la condición que decide si suena está al lado del
+   * `if` que lo decide, y se puede seguir leyendo.
+   *
+   * Es una preferencia del navegador, como `useReducedMotion`, no un puerto:
+   * este hook sigue sin conocer ninguno.
+   */
+  const { soundEnabled } = useSoundPreference()
 
   const [state, setState] = useState<LiveSessionState>('running')
   /*
@@ -212,15 +218,19 @@ export function useGuidedStrengthSession(
    * mal desde que los relojes miden tiempo en vez de tics: con la pestaña
    * estrangulada el reloj salta de 118 a 130 y el aviso no llegaría nunca.
    *
-   * `vibrate` devuelve si hubo respuesta y aquí se ignora a propósito: en iOS no
-   * existe la Vibration API y el aviso tiene que seguir funcionando. Por eso la
-   * pantalla cambia además de color al cumplirse -ver `SetTracker`-, que es la
-   * mitad del aviso que sí llega a todas partes.
+   * SON TRES SEÑALES A LA VEZ y ninguna sobra, porque ninguna llega sola a todas
+   * las situaciones: el COLOR no sirve con el teléfono en el bolsillo, la
+   * VIBRACIÓN no existe en iOS —`vibrate` devuelve si hubo respuesta y aquí se
+   * ignora a propósito—, y el SONIDO se apaga en una sala compartida o con el
+   * móvil en silencio. Juntas cubren el caso normal de un descanso: el teléfono
+   * guardado y dos minutos sin mirarlo.
    *
-   * TODO: falta el sonido, que es el único aviso que alcanza a quien tiene el
-   * teléfono en el bolsillo y un iPhone en la mano. Exige decidir dónde se
-   * apaga: un pitido que no se puede silenciar en una sala compartida es peor
-   * que ninguno, y esa preferencia vive en Ajustes, con las demás.
+   * AQUÍ SÓLO VAN LAS DOS QUE DEPENDEN DE LA PANTALLA. Este efecto se despierta
+   * con el repintado, y con la pestaña en segundo plano el navegador lo
+   * estrangula a uno por minuto: medido aquí, la cuenta atrás congelada en 0:08
+   * durante quince segundos. El color y la vibración llegan tarde en ese caso y
+   * no hay forma de evitarlo desde el hilo principal. El sonido sí, y por eso se
+   * programa aparte: ver el efecto de abajo.
    */
   useEffect(() => {
     if (phase !== 'rest' || currentStep === null) {
@@ -235,6 +245,35 @@ export function useGuidedStrengthSession(
     vibrate(HapticPattern.TRANSITION)
   }, [phase, phaseSeconds, currentStep])
 
+  /*
+   * El pitido SE PROGRAMA al empezar el descanso, no se dispara al cumplirse.
+   *
+   * Es la diferencia entre avisar y avisar A TIEMPO. Disparado desde el efecto
+   * de arriba llegaría cuando el navegador se digne repintar, que con la pestaña
+   * en segundo plano puede ser un minuto tarde; y la pestaña en segundo plano es
+   * exactamente el caso para el que se puso el sonido. Programado por adelantado
+   * suena en su instante, porque el reloj de audio no se estrangula.
+   *
+   * NO DEPENDE DE `phaseSeconds`, y no es un descuido: cambia cada segundo y
+   * volvería a programar el aviso en cada tic. Lo que hace falta es el instante
+   * en que empezó el descanso, que sólo cambia cuando el descanso cambia. De ahí
+   * que las dependencias sean el ancla y lo acumulado, y no los segundos.
+   *
+   * La limpieza cancela, y con eso quedan cubiertos los tres modos de que un
+   * descanso deje de existir: empezar la siguiente serie antes de tiempo,
+   * deshacer, y pausar —al pausar, `state` deja de ser `running` y el efecto se
+   * desmonta; al reanudar se vuelve a anclar el reloj y se reprograma con lo que
+   * quede—. Un pitido a destiempo enseña a desconfiar del aviso.
+   */
+  useEffect(() => {
+    if (!soundEnabled || state !== 'running' || phase !== 'rest' || currentStep === null) return
+
+    const alreadyRested = phaseAccumulated + Math.floor((Date.now() - phaseStartedAt) / 1000)
+    scheduleRestChime(currentStep.restSecondsAfter - alreadyRested)
+
+    return cancelRestChime
+  }, [soundEnabled, state, phase, currentStep, phaseAccumulated, phaseStartedAt])
+
   const markReps = useCallback((count: number) => {
     // Volver a tocar la ultima marcada la desmarca: es como se corrige una
     // repeticion de mas sin tener que empezar de cero.
@@ -246,23 +285,33 @@ export function useGuidedStrengthSession(
 
 
   /**
-   * El peso con el que arranca una serie: lo último anotado de ESE ejercicio.
+   * El peso con el que arranca una serie, en tres escalones.
    *
-   * Del ejercicio y no de la serie anterior, que en una superserie es otro
-   * ejercicio con otra carga. Se mira primero lo hecho hoy y, si es la primera
-   * serie del día, lo de la última sesión: a «¿cuánto pongo?» las dos responden
-   * lo mismo, y teclearlo otra vez es lo que hace que se deje de anotar.
+   * 1. LO HECHO HOY en ese ejercicio. Es lo que hay puesto en la barra ahora
+   *    mismo, así que gana a todo lo demás. Del ejercicio y no de la serie
+   *    anterior, que en una superserie es otro ejercicio con otra carga.
+   * 2. LA ÚLTIMA SESIÓN. A «¿cuánto pongo?» responde lo mismo que la anterior, y
+   *    teclearlo otra vez es lo que hace que se deje de anotar.
+   * 3. LO PRESCRITO en la rutina, si el entrenador puso una carga de referencia.
+   *
+   * EL HISTORIAL VA POR DELANTE DE LA PRESCRIPCIÓN, y es la decisión que
+   * importa de las tres. Al revés, una rutina escrita hace tres meses bajaría a
+   * alguien de 80 a 60 cada vez que la abriera, en silencio y sin que nadie
+   * hubiera decidido bajarla. Así la prescripción hace lo que sí sabe hacer:
+   * contestar el primer día, cuando no hay historial que contradecir. Lo
+   * prescrito se sigue viendo siempre —en la línea de la serie y bajo el
+   * campo—, así que una descarga deliberada se puede seguir a mano.
    */
   const carriedWeight = useCallback(
-    (exerciseId: string, done: SetRecord[]): number | null => {
+    (step: SetStep, done: SetRecord[]): number | null => {
       for (let index = done.length - 1; index >= 0; index -= 1) {
         const record = done[index]
-        if (record.exerciseId === exerciseId && record.weightKg !== undefined) {
+        if (record.exerciseId === step.exerciseId && record.weightKg !== undefined) {
           return record.weightKg
         }
       }
 
-      return lastWeights.get(exerciseId) ?? null
+      return lastWeights.get(step.exerciseId) ?? step.weightKg ?? null
     },
     [lastWeights]
   )
@@ -283,7 +332,7 @@ export function useGuidedStrengthSession(
       ? chosenWeight
       : currentStep === null
         ? null
-        : carriedWeight(currentStep.exerciseId, records)
+        : carriedWeight(currentStep, records)
 
   const adjustWeight = useCallback(
     (delta: number) => {
@@ -306,6 +355,17 @@ export function useGuidedStrengthSession(
 
   const finishSet = useCallback(() => {
     if (currentStep === null || phase !== 'work') return
+
+    /*
+     * Aquí se desbloquea el audio, y tiene que ser aquí.
+     *
+     * Los navegadores sólo reanudan un contexto de audio dentro del manejador
+     * de un gesto del usuario. Cerrar la serie es el gesto que SIEMPRE precede a
+     * un descanso —no hay descanso que no venga de este toque—, así que cuando
+     * el temporizador quiera avisar, el audio ya está corriendo. Pedirlo desde
+     * el temporizador llegaría tarde y no sonaría nada.
+     */
+    if (soundEnabled) primeRestChime()
 
     const closed: SetRecord[] = [
       ...records,
@@ -352,6 +412,7 @@ export function useGuidedStrengthSession(
     phase,
     records,
     repsDone,
+    soundEnabled,
     steps.length,
     weightKg,
   ])

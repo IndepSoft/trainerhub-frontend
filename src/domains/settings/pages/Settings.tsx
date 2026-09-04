@@ -13,6 +13,7 @@ import { useLogout } from '@/auth/hooks/useLogout'
 import { useProfileEditor, type ProfileDraft } from '../hooks/useProfileEditor'
 import { ThemeSelector } from '../components/ThemeSelector'
 import { LanguageSelector } from '../components/LanguageSelector'
+import { SoundToggle } from '../components/SoundToggle'
 
 const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
 const SECTION_TITLE =
@@ -34,6 +35,10 @@ const SECTION_TITLE =
  *  - IDIOMA: sí, y tampoco fue una casilla. Hubo que traducir la aplicación
  *    entera antes: un selector sobre media traducción deja la mitad de cada
  *    pantalla en el idioma que no se pidió.
+ *  - SONIDO: sí, y es lo que permitió que el aviso de descanso existiera. No
+ *    se ponía por no poder callarlo —un pitido que no se apaga en una sala
+ *    compartida es peor que ninguno—, así que el interruptor no acompaña a la
+ *    función: es su condición.
  *  - CONTRASEÑA: no. `AuthPort` no expone cambiarla.
  *  - NOTIFICACIONES: no. No hay más canal que la campana, y ésa no se apaga.
  *
@@ -105,6 +110,22 @@ export default function Settings() {
               <span className={cn('block', FIELD_LABEL)}>{t('settings.language')}</span>
               <div className="mt-2">
                 <LanguageSelector />
+              </div>
+            </div>
+          </section>
+
+          {/* Entrenamiento y no «notificaciones»: esto no notifica nada
+              desde fuera, suena mientras se entrena y con la pantalla delante.
+              Llamarlo aviso haría buscarlo donde no está. */}
+          <section aria-labelledby="entrenamiento-titulo" className="space-y-4">
+            <h2 id="entrenamiento-titulo" className={SECTION_TITLE}>
+              {t('settings.training')}
+            </h2>
+
+            <div>
+              <span className={cn('block', FIELD_LABEL)}>{t('settings.sound')}</span>
+              <div className="mt-2">
+                <SoundToggle />
               </div>
             </div>
           </section>

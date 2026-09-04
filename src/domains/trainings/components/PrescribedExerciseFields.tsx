@@ -58,6 +58,7 @@ export function PrescribedExerciseFields({
   const setsFieldId = `${fieldId}-sets`
   const repsFieldId = `${fieldId}-reps`
   const repetitionsInReserveFieldId = `${fieldId}-rir`
+  const weightFieldId = `${fieldId}-weight`
   const restFieldId = `${fieldId}-rest`
 
   return (
@@ -113,11 +114,16 @@ export function PrescribedExerciseFields({
       </div>
 
       {/*
-        Dos columnas en móvil y cuatro desde `sm`. A 375 px cada campo queda en
-        unos 140 px, que para «3» o «90» sobra: el mínimo de 280 px de la regla
-        1.6 mide contenedores, no cada casilla de una rejilla de números.
+        Dos columnas en móvil, tres desde `sm` y las cinco desde `lg`. A 375 px
+        cada campo queda en unos 140 px, que para «3» o «90» sobra: el mínimo de
+        280 px de la regla 1.6 mide contenedores, no cada casilla de una rejilla
+        de números.
+
+        El salto intermedio existe porque los campos pasaron de cuatro a cinco:
+        con `sm:grid-cols-4` el quinto se quedaba solo en una fila, que se lee
+        como un campo desemparejado y no como el final de una rejilla.
       */}
-      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <div>
           <Label htmlFor={setsFieldId} className={FIELD_LABEL}>
             {t('prescription.sets')}
@@ -150,7 +156,7 @@ export function PrescribedExerciseFields({
 
         <div>
           <Label htmlFor={repetitionsInReserveFieldId} className={FIELD_LABEL}>
-            RIR
+            {t('prescription.rir')}
           </Label>
           {/* Vacío es «no aplica»; 0 es «al fallo». El marcador lo dice. */}
           <Input
@@ -162,6 +168,30 @@ export function PrescribedExerciseFields({
             placeholder={t('prescription.rirPlaceholder')}
             value={exercise.rir}
             onChange={(event) => onChange({ rir: event.target.value })}
+          />
+        </div>
+
+        {/*
+          EL PESO ES OPCIONAL Y NO CONTRADICE AL RIR: el RIR prescribe esfuerzo
+          y esto prescribe dónde empezar. Vacío significa «que lo decida quien
+          entrena», que es lo que ocurría antes de que este campo existiera.
+
+          Texto y no `type="number"`: el teclado del móvil ofrece el separador
+          decimal del idioma del teléfono, y un campo numérico rechaza «62,5» en
+          varios navegadores. Se acepta coma o punto al convertir.
+        */}
+        <div>
+          <Label htmlFor={weightFieldId} className={FIELD_LABEL}>
+            {t('prescription.weight')}
+          </Label>
+          <Input
+            id={weightFieldId}
+            type="text"
+            inputMode="decimal"
+            className="mt-1.5"
+            placeholder={t('prescription.weightPlaceholder')}
+            value={exercise.weightKg}
+            onChange={(event) => onChange({ weightKg: event.target.value })}
           />
         </div>
 

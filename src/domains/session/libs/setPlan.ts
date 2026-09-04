@@ -30,6 +30,8 @@ export interface SetStep {
   /** Repeticiones prescritas, tal y como se escribieron: «8-10». */
   reps: string
   rir?: number
+  /** Carga de referencia prescrita, en kilos. Ausente es «la decide quien entrena». */
+  weightKg?: number
   tempo?: string
   notes?: string
   /**
@@ -73,6 +75,7 @@ function stepOf(
     totalSets: exercise.sets,
     reps: exercise.reps,
     rir: exercise.rir,
+    weightKg: exercise.weightKg,
     tempo: exercise.tempo,
     notes: exercise.notes,
     restSecondsAfter,

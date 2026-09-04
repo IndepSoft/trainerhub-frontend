@@ -1,6 +1,7 @@
-import type { Session } from '@/shared/domain/entities/session'
+import type { Session, SetRecord } from '@/shared/domain/entities/session'
 import { toLocalDateKey } from '@/shared/lib/dateKey'
 import { DEV_CREW_ID } from './crewsSeed'
+import { routinesSeed } from './routinesSeed'
 
 /**
  * Sesiones simuladas de la agenda.
@@ -58,7 +59,86 @@ const trainedDaysAgo: { days: number; sets: number; total: number; minutes: numb
   { days: 12, sets: 9, total: 9, minutes: 43 },
 ]
 
-const completedHistory: Session[] = trainedDaysAgo.map(({ days, sets, total, minutes }) => ({
+/**
+ * Las series de `routine-1`, aplanadas en el orden en que se ejecutan.
+ *
+ * SE DERIVA DE LA RUTINA en vez de escribirse otra vez aquí: editar `routine-1`
+ * y dejar este historial hablando de ejercicios que ya no tiene daría una
+ * progresión de cargas de algo que nadie entrena.
+ *
+ * El aplanado supone bloques `simple` —todas las series de un ejercicio y luego
+ * el siguiente—, que es como está escrita `routine-1`. Una superserie se ejecuta
+ * por rondas y aquí saldría en otro orden; el que sabe hacer las dos cosas es
+ * `buildSetPlan`, y vive en el dominio de la sesión, que la infraestructura no
+ * puede importar.
+ */
+const ROUTINE_1_SETS = (routinesSeed.find((routine) => routine.id === 'routine-1')?.blocks ?? [])
+  .flatMap((block) =>
+    block.exercises.flatMap((exercise) =>
+      Array.from({ length: exercise.sets }, (_, index) => ({
+        prescribedId: exercise.id,
+        exerciseId: exercise.exerciseId,
+        setNumber: index + 1,
+        reps: exercise.reps,
+        restSeconds: exercise.restSeconds,
+      }))
+    )
+  )
+
+/**
+ * Con qué carga empezó cada ejercicio, en kilos.
+ *
+ * Sólo los que llevan barra. La plancha no está, y no es un olvido: se mide en
+ * segundos y no tiene peso que anotar. Sus series se guardan SIN `weightKg`, que
+ * es lo que distingue «no se levantó nada» de «se levantaron cero kilos», y de
+ * paso es el caso que la progresión de cargas tiene que saber descartar.
+ */
+const LOAD_START_KG: Record<string, number> = {
+  'sentadilla-barra': 70,
+  'press-banca-barra': 50,
+  'remo-barra': 55,
+}
+
+/** Cuánto sube y cada cuántas sesiones. Un disco de 1,25 por lado, sin prisa. */
+const LOAD_STEP_KG = 2.5
+const SESSIONS_PER_STEP = 3
+
+/**
+ * Lo que se levantó en una sesión del historial.
+ *
+ * `order` es la posición cronológica —0 la más antigua—, y de ahí sale la subida:
+ * sin ella el historial daría una línea plana y la progresión de cargas no
+ * enseñaría nada al abrirla por primera vez.
+ *
+ * Se generan tantas series como `completedSets` diga, recorriendo la rutina en
+ * orden. Así una sesión cerrada a medias deja anotado lo que dio tiempo a hacer
+ * y no una rutina entera que no ocurrió.
+ */
+function recordsOf(order: number, completedSets: number): SetRecord[] {
+  return ROUTINE_1_SETS.slice(0, completedSets).map((step) => {
+    const start = LOAD_START_KG[step.exerciseId]
+    const weightKg =
+      start === undefined
+        ? undefined
+        : start + Math.floor(order / SESSIONS_PER_STEP) * LOAD_STEP_KG
+
+    return {
+      stepId: `${step.prescribedId}-${step.setNumber}`,
+      prescribedId: step.prescribedId,
+      exerciseId: step.exerciseId,
+      setNumber: step.setNumber,
+      prescribedReps: step.reps,
+      // El suelo del rango prescrito: se cumplió lo pactado, sin heroicidades.
+      repsDone: Number.parseInt(step.reps, 10),
+      weightKg,
+      workSeconds: 40,
+      restSeconds: step.restSeconds,
+      prescribedRestSeconds: step.restSeconds,
+    }
+  })
+}
+
+const completedHistory: Session[] = trainedDaysAgo.map(({ days, sets, total, minutes }, index) => ({
   id: `session-history-${days}`,
   crewId: DEV_CREW_ID,
   title: 'Entrenamiento Personal',
@@ -79,6 +159,12 @@ const completedHistory: Session[] = trainedDaysAgo.map(({ days, sets, total, min
     elapsedSeconds: minutes * 60,
     // Se cerró el mismo día en el que estaba agendada, que es lo corriente.
     completedAt: daysAgo(days),
+    /*
+     * `trainedDaysAgo` va de la más reciente a la más antigua, así que la
+     * posición cronológica es la contraria: la última de la lista es la primera
+     * que ocurrió, y es la que tiene que salir más ligera.
+     */
+    sets: recordsOf(trainedDaysAgo.length - 1 - index, sets),
   },
 }))
 

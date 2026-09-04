@@ -45,6 +45,12 @@ export function createExerciseDraft(): PrescribedExerciseDraft {
     sets: DEFAULT_SETS,
     reps: DEFAULT_REPS,
     rir: '',
+    // El peso arranca vacío y no en una cifra «normal»: no existe una carga
+    // corriente para un ejercicio que todavía no se ha elegido, y un número
+    // puesto de oficio se guardaría tal cual en cuanto nadie lo mire.
+    weightKg: '',
+    tempo: '',
+    notes: '',
     restSeconds: DEFAULT_REST_SECONDS,
   }
 }
@@ -98,6 +104,17 @@ export function toBlockDraft(block: Block): BlockDraft {
       reps: exercise.reps,
       // Ausente y cero son cosas distintas, y el texto vacío es el ausente.
       rir: exercise.rir === undefined ? '' : String(exercise.rir),
+      /*
+       * `String` y no `formatKilos`: aquí el TEXTO es el dato mientras se edita,
+       * y tiene que volver a leerse igual. `formatKilos` pasa por `Intl`, que
+       * agrupa los millares con el mismo punto que en castellano separa los
+       * decimales, así que un ida y vuelta podría cambiar la cifra. En la sesión
+       * en vivo sí se formatea, porque allí el dato es el número y el texto sólo
+       * se pinta.
+       */
+      weightKg: exercise.weightKg === undefined ? '' : String(exercise.weightKg),
+      tempo: exercise.tempo ?? '',
+      notes: exercise.notes ?? '',
       restSeconds: String(exercise.restSeconds),
     })),
   }
@@ -145,6 +162,22 @@ function parseRepetitionsInReserve(value: string): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined
 }
 
+/**
+ * Los kilos prescritos, o nada.
+ *
+ * Acepta coma y punto porque el teclado del móvil ofrece el separador del
+ * idioma del teléfono y nadie va a buscar el otro. Lo que no es un número se
+ * descarta en vez de guardar `NaN`, igual que hace el RIR: media palabra
+ * escrita no es una carga.
+ */
+function parseOptionalKilos(value: string): number | undefined {
+  const trimmed = value.trim().replace(',', '.')
+  if (trimmed === '') return undefined
+
+  const kilos = Number(trimmed)
+  return Number.isFinite(kilos) && kilos >= 0 ? kilos : undefined
+}
+
 function toPrescribedExercise(draft: PrescribedExerciseDraft): PrescribedExercise {
   return {
     id: draft.id,
@@ -152,6 +185,11 @@ function toPrescribedExercise(draft: PrescribedExerciseDraft): PrescribedExercis
     sets: parseWholeNumber(draft.sets),
     reps: draft.reps.trim(),
     rir: parseRepetitionsInReserve(draft.rir),
+    weightKg: parseOptionalKilos(draft.weightKg),
+    // Se devuelven porque se recibieron. Editar una rutina no puede perder un
+    // dato que la edición ni siquiera ofrece cambiar.
+    tempo: parseOptionalText(draft.tempo),
+    notes: parseOptionalText(draft.notes),
     restSeconds: parseWholeNumber(draft.restSeconds),
   }
 }

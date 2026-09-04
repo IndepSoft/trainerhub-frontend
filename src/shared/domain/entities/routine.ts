@@ -32,6 +32,21 @@ export interface PrescribedExercise {
   reps: string
   /** Repeticiones en reserva. 0 es al fallo; ausente es «no aplica». */
   rir?: number
+  /**
+   * Carga de referencia, en kilos. Opcional, y NO contradice al RIR.
+   *
+   * El RIR prescribe ESFUERZO —«párate a dos de fallar»— y esto prescribe DÓNDE
+   * EMPEZAR. No son la misma instrucción y por eso conviven: un entrenador
+   * escribe «4×8 a 60 kg, RIR 2» queriendo decir «empieza en 60 y ajusta hasta
+   * que te queden dos». Lo que sí sería contradictorio es tratar este número
+   * como obligatorio, y por eso es opcional y se llama referencia.
+   *
+   * Existe porque sin él la primera sesión de un ejercicio no tiene respuesta a
+   * «¿cuánto pongo?»: el arrastre de la sesión anterior sólo funciona a partir
+   * de la segunda. Ver `useGuidedStrengthSession`, que lo usa de último recurso
+   * y NUNCA por encima del historial.
+   */
+  weightKg?: number
   restSeconds: number
   /** Cadencia en cuatro tiempos, «3-1-1-0». Opcional. */
   tempo?: string
