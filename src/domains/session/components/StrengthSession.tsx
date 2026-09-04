@@ -9,6 +9,7 @@ import { SlideToAction } from './SlideToAction'
 import { formatDuration } from '../libs/session.utils'
 import type { Routine } from '@/shared/domain/entities/routine'
 import type { Session, SessionResult } from '@/shared/domain/entities/session'
+import { useLastWeights } from '../hooks/useLastWeights'
 
 interface StrengthSessionProps {
   session: Session
@@ -44,6 +45,13 @@ export function StrengthSession({
 }: StrengthSessionProps) {
   const { t } = useTranslation()
   const exercisesById = useSessionExercises()
+  /*
+   * Lo que se levanto la ultima vez en cada ejercicio. Llega aparte y sin
+   * bloquear: si la consulta tarda, la pantalla se pinta igual y el campo del
+   * peso arranca vacio, que es lo mismo que pasa en la primera sesion de
+   * alguien.
+   */
+  const lastWeights = useLastWeights(session.studentId)
   const {
     steps,
     currentIndex,
@@ -53,17 +61,20 @@ export function StrengthSession({
     elapsedSeconds,
     phaseSeconds,
     repsDone,
+    weightKg,
     targetReps,
     records,
     doneSets,
     totalSets,
     progress,
     markReps,
+    setWeight,
+    adjustWeight,
     finishSet,
     startNextSet,
     pause,
     resume,
-  } = useGuidedStrengthSession(routine)
+  } = useGuidedStrengthSession(routine, lastWeights)
 
   const isRunning = state === 'running'
   const hasPlan = steps.length > 0
@@ -156,11 +167,15 @@ export function StrengthSession({
               phaseSeconds={phaseSeconds}
               repsDone={repsDone}
               targetReps={targetReps}
+              weightKg={weightKg}
+              lastWeightKg={lastWeights.get(currentStep.exerciseId) ?? null}
               exerciseName={nameOf(currentStep.exerciseId)}
               nextStep={nextStep}
               nextExerciseName={nameOf(nextStep?.exerciseId)}
               lastRecord={lastRecord}
               onMarkReps={markReps}
+              onSetWeight={setWeight}
+              onAdjustWeight={adjustWeight}
               onFinishSet={finishSet}
               onStartNextSet={startNextSet}
             />
@@ -171,6 +186,7 @@ export function StrengthSession({
               steps={steps}
               currentIndex={currentIndex}
               exercisesById={exercisesById}
+              records={records}
             />
           </div>
         </>

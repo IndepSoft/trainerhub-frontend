@@ -1,4 +1,5 @@
 import type { LiveSessionMetrics, RoutePoint } from '../types/session.types'
+import { activeLocale } from '@/shared/i18n/activeLocale'
 
 /**
  * Cálculos puros de la sesión. Sin React y sin estado: entran números, salen
@@ -35,6 +36,19 @@ export function formatClock(totalSeconds: number): string {
 
   if (hours === 0) return `${minutes}:${padTwoDigits(seconds)}`
   return `${hours}:${padTwoDigits(minutes)}:${padTwoDigits(seconds)}`
+}
+
+/**
+ * Los kilos como los escribe cada idioma: «62,5» en castellano, «62.5» en ingles.
+ *
+ * Por `Intl` y no con una coma a mano: la version anterior pintaba coma en el
+ * campo y punto en el resumen de la serie, asi que el mismo peso salia escrito
+ * de dos formas en la misma pantalla.
+ *
+ * Sin decimal cuando es entero -«60», no «60,0»-, que es como se dice un peso.
+ */
+export function formatKilos(kilos: number): string {
+  return new Intl.NumberFormat(activeLocale(), { maximumFractionDigits: 1 }).format(kilos)
 }
 
 export function toKilometers(meters: number): number {

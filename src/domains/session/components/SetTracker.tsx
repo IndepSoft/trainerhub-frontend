@@ -3,7 +3,7 @@ import { Button } from '@/shared/ui/button'
 import { cn } from '@/shared/lib/utils'
 import { BLOCK_METHOD_LABEL_KEY } from '@/shared/i18n/domainLabels'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
-import { formatClock } from '../libs/session.utils'
+import { formatClock, formatKilos } from '../libs/session.utils'
 import {
   expectedWorkSeconds,
   paceVerdict,
@@ -17,6 +17,7 @@ import type { SetStep } from '../libs/setPlan'
 import type { SessionPhase } from '../hooks/useGuidedStrengthSession'
 import type { SetRecord } from '@/shared/domain/entities/session'
 import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
+import { SetWeightField } from './SetWeightField'
 
 const REPS_VERDICT_KEY: Record<RepsVerdict, TranslationKey> = {
   below: 'liveSession.repsBelow',
@@ -53,6 +54,10 @@ interface SetTrackerProps {
   phaseSeconds: number
   repsDone: number
   targetReps: number
+  /** Kilos anotados en la serie en curso, o `null` si todavía ninguno. */
+  weightKg: number | null
+  /** Lo que se levantó la última vez en este ejercicio, si se sabe. */
+  lastWeightKg: number | null
   exerciseName: string
   /** Qué viene después del descanso. `null` si ésta era la última. */
   nextStep: SetStep | null
@@ -60,6 +65,8 @@ interface SetTrackerProps {
   /** La serie que se acaba de cerrar, para decir cómo salió. */
   lastRecord: SetRecord | null
   onMarkReps: (count: number) => void
+  onSetWeight: (kilos: number | null) => void
+  onAdjustWeight: (delta: number) => void
   onFinishSet: () => void
   onStartNextSet: () => void
 }
@@ -86,11 +93,15 @@ export function SetTracker({
   phaseSeconds,
   repsDone,
   targetReps,
+  weightKg,
+  lastWeightKg,
   exerciseName,
   nextStep,
   nextExerciseName,
   lastRecord,
   onMarkReps,
+  onSetWeight,
+  onAdjustWeight,
   onFinishSet,
   onStartNextSet,
 }: SetTrackerProps) {
@@ -131,11 +142,18 @@ export function SetTracker({
 
         {lastRecord !== null && (
           <p className="mt-3 text-sm text-ink/60">
-            {t('liveSession.setDone', {
-              reps: lastRecord.repsDone,
-              prescribed: lastRecord.prescribedReps,
-              seconds: lastRecord.workSeconds,
-            })}
+            {lastRecord.weightKg === undefined
+              ? t('liveSession.setDone', {
+                  reps: lastRecord.repsDone,
+                  prescribed: lastRecord.prescribedReps,
+                  seconds: lastRecord.workSeconds,
+                })
+              : t('liveSession.setDoneWithWeight', {
+                  reps: lastRecord.repsDone,
+                  prescribed: lastRecord.prescribedReps,
+                  weight: formatKilos(lastRecord.weightKg),
+                  seconds: lastRecord.workSeconds,
+                })}
             {' · '}
             {t(PACE_VERDICT_KEY[paceVerdict(lastRecord.workSeconds, lastExpected)])}
           </p>
@@ -203,11 +221,18 @@ export function SetTracker({
               : OFF_TARGET
           )}
         >
-          {t('liveSession.previousSet', {
-            reps: lastRecord.repsDone,
-            prescribed: lastRecord.prescribedReps,
-            rest: lastRecord.restSeconds,
-          })}
+          {lastRecord.weightKg === undefined
+            ? t('liveSession.previousSet', {
+                reps: lastRecord.repsDone,
+                prescribed: lastRecord.prescribedReps,
+                rest: lastRecord.restSeconds,
+              })
+            : t('liveSession.previousSetWithWeight', {
+                reps: lastRecord.repsDone,
+                prescribed: lastRecord.prescribedReps,
+                weight: formatKilos(lastRecord.weightKg),
+                rest: lastRecord.restSeconds,
+              })}
           {' · '}
           {t(
             REST_VERDICT_KEY[
@@ -216,6 +241,18 @@ export function SetTracker({
           )}
         </p>
       )}
+
+      {/* El peso ANTES de las repeticiones: se decide al cargar la barra, y
+          las repeticiones se marcan al terminar. Debajo obligaría a subir la
+          vista con el ejercicio ya hecho. */}
+      <div className="mt-5">
+        <SetWeightField
+          weightKg={weightKg}
+          lastWeightKg={lastWeightKg}
+          onChange={onSetWeight}
+          onAdjust={onAdjustWeight}
+        />
+      </div>
 
       <div
         role="group"

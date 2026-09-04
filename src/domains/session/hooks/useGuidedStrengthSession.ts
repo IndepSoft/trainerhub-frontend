@@ -28,6 +28,14 @@ interface UseGuidedStrengthSessionResult {
   phaseSeconds: number
   /** Repeticiones marcadas en la serie en curso. */
   repsDone: number
+  /**
+   * Peso de la serie en curso, en kilos. `null` mientras no se haya anotado.
+   *
+   * `null` y no cero: cero es un peso —una barra vacía, un lastre que se quita—
+   * y «no lo he anotado» es otra cosa. Confundirlos llenaría el historial de
+   * ceros que parecerían mediciones.
+   */
+  weightKg: number | null
   /** Cuántos círculos pintar: el tope del rango prescrito. */
   targetReps: number
   records: SetRecord[]
@@ -37,6 +45,10 @@ interface UseGuidedStrengthSessionResult {
   progress: number
   /** Marca hasta la repetición `count`. Volver a tocar la última la desmarca. */
   markReps: (count: number) => void
+  /** Fija el peso de la serie en curso. `null` lo deja sin anotar. */
+  setWeight: (kilos: number | null) => void
+  /** Sube o baja el peso. Desde «sin anotar» arranca en el propio incremento. */
+  adjustWeight: (delta: number) => void
   /** Cierra la serie en curso y abre el descanso, o la siguiente serie. */
   finishSet: () => void
   /** Termina el descanso antes de tiempo y arranca la serie siguiente. */
@@ -72,7 +84,16 @@ const TICK_MILLISECONDS = 1000
  * TODO: no se puede deshacer una serie cerrada. Equivocarse es normal y hoy la
  * única salida es terminar la sesión y rehacerla.
  */
-export function useGuidedStrengthSession(routine: Routine | null): UseGuidedStrengthSessionResult {
+export function useGuidedStrengthSession(
+  routine: Routine | null,
+  /**
+   * Lo que se levantó la última vez en cada ejercicio. Ver `useLastWeights`.
+   *
+   * Llega de fuera y no se pide aquí dentro para que este hook siga sin conocer
+   * ningún puerto: sabe conducir una sesión, no leer el historial.
+   */
+  lastWeights: Map<string, number> = new Map()
+): UseGuidedStrengthSessionResult {
   const steps = useMemo(() => buildSetPlan(routine), [routine])
 
   const [state, setState] = useState<LiveSessionState>('running')
@@ -81,6 +102,7 @@ export function useGuidedStrengthSession(routine: Routine | null): UseGuidedStre
   const [currentIndex, setCurrentIndex] = useState(0)
   const [phase, setPhase] = useState<SessionPhase>('work')
   const [repsDone, setRepsDone] = useState(0)
+  const [weightKg, setWeightKg] = useState<number | null>(null)
   const [records, setRecords] = useState<SetRecord[]>([])
 
   // El identificador del intervalo va en una referencia: cambiarlo no debe
@@ -109,21 +131,72 @@ export function useGuidedStrengthSession(routine: Routine | null): UseGuidedStre
     setRepsDone((previous) => (previous === count ? count - 1 : count))
   }, [])
 
-  const advance = useCallback(() => {
-    setCurrentIndex((previous) => {
-      const next = previous + 1
+  const setWeight = useCallback((kilos: number | null) => setWeightKg(kilos), [])
+
+  const adjustWeight = useCallback(
+    (delta: number) => {
+      // Desde «sin anotar» el primer toque deja el propio incremento, no cero:
+      // pulsar «+2,5» sin haber puesto nada quiere decir 2,5.
+      setWeightKg((previous) => Math.max((previous ?? 0) + delta, 0))
+    },
+    []
+  )
+
+  /**
+   * El peso con el que arranca una serie: lo último anotado de ESE ejercicio.
+   *
+   * Del ejercicio y no de la serie anterior, que en una superserie es otro
+   * ejercicio con otra carga. Se mira primero lo hecho hoy y, si es la primera
+   * serie del día, lo de la última sesión: a «¿cuánto pongo?» las dos responden
+   * lo mismo, y teclearlo otra vez es lo que hace que se deje de anotar.
+   */
+  const carriedWeight = useCallback(
+    (exerciseId: string, done: SetRecord[]): number | null => {
+      for (let index = done.length - 1; index >= 0; index -= 1) {
+        const record = done[index]
+        if (record.exerciseId === exerciseId && record.weightKg !== undefined) {
+          return record.weightKg
+        }
+      }
+
+      return lastWeights.get(exerciseId) ?? null
+    },
+    [lastWeights]
+  )
+
+  /*
+   * La PRIMERA serie, cuando llega el historial.
+   *
+   * `useLastWeights` resuelve tarde -es una consulta- y la pantalla ya se ha
+   * pintado. La guarda evita que ese retraso pise el peso de una serie que ya
+   * se esté haciendo: sólo se aplica si todavía no se ha cerrado ninguna.
+   */
+  useEffect(() => {
+    const first = steps[0]
+    if (first === undefined || currentIndex !== 0 || records.length > 0) return
+
+    setWeightKg(lastWeights.get(first.exerciseId) ?? null)
+  }, [steps, lastWeights, currentIndex, records.length])
+
+  const advance = useCallback(
+    (done: SetRecord[]) => {
+      const next = currentIndex + 1
+      setCurrentIndex(next)
       setPhase(next >= steps.length ? 'done' : 'work')
-      return next
-    })
-    setRepsDone(0)
-    setPhaseSeconds(0)
-  }, [steps.length])
+      setRepsDone(0)
+      setPhaseSeconds(0)
+
+      const nextStep = steps[next]
+      setWeightKg(nextStep === undefined ? null : carriedWeight(nextStep.exerciseId, done))
+    },
+    [carriedWeight, currentIndex, steps]
+  )
 
   const finishSet = useCallback(() => {
     if (currentStep === null || phase !== 'work') return
 
-    setRecords((previous) => [
-      ...previous,
+    const closed: SetRecord[] = [
+      ...records,
       {
         stepId: currentStep.id,
         prescribedId: currentStep.prescribedId,
@@ -131,12 +204,16 @@ export function useGuidedStrengthSession(routine: Routine | null): UseGuidedStre
         setNumber: currentStep.setNumber,
         prescribedReps: currentStep.reps,
         repsDone,
+        // Sin anotar se guarda AUSENTE, no cero. Ver `SetRecord.weightKg`.
+        weightKg: weightKg ?? undefined,
         workSeconds: phaseSeconds,
         // El descanso todavia no ha ocurrido: se anota al terminarlo.
         restSeconds: 0,
         prescribedRestSeconds: currentStep.restSecondsAfter,
       },
-    ])
+    ]
+
+    setRecords(closed)
 
     const isLast = currentIndex >= steps.length - 1
 
@@ -146,28 +223,36 @@ export function useGuidedStrengthSession(routine: Routine | null): UseGuidedStre
      * superserie ese toque estaria justo donde no hay que parar.
      */
     if (currentStep.restSecondsAfter === 0 || isLast) {
-      advance()
+      advance(closed)
       return
     }
 
     setPhase('rest')
     setPhaseSeconds(0)
-  }, [advance, currentIndex, currentStep, phase, phaseSeconds, repsDone, steps.length])
+  }, [
+    advance,
+    currentIndex,
+    currentStep,
+    phase,
+    phaseSeconds,
+    records,
+    repsDone,
+    steps.length,
+    weightKg,
+  ])
 
   const startNextSet = useCallback(() => {
     if (phase !== 'rest') return
 
     // El descanso REAL se anota en la serie que lo provoco, no en la siguiente:
     // es una propiedad de como se ejecuto esa serie.
-    const restTaken = phaseSeconds
-    setRecords((previous) =>
-      previous.map((record, index) =>
-        index === previous.length - 1 ? { ...record, restSeconds: restTaken } : record
-      )
+    const rested = records.map((record, index) =>
+      index === records.length - 1 ? { ...record, restSeconds: phaseSeconds } : record
     )
 
-    advance()
-  }, [advance, phase, phaseSeconds])
+    setRecords(rested)
+    advance(rested)
+  }, [advance, phase, phaseSeconds, records])
 
   const pause = useCallback(() => setState('paused'), [])
   const resume = useCallback(() => setState('running'), [])
@@ -183,12 +268,15 @@ export function useGuidedStrengthSession(routine: Routine | null): UseGuidedStre
     elapsedSeconds,
     phaseSeconds,
     repsDone,
+    weightKg,
     targetReps,
     records,
     doneSets,
     totalSets: steps.length,
     progress: steps.length === 0 ? 0 : doneSets / steps.length,
     markReps,
+    setWeight,
+    adjustWeight,
     finishSet,
     startNextSet,
     pause,

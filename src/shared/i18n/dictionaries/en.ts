@@ -902,4 +902,17 @@ export const english: Dictionary = {
   // --------------------------------------------- sesion guiada: descanso
   'liveSession.restOf': 'of {seconds} s',
   'liveSession.previousSet': 'Previous: {reps} of {prescribed} · {rest} s rest',
+
+  // ------------------------------------------------------ peso por serie
+  'liveSession.weight': 'Weight',
+  'liveSession.kilos': 'kg',
+  'liveSession.weightUp': 'Add {step} kg',
+  'liveSession.weightDown': 'Take off {step} kg',
+  'liveSession.lastWeight': 'Last time: {weight} kg',
+  'liveSession.setDoneWithWeight': '{reps} of {prescribed} reps at {weight} kg in {seconds} s',
+  'liveSession.previousSetWithWeight': 'Previous: {reps} of {prescribed} at {weight} kg · {rest} s rest',
+
+  // ----------------------------------------------------- peso en el plan
+  'liveSession.doneReps': '{reps} reps',
+  'liveSession.doneRepsWithWeight': '{reps} reps · {weight} kg',
 }

@@ -307,9 +307,13 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   manejador real que nunca se invoca.
 - La sesión guiada no avisa cuando termina el descanso —la cuenta atrás llega a
   cero y sigue, pero nadie mira el teléfono los dos minutos enteros— y no deja
-  deshacer una serie cerrada. Tampoco registra el PESO: ni `PrescribedExercise`
-  ni `SetRecord` lo llevan, y añadirlo exige decidir antes si el peso es del
-  alumno o de la prescripción.
+  deshacer una serie cerrada.
+- El peso se REGISTRA por serie pero no se PRESCRIBE: la prescripción dice RIR,
+  que es «elige tú la carga». Fijar un peso o un porcentaje del máximo arrastraría
+  al editor de rutinas, al borrador de planes y al volcado a la agenda. Y nadie
+  mira todavía la progresión de cargas de un ejercicio a lo largo de las semanas:
+  el dato existe y no tiene pantalla. Los pesos van en kilos; ofrecer libras es
+  una preferencia que no está decidida.
 - Los filtros de `TrainingFilters` y `StudentFilters` no filtran.
 - Las sesiones volcadas desde un plan no guardan de qué volcado salieron, así que
   no se pueden mover ni cancelar en bloque y volcar dos veces duplica.

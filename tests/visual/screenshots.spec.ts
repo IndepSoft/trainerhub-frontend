@@ -2587,6 +2587,93 @@ test.describe('sesion en vivo', () => {
     expect(orden[10]).toContain('Serie 2 de 3')
   })
 
+  test('el peso se anota por serie y se arrastra al siguiente', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/session/session-1')
+
+    const peso = page.getByRole('textbox', { name: 'Peso' })
+    await expect(peso).toHaveValue('')
+
+    /*
+     * A TOQUES, no tecleando. Entre serie y serie las manos estan sudadas y el
+     * teclado del movil tapa media pantalla; 2,5 kg es el salto de un par de
+     * discos de 1,25, que es el incremento estandar en una barra.
+     */
+    await page.getByRole('button', { name: 'Subir 2,5 kg' }).click()
+    await page.getByRole('button', { name: 'Subir 2,5 kg' }).click()
+    await expect(peso).toHaveValue('5')
+
+    // Y el campo sigue ahi para el salto grande.
+    await peso.fill('62,5')
+    await page.getByRole('button', { name: 'Repetición 7' }).click()
+    await page.getByRole('button', { name: 'Finalizar serie' }).click()
+
+    // Lo que salio, con su peso, en el descanso.
+    await expect(page.getByText(/7 de 6-8 repeticiones a 62,5 kg/)).toBeVisible()
+
+    // Y en el plan: la serie cerrada dice lo HECHO, no lo que tocaba.
+    await expect(page.getByText('7 rep · 62,5 kg')).toBeVisible()
+
+    await page.getByRole('button', { name: 'Empezar la siguiente' }).click()
+
+    /*
+     * El peso llega puesto a la serie siguiente: lo ultimo anotado de ESE
+     * ejercicio. Volver a teclearlo cuatro veces por ejercicio es lo que hace
+     * que se deje de anotar a la tercera semana.
+     */
+    await expect(page.getByRole('textbox', { name: 'Peso' })).toHaveValue('62,5')
+    await expect(page.getByText(/Anterior: 7 de 6-8 a 62,5 kg/)).toBeVisible()
+  })
+
+  test('el peso de la ultima vez llega puesto a la sesion siguiente', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/calendar')
+    await page.waitForTimeout(1500)
+
+    /*
+     * La MISMA tarjeta las dos veces: la primera de la agenda. Elegirla con dos
+     * localizadores distintos -uno por «Confirmada» y otro por la duracion-
+     * dejaria de casar en cuanto la sesion cambia de estado, que es justo lo que
+     * pasa a mitad de esta prueba.
+     */
+    const primera = page.getByRole('button', { name: /minutos/ }).first()
+
+    await primera.click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Iniciar sesión' }).click()
+    await page.waitForURL(/\/session\/[\w-]+/)
+
+    await page.getByRole('textbox', { name: 'Peso' }).fill('47,5')
+    await page.getByRole('button', { name: 'Finalizar serie' }).click()
+
+    // Por teclado: el control es deslizar-para-confirmar y un toque no confirma.
+    await page.getByRole('button', { name: 'Pausar la sesión' }).press('Enter')
+    await page.getByRole('button', { name: 'Finalizar la sesión' }).press('Enter')
+
+    /*
+     * Se vuelve por el historial y no con `goto`: los adaptadores falsos viven
+     * en memoria y recargar devolveria la sesion a su estado de semilla, que es
+     * justo el dato que se esta comprobando.
+     */
+    await page.goBack()
+    await page.goBack()
+    await page.waitForURL(/\/calendar$/, { timeout: 20_000 })
+
+    // Se vuelve a entrar a la misma sesion, ya cerrada.
+    await primera.click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Iniciar sesión' }).click()
+    await page.waitForURL(/\/session\/[\w-]+/)
+
+    /*
+     * ESTO ES LO QUE CONVIERTE UN REGISTRO EN UNA PROGRESION. El campo llega con
+     * lo que se levanto la ultima vez y lo dice, para que la cifra que aparece
+     * sola no se lea como un dato inventado.
+     */
+    await expect(page.getByRole('textbox', { name: 'Peso' })).toHaveValue('47,5')
+    await expect(page.getByText('La última vez: 47,5 kg')).toBeVisible()
+  })
+
   test('una sesion de cardio conserva su pantalla de carrera', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await signIn(page)

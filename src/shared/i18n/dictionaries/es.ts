@@ -912,6 +912,19 @@ export const spanish = {
   // --------------------------------------------- sesion guiada: descanso
   'liveSession.restOf': 'de {seconds} s',
   'liveSession.previousSet': 'Anterior: {reps} de {prescribed} · {rest} s de descanso',
+
+  // ------------------------------------------------------ peso por serie
+  'liveSession.weight': 'Peso',
+  'liveSession.kilos': 'kg',
+  'liveSession.weightUp': 'Subir {step} kg',
+  'liveSession.weightDown': 'Bajar {step} kg',
+  'liveSession.lastWeight': 'La última vez: {weight} kg',
+  'liveSession.setDoneWithWeight': '{reps} de {prescribed} repeticiones a {weight} kg en {seconds} s',
+  'liveSession.previousSetWithWeight': 'Anterior: {reps} de {prescribed} a {weight} kg · {rest} s de descanso',
+
+  // ----------------------------------------------------- peso en el plan
+  'liveSession.doneReps': '{reps} rep',
+  'liveSession.doneRepsWithWeight': '{reps} rep · {weight} kg',
 } as const
 
 /** Toda clave que la aplicación puede traducir. */

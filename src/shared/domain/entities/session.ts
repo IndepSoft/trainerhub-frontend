@@ -70,6 +70,24 @@ export interface SetRecord {
   /** Repeticiones prescritas, tal y como estaban escritas: «8-10». */
   prescribedReps: string
   repsDone: number
+  /**
+   * El peso movido, en kilos. Ausente cuando no se anotó.
+   *
+   * ES EL DATO DE LA PROGRESIÓN: sin él, el historial dice cuántas veces se
+   * entrenó y no si se avanzó. Diez repeticiones a 40 kg y diez a 60 son la
+   * misma línea sin este número.
+   *
+   * OPCIONAL Y SIEMPRE OFRECIDO. No se esconde en los ejercicios de peso
+   * corporal, y no es descuido: los dominadas y los fondos son justo donde se
+   * añade carga con cinturón. Adivinar cuándo sobra el campo se equivocaría en
+   * el caso que más lo necesita, así que se ofrece siempre y se deja en blanco
+   * cuando no aplica.
+   *
+   * TODO: en kilos, sin más. Ofrecer libras es una preferencia de quien mira
+   * —o del equipo— y esa decisión no está tomada; media aplicación en kilos y
+   * media en libras sería peor que sólo kilos.
+   */
+  weightKg?: number
   /** Segundos de trabajo: de empezar la serie a darla por terminada. */
   workSeconds: number
   /** Descanso REAL tras la serie. Cero si no llegó a descansarse. */

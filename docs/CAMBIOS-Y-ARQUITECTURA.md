@@ -1747,3 +1747,102 @@ para no ganar nada.
   ni `SetRecord`—, así que la sesión no puede preguntarlo sin inventarse el
   campo. Es lo siguiente que pide un entrenador de fuerza, y exige decidir antes
   si el peso es del alumno o de la prescripción.
+
+---
+
+## 22. El peso por serie (3 sep 2026)
+
+### 22.1 Sin él, el historial no dice si se avanzó
+
+La sesión guiada medía repeticiones, segundos de trabajo y segundos de descanso.
+Faltaba el número que convierte todo eso en una progresión: diez repeticiones a
+40 kg y diez a 60 son la misma línea sin el peso.
+
+`SetRecord` gana `weightKg`, **opcional**. Ausente significa «no se anotó», que
+no es lo mismo que cero: cero es un peso —una barra vacía, un lastre que se
+quita— y confundirlos llenaría el historial de ceros que parecerían mediciones.
+
+### 22.2 Se ofrece siempre, también en peso corporal
+
+La tentación era esconder el campo cuando el ejercicio no lleva carga externa.
+Habría sido un error, y en el caso que más lo necesita: **las dominadas y los
+fondos son justo donde se añade peso con cinturón**. Adivinar cuándo sobra el
+campo se equivoca precisamente ahí, así que se ofrece siempre y se deja en blanco
+cuando no aplica.
+
+De paso evita que el dominio de la sesión tenga que saber de qué material es un
+ejercicio, que es catálogo de `trainings` y no viaja con la prescripción.
+
+### 22.3 Se ajusta a toques, no se teclea
+
+Entre serie y serie las manos están sudadas y el teclado del móvil tapa media
+pantalla. Dos botones de **2,5 kg** —el salto de un par de discos de 1,25, que es
+el incremento estándar en una barra— resuelven el caso normal sin abrirlo:
+repetir la carga, o subir un disco. El campo sigue ahí para el salto grande o
+para el primer día de un ejercicio.
+
+Poner 1 kg obligaría a tres toques para el cambio más común; poner 5 dejaría
+fuera la mitad de las progresiones.
+
+### 22.4 El peso llega puesto, y dice de dónde sale
+
+Anotar sin recordar obligaría a escribir la carga desde cero en cada serie de
+cada sesión, y lo que se teclea cuatro veces por ejercicio se deja de teclear a
+la tercera semana.
+
+El campo arranca con **lo último anotado de ese ejercicio**, en dos saltos:
+
+1. Lo hecho hoy, si ya hay una serie cerrada de ese ejercicio. Del **ejercicio**
+   y no de la serie anterior, que en una superserie es otro ejercicio con otra
+   carga.
+2. Si es la primera del día, lo de la última sesión cerrada. Eso lo resuelve
+   `useLastWeights`, que recorre las sesiones del alumno **por `completedAt`** y
+   no por la fecha de la agenda: son cosas distintas —una sesión del martes se
+   puede cerrar el miércoles— y aquí importa cuándo se levantó ese peso.
+
+Y se dice: «La última vez: 47,5 kg». Un campo que se rellena solo y no explica
+por qué se lee como un dato inventado.
+
+`useLastWeights` **no bloquea nada**: devuelve un mapa vacío mientras la consulta
+va, y la pantalla se pinta igual. Sin historial —la primera sesión de alguien—
+tampoco habría nada que ofrecer, y una pantalla que se abre con el teléfono en la
+mano no puede esperar a una consulta.
+
+Llega al hook de la sesión **por parámetro**, no se pide dentro:
+`useGuidedStrengthSession` sabe conducir una sesión, no leer el historial.
+
+### 22.5 Dónde se ve, para que no sea un campo de escritura
+
+Un dato que se guarda y no se lee en ninguna parte es un dato que envejece sin
+que nadie lo note. El peso aparece en cuatro sitios:
+
+- En el descanso, con lo que acaba de salir: «7 de 6-8 repeticiones a 62,5 kg en
+  70 s».
+- En la serie siguiente, en el resumen de la anterior.
+- En el plan, donde una serie cerrada pasa a decir **lo hecho** en vez de lo que
+  tocaba: «7 rep · 62,5 kg» donde antes ponía «Serie 1 de 4 · 6-8». Es la
+  diferencia entre un plan y un diario.
+- En la sesión siguiente, como valor de partida.
+
+### 22.6 Kilos, y con la coma de cada idioma
+
+`formatKilos` pasa por `Intl.NumberFormat` con la etiqueta activa: «62,5» en
+castellano, «62.5» en inglés. La primera versión escribía la coma a mano y
+pintaba coma en el campo y punto en el resumen, así que el mismo peso salía
+escrito de dos formas **en la misma pantalla**. El campo sigue aceptando las dos
+al escribir.
+
+**TODO: sólo kilos.** Ofrecer libras es una preferencia de quien mira —o del
+equipo— y esa decisión no está tomada. Media aplicación en kilos y media en
+libras sería peor que sólo kilos.
+
+### 22.7 Lo que sigue faltando
+
+- **No se prescribe el peso**, sólo se registra. La prescripción dice RIR, que es
+  la instrucción de «elige tú la carga»; fijar un peso absoluto o un porcentaje
+  del máximo es otra decisión de producto, y arrastraría al editor de rutinas, al
+  borrador de planes y al volcado a la agenda.
+- **Nadie mira el histórico de cargas todavía.** El peso se guarda, se arrastra y
+  se ve dentro de la sesión, pero no hay ninguna pantalla que enseñe la
+  progresión de un ejercicio a lo largo de las semanas. Es lo siguiente que pide
+  quien lo anota.

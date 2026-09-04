@@ -4,11 +4,15 @@ import { BLOCK_METHOD_LABEL_KEY } from '@/shared/i18n/domainLabels'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type { SetStep } from '../libs/setPlan'
 import type { Exercise } from '@/shared/domain/entities/exercise'
+import { formatKilos } from '../libs/session.utils'
+import type { SetRecord } from '@/shared/domain/entities/session'
 
 interface SessionPlanListProps {
   steps: SetStep[]
   currentIndex: number
   exercisesById: Map<string, Exercise>
+  /** Las series ya cerradas, para decir qué se hizo en vez de qué tocaba. */
+  records: SetRecord[]
 }
 
 /**
@@ -24,8 +28,36 @@ interface SessionPlanListProps {
  * tener las dos máquinas libres a la vez, y verla partida en series sueltas
  * escondería justo eso.
  */
-export function SessionPlanList({ steps, currentIndex, exercisesById }: SessionPlanListProps) {
+export function SessionPlanList({
+  steps,
+  currentIndex,
+  exercisesById,
+  records,
+}: SessionPlanListProps) {
   const { t } = useTranslation()
+
+  const doneById = new Map(records.map((record) => [record.stepId, record]))
+
+  /**
+   * Lo hecho si ya se hizo, y lo prescrito si todavía no.
+   *
+   * Es la diferencia entre un plan y un diario. Una serie cerrada a 62,5 kg y
+   * siete repeticiones ya no necesita decir «6-8»: eso era lo que tocaba, y lo
+   * que interesa mirar hacia atrás es lo que salió.
+   */
+  const describe = (step: SetStep): string => {
+    const record = doneById.get(step.id)
+    if (record === undefined) {
+      return `${t('liveSession.setOf', { set: step.setNumber, total: step.totalSets })} · ${step.reps}`
+    }
+
+    return record.weightKg === undefined
+      ? t('liveSession.doneReps', { reps: record.repsDone })
+      : t('liveSession.doneRepsWithWeight', {
+          reps: record.repsDone,
+          weight: formatKilos(record.weightKg),
+        })
+  }
 
   const blocks = steps.reduce<Map<string, SetStep[]>>((groups, step) => {
     const current = groups.get(step.blockId) ?? []
@@ -88,10 +120,7 @@ export function SessionPlanList({ steps, currentIndex, exercisesById }: SessionP
                         {exercisesById.get(step.exerciseId)?.name ?? t('exercise.fallback')}
                       </span>
 
-                      <span className="metric-figures shrink-0 text-xs">
-                        {t('liveSession.setOf', { set: step.setNumber, total: step.totalSets })} ·{' '}
-                        {step.reps}
-                      </span>
+                      <span className="metric-figures shrink-0 text-xs">{describe(step)}</span>
                     </li>
                   )
                 })}
