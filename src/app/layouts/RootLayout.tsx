@@ -1,75 +1,149 @@
-import React from 'react'
-import { Link, Outlet, useLocation } from 'react-router-dom'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import { AppSidebar } from '@/shared/components/navigation/AppSidebar'
+import { AppNavbar } from '@/shared/components/navigation/AppNavbar'
+import { BottomTabBar } from '@/shared/components/navigation/BottomTabBar'
+import { SidebarInset } from '@/shared/ui/sidebar'
+import { useAuth } from '@/auth/hooks/useAuth'
+import { useViewer } from '@/app/hooks/useViewer'
+import { ViewerContext } from '@/app/ViewerContext'
+import type { NavigationViewer } from '@/app/config/navigation.config'
+import { hasSeenOnboarding } from '@/domains/onboarding/hooks/useOnboarding'
 
 export default function RootLayout() {
   const location = useLocation()
-  
-  const hideNavRoutes = ['/register', '/login']
-  const shouldHideNav = hideNavRoutes.includes(location.pathname)
-  
-  return (
-    <div className="min-h-dvh flex flex-col">
-      {!shouldHideNav && (
-        <header className="bg-gray-900 text-white shadow-lg">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <div className="flex items-center">
-                <Link to="/" className="text-xl font-bold text-white hover:text-gray-300 transition-colors">
-                  TrainerHub
-                </Link>
-              </div>
-              
-              <nav className="hidden md:block">
-                <div className="flex items-center space-x-6">
-                  <Link 
-                    to="/dashboard" 
-                    className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                  >
-                    Dashboard
-                  </Link>
-                  <Link 
-                    to="/about" 
-                    className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                  >
-                    About
-                  </Link>
-                </div>
-              </nav>
+  const { user } = useAuth()
 
-              {/* Mobile menu button */}
-              <div className="md:hidden">
-                <button
-                  type="button"
-                  className="text-gray-300 hover:text-white focus:outline-none focus:text-white"
-                  aria-label="Toggle menu"
-                >
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-        </header>
-      )}
+  /*
+   * Quien ha entrado se resuelve aqui y una sola vez. Antes lo pedian por su
+   * cuenta la tarjeta de la barra lateral y la barra superior, asi que cada
+   * carga lanzaba dos o tres GET del mismo registro. El layout es el unico
+   * ancestro comun, y por tanto su sitio.
+   *
+   * Ademas de la ficha, `useViewer` resuelve EL PAPEL Y EL CREW ACTIVO, que es
+   * de donde sale que la navegacion sea distinta para un entrenador y para un
+   * alumno, y que los datos que se leen sean los de su crew.
+   */
+  const viewer = useViewer()
+  const { person, memberships, active, hasOwnProgress, isPlatformAdmin, loading, selectCrew } =
+    viewer
 
-      {/* Main content */}
-      <main className={`flex-1 ${!shouldHideNav ? 'p-6' : ''}`}>
-        <div className={!shouldHideNav ? 'max-w-7xl mx-auto' : ''}>
+  /*
+   * Lo que la navegacion necesita para decidir, armado una vez.
+   *
+   * Las concesiones sueltas viajan con el rol porque la navegacion pregunta por
+   * CAPACIDAD: prestarle «Rutinas y planes» a un alumno tiene que abrirle el
+   * destino, no solo guardarse en su ficha.
+   */
+  const navigationViewer: NavigationViewer = {
+    role: active?.role ?? null,
+    extraCapabilities: active?.extraCapabilities ?? [],
+    hasOwnProgress,
+    isPlatformAdmin,
+  }
+
+  /*
+   * Rutas a pantalla completa, sin barra lateral, superior ni inferior.
+   *
+   * - La celebracion, porque el registro agresivo depende de ocupar la pantalla
+   *   entera: con la navegacion alrededor, el bloque diagonal se lee como un
+   *   banner dentro de la aplicacion y no como un momento.
+   * - La sesion en vivo, por dos razones. Medida: a 375 px su contenido son
+   *   615 px en un hueco de 511, asi que habia que desplazarse para ver el
+   *   cronometro, que es el motivo entero de la pantalla. Quitar las barras
+   *   superior e inferior devuelve unos 120 px y cabe. Y de producto: una
+   *   sesion en marcha es un modo enfocado; ofrecer la navegacion completa
+   *   invita a salirse por error de algo que esta corriendo.
+   */
+  const hideNavRoutes = [
+    '/authentication',
+    '/progress/celebracion',
+    '/session',
+    '/onboarding',
+  ]
+  /*
+   * Por PREFIJO y no por igualdad: la sesion en vivo pasa a ser
+   * `/session/:sessionId`, asi que comparar la ruta entera dejaba de acertar y
+   * la pantalla enfocada recuperaba las dos barras sin que nadie lo pidiera.
+   */
+  const shouldHideNav = hideNavRoutes.some(
+    (route) =>
+      location.pathname === route || location.pathname.startsWith(`${route}/`)
+  )
+
+  /*
+   * El onboarding se muestra una vez, en la primera sesion del dispositivo. Se
+   * decide aqui porque RootLayout es el unico punto por el que pasan todas las
+   * rutas autenticadas; ponerlo en cada pagina seria repetirlo seis veces.
+   *
+   * La guardia NO se aplica en `/authentication`, y el motivo no es teorico:
+   * `useLogin` hace `setUser` y despues `navigate('/')`. Entre esas dos
+   * lineas hay un renderizado en el que ya hay usuario pero la ruta sigue siendo
+   * `/authentication`; sin esta exclusion la guardia disparaba ahi, el
+   * `navigate` posterior la deshacia, y las dos navegaciones se pisaban en
+   * bucle dejando la pantalla en blanco.
+   *
+   * `replace` a proposito: sin el, el boton de atras devolveria al onboarding
+   * ya completado.
+   */
+  const rutasSinGuardiaDeOnboarding = ['/authentication', '/onboarding']
+  const necesitaOnboarding =
+    user !== null &&
+    !rutasSinGuardiaDeOnboarding.includes(location.pathname) &&
+    !hasSeenOnboarding()
+
+  if (necesitaOnboarding) {
+    return <Navigate to="/onboarding" replace />
+  }
+
+  if (shouldHideNav) {
+    // Columna flex y no un div suelto: las paginas a pantalla completa declaran
+    // `flex-1` en su raiz, que sin un padre flex no reparte nada.
+    return (
+      <ViewerContext.Provider value={viewer}>
+        <div className="flex h-dvh w-dvw flex-col overflow-hidden">
           <Outlet />
         </div>
-      </main>
+      </ViewerContext.Provider>
+    )
+  }
 
-      {/* Footer - solo se muestra en rutas específicas */}
-      {!shouldHideNav && (
-        <footer className="bg-gray-100 border-t border-gray-200">
-          <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
-            <p className="text-center text-sm text-gray-600">
-              © 2025 TrainerHub. Todos los derechos reservados.
-            </p>
+  /*
+   * El proveedor envuelve TAMBIEN la rama a pantalla completa. Si solo cubriera
+   * esta, la sesion en vivo y la celebracion -que son rutas sin barras- se
+   * quedarian sin saber en que crew estan, y tendrian que resolverlo por su
+   * cuenta: dos rondas de consultas para lo mismo.
+   */
+  return (
+    <ViewerContext.Provider value={viewer}>
+      <div className="flex h-dvh w-dvw overflow-hidden">
+        <AppSidebar
+          memberships={memberships}
+          active={active}
+          navigationViewer={navigationViewer}
+          loading={loading}
+          onSelectCrew={selectCrew}
+        />
+
+        <SidebarInset className="flex-1 flex flex-col min-h-0">
+          <AppNavbar
+            person={person}
+            memberships={memberships}
+            active={active}
+            loading={loading}
+            onSelectCrew={selectCrew}
+          />
+
+          <div className="p-4 flex-1 flex flex-col overflow-hidden min-h-0">
+            <Outlet />
           </div>
-        </footer>
-      )}
-    </div>
+
+          {/* Ultimo hijo de la columna y no `fixed`: asi ocupa su sitio en el
+            reparto flex y el contenedor de desplazamiento se encoge solo. Con
+            `fixed` habria que compensar con relleno inferior en cada pagina, y
+            cualquiera que se olvidara dejaria contenido tapado. */}
+          <BottomTabBar navigationViewer={navigationViewer} />
+        </SidebarInset>
+      </div>
+    </ViewerContext.Provider>
   )
 }

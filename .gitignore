@@ -22,3 +22,18 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment variables files
+.env
+.env.*
+!.env.example
+
+# TypeScript incremental build info
+*.tsbuildinfo
+# Configuracion local de herramientas (launch.json de la vista previa)
+.claude/
+
+# Capturas de revision visual: se regeneran con `npx playwright test`
+tests/visual/salida/
+/test-results/
+/playwright-report/

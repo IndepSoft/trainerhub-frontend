@@ -1,9 +1,14 @@
 {
   "compilerOptions": {
     "target": "ES2023",
-    "lib": [
-      "ES2023"
-    ],
+    "lib": ["ES2023"],
+    // vite-plugin-pwa arrastra los tipos de Workbox, escritos contra los
+    // globales de un service worker (ExtendableEvent, CacheQueryOptions). Sin
+    // esto, `tsc -b` comprueba esos .d.ts de node_modules y falla por globales
+    // que el entorno de Vite no tiene. Anadir "WebWorker" al lib no vale: choca
+    // con DOM, porque ambos declaran self, location y navigator.
+    "skipLibCheck": true,
+    "types": ["node"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
@@ -17,7 +22,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": [
-    "vite.config.ts"
-  ]
+  "include": ["vite.config.ts"]
 }

@@ -1,17 +1,18 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { useAuthStore } from './app/stores/authStore';
-import App from './App';
+import { StrictMode } from 'react'
+import ReactDOM from 'react-dom/client'
 import './index.css'
+import App from './App'
 
+const rootElement = document.getElementById('root')
 
-const authToken = localStorage.getItem('authToken');
-if (authToken) {
-  useAuthStore.getState().login(authToken); 
+if (!rootElement) {
+  throw new Error(
+    'Root element not found'
+  )
 }
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App/>
-  </React.StrictMode>
-);
+ReactDOM.createRoot(rootElement).render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+)
