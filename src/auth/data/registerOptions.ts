@@ -1,3 +1,5 @@
+import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
+
 /**
  * Opciones de los desplegables del registro.
  *
@@ -9,24 +11,33 @@
  * "Cybersecurity"- en un formulario de alta de entrenadores. Venia copiada de
  * otro proyecto. Se sustituye por especialidades de entrenamiento personal.
  *
+ * SON CLAVES, no textos: la lista se evalua al importar, donde no hay contexto
+ * del que sacar el idioma. Traduce el formulario, que es quien las pinta.
+ *
  * TODO: revisar esta lista con producto. Son una propuesta razonable, no una
  * decision tomada.
  */
-export const TRAINER_SPECIALTIES: string[] = [
-  'Entrenamiento de fuerza',
-  'Pérdida de peso',
-  'Acondicionamiento físico',
-  'Preparación deportiva',
-  'Rehabilitación y readaptación',
-  'Nutrición deportiva',
-  'Entrenamiento funcional',
-  'Yoga y movilidad',
+export const TRAINER_SPECIALTY_KEYS: TranslationKey[] = [
+  'specialty.strength',
+  'specialty.weightLoss',
+  'specialty.conditioning',
+  'specialty.sports',
+  'specialty.rehab',
+  'specialty.nutrition',
+  'specialty.functional',
+  'specialty.yoga',
 ]
 
-export const EXPERIENCE_RANGES: string[] = [
-  '0-1 años',
-  '1-3 años',
-  '3-5 años',
-  '5-10 años',
-  'Más de 10 años',
+/*
+ * El rango de experiencia se guarda como NUMERO: `useRegisterForm` le hace un
+ * `parseInt`, que se queda con la cifra de la izquierda. Por eso toda traduccion
+ * de estas etiquetas tiene que empezar por el numero -«0-1 years», nunca «less
+ * than a year»-, o el dato que se guarda deja de ser el que se eligio.
+ */
+export const EXPERIENCE_RANGE_KEYS: TranslationKey[] = [
+  'experience.0to1',
+  'experience.1to3',
+  'experience.3to5',
+  'experience.5to10',
+  'experience.over10',
 ]

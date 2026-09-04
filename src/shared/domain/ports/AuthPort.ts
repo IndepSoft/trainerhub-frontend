@@ -1,4 +1,4 @@
-import type { AuthUser, LoginCredentials } from '../entities/auth'
+import type { AuthUser, LoginCredentials, SignUpCredentials } from '../entities/auth'
 
 /**
  * Puerto de autenticacion.
@@ -9,6 +9,19 @@ import type { AuthUser, LoginCredentials } from '../entities/auth'
  */
 export interface AuthPort {
   signInWithEmail(credentials: LoginCredentials): Promise<AuthUser>
+
+  /**
+   * Crea la cuenta y devuelve el usuario.
+   *
+   * SOLO LA CUENTA. El perfil que va con ella -entrenador o alumno- lo crea
+   * quien registra, contra su repositorio: es de lo que se deduce el rol, y
+   * meterlo aqui obligaria al puerto de autenticacion a conocer a los dos.
+   *
+   * OJO con la confirmacion por correo: si el proveedor la exige, la cuenta
+   * queda creada pero sin sesion abierta. Devolver el usuario no significa que
+   * ya este dentro; eso se comprueba con `getCurrentUser`.
+   */
+  signUp(credentials: SignUpCredentials): Promise<AuthUser>
 
   /**
    * Arranca un login federado. No devuelve usuario: el proveedor redirige el

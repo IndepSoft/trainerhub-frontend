@@ -1,69 +1,101 @@
-import { TIME_SLOTS, WEEK_DAY_LABELS } from '../data/calendarOptions'
-import { isToday, toLocalDateKey } from '../libs/calendar.utils'
-import { SESSION_STATUS } from '../libs/sessionStatus'
+import { TIME_SLOTS, weekDayLabels } from '../data/calendarOptions'
+import { isToday } from '../libs/calendar.utils'
+import { toLocalDateKey } from '@/shared/lib/dateKey'
+import { SessionLane } from './SessionLane'
+import { SessionCard } from './SessionCard'
+import { cn } from '@/shared/lib/utils'
+import type { Student } from '@/shared/domain/entities/student'
+import { resolveSessionStudentName } from '../libs/sessionStudent'
 import type { Session } from '../types/calendar.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
+
+/** Alto de cada tramo de 30 minutos en la rejilla semanal. */
+const SLOT_HEIGHT = 48
 
 interface WeekViewProps {
   weekDates: Date[]
-  getSessionsAt: (date: Date, time: string) => Session[]
+  getSessionsOfDay: (date: Date) => Session[]
   onSelectSession: (session: Session) => void
+  /** Alumnos indexados, para resolver el nombre de cada sesion una sola vez. */
+  studentsById: Map<string, Student>
 }
 
+/**
+ * Rejilla semanal.
+ *
+ * La columna de horas es de ancho FIJO y estrecho. Antes la rejilla era
+ * `grid-cols-8` con ocho columnas idénticas, así que una etiqueta de 44 px
+ * recibía los mismos 143 px que un día entero: casi cien píxeles que se le
+ * quitaban a las siete columnas donde viven las sesiones.
+ *
+ * Las sesiones se colocan sobre la escala y cruzan los tramos que ocupen, en
+ * vez de vivir dentro de una celda. Ver `SessionLane`.
+ */
 export function WeekView({
   weekDates,
-  getSessionsAt,
+  getSessionsOfDay,
   onSelectSession,
+  studentsById,
 }: WeekViewProps) {
+  const { t } = useTranslation()
+  const dayLabels = weekDayLabels()
   return (
-    <div className="grid grid-cols-8 gap-1">
-      <div className="p-2" />
-
-      {weekDates.map((date, index) => (
-        <div key={toLocalDateKey(date)} className="p-2 text-center border-b">
-          <div className="font-medium">{WEEK_DAY_LABELS[index]}</div>
-          <div
-            className={`text-sm ${
-              isToday(date) ? 'text-primary font-bold' : 'text-muted-foreground'
-            }`}
-          >
-            {date.getDate()}
-          </div>
-        </div>
-      ))}
-
-      {TIME_SLOTS.map((time) => (
-        <div key={time} className="contents">
-          <div className="p-2 text-sm text-muted-foreground border-r">
-            {time}
-          </div>
-
-          {weekDates.map((date) => (
-            <div
-              key={`${toLocalDateKey(date)}-${time}`}
-              className="p-1 border-b border-r min-h-16"
+    <div className="border-y border-cobalt-tint-3">
+      {/* Pegada arriba del contenedor de scroll: al desplazar la rejilla, saber
+          en que columna cae cada dia es imprescindible, y sin esto la fila de
+          dias se iba con el contenido. Fondo opaco obligatorio, o la rejilla se
+          transparenta por debajo al pasar. */}
+      <div className="sticky top-0 z-10 flex border-b border-cobalt-tint-3 bg-bone">
+        <div className="w-14 shrink-0" />
+        {weekDates.map((date, index) => (
+          <div key={toLocalDateKey(date)} className="min-w-0 flex-1 py-2 text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/50">
+              {dayLabels[index]}
+            </p>
+            <p
+              className={cn(
+                'metric-figures font-display text-lg font-bold leading-none',
+                isToday(date) ? 'text-cobalt' : 'text-ink/70'
+              )}
             >
-              {getSessionsAt(date, time).map((session) => (
-                <button
-                  key={session.id}
-                  type="button"
-                  onClick={() => onSelectSession(session)}
-                  className={`w-full text-left p-2 rounded text-xs cursor-pointer hover:opacity-80 transition-opacity ${
-                    SESSION_STATUS[session.status].slotClassName
-                  }`}
-                >
-                  <div className="flex items-center gap-1 mb-1">
-                    {SESSION_STATUS[session.status].icon}
-                    <span className="font-medium truncate">
-                      {session.student}
-                    </span>
-                  </div>
-                  <div className="text-xs opacity-75">{session.category}</div>
-                </button>
-              ))}
+              {date.getDate()}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex">
+        <div className="w-14 shrink-0 border-e border-cobalt-tint-3">
+          {TIME_SLOTS.map((time) => (
+            <div
+              key={time}
+              className="metric-figures flex items-start justify-end pe-2 pt-1 text-[11px] font-semibold tabular-nums text-ink/35"
+              style={{ height: SLOT_HEIGHT }}
+            >
+              {/* Sólo la hora en punto. Con las veintisiete etiquetas la columna
+                  es una lista de números y deja de leerse como una escala. */}
+              {time.endsWith(':00') ? time : ''}
             </div>
           ))}
         </div>
-      ))}
+
+        {weekDates.map((date) => (
+          <SessionLane
+            key={toLocalDateKey(date)}
+            className="min-w-0 flex-1 border-e border-cobalt-tint-3 last:border-e-0"
+            sessions={getSessionsOfDay(date)}
+            slotHeight={SLOT_HEIGHT}
+            renderSession={(session) => (
+              <SessionCard
+                session={session}
+                studentName={resolveSessionStudentName(session, studentsById, t)}
+                onSelect={onSelectSession}
+                variant="compact"
+              />
+            )}
+          />
+        ))}
+      </div>
     </div>
   )
 }

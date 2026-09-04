@@ -12,8 +12,10 @@ import { Button } from '@/shared/ui/button'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Chrome } from 'lucide-react'
 import { useLogin } from '../hooks/useLogin'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 export function LoginForm() {
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const { loginWithEmail, loginWithGoogle, error, loading } = useLogin()
@@ -27,10 +29,10 @@ export function LoginForm() {
     <>
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-semibold text-center">
-          Bienvenido de vuelta
+          {t('auth.welcomeBack')}
         </CardTitle>
         <CardDescription className="text-center">
-          Ingresa tus credenciales para acceder a tu cuenta
+          {t('auth.welcomeBackHint')}
         </CardDescription>
       </CardHeader>
 
@@ -43,7 +45,7 @@ export function LoginForm() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="login-email">Email</Label>
+            <Label htmlFor="login-email">{t('auth.email')}</Label>
             <Input
               id="login-email"
               type="email"
@@ -58,7 +60,7 @@ export function LoginForm() {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="login-password">Contraseña</Label>
+              <Label htmlFor="login-password">{t('auth.password')}</Label>
               {/*
                 TODO: la recuperacion de contraseña no esta implementada. El
                 boton llevaba un console.log como manejador, que habria acabado
@@ -71,7 +73,7 @@ export function LoginForm() {
                 className="px-0 font-normal"
                 disabled
               >
-                ¿Olvidaste tu contraseña?
+                {t('auth.forgotPassword')}
               </Button>
             </div>
             <Input
@@ -86,7 +88,7 @@ export function LoginForm() {
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
+            {loading ? t('auth.signingIn') : t('auth.signIn')}
           </Button>
         </form>
       </CardContent>
@@ -98,7 +100,7 @@ export function LoginForm() {
           </div>
           <div className="relative flex justify-center text-xs uppercase">
             <span className="bg-background px-2 text-muted-foreground">
-              O continúa con
+              {t('auth.orContinueWith')}
             </span>
           </div>
         </div>
@@ -111,7 +113,7 @@ export function LoginForm() {
           disabled={loading}
         >
           <Chrome className="mr-2 h-4 w-4" />
-          Continuar con Google
+          {t('auth.continueWithGoogle')}
         </Button>
       </CardFooter>
     </>

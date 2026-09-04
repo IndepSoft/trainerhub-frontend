@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useIsMobile } from '@/shared/hooks/useIsMobile'
-import { sessionsMock } from '../data/sessions.mock'
-import { addDays, getWeekDates, toLocalDateKey } from '../libs/calendar.utils'
+import { container } from '@/app/container'
+import { addDays, getWeekDates } from '../libs/calendar.utils'
+import { toLocalDateKey } from '@/shared/lib/dateKey'
 import type {
   CalendarViewMode,
   Session,
@@ -27,7 +28,8 @@ interface UseCalendarResult {
   goToPrevious: () => void
   goToNext: () => void
   selectSession: (session: Session | null) => void
-  getSessionsAt: (date: Date, time: string) => Session[]
+  /** Todas las sesiones de un dia. La colocacion en la escala la calcula la vista. */
+  getSessionsOfDay: (date: Date) => Session[]
 }
 
 /**
@@ -43,6 +45,31 @@ interface UseCalendarResult {
  */
 export function useCalendar(): UseCalendarResult {
   const isMobile = useIsMobile()
+  /*
+   * Del PUERTO, y suscrito a sus cambios: una sesion agendada desde la ficha de
+   * un estudiante -otro dominio- tiene que aparecer aqui sin recargar. Es lo
+   * que hace que «se refleje en el calendario» no dependa de que las dos
+   * pantallas compartan estado, sino de que compartan origen.
+   */
+  const [sessions, setSessions] = useState<Session[]>([])
+
+  useEffect(() => {
+    let active = true
+
+    const load = () => {
+      container.sessions.findAll().then((result) => {
+        if (active) setSessions(result)
+      })
+    }
+
+    load()
+    const unsubscribe = container.sessions.onChange(load)
+
+    return () => {
+      active = false
+      unsubscribe()
+    }
+  }, [])
   const [currentDate, setCurrentDate] = useState(new Date())
   const [preferredViewMode, setPreferredViewMode] = useState<CalendarViewMode>('week')
   const [selectedSession, setSelectedSession] = useState<Session | null>(null)
@@ -52,21 +79,20 @@ export function useCalendar(): UseCalendarResult {
   // en la diaria.
   const viewMode: CalendarViewMode = isMobile ? 'day' : preferredViewMode
 
-  const sessions = sessionsMock
 
   const weekDates = useMemo(() => getWeekDates(currentDate), [currentDate])
 
   /**
    * Índice de sesiones por `fecha|hora`.
    *
-   * Antes cada celda de la rejilla recorría el array entero: siete días por
-   * veintisiete tramos son 189 recorridos completos en cada render. Con el
-   * índice, cada celda es una consulta directa.
+   * Indexado por DIA y no por tramo: una sesion ya no pertenece a un tramo,
+   * ocupa un intervalo que puede cruzar varios. La vista recibe las sesiones
+   * del dia y calcula la colocacion con `placeSessions`.
    */
-  const sessionsBySlot = useMemo(() => {
+  const sessionsByDay = useMemo(() => {
     const index = new Map<string, Session[]>()
     for (const session of sessions) {
-      const key = `${session.date}|${session.time}`
+      const key = session.date
       const slot = index.get(key)
       if (slot) {
         slot.push(session)
@@ -79,8 +105,9 @@ export function useCalendar(): UseCalendarResult {
 
   const countByStatus = useMemo(() => {
     const counts: Record<SessionStatus, number> = {
-      confirmed: 0,
       pending: 0,
+      confirmed: 0,
+      completed: 0,
       cancelled: 0,
     }
     for (const session of sessions) {
@@ -89,8 +116,8 @@ export function useCalendar(): UseCalendarResult {
     return counts
   }, [sessions])
 
-  const getSessionsAt = (date: Date, time: string): Session[] =>
-    sessionsBySlot.get(`${toLocalDateKey(date)}|${time}`) ?? []
+  const getSessionsOfDay = (date: Date): Session[] =>
+    sessionsByDay.get(toLocalDateKey(date)) ?? []
 
   const moveBy = (days: number) => setCurrentDate(addDays(currentDate, days))
   const step = viewMode === 'week' ? 7 : 1
@@ -108,6 +135,6 @@ export function useCalendar(): UseCalendarResult {
     goToPrevious: () => moveBy(-step),
     goToNext: () => moveBy(step),
     selectSession: setSelectedSession,
-    getSessionsAt,
+    getSessionsOfDay,
   }
 }

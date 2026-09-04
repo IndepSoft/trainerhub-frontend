@@ -1,5 +1,7 @@
 import type { Trainer } from '@/shared/domain/entities/trainer'
+import type { NewTrainer } from '@/shared/domain/ports/TrainerRepository'
 import type { AuthUser } from '@/shared/domain/entities/auth'
+import type { TrainerProfile } from '@/shared/domain/ports/TrainerRepository'
 
 /** Fila cruda de la tabla `trainers`. Nombres tal cual estan en Postgres. */
 export interface TrainerRow {
@@ -45,6 +47,47 @@ export function toTrainer(row: TrainerRow): Trainer {
     verified: row.verified ?? false,
     averageRating: optional(row.average_rating),
     totalReviews: row.total_reviews ?? 0,
+  }
+}
+
+/**
+ * Traduce un alta de entrenador a la fila que espera Postgres.
+ *
+ * El mapper de ida hacia falta en cuanto hubo escrituras: hasta ahora todo era
+ * lectura y el snake_case solo tenia que morir en una direccion. Sin el, quien
+ * inserta tendria que conocer los nombres de las columnas, que es exactamente
+ * la fuga que los mappers existen para evitar.
+ *
+ * `id` no se manda: lo genera la base. Tampoco `verified` ni `total_reviews`,
+ * que tienen valor por defecto en el esquema.
+ */
+export function toTrainerRow(trainer: NewTrainer): Omit<TrainerRow, 'id'> {
+  return {
+    profile_id: trainer.profileId,
+    first_name: trainer.firstName,
+    last_name: trainer.lastName,
+    email: trainer.email,
+    bio: trainer.bio ?? null,
+    years_experience: trainer.yearsExperience ?? null,
+  }
+}
+
+/**
+ * La parte de la fila que cambia un perfil.
+ *
+ * Ni `profile_id` ni `email`: el primero es la cuenta con la que se entra y el
+ * segundo la llave por la que se reconoce a alguien. Que no estén aquí no es una
+ * omisión, es la garantía de que un `update` de perfil no puede tocarlos.
+ */
+export function toTrainerProfileRow(
+  profile: TrainerProfile
+): Pick<TrainerRow, 'first_name' | 'last_name' | 'photo_url' | 'bio' | 'years_experience'> {
+  return {
+    first_name: profile.firstName,
+    last_name: profile.lastName,
+    photo_url: profile.photoUrl ?? null,
+    bio: profile.bio ?? null,
+    years_experience: profile.yearsExperience ?? null,
   }
 }
 

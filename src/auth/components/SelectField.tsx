@@ -27,7 +27,7 @@ export function SelectField({
   return (
     <div className="relative w-full">
       {Icon && (
-        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-10">
+        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-ink/40 z-10">
           <Icon className="size-4 shrink-0" />
         </div>
       )}

@@ -1,87 +1,68 @@
-import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
-import { Badge } from '@/shared/ui/badge'
-import { Clock, MapPin } from 'lucide-react'
 import { TIME_SLOTS } from '../data/calendarOptions'
-import { getStudentInitials } from '../libs/calendar.utils'
-import { SESSION_STATUS } from '../libs/sessionStatus'
+import { SessionLane } from './SessionLane'
+import { SessionCard } from './SessionCard'
+import type { Student } from '@/shared/domain/entities/student'
+import { resolveSessionStudentName } from '../libs/sessionStudent'
 import type { Session } from '../types/calendar.types'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
+
+/** Alto de cada tramo de 30 minutos en la vista de día. */
+const SLOT_HEIGHT = 64
 
 interface DayViewProps {
   date: Date
-  getSessionsAt: (date: Date, time: string) => Session[]
+  getSessionsOfDay: (date: Date) => Session[]
   onSelectSession: (session: Session) => void
+  /** Alumnos indexados, para resolver el nombre de cada sesion una sola vez. */
+  studentsById: Map<string, Student>
 }
 
-export function DayView({ date, getSessionsAt, onSelectSession }: DayViewProps) {
+/**
+ * Vista de día.
+ *
+ * La hora va en una columna fija y estrecha: sólo tiene que caber «08:00», y
+ * darle el mismo ancho que al contenido era regalarle sitio a una etiqueta.
+ *
+ * Las sesiones se colocan sobre la escala, no dentro de un tramo, así que una
+ * de 60 minutos ocupa el doble de alto que una de 30 y una que empieza a y
+ * cuarto arranca a y cuarto. Ver `SessionLane`.
+ */
+export function DayView({
+  date,
+  getSessionsOfDay,
+  onSelectSession,
+  studentsById,
+}: DayViewProps) {
+  const { t } = useTranslation()
   return (
-    <div className="space-y-4">
-      {TIME_SLOTS.map((time) => {
-        const sessions = getSessionsAt(date, time)
-
-        return (
-          <div key={time} className="flex gap-4 p-4 border-b">
-            <div className="w-16 text-sm text-muted-foreground font-medium">
-              {time}
-            </div>
-            <div className="flex-1">
-              {sessions.length === 0 ? (
-                <div className="text-muted-foreground text-sm">
-                  Sin sesiones programadas
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {sessions.map((session) => (
-                    <button
-                      key={session.id}
-                      type="button"
-                      onClick={() => onSelectSession(session)}
-                      className={`w-full text-left p-4 rounded-lg border cursor-pointer hover:shadow-md transition-shadow ${
-                        SESSION_STATUS[session.status].slotClassName
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          {/*
-                            El AvatarImage apuntaba a
-                            /generic-placeholder-icon.png, que no existe en
-                            public/ y devolvia 404 en cada sesion pintada. Se
-                            deja solo el fallback con las iniciales hasta que
-                            haya fotos reales.
-                          */}
-                          <Avatar className="w-10 h-10">
-                            <AvatarFallback>
-                              {getStudentInitials(session.student)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <h3 className="font-medium">{session.title}</h3>
-                            <div className="flex items-center gap-4 text-sm opacity-75 mt-1">
-                              <div className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {session.durationMinutes} min
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <MapPin className="w-3 h-3" />
-                                {session.location}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {SESSION_STATUS[session.status].icon}
-                          <Badge variant="outline" className="text-xs">
-                            {session.kind === 'individual' ? 'Individual' : 'Grupal'}
-                          </Badge>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+    <div className="flex border-y border-cobalt-tint-3">
+      <div className="w-14 shrink-0 border-e border-cobalt-tint-3">
+        {TIME_SLOTS.map((time) => (
+          <div
+            key={time}
+            className="metric-figures flex items-start justify-end pe-2 pt-1 text-[11px] font-semibold tabular-nums text-ink/35"
+            style={{ height: SLOT_HEIGHT }}
+          >
+            {/* Sólo se rotula la hora en punto. Con las veintisiete etiquetas, la
+                columna es una lista de números y deja de leerse como una escala. */}
+            {time.endsWith(':00') ? time : ''}
           </div>
-        )
-      })}
+        ))}
+      </div>
+
+      <SessionLane
+        className="flex-1"
+        sessions={getSessionsOfDay(date)}
+        slotHeight={SLOT_HEIGHT}
+        renderSession={(session, isCompact) => (
+          <SessionCard
+            studentName={resolveSessionStudentName(session, studentsById, t)}
+            session={session}
+            onSelect={onSelectSession}
+            variant={isCompact ? 'compact' : 'full'}
+          />
+        )}
+      />
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
+import type { Session } from '@/shared/domain/entities/session'
 
 /**
  * Entidades del dashboard.
@@ -11,14 +12,20 @@ import type { LucideIcon } from 'lucide-react'
  * arrastrar los props del primero.
  */
 
-export type SessionStatus = 'programmed' | 'confirmed' | 'canceled'
+/**
+ * LA SESIÓN YA NO SE DECLARA AQUÍ.
+ *
+ * Había una `Session` propia —`customer`, `activity`, y un estado
+ * `programmed | confirmed | canceled` que ni siquiera coincidía con el de la
+ * agenda—. Era una tercera forma del mismo concepto, alimentada por datos
+ * inventados: el panel enseñaba sesiones que no existían en ninguna agenda.
+ * Ahora usa la de `shared/domain` y las lee del puerto.
+ */
 
-export interface Session {
-  id: string
-  customer: string
-  scheduledDate: string
-  activity: string
-  status: SessionStatus
+/** Una sesión próxima con el nombre de su alumno ya resuelto. */
+export interface UpcomingSession {
+  session: Session
+  studentName: string
 }
 
 export type ActivityColor = 'green' | 'primary' | 'secondary'
@@ -39,15 +46,23 @@ export interface DashboardIndicator {
   title: string
   indicator: number
   icon: LucideIcon
-  period: IndicatorPeriod
-  delta: number
-  deltaType: IndicatorTrend
+  /**
+   * La tendencia es OPCIONAL, y hoy no se calcula ninguna.
+   *
+   * Comparar con el periodo anterior exige historico, y no lo hay: los deltas
+   * que se pintaban —«+5 este mes»— eran inventados. `MetricBlock` ya omite la
+   * línea cuando faltan, en vez de pintar un cero engañoso, así que la cifra se
+   * queda sola hasta que haya con qué compararla.
+   */
+  period?: IndicatorPeriod
+  delta?: number
+  deltaType?: IndicatorTrend
   prefix?: string
 }
 
 /** Todo lo que el dashboard necesita para pintarse. */
 export interface DashboardSummary {
   indicators: DashboardIndicator[]
-  upcomingSessions: Session[]
+  upcomingSessions: UpcomingSession[]
   recentActivity: RecentActivityEntry[]
 }

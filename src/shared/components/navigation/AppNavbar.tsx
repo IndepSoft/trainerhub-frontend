@@ -1,45 +1,58 @@
 import { SidebarTrigger } from '@/shared/ui/sidebar'
-import { getNavbarRoutes } from '@/app/config/navigation.config'
-import { NavItem } from './NavItem'
-import { MobileMenu } from './MobileMenu'
 import { UserMenu } from './UserMenu'
+import { CrewSwitcher } from './CrewSwitcher'
 import { NotificationButton } from './NotificationButton'
-import type { Trainer } from '@/shared/domain/entities/trainer'
+import type { Membership } from '@/shared/domain/entities/crew'
 
 interface AppNavbarProps {
-  trainer: Trainer | null
+  person: { firstName?: string; lastName?: string; photoUrl?: string }
+  memberships: Membership[]
+  active: Membership | null
   loading: boolean
+  onSelectCrew: (crewId: string) => void
 }
 
-export function AppNavbar({ trainer, loading }: AppNavbarProps) {
-  const navbarRoutes = getNavbarRoutes()
-
+/**
+ * Barra superior.
+ *
+ * Ya no lleva navegación: en escritorio la da la barra lateral y en móvil la
+ * barra inferior. Antes tenía una lista horizontal alimentada por
+ * `getNavbarRoutes()`, que devolvía siempre una lista vacía porque
+ * `showInNavbar` era `false` en los nueve elementos de la configuración. Nunca
+ * pintó nada.
+ *
+ * El botón de hamburguesa tampoco está: los destinos principales viven ahora en
+ * la barra inferior, a un toque y al alcance del pulgar.
+ *
+ * EL CREW SÍ ESTÁ, Y SÓLO EN MÓVIL. En escritorio vive en la cabecera de la
+ * barra lateral, pero en móvil esa barra no se abre —no hay disparador, a
+ * propósito—, así que sin esto no habría forma de saber en qué equipo se está ni
+ * de cambiar de uno a otro desde un teléfono. El hueco de la izquierda estaba
+ * ocupado por un separador vacío.
+ */
+export function AppNavbar({
+  person,
+  memberships,
+  active,
+  loading,
+  onSelectCrew,
+}: AppNavbarProps) {
   return (
-    <header className="h-16 border-b flex-shrink-0">
-      <div className="flex items-center h-16 px-4">
-        <SidebarTrigger className="mr-4 hidden md:flex" />
-        <MobileMenu trainer={trainer} loading={loading} />
+    <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-cobalt-tint-3 px-4">
+      <SidebarTrigger className="hidden md:flex" />
 
-        <div className="flex-1 flex justify-between items-center">
-          <nav className="hidden md:flex items-center space-x-1">
-            {navbarRoutes.map((route) => (
-              <NavItem
-                key={route.id}
-                to={route.href}
-                className="px-4 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors"
-                badge={route.badge}
-                disabled={route.disabled}
-              >
-                {route.label}
-              </NavItem>
-            ))}
-          </nav>
+      <div className="min-w-0 flex-1 md:hidden">
+        <CrewSwitcher
+          memberships={memberships}
+          active={active}
+          loading={loading}
+          onSelect={onSelectCrew}
+        />
+      </div>
 
-          <div className="flex items-center space-x-2">
-            <NotificationButton />
-            <UserMenu trainer={trainer} loading={loading} />
-          </div>
-        </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <NotificationButton />
+        <UserMenu person={person} loading={loading} />
       </div>
     </header>
   )

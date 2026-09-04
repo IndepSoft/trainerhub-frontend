@@ -22,6 +22,43 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="TrainerHub" />
+
+    <!--
+      El tema, ANTES del primer pintado.
+
+      React no llega a tiempo: el fondo del body sale de la hoja de estilos y se
+      pinta en cuanto el navegador la tiene, mucho antes de que se descargue y
+      ejecute el modulo de la aplicacion. Sin este guion, abrir con tema oscuro
+      da un destello blanco de pantalla entera en cada arranque -y en una PWA
+      instalada eso se nota mas, porque el arranque es frecuente-.
+
+      La clave es la misma que usa `ThemeProvider` (THEME_STORAGE_KEY). No se
+      puede importar desde aqui, asi que esta duplicada a proposito y anotada en
+      los dos lados.
+    -->
+    <script>
+      (function () {
+        try {
+          var elegido = window.localStorage.getItem('trainerhub.tema') || 'system'
+          var oscuro =
+            elegido === 'dark' ||
+            (elegido === 'system' &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches)
+          if (oscuro) document.documentElement.classList.add('dark')
+
+          // El idioma, por el mismo motivo: `lang` decide como parte palabras
+          // el navegador y que voz usa un lector de pantalla, y estaba fijo en
+          // `es` mas arriba. La clave la comparte con `LanguageProvider`.
+          var idioma = window.localStorage.getItem('trainerhub.idioma')
+          var etiquetas = { es: 'es-ES', en: 'en-US', pt: 'pt-BR' }
+          if (etiquetas[idioma]) document.documentElement.lang = etiquetas[idioma]
+        } catch (error) {
+          // Sin acceso al almacenamiento -ventana privada, permisos bloqueados-
+          // se arranca en claro. Es una preferencia, no un dato: perderla no
+          // rompe nada.
+        }
+      })()
+    </script>
   </head>
 
   <body>

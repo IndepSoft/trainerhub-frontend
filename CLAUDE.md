@@ -267,17 +267,80 @@ Variables en `.env` (plantilla en `.env.example`). `.gitignore` cubre `.env` y
 Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
 [`docs/CAMBIOS-Y-ARQUITECTURA.md`](docs/CAMBIOS-Y-ARQUITECTURA.md).
 
-- Los cinco dominios pintan datos simulados; no hay repositorios salvo
-  `TrainerRepository`.
-- `navigation.config.ts` declara `/reports`, `/settings` y `/login`, que no
-  existen como rutas.
+- Los adaptadores siguen siendo falsos salvo `TrainerRepository` sobre Supabase,
+  y ése convive con `FakeTrainerRepository`, que se elige con la misma condición
+  que la autenticación simulada. Los datos falsos viven en memoria: al recargar
+  vuelve la semilla.
+- No se puede cambiar la contraseña: `AuthPort` no expone esa operación, así que
+  Configuración no la ofrece en vez de fingirla.
+- La traducción cubre lo que escribe la aplicación —español, inglés y
+  portugués—, no lo que escribe una persona: los nombres de rutinas, los
+  anuncios del muro y el título de una sesión ya creada se quedan en el idioma en
+  que se escribieron. Está dicho en el propio selector. Toda cadena nueva se
+  añade a los TRES diccionarios: `Dictionary` es `Record<TranslationKey, string>`
+  y una clave que falte no compila.
 - `GuestRoute` está implementado pero no cableado: falta `withGuestRoute`.
+- La página del equipo tiene miembros, solicitudes, QR, muro y ranking.
+  **Faltan los eventos.** Los entrenamientos grupales NO son una entidad nueva
+  —`Session` ya tiene `kind: 'group'`—; un evento, una carrera o una quedada, sí.
+- El muro no avisa: un anuncio nuevo no se señala en ningún sitio. Lo barato es
+  un contador en la entrada de navegación del equipo; las notificaciones push son
+  otro trabajo.
+- `CrewPost.likedBy` guarda la lista entera de quién ha dado «me gusta». Con
+  equipos de decenas da igual; con miles hay que pasar a un contador y una
+  bandera calculados en el servidor.
+- **Todas las reglas de permisos las comprueba el navegador.** Impide
+  equivocarse, no impide actuar: un cliente modificado escribe igual. Cada regla
+  tiene ya una sola definición en `shared/domain` —`can`, `lastAdminBlocker`,
+  `canEnrollMembers`— y CAMBIOS §14.5 lleva la tabla de qué política de servidor
+  sustituye a cada una. Es lo único que queda entre esto y ser seguro.
+- La lista de administradores de plataforma es una constante en la semilla. Con
+  backend es una tabla que sólo escribe el rol de servicio.
+- No hay cobro: activar una suscripción es una decisión manual desde `/admin`.
+- No hay registro de auditoría: nadie sabe quién miró o cambió qué.
+- `CrewStaff.displayName` y `email` están copiados, no referenciados. Es la
+  excepción a «se referencia el vocabulario»: no hay entidad de persona todavía
+  —`AuthUser` sólo tiene id y correo—, así que el nombre se guarda con el puesto.
+  Cuando exista un perfil, esto se resuelve por identificador.
 - Props declaradas y sin conectar, marcadas con `TODO:` en gamification y
   calendar. `ChallengeCard.onUpdate` es la más grave: el padre le pasa un
   manejador real que nunca se invoca.
+- El aviso de fin de descanso son TRES señales y ninguna llega sola: color,
+  vibración y sonido. El color no sirve con el teléfono en el bolsillo; la
+  vibración no existe en iOS —Apple nunca implementó la Vibration API—; el sonido
+  se apaga desde Ajustes y por debajo manda el silenciador del teléfono. El
+  interruptor no acompaña al sonido, ES SU CONDICIÓN: un pitido que no se puede
+  callar en una sala compartida es peor que ninguno. El sonido se PROGRAMA en el
+  reloj de audio al empezar el descanso, no se dispara al cumplirse: los
+  temporizadores de una pestaña en segundo plano se estrangulan a uno por minuto
+  —medido— y el aviso llegaría tarde justo en el caso para el que se puso. Es la
+  única de las tres señales que sobrevive a eso; con la pantalla apagada, en iOS
+  no sobrevive ninguna y eso ya son notificaciones del sistema.
+- El TEMPO y las NOTAS de un ejercicio se conservan al editar una rutina pero no
+  se editan: no hay campo en el formulario y hoy sólo los trae la semilla. No
+  estaban en el borrador y editar los BORRABA en silencio; conservarlos era
+  obligatorio, darles interfaz es otra decisión.
+- El peso se prescribe como CARGA DE REFERENCIA, opcional, y no contradice al
+  RIR: el RIR prescribe esfuerzo y el peso dónde empezar. El historial va SIEMPRE
+  por delante de lo prescrito al rellenar el campo de la sesión —al revés, una
+  rutina vieja bajaría a alguien de 80 a 60 en silencio—, y lo prescrito se
+  sigue viendo para que una descarga deliberada se pueda seguir a mano. Los pesos
+  van en kilos; ofrecer libras es una preferencia que no está decidida.
+- La progresión de cargas tiene gráfica —dibujada a mano, sin librería— y 1RM
+  estimado por Epley, calculado al pintar y NUNCA almacenado. La gráfica dibuja
+  el peso medido y no la estimación, su eje horizontal son sesiones y no fechas,
+  y su eje vertical no arranca en cero: por eso la pendiente NO es comparable
+  entre dos ejercicios. El 1RM no se da por encima de diez repeticiones, donde la
+  fórmula se separa demasiado de la realidad.
+- Los filtros de `TrainingFilters` y `StudentFilters` no filtran.
+- Las sesiones volcadas desde un plan no guardan de qué volcado salieron, así que
+  no se pueden mover ni cancelar en bloque y volcar dos veces duplica.
 - La subestructura de carpetas difiere entre dominios; falta unificarla.
-- El dominio `reports` no tiene fichero de rutas ni esta registrado en el
-  router: su pagina y sus graficos existen pero son inalcanzables.
+- Las cuotas no guardan importes: la cola de cobros dice **quién vence y
+  cuándo**, no cuánto. Poner precio exige decidir moneda y modelo de tarifas, y
+  nada de eso está decidido. Ver `StudentSubscription`.
+- Los avisos son una bandeja **dentro** de la aplicación: quien no la abra no se
+  entera. Correo o push son otro trabajo, y otro consentimiento.
 - El lint esta en cero. `react-refresh/only-export-components` queda desactivada
   **solo** en `src/shared/ui/**`, porque el patron de shadcn -componente y
   variantes de `cva` en el mismo fichero- choca con ella y no es corregible sin

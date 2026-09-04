@@ -1,6 +1,11 @@
 import type { AuthPort } from '@/shared/domain/ports/AuthPort'
-import type { AuthUser, LoginCredentials } from '@/shared/domain/entities/auth'
+import type {
+  AuthUser,
+  LoginCredentials,
+  SignUpCredentials,
+} from '@/shared/domain/entities/auth'
 import { AppError, AppErrorCode } from '@/shared/domain/errors'
+import { profileIdFromEmail } from './devIdentity'
 
 /**
  * Implementación de AuthPort en memoria, para desarrollo local sin depender de
@@ -68,7 +73,7 @@ export class FakeAuthAdapter implements AuthPort {
     }
 
     const user: AuthUser = {
-      id: this.buildDeterministicIdentifier(credentials.email),
+      id: profileIdFromEmail(credentials.email),
       email: credentials.email,
     }
 
@@ -78,9 +83,43 @@ export class FakeAuthAdapter implements AuthPort {
     return user
   }
 
+  async signUp(credentials: SignUpCredentials): Promise<AuthUser> {
+    // Las mismas validaciones que el login, y por el mismo motivo: que el
+    // formulario recorra sus caminos de error contra el adaptador falso
+    // exactamente igual que contra el proveedor.
+    if (!EMAIL_PATTERN.test(credentials.email)) {
+      throw new AppError(AppErrorCode.VALIDATION, 'El email no tiene un formato válido')
+    }
+
+    if (credentials.password.length < MINIMUM_PASSWORD_LENGTH) {
+      throw new AppError(
+        AppErrorCode.VALIDATION,
+        `La contraseña debe tener al menos ${MINIMUM_PASSWORD_LENGTH} caracteres`
+      )
+    }
+
+    if (credentials.email === FAILING_EMAIL_ADDRESS) {
+      throw new AppError(AppErrorCode.VALIDATION, 'Ya existe una cuenta con ese correo')
+    }
+
+    const user: AuthUser = {
+      id: profileIdFromEmail(credentials.email),
+      email: credentials.email,
+    }
+
+    // Deja la sesion abierta, que es el comportamiento de Supabase cuando la
+    // confirmacion por correo esta desactivada. Con ella activada habria que
+    // enviar a una pantalla de «revisa tu correo»; el dia que se active, el
+    // cambio esta en el adaptador real, no aqui.
+    this.persistSession(user)
+    this.setCurrentUser(user)
+
+    return user
+  }
+
   async signInWithGoogle(): Promise<void> {
     const user: AuthUser = {
-      id: this.buildDeterministicIdentifier('google@test.local'),
+      id: profileIdFromEmail('google@test.local'),
       email: 'google@test.local',
     }
 
@@ -109,22 +148,6 @@ export class FakeAuthAdapter implements AuthPort {
     for (const listener of this.listeners) {
       listener(user)
     }
-  }
-
-  /**
-   * Deriva un identificador estable a partir del email, para que el mismo
-   * correo produzca siempre el mismo `id` entre recargas y sesiones. Con un
-   * valor aleatorio, cualquier dato asociado al usuario se perdería en cada
-   * arranque.
-   */
-  private buildDeterministicIdentifier(emailAddress: string): string {
-    let hash = 0
-    for (let index = 0; index < emailAddress.length; index += 1) {
-      hash = (hash << 5) - hash + emailAddress.charCodeAt(index)
-      hash |= 0
-    }
-    const suffix = Math.abs(hash).toString(16).padStart(12, '0')
-    return `00000000-0000-4000-8000-${suffix.slice(0, 12)}`
   }
 
   private persistSession(user: AuthUser): void {

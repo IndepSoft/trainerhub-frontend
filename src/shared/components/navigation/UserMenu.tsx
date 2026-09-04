@@ -7,29 +7,39 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
+import { useNavigate } from 'react-router-dom'
 import { LogOut, User } from 'lucide-react'
 import { getInitials, getShortName } from '@/shared/lib/personName'
-import type { Trainer } from '@/shared/domain/entities/trainer'
 import { useLogout } from '@/auth/hooks/useLogout'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface UserMenuProps {
-  trainer: Trainer | null
+  /**
+   * Quien ha entrado, venga su nombre de donde venga.
+   *
+   * Antes recibia un `Trainer`, y un alumno no tiene ficha de entrenador: el
+   * menu pintaba las iniciales de `undefined`. Quien resuelve de que ficha sale
+   * el nombre es `useViewer`, que es el unico que sabe con que papel se entra.
+   */
+  person: { firstName?: string; lastName?: string; photoUrl?: string }
   loading: boolean
 }
 
-export function UserMenu({ trainer, loading }: UserMenuProps) {
+export function UserMenu({ person, loading }: UserMenuProps) {
+  const navigate = useNavigate()
   const { handleLogout } = useLogout()
+  const { t } = useTranslation()
   
-  const displayName = getShortName(trainer?.firstName, trainer?.lastName)
-  const initials = getInitials(trainer?.firstName, trainer?.lastName)
-  const avatarUrl = trainer?.photoUrl
+  const displayName = getShortName(person.firstName, person.lastName)
+  const initials = getInitials(person.firstName, person.lastName)
+  const avatarUrl = person.photoUrl
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button 
-          className="flex items-center space-x-2 p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
-          aria-label="Menú de usuario"
+          className="flex items-center space-x-2 p-2 text-ink/70 hover:text-ink hover:bg-cobalt-tint-1 rounded-md transition-colors"
+          aria-label={t('userMenu.label')}
         >
           <Avatar>
             <AvatarImage src={avatarUrl} alt={displayName} />
@@ -38,7 +48,7 @@ export function UserMenu({ trainer, loading }: UserMenuProps) {
 
           <div className="hidden md:flex flex-col gap-0.5 leading-none text-left">
             {loading ? (
-              <span className="text-sm text-gray-400">Cargando...</span>
+              <span className="text-sm text-ink/40">{t('common.loading')}</span>
             ) : (
               <span className="font-semibold text-sm">{displayName}</span>
             )}
@@ -47,15 +57,17 @@ export function UserMenu({ trainer, loading }: UserMenuProps) {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent className="w-56" align="end" sideOffset={8}>
-        <DropdownMenuLabel>Mi cuenta</DropdownMenuLabel>
+        <DropdownMenuLabel>{t('userMenu.account')}</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
+        {/* Lleva a Configuracion, que es donde vive el perfil. Era una entrada
+            de menu sin `onClick` ni enlace: no hacia absolutamente nada. */}
+        <DropdownMenuItem onSelect={() => navigate('/settings')}>
           <User className="mr-2 h-4 w-4" />
-          <span>Perfil</span>
+          <span>{t('userMenu.profile')}</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
-          <span>Cerrar sesión</span>
+          <span>{t('userMenu.logout')}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

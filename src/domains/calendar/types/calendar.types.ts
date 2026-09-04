@@ -8,24 +8,12 @@
  * aplicación a la forma de unos mocks.
  */
 
-export type SessionStatus = 'confirmed' | 'pending' | 'cancelled'
-
-export type SessionKind = 'individual' | 'group'
-
-export interface Session {
-  id: string
-  title: string
-  student: string
-  kind: SessionKind
-  category: string
-  /** Fecha local en formato `YYYY-MM-DD`. Ver `toLocalDateKey`. */
-  date: string
-  /** Hora local en formato `HH:mm`, alineada con los tramos de la agenda. */
-  time: string
-  durationMinutes: number
-  location: string
-  status: SessionStatus
-  notes: string
-}
+/**
+ * LA SESIÓN YA NO VIVE AQUÍ. Subió a `shared/domain/entities/session.ts` cuando
+ * la ficha del estudiante paso a listar y agendar las suyas: la necesitan dos
+ * dominios, y el criterio del proyecto es que entonces sube. Se reexporta para
+ * que el dominio siga teniendo un solo sitio donde mirar sus tipos.
+ */
+export type { Session, SessionKind, SessionStatus } from '@/shared/domain/entities/session'
 
 export type CalendarViewMode = 'week' | 'day'

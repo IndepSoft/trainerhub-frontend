@@ -1,39 +1,43 @@
-import { PageHeader } from '@/shared/components/PageHeader'
 import { IndicatorList } from '../components/IndicatorList'
-import { UpcomingSessionsCard } from '../components/UpcomingSessionsCard'
-import { RecentActivityCard } from '../components/RecentActivityCard'
+import { UpcomingSessions } from '../components/UpcomingSessions'
+import { RecentActivity } from '../components/RecentActivity'
 import { useDashboardSummary } from '../hooks/useDashboardSummary'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { usePullToRefresh } from '@/shared/hooks/usePullToRefresh'
+import { PullToRefreshIndicator } from '@/shared/components/PullToRefreshIndicator'
+import { PageHeader } from '@/shared/components/PageHeader'
 
 export default function Dashboard() {
-  const { summary } = useDashboardSummary()
+  const { t } = useTranslation()
+  const { summary, refresh } = useDashboardSummary()
+  const { pullDistance, isRefreshing, willRefresh, handlers } = usePullToRefresh({
+    onRefresh: refresh,
+  })
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    <div className="flex flex-1 flex-col overflow-hidden bg-bone">
       <PageHeader>
-        <PageHeader.Content>
-          <div>
-            <PageHeader.Title>Dashboard</PageHeader.Title>
-            <p className="text-sm text-gray-600 mt-1">
-              Resumen de tu actividad como entrenador
-            </p>
-          </div>
-        </PageHeader.Content>
+        <PageHeader.Eyebrow>{t('dashboard.eyebrow')}</PageHeader.Eyebrow>
+        <PageHeader.Title>{t('dashboard.title')}</PageHeader.Title>
       </PageHeader>
 
-      {/* Contenedor de scroll de la pagina. Es un div y no un <main> a
-          proposito: el landmark <main> ya lo pinta SidebarInset desde
-          RootLayout, y anidar uno dentro de otro es HTML invalido -solo se
-          admite uno por documento- ademas de confundir a los lectores de
-          pantalla. */}
-      <div className="mt-8 flex-1 overflow-auto">
-        <div className="ps-4 pe-4 pb-4 max-w-8xl mx-auto">
-          <div className="w-full mb-6">
-            <IndicatorList indicators={summary.indicators} />
-          </div>
-          <div className="flex w-full flex-col gap-4 lg:flex-row">
-            <UpcomingSessionsCard sessions={summary.upcomingSessions} />
-            <RecentActivityCard activities={summary.recentActivity} />
-          </div>
+      {/* Contenedor de scroll de la pagina. Es un div y no un <main>: el
+          landmark ya lo pinta SidebarInset desde RootLayout. */}
+      {/* Los manejadores van en el contenedor de desplazamiento, no en la
+          pagina: el hook necesita leer su `scrollTop` para saber si esta arriba
+          del todo, y solo entonces activar el gesto. */}
+      <div className="flex-1 overflow-auto" {...handlers}>
+        <PullToRefreshIndicator
+          pullDistance={pullDistance}
+          isRefreshing={isRefreshing}
+          willRefresh={willRefresh}
+        />
+
+        <IndicatorList indicators={summary.indicators} />
+
+        <div className="flex flex-col gap-10 px-5 py-8 lg:flex-row lg:gap-12">
+          <UpcomingSessions sessions={summary.upcomingSessions} />
+          <RecentActivity activities={summary.recentActivity} />
         </div>
       </div>
     </div>

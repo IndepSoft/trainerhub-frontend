@@ -1,16 +1,91 @@
+/*
+ * Barlow autohospedada, no via Google Fonts. Motivo: un <link> a un host
+ * externo no funciona sin conexion, y esta aplicacion es una PWA instalable.
+ * Los .woff2 quedan en el bundle y el service worker ya los precachea, porque
+ * `woff2` esta en los globPatterns de workbox (ver vite.config.ts).
+ *
+ * Condensed no es otra tipografia: es el mismo esqueleto en otro ancho. Eso
+ * permite el registro display agresivo sin que la aplicacion se sienta partida
+ * en dos.
+ */
+@import '@fontsource/barlow/400.css';
+@import '@fontsource/barlow/500.css';
+@import '@fontsource/barlow/600.css';
+@import '@fontsource/barlow-condensed/700.css';
+@import '@fontsource/barlow-condensed/800.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 220 90% 42%;
+    /* ---------------------------------------------------------------
+       Identidad. Cobalt es el unico color que sobrevive intacto del tema
+       anterior: era el unico token real que existia. Ember sustituye al
+       `orange-500` de Tailwind que estaba escrito a mano en ocho ficheros
+       -girado de 24.6 a 14 grados para que deje de leerse como el naranja
+       de serie de cualquier framework-.
+       --------------------------------------------------------------- */
+    --cobalt: 220 90% 42%;
+    --cobalt-lift: 215 88% 54%;
+    --ember: 14 100% 55%;
+    --ember-deep: 8 82% 44%;
+    --ink: 222 55% 9%;
+    --bone: 36 33% 97%;
+
+    /* Superficies derivadas de Cobalt. No son colores nuevos: son el mismo
+       tono a distinta opacidad, que es lo que eran en realidad los 17
+       `bg-blue-50` y `bg-blue-100` repartidos por los dominios.
+
+       LLEVAN SU PROPIA ALFA, asi que el modificador de Tailwind NO se les puede
+       aplicar: `bg-cobalt-tint/40` se compila a `hsl(220 90% 42% / 0.06 / 0.4)`,
+       que no es un color valido y el navegador pinta transparente sin quejarse.
+       Habia seis escritos asi y ninguno tiñe nada. Para mas o menos tinte estan
+       los tres niveles; para uno intermedio, se añade un cuarto aqui. */
+    --cobalt-tint-1: 220 90% 42% / 0.06;
+    --cobalt-tint-2: 220 90% 42% / 0.12;
+    --cobalt-tint-3: 220 90% 42% / 0.24;
+
+    /* Estados semanticos. Son un tercer grupo, distinto de la marca y de la
+       escala de dificultad: «confirmada» no es una accion ni un nivel, es un
+       hecho. Sin estos tokens, los verdes y amarillos de estado acababan
+       escritos a mano en cada tabla de configuracion. `--destructive` ya
+       existia y hace de tercer estado. */
+    --success: 142 71% 36%;
+    --success-surface: 142 71% 36% / 0.12;
+    --warning: 38 92% 42%;
+    --warning-surface: 38 92% 42% / 0.14;
+    --destructive-surface: 0 84% 60% / 0.12;
+
+    /* Escala de dificultad, DELIBERADAMENTE fuera de la marca: si
+       «Intermedio» usara Cobalt, una etiqueta de nivel se leeria como un
+       boton primario. Unifica ademas las dos escalas que no coincidian
+       -StudentCard usaba amarillo para «Principiante» y RoutineCard
+       naranja, que encima chocaba con Ember-. */
+    --scale-1: 43 96% 48%;
+    --scale-2: 199 89% 48%;
+    --scale-3: 142 71% 40%;
+
+    /* Dos radios, no uno. `--radius` uniforme en todo es la firma de
+       shadcn de fabrica: bloques a escuadra, acciones en pildora. */
+    --radius-block: 0rem;
+    --radius-action: 999px;
+
+    /* La superficie ELEVADA: tarjetas y paneles sobre el papel de fondo.
+       Existe porque `bg-white` estaba escrito a mano en diecisiete sitios, y
+       en oscuro cada uno de ellos habria seguido siendo blanco. Un token
+       responde a «que es esto» -una superficie por encima del fondo- en vez
+       de a «de que color es hoy». */
+    --surface: 0 0% 100%;
+
+    --background: var(--bone);
+    --foreground: var(--ink);
+    --card: var(--surface);
+    --card-foreground: var(--ink);
+    --popover: var(--surface);
+    --popover-foreground: var(--ink);
+    --primary: var(--cobalt);
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -22,56 +97,106 @@
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 215 87.9% 53.7%;
+    --ring: var(--cobalt-lift);
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
-    --sidebar-background: 0 0% 98%;
+    --radius: 0.375rem;
+    --sidebar-background: var(--bone);
     --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 215 87.9% 53.7%;
+    --sidebar-primary: var(--cobalt);
     --sidebar-primary-foreground: 0 0% 98%;
     --sidebar-accent: 240 4.8% 95.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 215 87.9% 53.7%;
+    --sidebar-ring: var(--cobalt-lift);
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* -----------------------------------------------------------------
+       TEMA OSCURO.
+
+       `--bone` y `--ink` cambian de valor, y eso obliga a leer sus nombres
+       como PAPELES y no como colores: bone es «la superficie de la pagina» e
+       ink «el texto encima». En claro son hueso y tinta; en oscuro, tinta y
+       hueso. Redefinir los dos aqui es lo que hace que las cuarenta pantallas
+       que escriben `bg-bone` y `text-ink` funcionen sin tocarlas.
+
+       La alternativa -dejar los tokens quietos y cambiar solo
+       `--background`- habria exigido reescribir esas cuarenta pantallas para
+       que dejaran de nombrar el color y nombraran el papel. Es lo correcto en
+       abstracto y no lo que este sistema hace hoy.
+
+       No es negro puro: 222 grados conserva el parentesco con Cobalt, y un
+       fondo absolutamente negro con texto blanco puro produce el halo que
+       cansa la vista en pantallas OLED.
+       ----------------------------------------------------------------- */
+    --bone: 222 30% 7%;
+    --ink: 36 25% 93%;
+
+    /* Cobalt SUBE. Un azul al 42 % de luminosidad sobre un fondo casi negro
+       se lee como gris oscuro: el mismo tono no vale para los dos temas. Se
+       usa el que ya existia para los estados de elevacion. */
+    --cobalt: 215 88% 62%;
+    --cobalt-lift: 215 92% 72%;
+
+    /* Los tintes suben de opacidad ademas de tono: un 6 % de azul sobre papel
+       claro se ve, y sobre casi negro no. */
+    --cobalt-tint-1: 215 88% 62% / 0.10;
+    --cobalt-tint-2: 215 88% 62% / 0.18;
+    --cobalt-tint-3: 215 88% 62% / 0.30;
+
+    /* Ember se aclara lo justo. `--ember-deep` deja de ser «mas oscuro» para
+       ser «mas claro»: su papel es destacar sobre el fondo, y el fondo cambio
+       de lado. */
+    --ember: 14 100% 63%;
+    --ember-deep: 14 92% 72%;
+
+    /* Estados y escala de dificultad, subidos por el mismo motivo. */
+    --success: 142 62% 52%;
+    --success-surface: 142 62% 52% / 0.16;
+    --warning: 38 92% 58%;
+    --warning-surface: 38 92% 58% / 0.18;
+    --destructive: 0 84% 65%;
+    --destructive-surface: 0 84% 65% / 0.16;
+
+    --scale-1: 43 96% 60%;
+    --scale-2: 199 89% 60%;
+    --scale-3: 142 62% 55%;
+
+    /* La superficie elevada se separa del fondo subiendo, no bajando: en
+       oscuro lo que esta mas cerca es mas claro. */
+    --surface: 222 26% 11%;
+
+    --background: var(--bone);
+    --foreground: var(--ink);
+    --card: var(--surface);
+    --card-foreground: var(--ink);
+    --popover: var(--surface);
+    --popover-foreground: var(--ink);
+    --primary: var(--cobalt);
+    --primary-foreground: 222 30% 7%;
+    --secondary: 222 22% 16%;
+    --secondary-foreground: var(--ink);
+    --muted: 222 22% 16%;
+    --muted-foreground: 36 12% 68%;
+    --accent: 222 22% 18%;
+    --accent-foreground: var(--ink);
+    --destructive-foreground: 222 30% 7%;
+    --border: 215 88% 62% / 0.22;
+    --input: 215 88% 62% / 0.28;
+    --ring: var(--cobalt-lift);
+
+    --sidebar-background: var(--bone);
+    --sidebar-foreground: var(--ink);
+    --sidebar-primary: var(--cobalt);
+    --sidebar-primary-foreground: 222 30% 7%;
+    --sidebar-accent: 222 22% 16%;
+    --sidebar-accent-foreground: var(--ink);
+    --sidebar-border: 215 88% 62% / 0.22;
+    --sidebar-ring: var(--cobalt-lift);
   }
 }
 
@@ -82,5 +207,57 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer base {
+  body {
+    font-feature-settings: 'cv11';
+  }
+
+  /* Cifras tabulares para toda metrica animada. Sin ancho fijo, un contador
+     tipo odometro salta en cada incremento. */
+  .metric-figures {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+}
+
+/*
+ * Transiciones entre vistas.
+ *
+ * Usan la View Transitions API del navegador a traves de react-router. Donde no
+ * existe -Firefox hoy- la navegacion ocurre igual, al instante y sin animacion:
+ * el navegador ignora estas reglas y `viewTransition` degrada solo. No hace
+ * falta detectar soporte.
+ *
+ * El movimiento es corto y vertical, no un deslizamiento lateral: el lateral
+ * sugiere jerarquia -atras y adelante-, y estas rutas son hermanas.
+ *
+ * Todo el bloque va dentro de `prefers-reduced-motion: no-preference`. Sin la
+ * consulta, la animacion se aplicaria a quien pidio que no hubiera movimiento,
+ * y una transicion de pagina completa es de las que peor sientan.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: 130ms cubic-bezier(0.4, 0, 1, 1) both salida-de-vista;
+  }
+
+  ::view-transition-new(root) {
+    animation: 190ms cubic-bezier(0, 0, 0.2, 1) 40ms both entrada-de-vista;
+  }
+
+  @keyframes salida-de-vista {
+    to {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+  }
+
+  @keyframes entrada-de-vista {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
   }
 }
