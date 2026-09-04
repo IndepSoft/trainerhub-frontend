@@ -8,6 +8,7 @@ import { PageSkeleton } from '@/shared/components/PageSkeleton'
 import { getInitials, getShortName } from '@/shared/lib/personName'
 import { useStudent } from '../hooks/useStudent'
 import { StudentAssignments } from '../components/StudentAssignments'
+import { StudentLoadProgression } from '../components/StudentLoadProgression'
 import { StudentProgressSection } from '../components/StudentProgressSection'
 import { StudentSubscriptionSection } from '../components/StudentSubscriptionSection'
 import { StudentSessions } from '../components/StudentSessions'
@@ -151,6 +152,10 @@ export default function StudentDetail() {
         <StudentSubscriptionSection student={student} />
 
         <StudentProgressSection studentId={student.id} />
+
+        {/* Debajo del progreso y no dentro: aquello es el juego -nivel, racha,
+            hitos- y esto es la medida de fuerza. Se leen por motivos distintos. */}
+        <StudentLoadProgression studentId={student.id} />
 
         <StudentAssignments student={student} />
 

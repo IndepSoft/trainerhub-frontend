@@ -72,6 +72,7 @@ export function StrengthSession({
     adjustWeight,
     finishSet,
     startNextSet,
+    undoLastSet,
     pause,
     resume,
   } = useGuidedStrengthSession(routine, lastWeights)
@@ -178,6 +179,7 @@ export function StrengthSession({
               onAdjustWeight={adjustWeight}
               onFinishSet={finishSet}
               onStartNextSet={startNextSet}
+              onUndoLastSet={records.length > 0 ? undoLastSet : null}
             />
           )}
 

@@ -188,8 +188,8 @@ function MembershipFields({
                     fromRole
                       ? // Los del rol se ven concedidos pero apagados: quitarlos
                         // exigiría poder restar, que es justo lo que no se hace.
-                        'cursor-default bg-cobalt-tint/50'
-                      : 'hover:bg-cobalt-tint/40'
+                        'cursor-default bg-cobalt-tint'
+                      : 'hover:bg-cobalt-tint'
                   )}
                 >
                   <span>{t(CAPABILITY_LABEL_KEY[capability])}</span>

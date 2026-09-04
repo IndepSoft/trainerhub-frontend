@@ -1846,3 +1846,135 @@ libras sería peor que sólo kilos.
   se ve dentro de la sesión, pero no hay ninguna pantalla que enseñe la
   progresión de un ejercicio a lo largo de las semanas. Es lo siguiente que pide
   quien lo anota.
+
+---
+
+## 23. La progresión de cargas, y lo que quedaba de la sesión (4 sep 2026)
+
+### 23.1 El peso ya tiene pantalla
+
+Se anotaba desde que la sesión guiada lo pide, y el único que lo leía era el
+campo de la sesión siguiente para dejarlo puesto. Un dato que se escribe y no se
+mira envejece sin que nadie lo note, y éste responde a la pregunta por la que
+alguien paga a un entrenador: **¿estoy mejorando?**
+
+Va en la **ficha del alumno**, debajo del progreso, por lo mismo que aquél: quien
+lo consulta ya está mirando a esa persona. Y debajo y no dentro, porque son cosas
+distintas: el progreso es el juego —nivel, racha, hitos— y esto es la medida de
+fuerza.
+
+### 23.2 La serie tope del día, no el promedio
+
+`buildLoadProgression` agrupa por ejercicio y por día, y de cada día se queda con
+**la serie más pesada**, con SUS repeticiones al lado.
+
+- **No se promedia.** Un calentamiento a 40 y un trabajo a 80 darían 60, un peso
+  que no se levantó nunca.
+- **No se suma el volumen.** Es otra pregunta, y mezclada con ésta esconde si la
+  carga sube.
+- **Las repeticiones van con el peso de esa misma serie.** Quedarse con el peso
+  máximo de un día y las repeticiones de otra serie sería un par de datos que no
+  ocurrió junto.
+
+Con un solo punto no se pinta variación: un «0 kg» ahí se leería como «no ha
+subido» cuando lo cierto es que todavía no se sabe.
+
+### 23.3 Una sola definición de «el último peso»
+
+`lastWeightByExercise` sale del mismo historial que pinta la ficha, y de ahí lo
+toma `useLastWeights` para dejar el campo puesto en la sesión. Con dos
+definiciones, la sesión y la ficha podrían decir cifras distintas del mismo día.
+
+`formatKilos` sube a `shared/lib/routineFormat.ts` por el mismo motivo que subió
+`formatPrescription`: lo usan dos dominios y ninguno importa del otro.
+
+### 23.4 Los relojes medían tics, no tiempo
+
+**Es el defecto más grave que salió de verificar en el navegador.** La sesión
+sumaba uno por cada `setInterval`, y el navegador estrangula los temporizadores
+de una pestaña en segundo plano: medido aquí, **dos segundos contados en dos
+minutos reales**. Con el móvil bloqueado entre series —que es lo normal— los
+segundos que se guardaban en cada `SetRecord` habrían sido falsos.
+
+Ahora se guarda **cuándo** empezó cada cosa y el tiempo se resta de `Date.now()`.
+El intervalo sólo repinta; si se estrangula, la cifra se refresca más tarde pero
+nunca se equivoca. Tres consecuencias:
+
+- **Lo que se guarda se mide en el instante de guardarlo**, con `Date.now()` y no
+  con el `now` del último repintado. Ahí está la diferencia entre los segundos
+  que la pantalla alcanzó a contar y los que la serie duró.
+- **Pausar congela** lo corrido y reanudar vuelve a anclar los dos relojes. Sin
+  eso, una pausa de diez minutos daría una serie de diez minutos.
+- **Al volver de segundo plano la cifra se pone al día** sin esperar al tic:
+  quien desbloquea el móvil vería el reloj parado durante un segundo, que es
+  justo la sensación que esto venía a quitar.
+
+### 23.5 El aviso al cumplirse el descanso
+
+La cuenta atrás llegaba a cero y seguía, pero nadie mira el teléfono los dos
+minutos enteros, que es el problema que la cuenta atrás venía a resolver.
+
+Ahora, al cruzarse el descanso prescrito:
+
+- **Vibra**, si el dispositivo puede. `vibrate` devuelve si hubo respuesta y aquí
+  se ignora a propósito: en iOS no existe la Vibration API.
+- **La franja entera cambia de color**, no sólo la cifra. Es la mitad del aviso
+  que sí llega a todas partes, y se ve de un vistazo desde el banco.
+
+Se dispara **al cruzar** y una sola vez, con una referencia que lo recuerda.
+Comparar por igualdad exacta habría sido más corto y estaría mal desde que los
+relojes miden tiempo: con la pestaña estrangulada el reloj salta de 118 a 130 y
+el aviso no llegaría nunca.
+
+**TODO: falta el sonido**, que es el único aviso que alcanza a quien tiene el
+teléfono en el bolsillo y un iPhone en la mano. Exige decidir dónde se apaga: un
+pitido que no se puede silenciar en una sala compartida es peor que ninguno, y
+esa preferencia vive en Ajustes, con las demás.
+
+### 23.6 Deshacer una serie
+
+Equivocarse contando es lo más normal del mundo, y la única salida era terminar
+la sesión y rehacerla entera.
+
+Reabre la última cerrada **con lo que se anotó en ella** —repeticiones, peso— y
+con su reloj donde estaba: la serie se hizo y duró eso, y reiniciarlo convertiría
+el arreglo de un error de conteo en un dato falso.
+
+El control es secundario y callado, debajo de la acción principal, y **no se
+pinta cuando no hay nada que deshacer** en vez de apagarse: un botón desactivado
+en la primera serie no le dice nada a nadie.
+
+### 23.7 Dos defectos que aparecieron de paso
+
+**El peso se borraba al deshacer.** El valor de partida se copiaba a un estado
+con un efecto —para poder rellenarlo cuando `useLastWeights` resolvía, que es una
+consulta y llega después del primer pintado— y ese efecto pisaba el peso
+restaurado: al volver a la primera serie su guarda se cumplía otra vez. Ahora el
+peso **se deriva** en vez de copiarse, y no hay dos fuentes compitiendo. El
+estado guarda sólo lo decidido a mano, donde `undefined` —«nadie lo ha tocado»—
+es distinto de `null` —«lo he dejado en blanco»—.
+
+**Seis tintes que no teñían nada.** `bg-cobalt-tint/40` se compila a
+`hsl(220 90% 42% / 0.06 / 0.4)`, porque el token YA lleva su propia alfa. No es
+un color válido y el navegador pinta transparente sin quejarse. Estaba en el
+registro, en el aviso de unirse a un equipo, en el diálogo de permisos y en la
+campana. Queda dicho en `index.css`, junto a los tokens.
+
+**Y un botón sin una sola letra.** `AchievementCelebration.dismissLabel` era
+opcional con «Seguir» por defecto; al pasar a claves el valor por defecto
+desapareció y el único que la monta no la pasaba. Como el tipo la daba por
+opcional, nada se quejó. Ahora es obligatoria.
+
+### 23.8 Lo que sigue faltando
+
+- **El peso no se prescribe, sólo se registra.** La prescripción dice RIR, que es
+  la instrucción de «elige tú la carga». Fijar un peso absoluto o un porcentaje
+  del máximo es otra decisión de producto —y contradictoria con el RIR si se
+  ponen las dos—, así que no se toma de rebote.
+- **No hay gráfica.** La progresión es una lista, y a propósito: con cinco o seis
+  puntos una lista se lee mejor que un dibujo, y añadir una librería de gráficos
+  para eso fue exactamente lo que se quitó de Reportes. Con un año de historial
+  detrás, esto se revisa.
+- **No hay 1RM estimado.** Es la cifra que normaliza peso y repeticiones, y es un
+  MODELO —Epley, Brzycki— con su margen de error. Aquí no se ha guardado nunca
+  nada calculado, y ésta no va a ser la primera.

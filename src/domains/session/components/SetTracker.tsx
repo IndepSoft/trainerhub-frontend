@@ -1,9 +1,10 @@
-import { Check, Timer } from 'lucide-react'
+import { Check, Timer, Undo2 } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { cn } from '@/shared/lib/utils'
 import { BLOCK_METHOD_LABEL_KEY } from '@/shared/i18n/domainLabels'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
-import { formatClock, formatKilos } from '../libs/session.utils'
+import { formatClock } from '../libs/session.utils'
+import { formatKilos } from '@/shared/lib/routineFormat'
 import {
   expectedWorkSeconds,
   paceVerdict,
@@ -69,6 +70,8 @@ interface SetTrackerProps {
   onAdjustWeight: (delta: number) => void
   onFinishSet: () => void
   onStartNextSet: () => void
+  /** Reabre la última serie cerrada. `null` cuando no hay ninguna que deshacer. */
+  onUndoLastSet: (() => void) | null
 }
 
 /**
@@ -104,6 +107,7 @@ export function SetTracker({
   onAdjustWeight,
   onFinishSet,
   onStartNextSet,
+  onUndoLastSet,
 }: SetTrackerProps) {
   const { t } = useTranslation()
 
@@ -115,9 +119,24 @@ export function SetTracker({
     const lastExpected = expectedWorkSeconds(step)
 
     return (
-      <section className="shrink-0 border-y border-cobalt-tint-3 bg-cobalt-tint/40 px-5 py-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cobalt">
-          {t('liveSession.resting')}
+      <section
+        className={cn(
+          'shrink-0 border-y px-5 py-6 transition-colors',
+          // Cumplido, la franja ENTERA cambia de color. La cifra sola no basta:
+          // el aviso tiene que verse de un vistazo desde el banco, y la
+          // vibración no llega a iOS.
+          overdue
+            ? 'border-ember/40 bg-ember/10'
+            : 'border-cobalt-tint-3 bg-cobalt-tint'
+        )}
+      >
+        <p
+          className={cn(
+            'text-[11px] font-semibold uppercase tracking-[0.16em]',
+            overdue ? 'text-ember-deep' : 'text-cobalt'
+          )}
+        >
+          {overdue ? t('liveSession.restOver') : t('liveSession.resting')}
         </p>
 
         {/* Cuenta ATRÁS, no adelante: lo que hace falta saber es cuánto queda.
@@ -173,6 +192,8 @@ export function SetTracker({
           <Timer className="size-5" />
           {t('liveSession.startNextSet')}
         </Button>
+
+        <UndoButton onUndo={onUndoLastSet} label={t('liveSession.undo')} />
       </section>
     )
   }
@@ -299,6 +320,38 @@ export function SetTracker({
         <Check className="size-5" />
         {t('liveSession.finishSet')}
       </Button>
+
+      <UndoButton onUndo={onUndoLastSet} label={t('liveSession.undo')} />
     </section>
+  )
+}
+
+interface UndoButtonProps {
+  onUndo: (() => void) | null
+  label: string
+}
+
+/**
+ * Deshacer la última serie.
+ *
+ * SECUNDARIO Y CALLADO, debajo de la acción principal: equivocarse contando es
+ * normal, pero es la excepción, y un botón de deshacer con el mismo peso que
+ * «finalizar» invitaría a pulsarlo por reflejo.
+ *
+ * No se pinta cuando no hay nada que deshacer, en vez de apagarse: un control
+ * desactivado en la primera serie de la sesión no le dice nada a nadie.
+ */
+function UndoButton({ onUndo, label }: UndoButtonProps) {
+  if (onUndo === null) return null
+
+  return (
+    <button
+      type="button"
+      onClick={onUndo}
+      className="mt-2 flex min-h-11 w-full items-center justify-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-ink/40 transition-colors hover:text-ink"
+    >
+      <Undo2 className="size-3.5" />
+      {label}
+    </button>
   )
 }

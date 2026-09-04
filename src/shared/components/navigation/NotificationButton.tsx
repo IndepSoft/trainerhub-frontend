@@ -95,7 +95,7 @@ export function NotificationButton() {
             {notices.map((notice) => (
               <li
                 key={notice.id}
-                className={cn('px-4 py-3', notice.readAt === null && 'bg-cobalt-tint/40')}
+                className={cn('px-4 py-3', notice.readAt === null && 'bg-cobalt-tint')}
               >
                 <p className="whitespace-pre-line text-sm leading-relaxed text-ink/80">
                   {notice.body}

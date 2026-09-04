@@ -2674,6 +2674,34 @@ test.describe('sesion en vivo', () => {
     await expect(page.getByText('La última vez: 47,5 kg')).toBeVisible()
   })
 
+  test('deshacer reabre la ultima serie con lo que se anoto', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/session/session-1')
+
+    const avance = page.getByRole('progressbar')
+
+    await page.getByRole('textbox', { name: 'Peso' }).fill('80')
+    await page.getByRole('button', { name: 'Repetición 6' }).click()
+    await page.getByRole('button', { name: 'Finalizar serie' }).click()
+    await expect(avance).toHaveAttribute('aria-valuenow', '1')
+
+    /*
+     * Equivocarse contando es lo mas normal del mundo, y hasta ahora la unica
+     * salida era terminar la sesion y rehacerla entera.
+     */
+    await page.getByRole('button', { name: 'Deshacer la última serie' }).click()
+
+    // Vuelve la MISMA serie, con su peso y sus repeticiones puestos.
+    await expect(page.getByText('Serie 1 de 4 · 6-8 · RIR 2 · 3-1-1-0')).toBeVisible()
+    await expect(page.getByRole('textbox', { name: 'Peso' })).toHaveValue('80')
+    await expect(page.getByText('6 de 6-8 repeticiones', { exact: false })).toBeVisible()
+    await expect(avance).toHaveAttribute('aria-valuenow', '0')
+
+    // Y ya no hay nada que deshacer: el control desaparece en vez de apagarse.
+    await expect(page.getByRole('button', { name: 'Deshacer la última serie' })).toHaveCount(0)
+  })
+
   test('una sesion de cardio conserva su pantalla de carrera', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await signIn(page)
@@ -4208,6 +4236,81 @@ test.describe('cuotas', () => {
     await page.getByRole('button', { name: /Hierro y Asfalto/ }).first().click()
     await page.getByRole('menuitem', { name: 'Ver el equipo' }).click()
     await expect(page.getByText(/tu cuota vence en 3 días/)).toHaveCount(0)
+  })
+})
+
+/**
+ * La progresion de cargas, que es lo que el peso venia a permitir.
+ *
+ * El peso se anotaba desde que la sesion guiada lo pide y el unico que lo leia
+ * era el campo de la sesion siguiente. Un dato que se escribe y no tiene
+ * pantalla envejece sin que nadie lo note.
+ */
+test.describe('progresion de cargas', () => {
+  test('lo levantado en la sesion aparece en la ficha del alumno', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students/student-2')
+
+    // De partida no hay nada: `student-2` no tiene historial en la semilla.
+    await expect(page.getByText(/Todavía no hay pesos anotados/)).toBeVisible()
+
+    /*
+     * Se entra a la sesion por la agenda y se vuelve por la interfaz: los
+     * adaptadores falsos viven en memoria y `goto` devolveria la sesion a su
+     * estado de semilla, que es justo el dato que se comprueba.
+     */
+    await page.getByRole('link', { name: 'Calendario' }).first().click()
+    await page.waitForURL(/\/calendar$/, { timeout: 15_000 })
+    await page.waitForTimeout(1200)
+
+    /*
+     * POR EL NOMBRE del alumno, no «la primera con minutos»: en escritorio la
+     * agenda abre en vista SEMANAL, y la semilla trae sesiones cerradas de otro
+     * alumno en los dias anteriores. La primera tarjeta de la semana no es la
+     * de hoy.
+     */
+    await page.getByRole('button', { name: /María Gómez/ }).first().click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Iniciar sesión' }).click()
+    await page.waitForURL(/\/session\/[\w-]+/)
+
+    // Dos series del mismo ejercicio, la segunda mas pesada.
+    await page.getByRole('textbox', { name: 'Peso' }).fill('70')
+    await page.getByRole('button', { name: 'Repetición 6' }).click()
+    await page.getByRole('button', { name: 'Finalizar serie' }).click()
+    await page.getByRole('button', { name: 'Empezar la siguiente' }).click()
+
+    await page.getByRole('textbox', { name: 'Peso' }).fill('75')
+    await page.getByRole('button', { name: 'Repetición 6' }).click()
+    await page.getByRole('button', { name: 'Finalizar serie' }).click()
+
+    await page.getByRole('button', { name: 'Pausar la sesión' }).press('Enter')
+    await page.getByRole('button', { name: 'Finalizar la sesión' }).press('Enter')
+
+    /*
+     * Se pasa por la celebracion y sale sola: `student-2` no tiene historial en
+     * la semilla, asi que esta primera sesion no desbloquea ningun logro y la
+     * pantalla se salta a si misma en vez de pintar una celebracion vacia.
+     */
+    await page.waitForURL(/\/calendar/, { timeout: 20_000 })
+
+    await page.getByRole('link', { name: /Estudiantes/ }).first().click()
+    await page.waitForURL(/\/students$/, { timeout: 15_000 })
+    await page.getByRole('link', { name: 'María Gómez' }).click()
+    await page.waitForURL(/\/students\/student-2/, { timeout: 15_000 })
+
+    const cargas = page.locator('section').filter({ hasText: 'Cargas' })
+    await expect(cargas.getByText('Press de banca con barra')).toBeVisible()
+
+    /*
+     * LA SERIE TOPE DEL DIA, no el promedio ni el volumen: una de calentamiento
+     * a 70 y una de trabajo a 75 promediarian 72,5, un peso que no se levanto.
+     */
+    await expect(cargas.getByText('75', { exact: false }).first()).toBeVisible()
+
+    // Y el detalle dice cuantas series fueron, que es lo que da contexto al tope.
+    await cargas.getByRole('button', { name: /Press de banca con barra/ }).click()
+    await expect(cargas.getByText('75 kg × 6 · 2 series')).toBeVisible()
   })
 })
 

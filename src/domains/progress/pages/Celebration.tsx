@@ -2,6 +2,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AchievementCelebration } from '../components/AchievementCelebration'
 import { useLatestAchievement } from '../hooks/useLatestAchievement'
 import { useViewerContext } from '@/app/ViewerContext'
+import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /**
  * Pantalla de celebración. Sólo composición.
@@ -20,6 +21,7 @@ import { useViewerContext } from '@/app/ViewerContext'
  * su alumna acaba de conseguir algo, que es buena noticia para él también.
  */
 export default function Celebration() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { hasOwnProgress, loading: loadingViewer } = useViewerContext()
 
@@ -55,6 +57,7 @@ export default function Celebration() {
       headlineValue={headlineValue}
       headlineLabel={headlineLabel}
       onDismiss={() => navigate(exit)}
+      dismissLabel={t('achievement.keepGoing')}
     />
   )
 }

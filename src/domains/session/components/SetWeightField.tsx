@@ -2,7 +2,7 @@ import { Minus, Plus } from 'lucide-react'
 import { Input } from '@/shared/ui/input'
 import { cn } from '@/shared/lib/utils'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
-import { formatKilos } from '../libs/session.utils'
+import { formatKilos } from '@/shared/lib/routineFormat'
 
 /**
  * Cuánto sube o baja cada toque, en kilos.

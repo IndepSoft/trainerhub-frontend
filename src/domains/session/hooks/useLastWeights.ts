@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { container } from '@/app/container'
-import type { SessionResult } from '@/shared/domain/entities/session'
+import { lastWeightByExercise } from '@/shared/domain/loadProgression'
 
 /**
  * El último peso anotado de cada ejercicio, en sesiones ya cerradas.
@@ -11,8 +11,9 @@ import type { SessionResult } from '@/shared/domain/entities/session'
  * semana. Aquí el campo llega ya con lo que se levantó la última vez, y subir es
  * un toque.
  *
- * SÓLO DE SESIONES CON RESULTADO: una que se abandonó a medias no dice cuál era
- * la carga de trabajo.
+ * EL CÁLCULO NO ESTÁ AQUÍ: sale de `lastWeightByExercise`, que es el mismo
+ * historial que pinta la ficha del alumno. Con dos definiciones de «el último
+ * peso», la sesión y la ficha podrían decir cifras distintas del mismo día.
  *
  * NO BLOQUEA NADA. Devuelve un mapa vacío mientras carga, y la pantalla funciona
  * igual: sin historial —la primera sesión de alguien— tampoco habría nada que
@@ -29,32 +30,7 @@ export function useLastWeights(studentId: string | null): Map<string, number> {
 
     const load = async () => {
       const sessions = await container.sessions.findByStudent(studentId)
-      if (!active) return
-
-      /*
-       * Por `completedAt` y no por la fecha de la agenda: son cosas distintas
-       * —una sesión del martes se puede cerrar el miércoles— y la que importa
-       * aquí es cuándo se levantó ese peso de verdad.
-       *
-       * De la más reciente hacia atrás, así que la primera anotación que
-       * aparezca de un ejercicio es la última que ocurrió.
-       */
-      const results = sessions
-        .map((session) => session.result)
-        .filter((result): result is SessionResult => result !== null)
-        .sort((left, right) => right.completedAt.localeCompare(left.completedAt))
-
-      const found = new Map<string, number>()
-
-      for (const result of results) {
-        for (const record of result.sets ?? []) {
-          if (record.weightKg === undefined) continue
-          if (found.has(record.exerciseId)) continue
-          found.set(record.exerciseId, record.weightKg)
-        }
-      }
-
-      setWeights(found)
+      if (active) setWeights(lastWeightByExercise(sessions))
     }
 
     void load()

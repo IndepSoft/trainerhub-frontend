@@ -1,4 +1,5 @@
 import type { PrescribedExercise } from '@/shared/domain/entities/routine'
+import { activeLocale } from '@/shared/i18n/activeLocale'
 
 /**
  * Cómo se escribe una rutina. Funciones puras, sin React.
@@ -35,4 +36,21 @@ export function formatRest(seconds: number): string {
   const minutes = Math.floor(seconds / 60)
   const remainder = seconds % 60
   return remainder === 0 ? `${minutes} min` : `${minutes}:${String(remainder).padStart(2, '0')}`
+}
+
+/**
+ * Los kilos como los escribe cada idioma: «62,5» en castellano, «62.5» en ingles.
+ *
+ * Por `Intl` y no con una coma a mano: una version anterior pintaba coma en el
+ * campo del peso y punto en el resumen de la serie, asi que el mismo peso salia
+ * escrito de dos formas en la misma pantalla.
+ *
+ * Sin decimal cuando es entero -«60», no «60,0»-, que es como se dice un peso.
+ *
+ * Subio aqui cuando la ficha del alumno paso a pintar la progresion de cargas:
+ * hasta entonces solo lo usaba la sesion en vivo, y quedarse alli habria
+ * obligado a `students` a importar de otro dominio.
+ */
+export function formatKilos(kilos: number): string {
+  return new Intl.NumberFormat(activeLocale(), { maximumFractionDigits: 1 }).format(kilos)
 }

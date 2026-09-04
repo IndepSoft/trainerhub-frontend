@@ -36,7 +36,13 @@
 
     /* Superficies derivadas de Cobalt. No son colores nuevos: son el mismo
        tono a distinta opacidad, que es lo que eran en realidad los 17
-       `bg-blue-50` y `bg-blue-100` repartidos por los dominios. */
+       `bg-blue-50` y `bg-blue-100` repartidos por los dominios.
+
+       LLEVAN SU PROPIA ALFA, asi que el modificador de Tailwind NO se les puede
+       aplicar: `bg-cobalt-tint/40` se compila a `hsl(220 90% 42% / 0.06 / 0.4)`,
+       que no es un color valido y el navegador pinta transparente sin quejarse.
+       Habia seis escritos asi y ninguno tiñe nada. Para mas o menos tinte estan
+       los tres niveles; para uno intermedio, se añade un cuarto aqui. */
     --cobalt-tint-1: 220 90% 42% / 0.06;
     --cobalt-tint-2: 220 90% 42% / 0.12;
     --cobalt-tint-3: 220 90% 42% / 0.24;

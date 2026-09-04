@@ -48,7 +48,7 @@ export function JoinCrewPrompt() {
   }
 
   return (
-    <section className="border-b border-cobalt-tint-3 bg-cobalt-tint/40 px-5 py-6">
+    <section className="border-b border-cobalt-tint-3 bg-cobalt-tint px-5 py-6">
       <div className="mx-auto flex max-w-xl flex-col items-start gap-3">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cobalt">
           {t('joinCrew.startHere')}

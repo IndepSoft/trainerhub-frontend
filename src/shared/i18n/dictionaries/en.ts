@@ -915,4 +915,15 @@ export const english: Dictionary = {
   // ----------------------------------------------------- peso en el plan
   'liveSession.doneReps': '{reps} reps',
   'liveSession.doneRepsWithWeight': '{reps} reps · {weight} kg',
+
+  // ------------------------------------------------ progresion de cargas
+  'loads.title': 'Loads',
+  'loads.kilos': 'kg',
+  'loads.empty': 'No weights recorded yet. They are picked up on their own when a strength session is run.',
+  'loads.lastEntry': '{date} · {reps} reps',
+  'loads.point': '{weight} kg × {reps} · {sets} sets',
+
+  // ---------------------------------------- aviso de descanso y deshacer
+  'liveSession.restOver': 'Rest is up',
+  'liveSession.undo': 'Undo the last set',
 }

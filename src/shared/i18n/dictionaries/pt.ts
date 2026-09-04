@@ -915,4 +915,15 @@ export const portuguese: Dictionary = {
   // ----------------------------------------------------- peso en el plan
   'liveSession.doneReps': '{reps} rep',
   'liveSession.doneRepsWithWeight': '{reps} rep · {weight} kg',
+
+  // ------------------------------------------------ progresion de cargas
+  'loads.title': 'Cargas',
+  'loads.kilos': 'kg',
+  'loads.empty': 'Ainda não há pesos anotados. Eles são coletados sozinhos ao executar uma sessão de força.',
+  'loads.lastEntry': '{date} · {reps} rep',
+  'loads.point': '{weight} kg × {reps} · {sets} séries',
+
+  // ---------------------------------------- aviso de descanso y deshacer
+  'liveSession.restOver': 'Descanso cumprido',
+  'liveSession.undo': 'Desfazer a última série',
 }

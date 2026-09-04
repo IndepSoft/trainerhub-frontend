@@ -4,7 +4,7 @@ import { BLOCK_METHOD_LABEL_KEY } from '@/shared/i18n/domainLabels'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type { SetStep } from '../libs/setPlan'
 import type { Exercise } from '@/shared/domain/entities/exercise'
-import { formatKilos } from '../libs/session.utils'
+import { formatKilos } from '@/shared/lib/routineFormat'
 import type { SetRecord } from '@/shared/domain/entities/session'
 
 interface SessionPlanListProps {

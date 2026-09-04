@@ -305,15 +305,19 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
 - Props declaradas y sin conectar, marcadas con `TODO:` en gamification y
   calendar. `ChallengeCard.onUpdate` es la más grave: el padre le pasa un
   manejador real que nunca se invoca.
-- La sesión guiada no avisa cuando termina el descanso —la cuenta atrás llega a
-  cero y sigue, pero nadie mira el teléfono los dos minutos enteros— y no deja
-  deshacer una serie cerrada.
+- El aviso de fin de descanso es VIBRACIÓN y color, no sonido. En iOS no existe
+  la Vibration API, así que ahí sólo queda el color: al que tiene el teléfono en
+  el bolsillo no le llega nada. El sonido exige decidir dónde se apaga —un pitido
+  que no se puede silenciar en una sala compartida es peor que ninguno— y esa
+  preferencia vive en Ajustes.
 - El peso se REGISTRA por serie pero no se PRESCRIBE: la prescripción dice RIR,
-  que es «elige tú la carga». Fijar un peso o un porcentaje del máximo arrastraría
-  al editor de rutinas, al borrador de planes y al volcado a la agenda. Y nadie
-  mira todavía la progresión de cargas de un ejercicio a lo largo de las semanas:
-  el dato existe y no tiene pantalla. Los pesos van en kilos; ofrecer libras es
-  una preferencia que no está decidida.
+  que es «elige tú la carga», y poner además un peso absoluto la contradice.
+  Fijarlo arrastraría al editor de rutinas y al borrador de planes. Los pesos van
+  en kilos; ofrecer libras es una preferencia que no está decidida.
+- La progresión de cargas es una LISTA, sin gráfica y sin 1RM estimado. Con cinco
+  o seis puntos una lista se lee mejor, y añadir una librería de gráficos fue
+  justo lo que se quitó de Reportes; el 1RM es un modelo con su margen de error, y
+  aquí no se guarda nada calculado.
 - Los filtros de `TrainingFilters` y `StudentFilters` no filtran.
 - Las sesiones volcadas desde un plan no guardan de qué volcado salieron, así que
   no se pueden mover ni cancelar en bloque y volcar dos veces duplica.

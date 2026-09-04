@@ -925,6 +925,17 @@ export const spanish = {
   // ----------------------------------------------------- peso en el plan
   'liveSession.doneReps': '{reps} rep',
   'liveSession.doneRepsWithWeight': '{reps} rep · {weight} kg',
+
+  // ------------------------------------------------ progresion de cargas
+  'loads.title': 'Cargas',
+  'loads.kilos': 'kg',
+  'loads.empty': 'Todavía no hay pesos anotados. Se recogen solos al ejecutar una sesión de fuerza.',
+  'loads.lastEntry': '{date} · {reps} rep',
+  'loads.point': '{weight} kg × {reps} · {sets} series',
+
+  // ---------------------------------------- aviso de descanso y deshacer
+  'liveSession.restOver': 'Descanso cumplido',
+  'liveSession.undo': 'Deshacer la última serie',
 } as const
 
 /** Toda clave que la aplicación puede traducir. */

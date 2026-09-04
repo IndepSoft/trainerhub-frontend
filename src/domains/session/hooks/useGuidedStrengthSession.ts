@@ -3,6 +3,7 @@ import type { Routine } from '@/shared/domain/entities/routine'
 import type { SetRecord } from '@/shared/domain/entities/session'
 import { buildSetPlan, maxReps, type SetStep } from '../libs/setPlan'
 import type { LiveSessionState } from '../types/session.types'
+import { HapticPattern, vibrate } from '@/shared/lib/haptics'
 
 /**
  * En qué está la sesión ahora mismo.
@@ -53,6 +54,13 @@ interface UseGuidedStrengthSessionResult {
   finishSet: () => void
   /** Termina el descanso antes de tiempo y arranca la serie siguiente. */
   startNextSet: () => void
+  /**
+   * Reabre la última serie cerrada, con lo que se anotó en ella.
+   *
+   * Equivocarse contando es lo más normal del mundo, y hasta ahora la única
+   * salida era terminar la sesión y rehacerla entera.
+   */
+  undoLastSet: () => void
   pause: () => void
   resume: () => void
 }
@@ -97,33 +105,135 @@ export function useGuidedStrengthSession(
   const steps = useMemo(() => buildSetPlan(routine), [routine])
 
   const [state, setState] = useState<LiveSessionState>('running')
-  const [elapsedSeconds, setElapsedSeconds] = useState(0)
-  const [phaseSeconds, setPhaseSeconds] = useState(0)
+  /*
+   * LOS RELOJES MIDEN TIEMPO, NO TICS.
+   *
+   * La primera versión sumaba uno por cada `setInterval`, y eso da un reloj que
+   * se para: el navegador estrangula los temporizadores de una pestaña en
+   * segundo plano —medido aquí: dos segundos contados en dos minutos reales— y
+   * con el móvil bloqueado entre series, que es lo normal, los segundos que se
+   * guardaban en cada `SetRecord` habrían sido falsos.
+   *
+   * Ahora se guarda CUÁNDO empezó cada cosa y el tiempo se resta de `Date.now()`.
+   * El intervalo ya sólo sirve para repintar; si se estrangula, la cifra se
+   * refresca más tarde pero nunca se equivoca.
+   *
+   * `accumulated` es lo corrido antes de la pausa en curso: pausar congela ahí y
+   * reanudar vuelve a anclar el reloj.
+   */
+  const [sessionStartedAt, setSessionStartedAt] = useState(() => Date.now())
+  const [sessionAccumulated, setSessionAccumulated] = useState(0)
+  const [phaseStartedAt, setPhaseStartedAt] = useState(() => Date.now())
+  const [phaseAccumulated, setPhaseAccumulated] = useState(0)
+  /* Sólo provoca el repintado. El valor que importa sale de las marcas de tiempo. */
+  const [now, setNow] = useState(() => Date.now())
   const [currentIndex, setCurrentIndex] = useState(0)
   const [phase, setPhase] = useState<SessionPhase>('work')
   const [repsDone, setRepsDone] = useState(0)
-  const [weightKg, setWeightKg] = useState<number | null>(null)
+  /*
+   * Lo decidido A MANO para la serie en curso. `undefined` es «todavía nadie ha
+   * tocado el peso», que NO es lo mismo que `null` —«lo he dejado en blanco a
+   * propósito»—. La diferencia es lo que permite que el valor de partida se
+   * derive sin pisar lo que se acaba de escribir.
+   */
+  const [chosenWeight, setChosenWeight] = useState<number | null | undefined>(undefined)
   const [records, setRecords] = useState<SetRecord[]>([])
 
   // El identificador del intervalo va en una referencia: cambiarlo no debe
   // provocar un renderizado.
   const intervalRef = useRef<number | null>(null)
+  /** La serie cuyo descanso ya se avisó, para no repetirlo en cada repintado. */
+  const signalledRestRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (state !== 'running' || phase === 'done') return
 
-    intervalRef.current = window.setInterval(() => {
-      setElapsedSeconds((previous) => previous + 1)
-      setPhaseSeconds((previous) => previous + 1)
-    }, TICK_MILLISECONDS)
+    intervalRef.current = window.setInterval(() => setNow(Date.now()), TICK_MILLISECONDS)
 
     return () => {
       if (intervalRef.current !== null) window.clearInterval(intervalRef.current)
     }
   }, [state, phase])
 
+  /*
+   * Al volver de segundo plano, la cifra se pone al día sin esperar al tic.
+   *
+   * El valor nunca fue incorrecto -sale de restar marcas de tiempo-, pero lo que
+   * se PINTA depende del último repintado, y con la pestaña estrangulada ése
+   * puede ser de hace un minuto. Quien desbloquea el móvil vería el reloj
+   * parado durante un segundo, que es exactamente la sensación que este cambio
+   * venía a quitar.
+   */
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState === 'visible') setNow(Date.now())
+    }
+
+    document.addEventListener('visibilitychange', refresh)
+    return () => document.removeEventListener('visibilitychange', refresh)
+  }, [])
+
+  /**
+   * Los segundos corridos de un reloj, medidos EN EL INSTANTE QUE SE PIDA.
+   *
+   * `at` es el parámetro que importa: para pintar se pasa `now` —el del último
+   * repintado, que basta— y para GUARDAR se pasa `Date.now()`. Guardar con `now`
+   * anotaría los segundos que la pantalla alcanzó a contar y no los que la serie
+   * duró, que es justo el error que se venía a corregir.
+   */
+  const secondsOf = useCallback(
+    (anchor: number, accumulated: number, at: number): number =>
+      accumulated + (state === 'running' && phase !== 'done' ? Math.floor((at - anchor) / 1000) : 0),
+    [state, phase]
+  )
+
+  const elapsedSeconds = secondsOf(sessionStartedAt, sessionAccumulated, now)
+  const phaseSeconds = secondsOf(phaseStartedAt, phaseAccumulated, now)
+
+  /** Arranca de cero el reloj de la fase, o desde lo que ya llevaba. */
+  const restartPhaseClock = useCallback((from = 0) => {
+    setPhaseAccumulated(from)
+    setPhaseStartedAt(Date.now())
+    setNow(Date.now())
+  }, [])
+
   const currentStep = steps[currentIndex] ?? null
   const targetReps = currentStep === null ? 0 : maxReps(currentStep.reps)
+
+  /*
+   * El aviso al cumplirse el descanso.
+   *
+   * LA CUENTA ATRÁS NO BASTABA: llegaba a cero y seguía, pero nadie mira el
+   * teléfono los dos minutos enteros, que es justamente el problema que la
+   * cuenta atrás venía a resolver.
+   *
+   * Se dispara al CRUZAR el prescrito, y una sola vez por descanso: lo recuerda
+   * una referencia. Comparar por igualdad exacta habría sido más corto y estaría
+   * mal desde que los relojes miden tiempo en vez de tics: con la pestaña
+   * estrangulada el reloj salta de 118 a 130 y el aviso no llegaría nunca.
+   *
+   * `vibrate` devuelve si hubo respuesta y aquí se ignora a propósito: en iOS no
+   * existe la Vibration API y el aviso tiene que seguir funcionando. Por eso la
+   * pantalla cambia además de color al cumplirse -ver `SetTracker`-, que es la
+   * mitad del aviso que sí llega a todas partes.
+   *
+   * TODO: falta el sonido, que es el único aviso que alcanza a quien tiene el
+   * teléfono en el bolsillo y un iPhone en la mano. Exige decidir dónde se
+   * apaga: un pitido que no se puede silenciar en una sala compartida es peor
+   * que ninguno, y esa preferencia vive en Ajustes, con las demás.
+   */
+  useEffect(() => {
+    if (phase !== 'rest' || currentStep === null) {
+      signalledRestRef.current = null
+      return
+    }
+
+    if (phaseSeconds < currentStep.restSecondsAfter) return
+    if (signalledRestRef.current === currentStep.id) return
+
+    signalledRestRef.current = currentStep.id
+    vibrate(HapticPattern.TRANSITION)
+  }, [phase, phaseSeconds, currentStep])
 
   const markReps = useCallback((count: number) => {
     // Volver a tocar la ultima marcada la desmarca: es como se corrige una
@@ -131,16 +241,9 @@ export function useGuidedStrengthSession(
     setRepsDone((previous) => (previous === count ? count - 1 : count))
   }, [])
 
-  const setWeight = useCallback((kilos: number | null) => setWeightKg(kilos), [])
+  const setWeight = useCallback((kilos: number | null) => setChosenWeight(kilos), [])
 
-  const adjustWeight = useCallback(
-    (delta: number) => {
-      // Desde «sin anotar» el primer toque deja el propio incremento, no cero:
-      // pulsar «+2,5» sin haber puesto nada quiere decir 2,5.
-      setWeightKg((previous) => Math.max((previous ?? 0) + delta, 0))
-    },
-    []
-  )
+
 
   /**
    * El peso con el que arranca una serie: lo último anotado de ESE ejercicio.
@@ -165,32 +268,41 @@ export function useGuidedStrengthSession(
   )
 
   /*
-   * La PRIMERA serie, cuando llega el historial.
+   * El peso de la serie en curso: lo decidido a mano si lo hay, y si no el que
+   * viene arrastrado.
    *
-   * `useLastWeights` resuelve tarde -es una consulta- y la pantalla ya se ha
-   * pintado. La guarda evita que ese retraso pise el peso de una serie que ya
-   * se esté haciendo: sólo se aplica si todavía no se ha cerrado ninguna.
+   * SE DERIVA, NO SE COPIA A UN ESTADO. La versión anterior lo copiaba con un
+   * efecto para poder rellenarlo cuando `useLastWeights` resolvía —es una
+   * consulta y llega después del primer pintado—, y ese efecto pisaba el peso
+   * restaurado al deshacer una serie: volvía a la primera, la guarda del efecto
+   * se cumplía otra vez y lo borraba. Derivándolo no hay dos fuentes que
+   * competir.
    */
-  useEffect(() => {
-    const first = steps[0]
-    if (first === undefined || currentIndex !== 0 || records.length > 0) return
+  const weightKg =
+    chosenWeight !== undefined
+      ? chosenWeight
+      : currentStep === null
+        ? null
+        : carriedWeight(currentStep.exerciseId, records)
 
-    setWeightKg(lastWeights.get(first.exerciseId) ?? null)
-  }, [steps, lastWeights, currentIndex, records.length])
-
-  const advance = useCallback(
-    (done: SetRecord[]) => {
-      const next = currentIndex + 1
-      setCurrentIndex(next)
-      setPhase(next >= steps.length ? 'done' : 'work')
-      setRepsDone(0)
-      setPhaseSeconds(0)
-
-      const nextStep = steps[next]
-      setWeightKg(nextStep === undefined ? null : carriedWeight(nextStep.exerciseId, done))
+  const adjustWeight = useCallback(
+    (delta: number) => {
+      // Desde «sin anotar» el primer toque deja el propio incremento, no cero:
+      // pulsar «+2,5» sin haber puesto nada quiere decir 2,5.
+      setChosenWeight(Math.max((weightKg ?? 0) + delta, 0))
     },
-    [carriedWeight, currentIndex, steps]
+    [weightKg]
   )
+
+  const advance = useCallback(() => {
+    const next = currentIndex + 1
+    setCurrentIndex(next)
+    setPhase(next >= steps.length ? 'done' : 'work')
+    setRepsDone(0)
+    restartPhaseClock()
+    // A «sin decidir»: el peso de la serie nueva lo pone el arrastre.
+    setChosenWeight(undefined)
+  }, [currentIndex, restartPhaseClock, steps.length])
 
   const finishSet = useCallback(() => {
     if (currentStep === null || phase !== 'work') return
@@ -206,7 +318,7 @@ export function useGuidedStrengthSession(
         repsDone,
         // Sin anotar se guarda AUSENTE, no cero. Ver `SetRecord.weightKg`.
         weightKg: weightKg ?? undefined,
-        workSeconds: phaseSeconds,
+        workSeconds: secondsOf(phaseStartedAt, phaseAccumulated, Date.now()),
         // El descanso todavia no ha ocurrido: se anota al terminarlo.
         restSeconds: 0,
         prescribedRestSeconds: currentStep.restSecondsAfter,
@@ -223,18 +335,21 @@ export function useGuidedStrengthSession(
      * superserie ese toque estaria justo donde no hay que parar.
      */
     if (currentStep.restSecondsAfter === 0 || isLast) {
-      advance(closed)
+      advance()
       return
     }
 
     setPhase('rest')
-    setPhaseSeconds(0)
+    restartPhaseClock()
   }, [
     advance,
     currentIndex,
     currentStep,
+    phaseAccumulated,
+    phaseStartedAt,
+    restartPhaseClock,
+    secondsOf,
     phase,
-    phaseSeconds,
     records,
     repsDone,
     steps.length,
@@ -246,16 +361,52 @@ export function useGuidedStrengthSession(
 
     // El descanso REAL se anota en la serie que lo provoco, no en la siguiente:
     // es una propiedad de como se ejecuto esa serie.
+    const taken = secondsOf(phaseStartedAt, phaseAccumulated, Date.now())
     const rested = records.map((record, index) =>
-      index === records.length - 1 ? { ...record, restSeconds: phaseSeconds } : record
+      index === records.length - 1 ? { ...record, restSeconds: taken } : record
     )
 
     setRecords(rested)
-    advance(rested)
-  }, [advance, phase, phaseSeconds, records])
+    advance()
+  }, [advance, phase, phaseAccumulated, phaseStartedAt, records, secondsOf])
 
-  const pause = useCallback(() => setState('paused'), [])
-  const resume = useCallback(() => setState('running'), [])
+  const undoLastSet = useCallback(() => {
+    const last = records[records.length - 1]
+    if (last === undefined) return
+
+    const stepIndex = steps.findIndex((step) => step.id === last.stepId)
+    if (stepIndex === -1) return
+
+    setRecords(records.slice(0, -1))
+    setCurrentIndex(stepIndex)
+    setPhase('work')
+    setRepsDone(last.repsDone)
+    setChosenWeight(last.weightKg ?? null)
+    /*
+     * El reloj vuelve a donde estaba, no a cero: la serie se hizo y duró eso.
+     * Reiniciarlo convertiría el arreglo de un error de conteo en un dato falso.
+     */
+    restartPhaseClock(last.workSeconds)
+  }, [records, restartPhaseClock, steps])
+
+  /*
+   * Pausar CONGELA lo corrido; reanudar vuelve a anclar los dos relojes. Sin
+   * esto, el rato en pausa se contaría igual y una pausa de diez minutos daría
+   * una serie de diez minutos.
+   */
+  const pause = useCallback(() => {
+    setSessionAccumulated(elapsedSeconds)
+    setPhaseAccumulated(phaseSeconds)
+    setState('paused')
+  }, [elapsedSeconds, phaseSeconds])
+
+  const resume = useCallback(() => {
+    const anchor = Date.now()
+    setSessionStartedAt(anchor)
+    setPhaseStartedAt(anchor)
+    setNow(anchor)
+    setState('running')
+  }, [])
 
   const doneSets = records.length
 
@@ -279,6 +430,7 @@ export function useGuidedStrengthSession(
     adjustWeight,
     finishSet,
     startNextSet,
+    undoLastSet,
     pause,
     resume,
   }

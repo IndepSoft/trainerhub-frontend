@@ -10,7 +10,15 @@ interface AchievementCelebrationProps {
   headlineValue: number
   headlineLabel: string
   onDismiss: () => void
-  dismissLabel?: string
+  /**
+   * Qué pone el botón de salir.
+   *
+   * OBLIGATORIA, y lo es desde que se tradujo la aplicación: era opcional con
+   * «Seguir» por defecto, al pasar a claves el valor por defecto desapareció y
+   * el único que la monta no la pasaba. El botón quedó sin una sola letra, y
+   * como el tipo la daba por opcional nada se quejó.
+   */
+  dismissLabel: string
 }
 
 /**
