@@ -282,6 +282,9 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
 - El ESQUEMA vive en `supabase/migrations/`, y sólo desde la tercera migración:
   las dos primeras se aplicaron por herramienta y siguen únicamente en la nube.
   Se recuperan con `supabase db pull`.
+- Supabase LIMITA los envíos de correo por hora en el plan gratuito. Al probar el
+  alta varias veces seguidas, el registro empieza a devolver «Demasiados
+  intentos»: es el límite del proveedor, no un fallo de la aplicación.
 - Los mensajes de error NO están traducidos: `errorMapper` devuelve castellano a
   fuego y `AppError.message` va directo a la pantalla. Arreglarlo es que
   `AppError` lleve una clave en vez de un mensaje, y toca todos los adaptadores.

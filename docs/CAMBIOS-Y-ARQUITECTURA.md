@@ -2321,18 +2321,32 @@ Con `VITE_USE_FAKE_AUTH` apagado, contra el proyecto real:
   cuenta— con la respuesta que da el proveedor de verdad: el usuario creado y
   ninguna sesión.
 
-### 25.6 Lo que NO queda comprobado, y por qué
+### 25.6 La migración, aplicada y comprobada
 
-- **El inicio de sesión completo de una cuenta ya confirmada.** Hace falta una
-  cuenta con el correo confirmado, y confirmarla exige o abrir el enlace del
-  mensaje o tocar `auth.users`. Queda por hacer con una cuenta de verdad.
-- **La migración no está aplicada.** Está escrita y revisada, pero aplicarla
-  requiere permiso que esta sesión no tiene. Hasta que se aplique, un alta de
-  alumno sigue naciendo con rol `trainer` —que es el defecto que la migración
-  corrige— y Configuración no puede guardar foto ni biografía, porque no hay
-  columnas donde escribirlas.
+Se aplicó al proyecto. Comprobado después:
 
-### 25.7 Lo que sigue siendo simulado, y por qué importa saberlo
+- `photo_url` y `bio` existen, y `authenticated` puede escribirlas.
+- El permiso de actualización de `authenticated` cubre siete columnas y **`role`
+  no está entre ellas**: nadie se asciende a administrador con un `update` sobre
+  su propia fila.
+- La decisión de rol da lo que debe en los cuatro casos, incluido el que
+  importa: un cliente que declara `intent: "admin"` sale **`student`**. La
+  intención sólo distingue entrenador de alumno; `admin` se decide contra
+  `platform_admin_emails` y nada más.
+
+Las cuentas de prueba se borraron: el proyecto queda con cero usuarios y cero
+perfiles.
+
+### 25.7 Lo que NO queda comprobado, y por qué
+
+- **El inicio de sesión completo de una cuenta ya confirmada.** Hace falta abrir
+  el enlace del correo, que no llega a esta sesión.
+- **El alta de alumno de punta a punta.** La lógica del rol está comprobada
+  sobre la base, pero no el recorrido entero por la pantalla: Supabase limita los
+  envíos de correo por hora y se agotaron verificando el resto. Es cuestión de
+  esperar y repetir el alta eligiendo «Entreno».
+
+### 25.8 Lo que sigue siendo simulado, y por qué importa saberlo
 
 Sólo la autenticación y la ficha de perfil hablan con Supabase. Equipos,
 alumnos, rutinas, sesiones, planes y suscripciones siguen en memoria, y sus
@@ -2349,7 +2363,7 @@ adaptadores falsos se siguen eligiendo con la misma condición.
 El camino es repositorio a repositorio, y el orden natural lo marca quién ata a
 quién: equipos y puestos antes que alumnos, y alumnos antes que sesiones.
 
-### 25.8 Deuda que aparece de paso
+### 25.9 Deuda que aparece de paso
 
 - **Los mensajes de error no están traducidos.** `errorMapper` devuelve castellano
   a fuego —«Email o contraseña incorrectos»— y `AppError.message` va directo a la
