@@ -3,6 +3,7 @@ import type {
   AuthUser,
   LoginCredentials,
   SignUpCredentials,
+  SignUpProfile,
 } from '@/shared/domain/entities/auth'
 import { AppError, AppErrorCode } from '@/shared/domain/errors'
 import { profileIdFromEmail } from './devIdentity'
@@ -39,11 +40,29 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 type AuthStateListener = (user: AuthUser | null) => void
 
+/**
+ * Lo que en Supabase hace un disparador de Postgres: dejar constancia de quien
+ * es la cuenta que acaba de nacer.
+ *
+ * Se inyecta desde la raiz de composicion en vez de hacerlo aqui dentro, y por
+ * un motivo concreto: este adaptador no debe saber que existen entrenadores ni
+ * alumnos. Sabe que una cuenta nace con un perfil y se lo pasa a quien si sabe
+ * que hacer con el, que es exactamente el reparto que hay del otro lado.
+ */
+export type ProfileRecorder = (user: AuthUser, profile: SignUpProfile) => Promise<void>
+
 export class FakeAuthAdapter implements AuthPort {
   private currentUser: AuthUser | null
   private readonly listeners: Set<AuthStateListener>
+  /*
+   * Campo declarado y asignado a mano, no una propiedad de parametro: el
+   * `tsconfig` lleva `erasableSyntaxOnly`, que prohibe la forma corta porque no
+   * se puede borrar sin dejar comportamiento detras.
+   */
+  private readonly recordProfile: ProfileRecorder
 
-  constructor() {
+  constructor(recordProfile: ProfileRecorder) {
+    this.recordProfile = recordProfile
     this.listeners = new Set<AuthStateListener>()
     this.currentUser = this.readPersistedSession()
 
@@ -107,10 +126,28 @@ export class FakeAuthAdapter implements AuthPort {
       email: credentials.email,
     }
 
-    // Deja la sesion abierta, que es el comportamiento de Supabase cuando la
-    // confirmacion por correo esta desactivada. Con ella activada habria que
-    // enviar a una pantalla de «revisa tu correo»; el dia que se active, el
-    // cambio esta en el adaptador real, no aqui.
+    /*
+     * El perfil ANTES de abrir la sesion, no despues.
+     *
+     * Abrir la sesion avisa a los oyentes, y de ahi arranca `useViewer`, que
+     * pregunta quien ha entrado. Al reves, la primera respuesta seria «nadie
+     * con ficha» y el recien registrado aterrizaria en la pantalla del alumno.
+     * Del otro lado no hace falta pensarlo: el disparador corre dentro de la
+     * misma transaccion que la cuenta.
+     */
+    await this.recordProfile(user, credentials.profile)
+
+    /*
+     * Deja la sesion abierta, que es el comportamiento de Supabase cuando la
+     * confirmacion por correo esta DESACTIVADA.
+     *
+     * En el proyecto real esta activada, asi que alli el alta no abre sesion y
+     * el registro manda a «revisa tu correo». Aqui se conserva la sesion abierta
+     * a proposito: la simulacion existe para trabajar sin salir del navegador, y
+     * un correo de confirmacion que nadie envia dejaria el desarrollo sin forma
+     * de pasar del alta. Quien registra distingue los dos casos preguntando por
+     * `getCurrentUser`, que es lo que dice el contrato del puerto.
+     */
     this.persistSession(user)
     this.setCurrentUser(user)
 

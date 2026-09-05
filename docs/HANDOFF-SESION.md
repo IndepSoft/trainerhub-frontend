@@ -129,9 +129,10 @@ local y sigue siendo frágil.** Si de verdad importa, lo correcto es empujarla a
 origin; si no importa, borrarla y dejarlo escrito. Lo que no puede es quedarse
 en este limbo por tercera vez.
 
-**Los 404 de `trainers` son esperados, no una regresión.** La base de datos de
-Supabase existe pero está vacía: cero tablas. Cada carga del dashboard lanza
-`GET /rest/v1/trainers` y recibe 404. La aplicación degrada bien.
+**Los 404 de `trainers` YA NO OCURREN, y dejaron de ser esperados.** Eran
+razonables mientras la base estuvo vacía; cuando se creó `profiles` y nadie
+apuntó el código hacia ella, pasaron a ser un defecto. El repositorio de
+entrenadores va ahora contra `profiles`. Ver CAMBIOS §25.
 
 **El buffer de consola del navegador arrastra errores de sesiones anteriores.**
 Tras reiniciar la vista previa aparecen `ERR_CONNECTION_REFUSED` y fallos de

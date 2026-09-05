@@ -71,13 +71,6 @@ export interface Container {
 const shouldUseFakeAuthentication =
   import.meta.env.DEV && import.meta.env.VITE_USE_FAKE_AUTH === 'true'
 
-function createAuthenticationAdapter(): AuthPort {
-  if (shouldUseFakeAuthentication) {
-    return new FakeAuthAdapter()
-  }
-  return new SupabaseAuthAdapter()
-}
-
 /**
  * Los entrenadores van con la autenticación, no aparte.
  *
@@ -85,12 +78,41 @@ function createAuthenticationAdapter(): AuthPort {
  * identificador de perfil que inventa la autenticación simulada no existe en
  * ninguna tabla real, así que un entrenador de Supabase sobre una sesión falsa
  * no encuentra nunca su ficha.
+ *
+ * Se guarda la CLASE CONCRETA y no sólo el puerto porque la simulación necesita
+ * algo que el puerto ya no ofrece: crear la ficha. Ver justo debajo.
  */
-function createTrainerRepository(): TrainerRepository {
-  if (shouldUseFakeAuthentication) {
-    return new FakeTrainerRepository()
-  }
-  return new SupabaseTrainerRepository()
+const fakeTrainers = shouldUseFakeAuthentication ? new FakeTrainerRepository() : null
+
+/**
+ * La cuenta y su ficha nacen juntas, también en la simulación.
+ *
+ * En Supabase lo hace un disparador sobre `auth.users`, dentro de la misma
+ * transacción; aquí lo hace esta función, que es lo más parecido que hay. Y va
+ * en la raíz de composición porque es el único sitio que puede saber a la vez
+ * que existe una autenticación simulada y que existen fichas de entrenador: el
+ * adaptador de autenticación no debe saberlo, y el de fichas no sabe de altas.
+ *
+ * SÓLO PARA QUIEN VIENE A ENTRENAR A OTROS. Un alumno no tiene ficha de
+ * entrenador, y dársela le mandaría a fundar un equipo que no ha pedido.
+ */
+function createAuthenticationAdapter(): AuthPort {
+  if (fakeTrainers === null) return new SupabaseAuthAdapter()
+
+  return new FakeAuthAdapter(async (user, profile) => {
+    if (profile.intent !== 'trainer') return
+
+    await fakeTrainers.create({
+      profileId: user.id,
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+      email: user.email,
+      // La experiencia llega como rango -«1-3 años»- y se guarda como número:
+      // en blanco se queda sin poner, no en cero, que afirmaría algo que nadie
+      // ha dicho.
+      yearsExperience: Number.parseInt(profile.yearsOfExperience ?? '', 10) || undefined,
+    })
+  })
 }
 
 /*
@@ -103,7 +125,7 @@ const fakeCrews = new FakeCrewRepository()
 const fakeStudents = new FakeStudentRepository(crewScope)
 const fakeSessions = new FakeSessionRepository(crewScope)
 const fakeCrewStaff = new FakeCrewStaffRepository(crewScope)
-const trainers = createTrainerRepository()
+const trainers: TrainerRepository = fakeTrainers ?? new SupabaseTrainerRepository()
 
 export const container: Container = {
   auth: createAuthenticationAdapter(),

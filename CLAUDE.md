@@ -267,10 +267,26 @@ Variables en `.env` (plantilla en `.env.example`). `.gitignore` cubre `.env` y
 Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
 [`docs/CAMBIOS-Y-ARQUITECTURA.md`](docs/CAMBIOS-Y-ARQUITECTURA.md).
 
-- Los adaptadores siguen siendo falsos salvo `TrainerRepository` sobre Supabase,
-  y ése convive con `FakeTrainerRepository`, que se elige con la misma condición
-  que la autenticación simulada. Los datos falsos viven en memoria: al recargar
-  vuelve la semilla.
+- Los adaptadores siguen siendo falsos salvo la AUTENTICACIÓN y el PERFIL, que
+  van contra Supabase —`profiles`, uno a uno con `auth.users`—. Los dos conviven
+  con sus gemelos falsos, que se eligen con la misma condición. Los datos falsos
+  viven en memoria: al recargar vuelve la semilla.
+  **`.env` conserva `VITE_USE_FAKE_AUTH=true` a propósito**: con la
+  autenticación real, el resto de repositorios no conocen al usuario que entra
+  —sus semillas cuelgan del identificador que inventa el adaptador simulado— y
+  la aplicación se ve vacía. Quitarlo también tumba las 180 pruebas.
+- El alta manda el perfil DENTRO del alta, no después, y no es una preferencia:
+  la confirmación por correo está activada, así que `signUp` no abre sesión y sin
+  sesión RLS no deja escribir la fila. La escribe un disparador de Postgres en la
+  misma transacción. Por eso `TrainerRepository` ya no tiene `create`.
+- El ESQUEMA vive en `supabase/migrations/`, y sólo desde la tercera migración:
+  las dos primeras se aplicaron por herramienta y siguen únicamente en la nube.
+  Se recuperan con `supabase db pull`.
+- Los mensajes de error NO están traducidos: `errorMapper` devuelve castellano a
+  fuego y `AppError.message` va directo a la pantalla. Arreglarlo es que
+  `AppError` lleve una clave en vez de un mensaje, y toca todos los adaptadores.
+- No se puede reenviar el correo de confirmación: si no llega, no hay salida
+  desde la aplicación. Exige una operación nueva en `AuthPort`.
 - No se puede cambiar la contraseña: `AuthPort` no expone esa operación, así que
   Configuración no la ofrece en vez de fingirla.
 - La traducción cubre lo que escribe la aplicación —español, inglés y

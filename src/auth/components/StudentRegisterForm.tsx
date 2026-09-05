@@ -6,6 +6,7 @@ import { FormField } from './FormField'
 import { FormInput } from './FormInput'
 import { RegisterFields } from './RegisterFields'
 import { useRegisterForm } from '../hooks/useRegisterForm'
+import { ConfirmEmailNotice } from './ConfirmEmailNotice'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface StudentRegisterFormProps {
@@ -29,7 +30,7 @@ interface StudentRegisterFormProps {
  */
 export function StudentRegisterForm({ onBack }: StudentRegisterFormProps) {
   const { t } = useTranslation()
-  const { formData, isValid, loading, error, isRequired, setField, submit } =
+  const { formData, isValid, loading, error, awaitingConfirmation, isRequired, setField, submit } =
     useRegisterForm('student')
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -37,6 +38,9 @@ export function StudentRegisterForm({ onBack }: StudentRegisterFormProps) {
     event.preventDefault()
     void submit()
   }
+
+  // Mismo motivo que en el alta de entrenador: se sustituye, no se superpone.
+  if (awaitingConfirmation) return <ConfirmEmailNotice email={formData.email.trim()} />
 
   return (
     <>

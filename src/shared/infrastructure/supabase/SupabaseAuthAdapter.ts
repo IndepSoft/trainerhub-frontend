@@ -7,7 +7,7 @@ import type {
 import { AppError, AppErrorCode } from '@/shared/domain/errors'
 import { supabase } from './client'
 import { mapAuthError } from './errorMapper'
-import { toAuthUser } from './mappers'
+import { toAuthUser, toSignUpMetadata } from './mappers'
 
 /** Implementacion de AuthPort sobre Supabase Auth. */
 export class SupabaseAuthAdapter implements AuthPort {
@@ -29,6 +29,29 @@ export class SupabaseAuthAdapter implements AuthPort {
     const { data, error } = await supabase.auth.signUp({
       email: credentials.email,
       password: credentials.password,
+      options: {
+        /*
+         * EL PERFIL VIAJA AQUI, y el disparador `on_auth_user_created` lo
+         * escribe en `profiles` dentro de la misma transaccion que la cuenta.
+         *
+         * Antes no se mandaba nada, con este motivo: «el rol NO se guarda en
+         * user_metadata, que lo puede editar el propio cliente». El motivo
+         * sigue siendo bueno y por eso el rol SIGUE sin salir de aqui: lo que
+         * viaja es la INTENCION declarada, y quien la convierte en rol es el
+         * disparador, que ademas decide `admin` contra `platform_admin_emails`
+         * sin mirar estos metadatos. Un cliente modificado puede mentir sobre a
+         * que viene, no sobre lo que puede.
+         */
+        data: toSignUpMetadata(credentials.profile),
+        /*
+         * A donde vuelve el enlace del correo de confirmacion.
+         *
+         * Sin esto manda a la Site URL configurada en el panel, que en un
+         * proyecto recien creado apunta a otro puerto y deja al recien
+         * registrado en una pagina que no existe.
+         */
+        emailRedirectTo: `${window.location.origin}/authentication`,
+      },
     })
 
     if (error) throw mapAuthError(error)
@@ -36,9 +59,12 @@ export class SupabaseAuthAdapter implements AuthPort {
       throw new AppError(AppErrorCode.UNKNOWN, 'No se pudo crear la cuenta')
     }
 
-    // Sin `user_metadata`: el rol NO se guarda ahi. Lo decide de que repositorio
-    // conoce el perfil -entrenadores o alumnos-, porque `user_metadata` lo puede
-    // editar el propio cliente y un rol autoasignable no es un rol.
+    /*
+     * `data.session` puede venir a null: es lo que pasa con la confirmacion por
+     * correo activada, que es como esta este proyecto. No se mira aqui a
+     * proposito -el puerto devuelve el usuario, no la sesion-; quien registra lo
+     * comprueba con `getCurrentUser`, que es lo que dice el contrato.
+     */
     return toAuthUser(data.user)
   }
 

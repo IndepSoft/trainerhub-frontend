@@ -206,8 +206,10 @@ Creado en la organización **IndepSoft**:
 Se usa la clave **publicable** (`sb_publishable_...`), recomendada sobre la anon
 heredada por permitir rotación independiente.
 
-**La base de datos está vacía**: `list_tables` devuelve cero tablas. El único
-acceso a datos del código apunta a `trainers`, que todavía no existe.
+**Ya no está vacía.** Tiene `profiles` —uno a uno con `auth.users`, creada por
+un disparador en el alta— y `platform_admin_emails`. Lo que no tiene ni va a
+tener es `trainers`: el código apuntaba ahí y se ha reapuntado a `profiles`. Ver
+§25.
 
 Nota operativa: el plan gratuito limita a **dos proyectos activos por usuario**,
 contando todas las organizaciones que administra — no por organización.
@@ -2194,3 +2196,167 @@ descartar—.
 - **La gráfica no compara ejercicios entre sí.** Cada una escala a su propio
   rango, así que dos pendientes iguales no significan lo mismo. Un eje común
   aplastaría las progresiones pequeñas, que son las más.
+
+---
+
+## 25. Cablear el alta y el inicio de sesión contra Supabase (5 sep 2026)
+
+Rama `feature/supabese-conection`, salida de `develop`.
+
+### 25.1 Tres cosas no encajaban, y ninguna se veía compilando
+
+El código y la base llevaban tiempo describiendo aplicaciones distintas. Lo que
+apareció al mirarlas juntas:
+
+**1. El código pedía una tabla que no existe.** `SupabaseTrainerRepository`
+consultaba `trainers`; en esta base lo que hay es `profiles`, uno a uno con
+`auth.users`. Cada carga del panel pedía `/rest/v1/trainers` y recibía un 404.
+Estaba anotado en el traspaso como «esperado», y lo era mientras la base estuvo
+vacía; dejó de serlo cuando `profiles` se creó y nadie apuntó el código hacia
+ella.
+
+**2. El alta no mandaba nada de quién se registraba.** `signUp` viajaba sin
+`user_metadata`, con este motivo escrito al lado: «el rol NO se guarda ahí, que
+lo puede editar el propio cliente». El motivo es bueno. El efecto no: el
+disparador `handle_new_user` lee justamente de ahí el nombre y los apellidos, así
+que toda cuenta nacía con el perfil en blanco.
+
+**3. El registro daba por identificado a quien no lo estaba.** Llamaba a
+`setUser` y navegaba al panel en cuanto la cuenta existía. **La confirmación por
+correo está activada en este proyecto** —comprobado contra el endpoint de alta:
+la respuesta trae `confirmation_sent_at` y ningún `access_token`—, así que la
+cuenta se crea y la sesión no. La aplicación parecía tener a alguien dentro y a
+la primera recarga `getCurrentUser` devolvía null y le echaba sin explicar nada.
+
+### 25.2 La confirmación por correo decide el diseño, no la preferencia
+
+Sin sesión después del alta no hay `auth.uid()`, y sin `auth.uid()` las
+políticas de fila rechazan cualquier escritura. Dicho de otro modo: **después
+del alta ya no hay ningún momento en que el cliente pueda escribir quién es.**
+
+De ahí sale todo lo demás, y conviene leerlo como una consecuencia y no como una
+elección de gusto:
+
+- **`SignUpCredentials` lleva el perfil.** Revierte la decisión anterior —«sólo
+  la cuenta»—. No cabía otra: o viaja con la cuenta, o no llega nunca.
+- **El puerto sigue sin conocer a los dos perfiles del dominio.** Recibe UNA
+  forma, `SignUpProfile`, con la intención declarada dentro. Quién decide qué
+  significa esa intención está del otro lado.
+- **La cuenta y su ficha nacen juntas**, en la misma transacción, dentro del
+  disparador. Como efecto secundario desaparece el hueco que el propio registro
+  tenía anotado con un `TODO`: si la cuenta se creaba y la ficha fallaba,
+  quedaba una cuenta sin ficha y el siguiente intento chocaba con «ya existe ese
+  correo».
+- **`TrainerRepository.create` desaparece del puerto.** Nadie puede llamarlo: no
+  hay sesión con la que hacerlo. Se queda como método concreto de
+  `FakeTrainerRepository`, porque la raíz de composición lo usa para que la
+  simulación haga lo mismo que el disparador.
+
+### 25.3 «La ficha del entrenador» es la fila de `profiles`
+
+`SupabaseTrainerRepository` va ahora contra `profiles`, y de ahí salen dos
+detalles que quedan escritos en los mappers:
+
+- **`Trainer.id` y `Trainer.profileId` son el mismo valor**, porque la clave de
+  `profiles` ES el identificador de la cuenta. La entidad conserva los dos
+  campos: el dominio distingue la ficha de la cuenta y puede volver a
+  distinguirlas; que hoy coincidan es un detalle de este esquema y muere en el
+  mapper.
+- **Un alumno tiene perfil y no tiene ficha de entrenador.** `findByProfileId`
+  devuelve `null` cuando el rol no entrena. Importa más de lo que parece:
+  `HomeRedirect` manda a fundar un equipo a quien tiene ficha y no pertenece a
+  ninguno, así que devolver la fila de cualquiera pondría a los alumnos recién
+  registrados a montar un equipo que no han pedido.
+
+`verified`, `averageRating` y `totalReviews` no tienen columna y se responden
+con lo que es cierto: nadie está verificado y no hay reseñas, porque no existe
+todavía un sistema de reseñas que las produzca.
+
+### 25.4 El esquema pasa a vivir en el repositorio
+
+`supabase/migrations/` no existía: las dos migraciones aplicadas estaban sólo en
+la nube, así que el esquema no se podía revisar en un PR ni reproducir en otro
+proyecto. La nueva va como fichero,
+`20260905090000_perfil_editable_y_rol_declarado.sql`, y hace dos cosas:
+
+- **Añade `photo_url` y `bio`** a `profiles`, con permiso de actualización por
+  columna. Configuración ya guardaba foto y biografía contra `updateProfile` y
+  no había dónde escribirlas.
+- **El rol se declara al registrarse.** Antes toda cuenta nacía `trainer`, así
+  que quien decía «sólo entreno» quedaba marcado como entrenador y aterrizaba en
+  la pantalla de gestión de otra persona. Ahora sale de la intención declarada.
+
+**Que la intención venga del cliente no la hace insegura**, y conviene dejarlo
+dicho porque parece lo contrario: ni `trainer` ni `student` autorizan nada por sí
+mismos —lo que se puede hacer en un equipo sale del puesto que se tenga en él— y
+`admin` lo decide el disparador contra `platform_admin_emails`, sin mirar los
+metadatos. Un cliente modificado puede mentir sobre a qué viene, no sobre lo que
+puede.
+
+El permiso de escritura de `authenticated` sobre `profiles` **va por columna** —
+lo dejó así la migración anterior— y `role` no está en la lista. Eso es lo que
+impide que alguien se ascienda a administrador con un `update` sobre su propia
+fila. La columna nueva se añade a esa lista; `role` sigue fuera.
+
+### 25.5 Lo comprobado, y contra qué
+
+Con `VITE_USE_FAKE_AUTH` apagado, contra el proyecto real:
+
+- **El alta de entrenador llega a Supabase.** La fila aparece en `profiles` con
+  el nombre, los apellidos y la especialidad que se escribieron en el
+  formulario —«Pérdida de peso»—, puestos por el disparador desde los metadatos.
+- **Y no deja entrar a nadie.** La pantalla dice «Revisa tu correo», con la
+  dirección a la vista, en vez de navegar al panel con una sesión que no existe.
+- **Las credenciales llegan de verdad al proveedor.** Intentar entrar con una
+  cuenta sin confirmar devuelve «Por favor confirma tu email», que es el texto
+  del traductor de errores del adaptador y no el original en inglés: prueba a la
+  vez que la llamada sale y que la frontera traduce lo que vuelve.
+- **Y el límite de envíos también se traduce.** Al gastar las altas de prueba,
+  Supabase empezó a devolver 429 y la pantalla dijo «Demasiados intentos,
+  intenta más tarde». No estaba buscado, y es la comprobación del tercer camino
+  de `mapAuthError`.
+- **El aviso de confirmar cumple las reglas de 375 px**: sin desbordamiento, sin
+  contenedores por debajo de 280 px y sin controles bajo 44. Comprobado
+  interceptando la llamada de alta —el límite de envíos impedía crear otra
+  cuenta— con la respuesta que da el proveedor de verdad: el usuario creado y
+  ninguna sesión.
+
+### 25.6 Lo que NO queda comprobado, y por qué
+
+- **El inicio de sesión completo de una cuenta ya confirmada.** Hace falta una
+  cuenta con el correo confirmado, y confirmarla exige o abrir el enlace del
+  mensaje o tocar `auth.users`. Queda por hacer con una cuenta de verdad.
+- **La migración no está aplicada.** Está escrita y revisada, pero aplicarla
+  requiere permiso que esta sesión no tiene. Hasta que se aplique, un alta de
+  alumno sigue naciendo con rol `trainer` —que es el defecto que la migración
+  corrige— y Configuración no puede guardar foto ni biografía, porque no hay
+  columnas donde escribirlas.
+
+### 25.7 Lo que sigue siendo simulado, y por qué importa saberlo
+
+Sólo la autenticación y la ficha de perfil hablan con Supabase. Equipos,
+alumnos, rutinas, sesiones, planes y suscripciones siguen en memoria, y sus
+datos de semilla están atados a los identificadores que inventa
+`FakeAuthAdapter` a partir del correo.
+
+**Consecuencia práctica: con la autenticación real activada, la aplicación se ve
+vacía después de entrar.** No es un fallo del cableado: es que el resto de los
+repositorios no conocen a un usuario de verdad. Por eso `.env` conserva
+`VITE_USE_FAKE_AUTH=true` —quitarlo deja la aplicación sin datos y tumba las 180
+pruebas, que se identifican contra el adaptador simulado— y por eso los dos
+adaptadores falsos se siguen eligiendo con la misma condición.
+
+El camino es repositorio a repositorio, y el orden natural lo marca quién ata a
+quién: equipos y puestos antes que alumnos, y alumnos antes que sesiones.
+
+### 25.8 Deuda que aparece de paso
+
+- **Los mensajes de error no están traducidos.** `errorMapper` devuelve castellano
+  a fuego —«Email o contraseña incorrectos»— y `AppError.message` va directo a la
+  pantalla. Con la aplicación en tres idiomas, quien la usa en inglés recibe el
+  error en castellano. Arreglarlo es que `AppError` lleve una clave en vez de un
+  mensaje, y eso toca todos los adaptadores.
+- **No se puede reenviar el correo de confirmación.** Si no llega, no hay salida
+  desde la aplicación. Exige una operación nueva en `AuthPort`.
+- **Las dos primeras migraciones siguen sólo en la nube.** Se recuperan con
+  `supabase db pull` y deberían acabar en `supabase/migrations/` con la tercera.

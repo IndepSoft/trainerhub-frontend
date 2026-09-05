@@ -942,4 +942,10 @@ export const english: Dictionary = {
   'loads.chart': '{exercise}: from {from} to {to} kg across {sessions} sessions',
   'loads.oneRepMax': 'Estimated 1RM',
   'loads.oneRepMaxHint': 'Estimated from the heaviest set with the Epley formula. It is not a measurement and it is not stored.',
+
+  // ---------------------------------------------- confirmacion de correo
+  'register.confirm.title': 'Check your email',
+  'register.confirm.sentTo': 'We sent a link to {email}',
+  'register.confirm.body': 'Open it to activate your account. After that you can sign in right here.',
+  'register.confirm.spam': 'If it has not arrived in a few minutes, check your spam folder.',
 }

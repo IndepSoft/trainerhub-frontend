@@ -11,15 +11,20 @@ export interface AuthPort {
   signInWithEmail(credentials: LoginCredentials): Promise<AuthUser>
 
   /**
-   * Crea la cuenta y devuelve el usuario.
+   * Crea la cuenta CON su perfil, y devuelve el usuario.
    *
-   * SOLO LA CUENTA. El perfil que va con ella -entrenador o alumno- lo crea
-   * quien registra, contra su repositorio: es de lo que se deduce el rol, y
-   * meterlo aqui obligaria al puerto de autenticacion a conocer a los dos.
+   * DECIA «SOLO LA CUENTA» y ya no puede decirlo. El motivo esta explicado en
+   * `SignUpCredentials`, y se resume asi: con la confirmacion por correo
+   * activada el alta no abre sesion, y sin sesion el cliente no puede escribir
+   * el perfil despues. O viaja con la cuenta, o no llega nunca.
    *
-   * OJO con la confirmacion por correo: si el proveedor la exige, la cuenta
-   * queda creada pero sin sesion abierta. Devolver el usuario no significa que
-   * ya este dentro; eso se comprueba con `getCurrentUser`.
+   * El puerto sigue sin conocer a los dos perfiles del dominio: recibe UNA
+   * forma -`SignUpProfile`- con la intencion declarada dentro. Quien decide que
+   * significa esa intencion es el otro lado; aqui solo se transporta.
+   *
+   * DEVOLVER EL USUARIO NO SIGNIFICA QUE YA ESTE DENTRO. Con la confirmacion
+   * activada la cuenta queda creada y la sesion no; quien registra tiene que
+   * comprobarlo con `getCurrentUser` antes de dar a nadie por identificado.
    */
   signUp(credentials: SignUpCredentials): Promise<AuthUser>
 

@@ -952,6 +952,12 @@ export const spanish = {
   'loads.chart': '{exercise}: de {from} a {to} kg en {sessions} sesiones',
   'loads.oneRepMax': '1RM estimado',
   'loads.oneRepMaxHint': 'Estimado sobre la serie más pesada con la fórmula de Epley. No es una medición y no se guarda.',
+
+  // ---------------------------------------------- confirmacion de correo
+  'register.confirm.title': 'Revisa tu correo',
+  'register.confirm.sentTo': 'Hemos enviado un enlace a {email}',
+  'register.confirm.body': 'Ábrelo para activar la cuenta. Después ya puedes iniciar sesión aquí mismo.',
+  'register.confirm.spam': 'Si en unos minutos no ha llegado, mira en la carpeta de correo no deseado.',
 } as const
 
 /** Toda clave que la aplicación puede traducir. */
