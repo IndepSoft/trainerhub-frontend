@@ -1,4 +1,9 @@
-import type { AuthUser, LoginCredentials } from '../entities/auth'
+import type {
+  AuthUser,
+  LoginCredentials,
+  RegisterCredentials,
+  RegisterResult,
+} from '../entities/auth'
 
 /**
  * Puerto de autenticacion.
@@ -9,6 +14,16 @@ import type { AuthUser, LoginCredentials } from '../entities/auth'
  */
 export interface AuthPort {
   signInWithEmail(credentials: LoginCredentials): Promise<AuthUser>
+
+  /**
+   * Da de alta una cuenta.
+   *
+   * No promete sesion iniciada: cuando el proveedor exige confirmar el correo,
+   * la cuenta queda creada y sin sesion. Por eso devuelve `RegisterResult` y no
+   * un `AuthUser` a secas, y quien lo llama debe mirar `needsEmailConfirmation`
+   * antes de navegar a una pantalla protegida.
+   */
+  signUp(credentials: RegisterCredentials): Promise<RegisterResult>
 
   /**
    * Arranca un login federado. No devuelve usuario: el proveedor redirige el

@@ -1,5 +1,10 @@
 import type { AuthPort } from '@/shared/domain/ports/AuthPort'
-import type { AuthUser, LoginCredentials } from '@/shared/domain/entities/auth'
+import type {
+  AuthUser,
+  LoginCredentials,
+  RegisterCredentials,
+  RegisterResult,
+} from '@/shared/domain/entities/auth'
 import { AppError, AppErrorCode } from '@/shared/domain/errors'
 
 /**
@@ -76,6 +81,40 @@ export class FakeAuthAdapter implements AuthPort {
     this.setCurrentUser(user)
 
     return user
+  }
+
+  async signUp(credentials: RegisterCredentials): Promise<RegisterResult> {
+    // Se valida igual que el alta real para que el formulario ejercite sus
+    // caminos de error tambien en desarrollo.
+    if (!EMAIL_PATTERN.test(credentials.email)) {
+      throw new AppError(AppErrorCode.VALIDATION, 'El email no tiene un formato válido')
+    }
+
+    if (credentials.password.length < MINIMUM_PASSWORD_LENGTH) {
+      throw new AppError(
+        AppErrorCode.VALIDATION,
+        `La contraseña debe tener al menos ${MINIMUM_PASSWORD_LENGTH} caracteres`
+      )
+    }
+
+    if (credentials.email === FAILING_EMAIL_ADDRESS) {
+      throw new AppError(AppErrorCode.CONFLICT, 'Ese email ya está registrado')
+    }
+
+    const user: AuthUser = {
+      id: this.buildDeterministicIdentifier(credentials.email),
+      email: credentials.email,
+    }
+
+    /*
+     * Deja sesion iniciada, el equivalente a tener desactivada la confirmacion
+     * por correo. Se declara aqui en vez de darlo por hecho porque el contrato
+     * admite las dos respuestas.
+     */
+    this.persistSession(user)
+    this.setCurrentUser(user)
+
+    return { user, needsEmailConfirmation: false }
   }
 
   async signInWithGoogle(): Promise<void> {
