@@ -11,7 +11,12 @@ import FormField from '../molecules/FormField'
 import FormInputCustom from '../molecules/FormInputCustom'
 import { Calendar, Lock, Mail, MapPin, User } from 'lucide-react'
 import SelectFieldCustom from '../molecules/SelectFieldCustom'
-import { useRegisterForm } from '../../hooks/useRegisterForm'
+import {
+  STEP_TITLES,
+  TOTAL_STEPS,
+  useRegisterForm,
+} from '../../hooks/useRegisterForm'
+import { ArrowLeft, ArrowRight } from 'lucide-react'
 
 /**
  * Especialidades ofrecidas en el alta.
@@ -53,25 +58,59 @@ export default function RegisterForm() {
     loading,
     error,
     confirmationNotice,
+    step,
+    canAdvance,
+    goNext,
+    goBack,
   } = useRegisterForm()
+
+  const isLastStep = step === TOTAL_STEPS
 
   const handleSubmit = (event: React.FormEvent) => {
     // Sin esto el navegador recarga la pagina entera al enviar: el
     // `handleSubmit` anterior no recibia el evento y no lo cancelaba, asi que el
     // formulario no habria podido funcionar nunca.
     event.preventDefault()
+
+    // Enter en un campo del primer paso avanza en vez de enviar. Sin esto, el
+    // formulario se enviaria a medias desde el teclado del movil, que es donde
+    // mas se pulsa Enter.
+    if (!isLastStep) {
+      if (canAdvance) goNext()
+      return
+    }
+
     void submit()
   }
 
   return (
     <>
       <CardHeader className="text-center">
-        <CardTitle className="text-xl font-semibold">
-          Crear cuenta
-        </CardTitle>
-        <CardDescription>
-          Únete a TrainerHub y gestiona tu negocio fitness
-        </CardDescription>
+        <CardTitle className="text-xl font-semibold">Crear cuenta</CardTitle>
+        <CardDescription>{STEP_TITLES[step]}</CardDescription>
+
+        {/* Indicador de progreso. Dos segmentos en vez de un "1 de 2" escrito:
+            se lee de un vistazo y no hay que traducirlo a ningun idioma.
+            `aria-label` lo dice en palabras para quien no ve los segmentos. */}
+        <div
+          className="mt-3 flex items-center justify-center gap-1.5"
+          role="progressbar"
+          aria-valuemin={1}
+          aria-valuemax={TOTAL_STEPS}
+          aria-valuenow={step}
+          aria-label={`Paso ${step} de ${TOTAL_STEPS}`}
+        >
+          {Array.from({ length: TOTAL_STEPS }, (_, index) => (
+            <span
+              key={index}
+              className={
+                index < step
+                  ? 'h-1 w-10 rounded-full bg-primary transition-colors'
+                  : 'h-1 w-10 rounded-full bg-muted transition-colors'
+              }
+            />
+          ))}
+        </div>
       </CardHeader>
       
       <CardContent className='px-2'>
@@ -91,7 +130,11 @@ export default function RegisterForm() {
 
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
-            {/* Nombre y Apellido */}
+            {/* PASO 1. El reparto de campos por paso vive tambien en
+                STEP_FIELDS, dentro del hook: si se mueve uno, hay que moverlo
+                en los dos sitios. */}
+            {step === 1 && (
+              <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField label="Nombre" required={isRequired('nombre')}>
                 <FormInputCustom
@@ -139,7 +182,12 @@ export default function RegisterForm() {
               />
             </FormField>
 
-            {/* Especialidad */}
+              </>
+            )}
+
+            {/* PASO 2 */}
+            {step === 2 && (
+              <>
             <FormField label="Especialidad" required={isRequired('especialidad')}>
               <SelectFieldCustom
                 placeholder="Selecciona tu especialidad"
@@ -172,14 +220,47 @@ export default function RegisterForm() {
                 />
               </FormField>
             </div>
+              </>
+            )}
 
-            <Button 
-              type="submit" 
-              className="w-full mt-6"
-              disabled={!isValid || loading}
-            >
-              {loading ? 'Creando cuenta...' : 'Crear cuenta'}
-            </Button>
+            {/* Navegacion. En el ultimo paso el boton envia; en los anteriores
+                avanza. Se apilan al reves de como se leen -`flex-row-reverse`-
+                para que la accion principal quede a la derecha en escritorio y
+                ARRIBA en movil, al alcance del pulgar. */}
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row-reverse">
+              {isLastStep ? (
+                <Button
+                  type="submit"
+                  className="w-full sm:flex-1"
+                  disabled={!isValid || loading}
+                >
+                  {loading ? 'Creando cuenta...' : 'Crear cuenta'}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  className="w-full sm:flex-1"
+                  disabled={!canAdvance}
+                  onClick={goNext}
+                >
+                  Continuar
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              )}
+
+              {step > 1 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  onClick={goBack}
+                  disabled={loading}
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Atrás
+                </Button>
+              )}
+            </div>
           </div>
         </form>
       </CardContent>

@@ -17,7 +17,7 @@ export default function AuthenticationPage() {
               className="w-full"
               aria-label="Formularios de autenticación"
             >
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="w-full">
                 <TabsTrigger value="login">
                   Iniciar sesión
                 </TabsTrigger>

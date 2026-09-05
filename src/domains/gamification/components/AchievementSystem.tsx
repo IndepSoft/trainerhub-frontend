@@ -114,7 +114,7 @@ export function AchievementSystem(_props: AchievementSystemProps) {
         </CardHeader>
         <CardContent>
           <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="w-full">
               <TabsTrigger value="all">All ({unlockedAchievements.length})</TabsTrigger>
               <TabsTrigger value="attendance">Attendance ({categoryStats.attendance})</TabsTrigger>
               <TabsTrigger value="consistency">Consistency ({categoryStats.consistency})</TabsTrigger>

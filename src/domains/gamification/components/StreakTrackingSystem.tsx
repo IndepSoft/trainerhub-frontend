@@ -176,7 +176,7 @@ export function StreakTrackingSystem() {
                 </CardHeader>
                 <CardContent>
                     <Tabs defaultValue="all">
-                        <TabsList className="grid w-full grid-cols-5">
+                        <TabsList className="w-full">
                             <TabsTrigger value="all">
                                 Todas ({filteredStreaks.length})
                             </TabsTrigger>

@@ -71,7 +71,7 @@ export default function Gamification() {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="w-full">
               <TabsTrigger value="overview">Resumen</TabsTrigger>
               <TabsTrigger value="achievements">Logros</TabsTrigger>
               <TabsTrigger value="challenges">Desafíos</TabsTrigger>

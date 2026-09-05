@@ -48,12 +48,47 @@ const REQUIRED_FIELDS: RegisterFormField[] = [
   'especialidad',
 ]
 
+export type RegisterStep = 1 | 2
+
+export const TOTAL_STEPS = 2
+
+/**
+ * Qué campo pertenece a cada paso.
+ *
+ * El formulario se parte en dos porque en un móvil de 375 px los siete campos
+ * ocupaban 1,29 pantallas —y eso ANTES de que el teclado tape la mitad—. Partido
+ * así, cada paso entra de una vez y el botón de avanzar queda siempre visible.
+ *
+ * El corte no es por cantidad, es por significado: primero quién eres y cómo
+ * entras; después a qué te dedicas. Son dos preguntas distintas y se responden
+ * con cabezas distintas.
+ *
+ * IMPORTANTE: esta tabla y los bloques del JSX de `RegisterForm` describen el
+ * mismo reparto. Si se mueve un campo de paso, hay que moverlo en los dos
+ * sitios, o `canAdvance` exigiría un campo que no está en pantalla.
+ */
+const STEP_FIELDS: Record<RegisterStep, RegisterFormField[]> = {
+  1: ['nombre', 'apellido', 'email', 'password'],
+  2: ['especialidad', 'experiencia', 'ubicacion'],
+}
+
+export const STEP_TITLES: Record<RegisterStep, string> = {
+  1: 'Tus datos de acceso',
+  2: 'Tu perfil profesional',
+}
+
 interface UseRegisterFormResult {
   formData: RegisterFormData
   isValid: boolean
   isRequired: (field: RegisterFormField) => boolean
   setField: (field: RegisterFormField, value: string) => void
   submit: () => Promise<void>
+  /** Paso visible ahora. */
+  step: RegisterStep
+  /** Si los obligatorios del paso actual están completos. */
+  canAdvance: boolean
+  goNext: () => void
+  goBack: () => void
   /** En curso: el botón se deshabilita para no dar de alta dos veces. */
   loading: boolean
   /** Mensaje ya traducido, listo para pintar. Nunca un error del proveedor. */
@@ -79,6 +114,7 @@ export function useRegisterForm(): UseRegisterFormResult {
   const navigate = useNavigate()
   const setUser = useAuthStore((state) => state.setUser)
   const [formData, setFormData] = useState<RegisterFormData>(EMPTY_FORM)
+  const [step, setStep] = useState<RegisterStep>(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmationNotice, setConfirmationNotice] = useState<string | null>(null)
@@ -92,6 +128,28 @@ export function useRegisterForm(): UseRegisterFormResult {
   const isValid = REQUIRED_FIELDS.every(
     (field) => formData[field].trim().length > 0
   )
+
+  /*
+   * Solo mira los OBLIGATORIOS de este paso. El segundo trae dos campos
+   * opcionales, y exigirlos para avanzar convertiria en obligatorio algo que la
+   * validacion final da por opcional: la misma incoherencia que ya tenia
+   * `ubicacion`, en otro sitio.
+   */
+  const canAdvance = STEP_FIELDS[step]
+    .filter((field) => REQUIRED_FIELDS.includes(field))
+    .every((field) => formData[field].trim().length > 0)
+
+  const goNext = () => {
+    // El error del paso anterior no debe seguir en pantalla al cambiar de paso:
+    // se refiere a algo que ya no se ve.
+    setError(null)
+    setStep((current) => (current < TOTAL_STEPS ? ((current + 1) as RegisterStep) : current))
+  }
+
+  const goBack = () => {
+    setError(null)
+    setStep((current) => (current > 1 ? ((current - 1) as RegisterStep) : current))
+  }
 
   const submit = async () => {
     setError(null)
@@ -144,6 +202,10 @@ export function useRegisterForm(): UseRegisterFormResult {
     isRequired,
     setField,
     submit,
+    step,
+    canAdvance,
+    goNext,
+    goBack,
     loading,
     error,
     confirmationNotice,
