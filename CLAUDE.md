@@ -298,11 +298,13 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   que se escribieron. Está dicho en el propio selector. Toda cadena nueva se
   añade a los TRES diccionarios: `Dictionary` es `Record<TranslationKey, string>`
   y una clave que falte no compila.
-- El acceso con GOOGLE echa al usuario de la aplicación: el proveedor no está
-  habilitado en el proyecto, así que el botón lleva el navegador a un JSON de
-  error de Supabase. No se puede traducir desde el cliente —la navegación ya
-  ocurrió—; o se habilita el proveedor con credenciales de Google, o se esconde
-  el botón.
+- El acceso con GOOGLE está DESHABILITADO: el proveedor no está habilitado en el
+  proyecto y el botón echaba al usuario de la aplicación, a un JSON de error de
+  Supabase. No se puede traducir desde el cliente —la navegación ya ocurrió—, así
+  que el botón va apagado, como el de recuperar contraseña. Encenderlo es quitar
+  un `disabled`, después de dar de alta un cliente OAuth de Google.
+- El correo transaccional de Supabase está LIMITADO POR HORAS y no es para
+  producción: sin un SMTP propio, en producción no llegan las confirmaciones.
 - La LISTA BLANCA DE REDIRECCIONES hay que mirarla en el panel: Supabase sólo
   respeta el `emailRedirectTo` del alta si la dirección está en Authentication →
   URL Configuration. Si no, el correo de confirmación devuelve a la Site URL y el

@@ -2444,3 +2444,51 @@ sobrevive a la recarga, cerrar sesion, las rutas protegidas y ahora la guardia d
 invitado. **Lo que no:** Google, recuperar la contraseña -el boton esta
 deshabilitado con su `TODO`, que al menos no miente- y reenviar el correo de
 confirmacion.
+
+### 25.11 El boton de Google, apagado
+
+Queda DESHABILITADO mientras el proveedor no exista en el proyecto. No es
+prudencia: comprobado, pulsarlo llevaba el navegador a
+`/auth/v1/authorize?provider=google`, que responde 400 con «Unsupported
+provider: provider is not enabled», y el usuario SALIA de la aplicacion para
+aterrizar en un JSON. Eso no se puede traducir ni recuperar desde el cliente,
+porque para cuando ocurre la navegacion ya ha pasado.
+
+Un boton apagado es peor experiencia que uno que funciona, y muchisimo mejor que
+uno que expulsa. Queda como el de recuperar contraseña, que lleva apagado desde
+antes por el mismo criterio: no ofrecer lo que no se puede cumplir.
+
+El manejador se queda puesto a proposito. Encenderlo el dia que el proveedor
+exista es quitar un `disabled`: hay que dar de alta un cliente OAuth de Google y
+pegar sus credenciales en Authentication → Providers.
+
+### 25.12 Que falta para produccion
+
+El acceso por correo y contraseña funciona contra el proyecto real, pero **la
+autenticacion no esta lista para produccion**, y lo que falta no es sobre todo
+codigo de esta capa:
+
+1. **El correo transaccional.** El emisor que trae Supabase esta limitado por
+   horas y no esta pensado para produccion —medido aqui: al tercer alta seguida
+   empezo a devolver «Demasiados intentos»—. Sin un SMTP propio configurado, en
+   produccion la gente no recibe el correo de confirmacion.
+2. **La lista blanca de redirecciones** tiene que incluir el dominio de
+   produccion. Si no, el enlace del correo devuelve a la Site URL y el alta no se
+   termina. Solo se ve y se cambia en el panel.
+3. **No se puede recuperar la contraseña.** Perderla es perder la cuenta. Exige
+   `resetPasswordForEmail` en `AuthPort` y una pantalla para la vuelta.
+4. **No se puede reenviar la confirmacion.** Si el correo no llega, no hay salida
+   desde la aplicacion.
+5. **El alta ya no enlaza fichas ni codigos** —ver §25.10 punto 4—, asi que el
+   camino «un entrenador invita por correo» y el del QR estan rotos de punta a
+   punta contra el proveedor real.
+6. **Los mensajes de error solo estan en castellano**, con la aplicacion en tres
+   idiomas.
+7. **Nunca se ha visto entrar a una cuenta confirmada.** Falta abrir el enlace de
+   un correo de verdad y comprobar que la sesion se abre y el perfil se lee.
+
+Y por encima de todo lo anterior: **detras del acceso no hay aplicacion.** Todo
+lo que no sea la cuenta y el perfil sigue en memoria, atado a los identificadores
+que inventa el adaptador simulado, asi que quien entre con una cuenta real
+encuentra la aplicacion vacia. Preguntarse si la autenticacion esta lista para
+produccion es prematuro mientras equipos y alumnos no lo esten.

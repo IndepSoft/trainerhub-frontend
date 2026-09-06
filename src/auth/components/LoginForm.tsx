@@ -105,12 +105,29 @@ export function LoginForm() {
           </div>
         </div>
 
+        {/*
+          TODO: el proveedor de Google NO esta habilitado en el proyecto de
+          Supabase. Mientras lo este, el boton va DESHABILITADO.
+
+          No es prudencia: comprobado, pulsarlo llevaba el navegador a
+          `/auth/v1/authorize?provider=google`, que responde 400 con
+          «Unsupported provider: provider is not enabled». El usuario SALIA de la
+          aplicacion y aterrizaba en un JSON, y eso no se puede ni traducir ni
+          recuperar desde aqui, porque para cuando ocurre la navegacion ya ha
+          pasado. Un boton apagado es peor experiencia que uno que funciona, y
+          muchisimo mejor que uno que expulsa.
+
+          El manejador se queda puesto a proposito: habilitarlo el dia que el
+          proveedor exista es quitar este `disabled`, nada mas. Requiere dar de
+          alta un cliente OAuth de Google y pegar sus credenciales en
+          Authentication → Providers.
+        */}
         <Button
           type="button"
           variant="outline"
           className="w-full"
           onClick={loginWithGoogle}
-          disabled={loading}
+          disabled
         >
           <Chrome className="mr-2 h-4 w-4" />
           {t('auth.continueWithGoogle')}
