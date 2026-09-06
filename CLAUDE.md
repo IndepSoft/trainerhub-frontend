@@ -298,7 +298,20 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   que se escribieron. Está dicho en el propio selector. Toda cadena nueva se
   añade a los TRES diccionarios: `Dictionary` es `Record<TranslationKey, string>`
   y una clave que falte no compila.
-- `GuestRoute` está implementado pero no cableado: falta `withGuestRoute`.
+- El acceso con GOOGLE echa al usuario de la aplicación: el proveedor no está
+  habilitado en el proyecto, así que el botón lleva el navegador a un JSON de
+  error de Supabase. No se puede traducir desde el cliente —la navegación ya
+  ocurrió—; o se habilita el proveedor con credenciales de Google, o se esconde
+  el botón.
+- La LISTA BLANCA DE REDIRECCIONES hay que mirarla en el panel: Supabase sólo
+  respeta el `emailRedirectTo` del alta si la dirección está en Authentication →
+  URL Configuration. Si no, el correo de confirmación devuelve a la Site URL y el
+  alta no se termina. No lo expone ninguna API.
+- Con la confirmación por correo, el alta YA NO EJECUTA `claimByEmail`,
+  `joinWithCode` ni el retorno a la ruta pretendida: se quedan detrás del
+  `return` de «no hay sesión». Su sitio pasa a ser el PRIMER ACCESO, y el código
+  de equipo tendría que sobrevivir al viaje por el correo. Va con la migración de
+  alumnos; enlazar por correo es trabajo de un disparador.
 - La página del equipo tiene miembros, solicitudes, QR, muro y ranking.
   **Faltan los eventos.** Los entrenamientos grupales NO son una entidad nueva
   —`Session` ya tiene `kind: 'group'`—; un evento, una carrera o una quedada, sí.

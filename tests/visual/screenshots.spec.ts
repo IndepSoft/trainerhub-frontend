@@ -4443,6 +4443,34 @@ test.describe('grafica de cargas', () => {
 })
 
 /**
+ * La pantalla de acceso, cuando ya se tiene sesion.
+ *
+ * PASO A HACER FALTA CON LA CONFIRMACION POR CORREO: el enlace del mensaje
+ * devuelve a `/authentication` y `supabase-js` recoge la sesion de la URL al
+ * cargar, asi que el recien confirmado llegaba a mirar el formulario de acceso
+ * ya estando dentro. `GuestRoute` llevaba escrito desde hace tiempo y sin
+ * cablear; ahora cuelga de la ruta.
+ */
+test.describe('acceso con sesion abierta', () => {
+  test('quien ya entro no se queda mirando el formulario de acceso', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+
+    // Se vuelve a la pantalla de acceso a proposito, que es lo que hace el
+    // enlace del correo de confirmacion.
+    await page.goto('/authentication')
+
+    /*
+     * A LA RAIZ, no al panel: alli decide `HomeRedirect` segun el papel. El
+     * entrenador de desarrollo acaba en el suyo, y lo que se comprueba es que
+     * NO se queda en `/authentication`.
+     */
+    await expect(page).not.toHaveURL(/\/authentication/, { timeout: 15_000 })
+    await expect(page.getByRole('button', { name: 'Iniciar sesión', exact: true })).toHaveCount(0)
+  })
+})
+
+/**
  * Reportes: tres pestañas, y cada una responde a una pregunta de negocio.
  *
  * Estaba enteramente inventado -24 alumnos, 4.800 de ingresos, 87 % de

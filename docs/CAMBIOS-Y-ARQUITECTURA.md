@@ -2374,3 +2374,73 @@ quién: equipos y puestos antes que alumnos, y alumnos antes que sesiones.
   desde la aplicación. Exige una operación nueva en `AuthPort`.
 - **Las dos primeras migraciones siguen sólo en la nube.** Se recuperan con
   `supabase db pull` y deberían acabar en `supabase/migrations/` con la tercera.
+
+### 25.10 Auditoria del alta y el acceso, antes de abrir el PR
+
+La pregunta era «¿esta cableado con todo lo necesario?». La respuesta corta es
+que no, y salieron cuatro cosas. Una estaba causada por este mismo cambio y va
+arreglada; las otras tres necesitan una decision o una llave que no esta aqui.
+
+**1. El enlace de confirmacion no tenia donde aterrizar. ARREGLADO.**
+`emailRedirectTo` devuelve a `/authentication`, y `supabase-js` recoge la sesion
+de la URL al cargar. Sin nada mas, el recien confirmado se quedaba mirando el
+formulario de acceso, dentro de la aplicacion y sin saberlo. `GuestRoute` llevaba
+escrito y sin cablear desde hace tiempo -estaba en la deuda-; ahora cuelga de la
+ruta con `withGuestRoute`, gemelo de `withProtectedRoute`.
+
+Y manda A LA RAIZ, no a `/dashboard` como decia. En la raiz decide
+`HomeRedirect` segun el papel; a `/dashboard` un alumno aterrizaba en la
+pantalla de gestion de otra persona, que es el defecto que `HomeRedirect` existe
+para evitar.
+
+**2. El acceso con Google echa al usuario de la aplicacion.** El proveedor NO
+esta habilitado en el proyecto -comprobado: `/auth/v1/settings` devuelve
+`external: ['email']`-, asi que pulsar «Continuar con Google» lleva el navegador
+a `/auth/v1/authorize?provider=google`, que responde:
+
+```json
+{"code":400,"error_code":"validation_failed","msg":"Unsupported provider: provider is not enabled"}
+```
+
+El usuario sale de la aplicacion y aterriza en un JSON. No es un error que se
+pueda traducir desde el cliente porque no vuelve al cliente: la navegacion ya ha
+ocurrido. Habilitarlo exige credenciales de un cliente OAuth de Google, que no
+estan aqui; esconder el boton exige decidir si se esconde siempre o segun lo que
+diga `/auth/v1/settings`.
+
+**3. La lista blanca de redirecciones no se puede ver desde aqui.** Supabase solo
+respeta el `emailRedirectTo` si la direccion esta en Authentication → URL
+Configuration; si no, ignora el parametro y usa la Site URL. Ese ajuste no lo
+expone ninguna API publica ni la herramienta de migraciones, asi que **hay que
+mirarlo en el panel**: el origen de desarrollo -`http://localhost:5178/**`- y el
+de produccion tienen que estar en la lista, o el correo de confirmacion devuelve
+a otro sitio y el alta no se termina nunca.
+
+**4. Con la confirmacion activada, tres pasos del alta ya no ocurren.** Y es la
+consecuencia mas importante, porque no se ve leyendo la pantalla:
+
+```
+if (session === null) { setAwaitingConfirmation(true); return }
+```
+
+Detras de ese `return` se quedan `claimByEmail` -enlazar la ficha que un
+entrenador ya habia creado con ese correo-, `joinWithCode` -el codigo de equipo
+que se escribe en el propio formulario- y `readIntendedPath` -volver a donde se
+queria ir, que es como regresa quien llega por el QR-.
+
+Antes corrian siempre porque el codigo daba por abierta una sesion que no lo
+estaba. Ahora no corren nunca contra el proveedor real. **Su sitio ya no es el
+alta: es el PRIMER ACCESO**, que es el primer momento en que hay sesion. El
+codigo de equipo, ademas, tiene que sobrevivir al viaje por el correo, asi que
+habria que guardarlo y consumirlo al entrar.
+
+No se ha movido todavia a proposito: los alumnos siguen siendo un repositorio
+simulado, y mover codigo falso de sitio es adivinar. Va con la migracion de
+alumnos, y lo natural es que acabe en el servidor -enlazar por correo es
+exactamente lo que sabe hacer un disparador-.
+
+**Lo que si esta completo del acceso:** correo y contraseña, la sesion que
+sobrevive a la recarga, cerrar sesion, las rutas protegidas y ahora la guardia de
+invitado. **Lo que no:** Google, recuperar la contraseña -el boton esta
+deshabilitado con su `TODO`, que al menos no miente- y reenviar el correo de
+confirmacion.
