@@ -220,15 +220,21 @@ instalacion si no se cumple, en vez de limitarse a avisar.
 ### 4.2 Comandos
 
 ```bash
-npm run dev      # servidor de desarrollo
-npm run build    # tsc -b && vite build
-npm run lint     # eslint .
-npm run preview  # sirve el build
+npm run dev            # servidor de desarrollo
+npm run build          # tsc -b && vite build
+npm run lint           # eslint .
+npm run preview        # sirve el build
+npm run test:e2e       # Playwright, contra los adaptadores simulados
+npm run db:start       # Supabase local (Docker): migraciones + semilla
+npm run db:reset       # vuelve a aplicar migraciones y semilla desde cero
+npm run test:contract  # Vitest contra Supabase local: políticas y funciones
 ```
 
-**Integracion continua:** `.github/workflows/ci.yml` ejecuta `npm ci`, `npm run
-lint` y `npm run build` en cada PR hacia `develop` y `main`. Antes de abrir un
-PR, pasa esa misma secuencia en local — es exactamente lo que va a correr.
+**Integracion continua:** `.github/workflows/ci.yml` tiene tres trabajos en
+cada PR hacia `develop` y `main`: lint y build, la suite de interfaz con
+Playwright, y las pruebas de contrato sobre un Supabase levantado en el runner.
+Antes de abrir un PR, pasa esa misma secuencia en local — es exactamente lo
+que va a correr.
 
 ### 4.3 Convenciones establecidas
 
@@ -267,31 +273,42 @@ Variables en `.env` (plantilla en `.env.example`). `.gitignore` cubre `.env` y
 Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
 [`docs/CAMBIOS-Y-ARQUITECTURA.md`](docs/CAMBIOS-Y-ARQUITECTURA.md).
 
-- Los adaptadores siguen siendo falsos salvo la AUTENTICACIÓN y el PERFIL, que
-  van contra Supabase —`profiles`, uno a uno con `auth.users`—. Los dos conviven
-  con sus gemelos falsos, que se eligen con la misma condición. Los datos falsos
-  viven en memoria: al recargar vuelve la semilla.
-  **`.env` conserva `VITE_USE_FAKE_AUTH=true` a propósito**: con la
-  autenticación real, el resto de repositorios no conocen al usuario que entra
-  —sus semillas cuelgan del identificador que inventa el adaptador simulado— y
-  la aplicación se ve vacía. Quitarlo también tumba las 180 pruebas.
+- TODOS los puertos tienen adaptador de Supabase y gemelo simulado, y
+  `container.ts` elige el juego ENTERO con una sola condición:
+  `import.meta.env.DEV && VITE_USE_FAKE_AUTH === 'true'`. No se mezclan: las
+  semillas falsas cuelgan de identificadores inventados y una mezcla se ve vacía.
+  **`.env` conserva `VITE_USE_FAKE_AUTH=true` a propósito**: la suite de
+  interfaz —Playwright, `npm run test:e2e`— vive de las semillas. Quitarlo es
+  ver la aplicación contra la base. Los datos falsos viven en memoria: al
+  recargar vuelve la semilla.
+- Lo que la base garantiza se prueba CONTRA la base: `tests/contract/` corre
+  con `npm run test:contract` sobre Supabase local (`supabase start`, Docker).
+  Cada regla del servidor —política, disparador, función— tiene su prueba ahí;
+  una regla nueva sin prueba de contrato no está terminada.
 - El alta manda el perfil DENTRO del alta, no después, y no es una preferencia:
   la confirmación por correo está activada, así que `signUp` no abre sesión y sin
   sesión RLS no deja escribir la fila. La escribe un disparador de Postgres en la
   misma transacción. Por eso `TrainerRepository` ya no tiene `create`.
-- El ESQUEMA vive en `supabase/migrations/`, y sólo desde la tercera migración:
-  las dos primeras se aplicaron por herramienta y siguen únicamente en la nube.
-  Se recuperan con `supabase db pull`.
+- El ESQUEMA vive entero en `supabase/migrations/`: siete migraciones. Las dos
+  primeras se aplicaron por herramienta y se RECONSTRUYERON desde el esquema
+  vivo, porque `supabase db pull` exige `supabase login`. Las cinco del plan
+  —equipos, alumnos, entrenamiento, agenda, muro— están aplicadas en local y
+  probadas por contrato; en la NUBE todavía no: aplicarlas allí es un paso de
+  la fase 7, con copia de seguridad antes.
 - Supabase LIMITA los envíos de correo por hora en el plan gratuito. Al probar el
   alta varias veces seguidas, el registro empieza a devolver «Demasiados
   intentos»: es el límite del proveedor, no un fallo de la aplicación.
-- Los mensajes de error NO están traducidos: `errorMapper` devuelve castellano a
-  fuego y `AppError.message` va directo a la pantalla. Arreglarlo es que
-  `AppError` lleve una clave en vez de un mensaje, y toca todos los adaptadores.
-- No se puede reenviar el correo de confirmación: si no llega, no hay salida
-  desde la aplicación. Exige una operación nueva en `AuthPort`.
-- No se puede cambiar la contraseña: `AuthPort` no expone esa operación, así que
-  Configuración no la ofrece en vez de fingirla.
+- Los errores VIAJAN COMO RAZONES, no como texto: `AppError.reason` es un
+  `AppErrorReason` cerrado y `describeError` lo traduce al pintar. Una regla
+  del servidor que rechaza hace `raise exception 'razon'` y `mapDataError` la
+  reconoce en `SERVER_REASONS`. Una razón nueva se añade en TRES sitios:
+  el tipo, `ERROR_REASON_KEY` y los tres diccionarios; si falta uno, no compila.
+- La CUENTA está completa: recuperar la contraseña —enlace por correo y vuelta
+  a `/authentication/nueva-contrasena`, que NO es ruta de invitado porque el
+  enlace llega con sesión—, cambiarla desde Configuración, reenviar la
+  confirmación una sola vez, y darse de baja con `delete_account`, que se
+  lleva el equipo donde uno está solo y se niega con `lastAdmin` donde gobierna
+  a otros. La dirección de vuelta tiene que estar en la lista blanca del panel.
 - La traducción cubre lo que escribe la aplicación —español, inglés y
   portugués—, no lo que escribe una persona: los nombres de rutinas, los
   anuncios del muro y el título de una sesión ya creada se quedan en el idioma en
@@ -301,41 +318,41 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
 - El acceso con GOOGLE está DESHABILITADO: el proveedor no está habilitado en el
   proyecto y el botón echaba al usuario de la aplicación, a un JSON de error de
   Supabase. No se puede traducir desde el cliente —la navegación ya ocurrió—, así
-  que el botón va apagado, como el de recuperar contraseña. Encenderlo es quitar
-  un `disabled`, después de dar de alta un cliente OAuth de Google.
+  que el botón va apagado. Encenderlo es quitar un `disabled`, después de dar de
+  alta un cliente OAuth de Google.
 - El correo transaccional de Supabase está LIMITADO POR HORAS y no es para
   producción: sin un SMTP propio, en producción no llegan las confirmaciones.
 - La LISTA BLANCA DE REDIRECCIONES hay que mirarla en el panel: Supabase sólo
   respeta el `emailRedirectTo` del alta si la dirección está en Authentication →
   URL Configuration. Si no, el correo de confirmación devuelve a la Site URL y el
   alta no se termina. No lo expone ninguna API.
-- Con la confirmación por correo, el alta YA NO EJECUTA `claimByEmail`,
-  `joinWithCode` ni el retorno a la ruta pretendida: se quedan detrás del
-  `return` de «no hay sesión». Su sitio pasa a ser el PRIMER ACCESO, y el código
-  de equipo tendría que sobrevivir al viaje por el correo. Va con la migración de
-  alumnos; enlazar por correo es trabajo de un disparador.
+- El ENLACE de una cuenta con su ficha lo hace el SERVIDOR, no el cliente: el
+  disparador del alta busca fichas con ese correo y aplica el `join_code` que
+  viaja en los metadatos de la cuenta, así que el código del QR sobrevive al
+  viaje por el correo. Con sesión abierta, `claim_membership` hace lo mismo con
+  el código tecleado. El retorno a la ruta pretendida tras confirmar el correo
+  sigue sin existir: el enlace aterriza en `/`.
 - La página del equipo tiene miembros, solicitudes, QR, muro y ranking.
   **Faltan los eventos.** Los entrenamientos grupales NO son una entidad nueva
   —`Session` ya tiene `kind: 'group'`—; un evento, una carrera o una quedada, sí.
-- El muro no avisa: un anuncio nuevo no se señala en ningún sitio. Lo barato es
-  un contador en la entrada de navegación del equipo; las notificaciones push son
-  otro trabajo.
-- `CrewPost.likedBy` guarda la lista entera de quién ha dado «me gusta». Con
-  equipos de decenas da igual; con miles hay que pasar a un contador y una
-  bandera calculados en el servidor.
-- **Todas las reglas de permisos las comprueba el navegador.** Impide
-  equivocarse, no impide actuar: un cliente modificado escribe igual. Cada regla
-  tiene ya una sola definición en `shared/domain` —`can`, `lastAdminBlocker`,
-  `canEnrollMembers`— y CAMBIOS §14.5 lleva la tabla de qué política de servidor
-  sustituye a cada una. Es lo único que queda entre esto y ser seguro.
-- La lista de administradores de plataforma es una constante en la semilla. Con
-  backend es una tabla que sólo escribe el rol de servicio.
+- El muro no avisa: un anuncio nuevo no se señala en ningún sitio. La marca de
+  «hasta dónde leí» ya existe en la base —`crew_wall_reads`—; falta el contador
+  en la entrada de navegación del equipo. Las notificaciones push son otro
+  trabajo.
+- El «me gusta» viaja como CONTADOR y BANDERA calculados en el servidor
+  —`crew_posts_view`—, nunca como lista. El simulado hace lo mismo en memoria.
+- **Las reglas de permisos las decide la BASE** —RLS, disparadores y las cuatro
+  funciones `is_crew_member`, `has_capability`, `is_crew_staff`,
+  `is_platform_admin`—. El cliente conserva `can`, `lastAdminBlocker` y
+  `canEnrollMembers` sólo para no ofrecer lo que va a fallar; un cliente
+  modificado ya no escribe. Cada regla del servidor tiene prueba de contrato.
+- La lista de administradores de plataforma es una tabla, `platform_admins`,
+  que sólo escribe el rol de servicio. En local la siembra `seed.sql`; en la
+  nube hay que insertarla a mano.
 - No hay cobro: activar una suscripción es una decisión manual desde `/admin`.
-- No hay registro de auditoría: nadie sabe quién miró o cambió qué.
-- `CrewStaff.displayName` y `email` están copiados, no referenciados. Es la
-  excepción a «se referencia el vocabulario»: no hay entidad de persona todavía
-  —`AuthUser` sólo tiene id y correo—, así que el nombre se guarda con el puesto.
-  Cuando exista un perfil, esto se resuelve por identificador.
+- Hay registro de auditoría de lo que CAMBIA —`audit_log`, escrito por un
+  disparador en equipos, puestos, fichas y cuotas; lo lee quien gobierna el
+  equipo—, pero ninguna pantalla lo enseña todavía y nadie registra quién MIRÓ.
 - Props declaradas y sin conectar, marcadas con `TODO:` en gamification y
   calendar. `ChallengeCard.onUpdate` es la más grave: el padre le pasa un
   manejador real que nunca se invoca.
@@ -367,8 +384,10 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   entre dos ejercicios. El 1RM no se da por encima de diez repeticiones, donde la
   fórmula se separa demasiado de la realidad.
 - Los filtros de `TrainingFilters` y `StudentFilters` no filtran.
-- Las sesiones volcadas desde un plan no guardan de qué volcado salieron, así que
-  no se pueden mover ni cancelar en bloque y volcar dos veces duplica.
+- Las sesiones volcadas desde un plan YA guardan de qué volcado salieron
+  —`assignment_id`, y `create_sessions` las crea todas o ninguna—, pero
+  moverlas o cancelarlas en bloque no tiene interfaz todavía, y volcar dos
+  veces sigue duplicando porque nadie lo comprueba antes.
 - La subestructura de carpetas difiere entre dominios; falta unificarla.
 - Las cuotas no guardan importes: la cola de cobros dice **quién vence y
   cuándo**, no cuánto. Poner precio exige decidir moneda y modelo de tarifas, y

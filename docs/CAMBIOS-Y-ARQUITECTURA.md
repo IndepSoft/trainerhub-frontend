@@ -2492,3 +2492,192 @@ lo que no sea la cuenta y el perfil sigue en memoria, atado a los identificadore
 que inventa el adaptador simulado, asi que quien entre con una cuenta real
 encuentra la aplicacion vacia. Preguntarse si la autenticacion esta lista para
 produccion es prematuro mientras equipos y alumnos no lo esten.
+
+## 26. El cableado completo: fases 0 a 5 del plan (8 sep 2026)
+
+Rama `feature/supabase-connection`. Ejecuta [`PLAN-CABLEADO.md`](PLAN-CABLEADO.md)
+de la fase 0 a la 5 sin pausas. Lo que aquí se cuenta es lo que el plan no
+podía saber: lo que cambió al escribirlo, y por qué.
+
+### 26.1 Lo que se puede ejecutar ahora
+
+- `supabase start` levanta la base en local desde `supabase/config.toml`, con
+  las siete migraciones y `supabase/seed.sql`. `supabase db reset` la deja como
+  nueva. Las claves salen de `supabase status -o env`, no de `.env`: el `.env`
+  sigue apuntando a la nube y las pruebas no lo tocan.
+- `npm run test:contract` corre las pruebas de contrato con Vitest contra esa
+  base local. Son SEIS ficheros en `tests/contract/`: perfiles, equipos,
+  alumnos, entrenamiento, sesiones y muro. Cada uno ejercita políticas,
+  disparadores y funciones con TRES clientes —anónimo, servicio y una sesión
+  real— y borra sus cuentas al terminar.
+- `npm run test:e2e` es la suite de Playwright de siempre, contra los
+  adaptadores simulados. Siguen existiendo A PROPÓSITO: es la única forma de
+  probar pantallas sin una base detrás, y la CI la ejecuta en un job aparte.
+- La CI tiene tres trabajos: lint y build, interfaz, y contratos. El de
+  contratos levanta Supabase con `supabase/setup-cli` y aplica las migraciones.
+
+### 26.2 Fase 0: los errores viajan como claves
+
+`AppError` ya no lleva un mensaje: lleva un `reason` de un tipo cerrado,
+`AppErrorReason`, con veintiuna razones. `describeError(error, t, fallback)` en
+`shared/i18n/errorMessages.ts` lo convierte en texto en el idioma de la
+persona; `ERROR_REASON_KEY` es la tabla de razón a clave, y las tres
+traducciones llevan las veintiuna claves `error.*`. Veintiún hooks pasaron por
+ahí.
+
+Lo que el servidor rechaza también viaja así: una función o un disparador hace
+`raise exception 'lastAdmin'`, y `mapDataError` reconoce el mensaje en
+`SERVER_REASONS` antes de mirar el código SQL. Es la forma de que «no puedes
+dejar al equipo sin administrador» se lea igual venga del navegador o de
+Postgres, y de que añadir una regla en el servidor no exija tocar el cliente
+más que en la tabla y en los diccionarios.
+
+Las dos primeras migraciones, que sólo vivían en la nube, se RECONSTRUYERON a
+partir del esquema vivo —`supabase db pull` exige `supabase login` y esta
+máquina no lo tiene— y viven en `supabase/migrations/` con su fecha original.
+Aplicarlas en local produce la misma base que la de la nube, y es lo que
+comprueban las pruebas de contrato.
+
+### 26.3 Fase 1: equipos y puestos
+
+`crews` y `crew_staff`, con las capacidades del puesto en `role_capabilities` y
+las extra en la fila. `create_crew` es una función: crea el equipo y sienta al
+creador como administrador en la misma transacción, porque una política no
+puede permitir «insertar en un equipo del que todavía no eres nadie».
+
+`is_crew_member`, `has_capability`, `is_crew_staff` e `is_platform_admin` son
+las cuatro funciones `security definer` que sustituyen a `can`,
+`lastAdminBlocker` y `canEnrollMembers` como barrera. El cliente las sigue
+teniendo, para no ofrecer lo que va a fallar; la que decide es la base. El
+último administrador no se degrada ni se borra: lo corta un disparador con
+`lastAdmin`, la misma razón que el cliente ya conocía.
+
+`CrewStaff` deja de copiar nombre y correo: los trae por la relación con
+`profiles` —`STAFF_COLUMNS` en el adaptador— y el mapper los aplana. Era la
+excepción anotada en la deuda; se cerró cuando existió el perfil.
+
+### 26.4 Fase 2: alumnos, pertenencia, cuotas y avisos
+
+`students` es la ficha, y `profile_id` nulo significa «sin cuenta todavía».
+El ENLACE ocurre en el servidor y en dos momentos:
+
+- Al registrarse, `handle_new_user` —el disparador del alta— busca fichas con
+  ese correo, sin distinguir mayúsculas, y las enlaza. Si el alta trae
+  `join_code` en los metadatos, `claim_membership_as` lo aplica ahí mismo. Por
+  eso `SignUpProfile.joinCode` existe y `toSignUpMetadata` lo manda: el código
+  del QR sobrevive al viaje por el correo porque va DENTRO de la cuenta.
+- Al entrar ya con cuenta, `claim_membership` hace lo mismo con el código que
+  se teclea. Es la ruta del QR para quien ya tiene sesión.
+
+Un disparador limita lo que un alumno puede escribir en su propia ficha:
+nombre y foto. Nivel, estado de pertenencia y capacidades son del entrenador, y
+cambiarlos devuelve `forbidden`. Cuotas y avisos son tablas planas con sus
+políticas; la plataforma —`platform_admins`— es una tabla que sólo escribe el
+rol de servicio, ya no una constante.
+
+### 26.5 Fase 3: entrenamiento
+
+Dos puertos que no existían, `CatalogRepository` y `BlockLibraryRepository`,
+porque el catálogo vivía en un fichero de datos y la biblioteca de bloques en
+un almacén de `zustand`, y ninguno de los dos podía tener adaptador real.
+`catalog.mock.ts`, `catalogStore.ts` y `blockLibraryStore.ts` desaparecen; los
+tipos siguen exportándose desde `trainings/types` para que las importaciones
+antiguas no se enteren.
+
+`crew_id` NULO ES EL CATÁLOGO DE SISTEMA. Grupos musculares, patrones, material,
+objetivos y divisiones que trae la semilla no tienen equipo, y por eso no se
+pueden editar; el material que da de alta un entrenador lleva su `crew_id` y
+sólo lo ve su equipo. Una sola tabla por catálogo, sin duplicar el esquema.
+
+Rutinas y planes guardan su documento en JSONB —`blocks` y `weeks`—, con la
+misma forma que la entidad. La forma la comprueba la base: `is_valid_blocks`,
+`is_valid_weeks` e `is_valid_block` son restricciones CHECK, y una rutina con
+series a cero o un método desconocido devuelve `23514` antes de guardarse.
+Borrar una rutina asignada lo impide la clave foránea, que es exactamente lo que
+`deletion.ts` calculaba en el cliente.
+
+### 26.6 Fase 4: agenda y sesión
+
+`sessions` guarda fecha y hora como `date` y `time`, no como `timestamptz`:
+«el martes a las nueve» no cambia de día porque alguien viaje. El resultado es
+un documento validado por `is_valid_session_result`, y `complete_session` cierra
+estado y resultado en UNA escritura, porque entre las dos que hacía el cliente
+cabía una sesión completada sin resultado.
+
+Un alumno ve las suyas y las grupales de su equipo —la política es
+`crewScope.asStudent()` escrito en SQL— y sólo puede CERRAR la suya: mover la
+fecha o cambiar el título lo corta `guard_session_update` con `forbidden`.
+`create_sessions` vuelca un plan en bloque y cada sesión guarda
+`assignment_id`: es lo que faltaba para poder mover o cancelar un volcado
+entero, y lo que hace que volcar dos veces se pueda detectar.
+
+### 26.7 Fase 5: progreso, ranking y muro
+
+El progreso NO tiene tabla: experiencia, nivel y racha se siguen derivando de
+las sesiones en el cliente. Lo único que sube al servidor es el ranking, y sube
+por RLS, no por rendimiento: necesita las sesiones de todos y un alumno no puede
+leer las de los demás. `crew_ranking(crew, period)` es `security definer`,
+comprueba la pertenencia, respeta `ranking_enabled` y repite la fórmula de
+`experience.ts` —veinte por sesión, una por serie—. Es la segunda y última
+duplicación que el plan acepta, y su prueba de contrato comprueba que las dos
+dan lo mismo.
+
+`CrewPost.likedBy` desaparece: hay `crew_post_likes` como tabla, y
+`crew_posts_view` —con `security_invoker`— devuelve `likeCount` y `likedByMe`
+calculados para quien pregunta. `toggle_post_like` da o quita en una llamada,
+sin que el cliente tenga que saber si ya lo había dado. `crew_wall_reads`
+guarda cuándo miró cada uno el muro por última vez: es la marca para el contador
+de no leídos que la deuda pedía, aunque el contador todavía no se pinta.
+
+### 26.8 La raíz de composición
+
+`container.ts` elige TODOS los repositorios con la misma condición que ya
+elegía la autenticación: `import.meta.env.DEV && VITE_USE_FAKE_AUTH === 'true'`.
+No hay medias tintas —medio simulado, medio real— porque las semillas falsas
+cuelgan de identificadores inventados y una mezcla se ve vacía. `.env` conserva
+`VITE_USE_FAKE_AUTH=true` mientras la suite de interfaz dependa de las semillas;
+quitarlo es la forma de ver la aplicación contra la base.
+
+### 26.9 Fase 6: la cuenta completa
+
+`AuthPort` gana cuatro operaciones y ninguna conoce al proveedor:
+`requestPasswordReset`, `updatePassword`, `resendConfirmation` y
+`deleteAccount`.
+
+**Recuperar la contraseña** es un desvío DENTRO de la pestaña de acceso —un
+paso y se vuelve— y el correo lleva a `/authentication/nueva-contrasena`, que
+no es ruta de invitado ni protegida, y no por descuido: el enlace llega CON
+sesión, así que la guardia de invitado la echaría a la raíz antes de poder
+cambiar nada; y quien llega con el enlace caducado no tiene sesión y merece
+saber por qué. El formulario de la nueva contraseña es el MISMO que el de
+Configuración —`PasswordFields`, sobre `useUpdatePassword`—; lo único que
+cambia es a dónde se va después.
+
+**Reenviar la confirmación** se permite UNA vez por pantalla: el proveedor
+limita los envíos por hora y el segundo reenvío seguido sólo gasta el cupo.
+
+**Darse de baja** es `delete_account()`, en el servidor, porque `auth.users`
+no se toca desde la API y porque hay que decidir qué pasa con lo que la
+persona deja: un equipo donde es la única con cuenta se va con ella; uno donde
+gobierna a otros la retiene con `lastAdmin` hasta que nombre a alguien; en los
+demás su puesto y su ficha caen en cascada. `crews.created_by` pasa a otro
+administrador, y `guard_last_admin` deja pasar la cascada de un equipo que se
+borra entero. El cliente cierra sólo la sesión LOCAL después: la cuenta ya no
+existe y pedirle al servidor que la cierre devolvería un error.
+
+Lo que la fase 6 deja PENDIENTE, a propósito: las fotos siguen siendo
+direcciones tecleadas —Storage es la primera vez que la aplicación guardaría
+ficheros y es una decisión—, el onboarding sigue siendo «visto en este
+dispositivo», y Google sigue apagado.
+
+### 26.10 Fase 7: lo que ya se puede hacer sin decidir nada
+
+`audit_log`, escrito por `record_audit` —un disparador genérico— en equipos,
+puestos, fichas y cuotas. Quién, qué, cuándo, y la fila antes y después. Lo lee
+quien tiene `crew.settings`; nadie lo escribe desde un cliente. No tiene
+pantalla todavía.
+
+Lo demás de la fase 7 no es código de este repositorio: dos proyectos de
+Supabase, SMTP propio, la lista blanca de redirecciones con
+`/authentication/nueva-contrasena`, las copias de seguridad, y aplicar las seis
+migraciones nuevas en la nube con copia previa.
