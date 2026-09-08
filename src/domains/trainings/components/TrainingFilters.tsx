@@ -1,30 +1,68 @@
 import { InputWithIcon } from '@/shared/components/InputWithIcon'
-import { Button } from '@/shared/ui/button'
-import { Filter, Search } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select'
+import { Search } from 'lucide-react'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { STUDENT_LEVEL_LABEL_KEY } from '@/shared/i18n/domainLabels'
+import type { TrainingLevel } from '@/shared/domain/entities/routine'
+import type { RoutineFilterState } from '../libs/filterRoutines'
+
+const LEVELS: TrainingLevel[] = ['Principiante', 'Intermedio', 'Avanzado']
+
+interface TrainingFiltersProps {
+  filters: RoutineFilterState
+  onChange: (filters: RoutineFilterState) => void
+}
 
 /**
- * Barra de busqueda y filtros de rutinas.
+ * Barra de búsqueda y filtros de rutinas. Sólo presentación: el estado vive en
+ * la lista que la pinta y el filtrado en `filterRoutines`.
  *
- * TODO: todavia no filtra nada. Cuando lo haga, el estado vivira en
- * `useRoutines` y este componente seguira siendo presentacional, recibiendo
- * valor y manejadores por props.
+ * Como en alumnos, el único filtro es el nivel y va como desplegable a la
+ * vista, no detrás de un botón «Filtros».
  */
-export function TrainingFilters() {
+export function TrainingFilters({ filters, onChange }: TrainingFiltersProps) {
   const { t } = useTranslation()
+
   return (
-    <div className="flex items-center gap-4 justify-between">
-      <div className="max-w-sm w-full">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="w-full sm:max-w-sm">
         <InputWithIcon
           icon={<Search className="w-4 h-4" />}
           iconPosition="left"
           placeholder={t('trainings.searchRoutines')}
+          aria-label={t('trainings.searchRoutines')}
+          value={filters.query}
+          onChange={(event) => onChange({ ...filters, query: event.target.value })}
         />
       </div>
-      <Button variant="outline" className="gap-2">
-        <Filter className="h-4 w-4" />
-        {t('trainings.filters')}
-      </Button>
+      <Select
+        value={filters.level}
+        onValueChange={(level) => {
+          if (level === 'all' || isTrainingLevel(level)) onChange({ ...filters, level })
+        }}
+      >
+        <SelectTrigger className="w-full sm:w-48" aria-label={t('trainings.filters')}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">{t('filters.level.all')}</SelectItem>
+          {LEVELS.map((level) => (
+            <SelectItem key={level} value={level}>
+              {t(STUDENT_LEVEL_LABEL_KEY[level])}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   )
+}
+
+function isTrainingLevel(value: string): value is TrainingLevel {
+  return LEVELS.some((level) => level === value)
 }

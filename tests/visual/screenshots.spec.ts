@@ -4806,3 +4806,133 @@ test.describe('cuenta', () => {
     await expect(page.getByText('Bienvenido de vuelta')).toBeVisible()
   })
 })
+
+/**
+ * Los huecos de §10 del plan que eran controles sin nada detras: los filtros,
+ * el tempo y las notas de un ejercicio, y las notas y la edicion de una sesion.
+ */
+test.describe('huecos cerrados', () => {
+  test('los filtros de alumnos filtran por texto y por nivel', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/students')
+    await page.waitForTimeout(1200)
+
+    const tarjetas = page.locator('article')
+    const antes = await tarjetas.count()
+    expect(antes).toBeGreaterThan(1)
+
+    // Sin tilde a proposito: la busqueda no distingue acentos ni mayusculas.
+    await page.getByLabel('Buscar estudiante...').fill('ana')
+    await expect(tarjetas).not.toHaveCount(antes)
+    await expect(tarjetas.first()).toContainText(/ana/i)
+
+    await page.getByLabel('Buscar estudiante...').fill('nadie-con-este-nombre')
+    await expect(page.getByText('Ningún alumno coincide con la búsqueda.')).toBeVisible()
+    await page.getByLabel('Buscar estudiante...').fill('')
+
+    await elegirDelDesplegable(page, page.getByRole('combobox', { name: 'Filtros' }), 'Avanzado')
+    const avanzados = await tarjetas.count()
+    expect(avanzados).toBeGreaterThan(0)
+    expect(avanzados).toBeLessThan(antes)
+    for (const tarjeta of await tarjetas.all()) {
+      await expect(tarjeta).toContainText('Avanzado')
+    }
+  })
+
+  test('los filtros de rutinas filtran, y sin resultados lo dicen', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/trainings?tab=rutinas')
+    await page.waitForTimeout(1200)
+
+    const tarjetas = page.locator('article')
+    const antes = await tarjetas.count()
+    expect(antes).toBeGreaterThan(1)
+
+    await page.getByLabel('Buscar rutinas...').fill('full body')
+    await expect(tarjetas).toHaveCount(1)
+    await expect(tarjetas.first()).toContainText('Full body')
+
+    await page.getByLabel('Buscar rutinas...').fill('zzz')
+    await expect(page.getByText('Ninguna rutina coincide con la búsqueda.')).toBeVisible()
+  })
+
+  test('el tempo y las notas de un ejercicio se editan y sobreviven al guardar', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/trainings?tab=rutinas')
+    await page.waitForTimeout(1200)
+
+    // La primera rutina de la lista, a su edicion por la interfaz.
+    await page.locator('article').first().getByRole('button', { name: /Acciones para/ }).click()
+    await page.getByRole('menuitem', { name: 'Editar' }).click()
+    await page.waitForURL(/\/trainings\/[\w-]+\/edit/)
+
+    await page.getByLabel('Tempo').first().fill('3-1-1-0')
+    await page.getByLabel('Indicaciones').first().fill('Sin rebote abajo')
+    // Al editar, el boton dice «Guardar cambios»; «Guardar rutina» es el del alta.
+    await page.getByRole('button', { name: 'Guardar cambios' }).click()
+    await page.waitForURL(/\/trainings\/(?!.*edit)[\w-]+$/)
+
+    // La ficha pinta el tempo y las notas: son datos de la rutina, no del formulario.
+    await expect(page.getByText('3-1-1-0').first()).toBeVisible()
+    await expect(page.getByText('Sin rebote abajo').first()).toBeVisible()
+  })
+
+  test('las notas de una sesion se guardan, y editarla la mueve', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/calendar')
+    await page.waitForTimeout(1500)
+
+    await sesionSinCompletar(page).first().click()
+    const dialogo = page.getByRole('dialog')
+    await expect(dialogo).toBeVisible()
+
+    // Sin cambios no hay nada que guardar: el boton lo dice apagado.
+    await expect(dialogo.getByRole('button', { name: 'Guardar cambios' })).toBeDisabled()
+    await dialogo.getByLabel('Notas').fill('Llevar la cuerda')
+    await dialogo.getByRole('button', { name: 'Guardar cambios' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    // Persistio: al reabrir, las notas siguen.
+    await sesionSinCompletar(page).first().click()
+    await expect(page.getByRole('dialog').getByLabel('Notas')).toHaveValue('Llevar la cuerda')
+
+    // Editar abre el formulario de la sesion, ya relleno, y cambia el lugar.
+    await page.getByRole('dialog').getByRole('button', { name: 'Editar' }).click()
+    const formulario = page.getByRole('dialog')
+    await expect(formulario.getByText('Editar sesión')).toBeVisible()
+    await expect(formulario.getByLabel('Notas')).toHaveValue('Llevar la cuerda')
+    await elegirDelDesplegable(page, desplegables(page, 'Ubicación'), 'Exterior')
+    await formulario.getByRole('button', { name: 'Guardar cambios' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    await sesionSinCompletar(page).first().click()
+    await expect(page.getByRole('dialog')).toContainText('Exterior')
+  })
+})
+
+test.describe('muro: el contador de no leidos', () => {
+  test('la entrada del equipo cuenta los anuncios, y abrir el muro los da por leidos', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+
+    // La semilla trae anuncios y ninguna marca: todos sin leer. `first` porque
+    // el conmutador de equipo se pinta dos veces: barra lateral y cabecera movil.
+    const contador = page.getByLabel(/anuncios sin leer en el muro/).first()
+    await expect(contador).toBeVisible()
+    const antes = Number((await contador.textContent())?.replace('+', ''))
+    expect(antes).toBeGreaterThan(0)
+
+    // Por la interfaz, no con `goto`: la marca vive en memoria en la simulacion.
+    await page.getByRole('button', { name: /Hierro y Asfalto/ }).click()
+    await page.getByRole('menuitem', { name: 'Ver el equipo' }).click()
+    await page.waitForURL(/\/crew/)
+    // El muro es una seccion de la pagina del equipo: abrirla es leerlo.
+    await expect(page.locator('section').filter({ hasText: 'Muro' }).first()).toBeVisible()
+
+    await expect(page.getByLabel(/anuncios sin leer en el muro/)).toHaveCount(0)
+  })
+})

@@ -163,3 +163,54 @@ describe('ranking: agregados para quien pertenece', () => {
     expect(disabled.data).toEqual([])
   })
 })
+
+describe('muro: la marca de leido', () => {
+  const created: TestAccount[] = []
+  afterAll(() => deleteAccounts(created))
+
+  it('cada uno lleva la suya, solo en su equipo, y sirve para contar lo nuevo', async () => {
+    const trainer = await signedInAs('marca', { intent: 'trainer', first_name: 'T', last_name: 'R' })
+    const crew = await createActiveCrewAs(trainer, 'Marcas')
+    const member = await signedInAs('lector', { intent: 'student', first_name: 'L', last_name: 'E' })
+    const stranger = await signedInAs('ajeno', { intent: 'student', first_name: 'A', last_name: 'J' })
+    created.push(trainer, member, stranger)
+    await enrollAs(trainer, crew.id, member)
+
+    await trainer.client
+      .from('crew_posts')
+      .insert({ crew_id: crew.id, author_profile_id: trainer.id, body: 'Primero' })
+
+    // El miembro marca; el ajeno no puede, porque no pertenece.
+    const marked = await member.client
+      .from('crew_wall_reads')
+      .upsert({ profile_id: member.id, crew_id: crew.id, read_at: new Date().toISOString() })
+    expect(marked.error).toBeNull()
+    const denied = await stranger.client
+      .from('crew_wall_reads')
+      .upsert({ profile_id: stranger.id, crew_id: crew.id, read_at: new Date().toISOString() })
+    expect(denied.error?.code).toBe('42501')
+
+    // Nadie marca por otro.
+    const forged = await trainer.client
+      .from('crew_wall_reads')
+      .upsert({ profile_id: member.id, crew_id: crew.id, read_at: new Date().toISOString() })
+    expect(forged.error?.code).toBe('42501')
+
+    // Lo publicado despues de la marca es lo que cuenta como nuevo.
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    await trainer.client
+      .from('crew_posts')
+      .insert({ crew_id: crew.id, author_profile_id: trainer.id, body: 'Segundo' })
+    const { data: mark } = await member.client
+      .from('crew_wall_reads')
+      .select('read_at')
+      .eq('crew_id', crew.id)
+      .single()
+    const { count } = await member.client
+      .from('crew_posts')
+      .select('id', { count: 'exact', head: true })
+      .eq('crew_id', crew.id)
+      .gt('created_at', mark?.read_at)
+    expect(count).toBe(1)
+  })
+})

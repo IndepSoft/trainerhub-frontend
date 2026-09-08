@@ -50,6 +50,16 @@ export function useCrewWall(): UseCrewWallResult {
     })
   }, [load])
 
+  /*
+   * Abrir el muro es leerlo: la marca se pone una vez por visita, al montar,
+   * y no en cada recarga de la lista -si no, un anuncio que llegara mientras
+   * se mira quedaria leido sin haberse visto-. El fallo se ignora: no poder
+   * marcar como leido no es motivo para no enseñar el muro.
+   */
+  useEffect(() => {
+    void container.crewPosts.markAllRead().catch(() => undefined)
+  }, [])
+
   const publish = useCallback(
     async (body: string) => {
       if (user === null) return

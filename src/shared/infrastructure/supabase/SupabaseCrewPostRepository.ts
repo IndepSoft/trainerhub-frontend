@@ -61,6 +61,7 @@ export class SupabaseCrewPostRepository implements CrewPostRepository {
       .single()
 
     if (readError) throw mapDataError(readError)
+    this.notify()
     return toCrewPost(row as CrewPostRow)
   }
 
@@ -68,16 +69,70 @@ export class SupabaseCrewPostRepository implements CrewPostRepository {
     const { error } = await supabase.rpc('toggle_post_like', { post: postId })
 
     if (error) throw mapDataError(error)
+    this.notify()
   }
 
   async remove(postId: string): Promise<void> {
     const { error } = await supabase.from('crew_posts').delete().eq('id', postId)
 
     if (error) throw mapDataError(error)
+    this.notify()
   }
 
-  /** El muro es el segundo en la lista de tiempo real del plan, §1.3. Hasta entonces, no avisar vale. */
-  onChange(): () => void {
-    return () => undefined
+  async countUnread(): Promise<number> {
+    const crewId = this.scope.current()
+    if (crewId === null) return 0
+
+    // Sin marca, todo esta sin leer: es el caso de quien acaba de entrar.
+    const { data: mark, error: markError } = await supabase
+      .from('crew_wall_reads')
+      .select('read_at')
+      .eq('crew_id', crewId)
+      .maybeSingle()
+    if (markError) throw mapDataError(markError)
+
+    let query = supabase
+      .from('crew_posts')
+      .select('id', { count: 'exact', head: true })
+      .eq('crew_id', crewId)
+    if (mark !== null) query = query.gt('created_at', (mark as { read_at: string }).read_at)
+
+    const { count, error } = await query
+    if (error) throw mapDataError(error)
+    return count ?? 0
+  }
+
+  async markAllRead(): Promise<void> {
+    const crewId = this.scope.current()
+    if (crewId === null) return
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (user === null) return
+
+    const { error } = await supabase
+      .from('crew_wall_reads')
+      .upsert({ profile_id: user.id, crew_id: crewId, read_at: new Date().toISOString() })
+    if (error) throw mapDataError(error)
+    this.notify()
+  }
+
+  /*
+   * Los oyentes se avisan de lo que ESTE cliente escribe: publicar, dar «me
+   * gusta», borrar o marcar como leido se ven al instante sin recargar. Lo que
+   * escriben otros llega por tiempo real, que se suscribe aparte.
+   */
+  private readonly listeners = new Set<() => void>()
+
+  onChange(listener: () => void): () => void {
+    this.listeners.add(listener)
+    return () => {
+      this.listeners.delete(listener)
+    }
+  }
+
+  private notify(): void {
+    for (const listener of this.listeners) listener()
   }
 }

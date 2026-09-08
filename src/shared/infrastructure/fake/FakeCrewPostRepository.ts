@@ -80,6 +80,29 @@ export class FakeCrewPostRepository implements CrewPostRepository {
     this.notify()
   }
 
+  /*
+   * La marca de «hasta donde lei», por crew. Sin marca, todo el muro esta sin
+   * leer: es lo que le pasa a quien acaba de entrar en un equipo, y lo que
+   * hace que el contador se vea nada mas arrancar la simulacion.
+   */
+  private readAt = new Map<string, string>()
+
+  async countUnread(): Promise<number> {
+    const crewId = this.scope.current()
+    if (crewId === null) return 0
+
+    const since = this.readAt.get(crewId) ?? ''
+    return this.posts.filter((post) => post.crewId === crewId && post.createdAt > since).length
+  }
+
+  async markAllRead(): Promise<void> {
+    const crewId = this.scope.current()
+    if (crewId === null) return
+
+    this.readAt.set(crewId, new Date().toISOString())
+    this.notify()
+  }
+
   onChange(listener: () => void): () => void {
     this.listeners.add(listener)
     return () => {

@@ -1016,6 +1016,23 @@ export const spanish = {
   'settings.deleteAccount.confirm': 'Sí, eliminar mi cuenta',
   'settings.deleteAccount.deleting': 'Eliminando…',
   'settings.deleteAccount.error': 'No se pudo eliminar la cuenta',
+  'filters.level.all': 'Todos los niveles',
+  'students.empty':
+    'Aún no tienes alumnos. Añade el primero para poder asignarle rutinas y agendarle sesiones.',
+  'students.noMatches': 'Ningún alumno coincide con la búsqueda.',
+  'trainings.noMatches': 'Ninguna rutina coincide con la búsqueda.',
+  'prescription.tempo': 'Tempo',
+  'prescription.tempoPlaceholder': '3-1-1-0',
+  'prescription.notes': 'Indicaciones',
+  'prescription.notesPlaceholder': 'Para el alumno: «sin rebote abajo»',
+  'sessionDetails.notes': 'Notas',
+  'sessionDetails.save': 'Guardar cambios',
+  'sessionDetails.saved': 'Sesión guardada',
+  'newSession.editTitle': 'Editar sesión',
+  'newSession.editHint': 'Cambia lo que haga falta. Lo hecho hasta ahora se conserva.',
+  'newSession.saveChanges': 'Guardar cambios',
+  'newSession.updated': 'Sesión actualizada',
+  'crewSwitcher.unread': '{count} anuncios sin leer en el muro',
 } as const
 
 /** Toda clave que la aplicación puede traducir. */
