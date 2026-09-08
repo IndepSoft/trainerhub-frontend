@@ -148,3 +148,23 @@ describe('crews: crear, gobernar y buscar', () => {
     expect(hidden).toEqual([])
   })
 })
+
+describe('crews: el token no se adivina a fuerza bruta', () => {
+  const created: TestAccount[] = []
+  afterAll(() => deleteAccounts(created))
+
+  it('a la vigesima consulta en una hora, la funcion deja de responder', async () => {
+    const trainer = await signedInAs('cierra', { intent: 'trainer', first_name: 'T', last_name: 'R' })
+    const crew = await createCrewAs(trainer, 'Cerrado')
+    const guesser = await signedInAs('adivina', { intent: 'student', first_name: 'A', last_name: 'D' })
+    created.push(trainer, guesser)
+
+    // Diecinueve intentos fallidos se responden; el bueno, el vigesimo, ya no.
+    for (let attempt = 0; attempt < 19; attempt += 1) {
+      const miss = await guesser.client.rpc('find_crew_by_join_token', { token: `NOPE${attempt}` })
+      expect(miss.error).toBeNull()
+    }
+    const blocked = await guesser.client.rpc('find_crew_by_join_token', { token: crew.join_token })
+    expect(blocked.error?.message).toBe('tooManyAttempts')
+  })
+})

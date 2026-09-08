@@ -5,6 +5,7 @@ import { AppError, AppErrorCode } from '@/shared/domain/errors'
 import { supabase } from './client'
 import { mapDataError } from './errorMapper'
 import { toSession, toSessionRow, type SessionRow } from './mappers'
+import { subscribeToTable } from './realtime'
 
 /**
  * Implementacion de SessionRepository sobre PostgREST.
@@ -108,6 +109,59 @@ export class SupabaseSessionRepository implements SessionRepository {
     return toSession(row as SessionRow)
   }
 
+  async createMany(sessions: NewSession[], assignmentId: string): Promise<Session[]> {
+    const crewId = this.scope.current()
+    if (crewId === null) {
+      throw new AppError(AppErrorCode.VALIDATION, 'noActiveCrew')
+    }
+
+    // `create_sessions` inserta el lote en una transaccion y pone el
+    // `assignment_id` a todas: todas o ninguna, y cada una sabe de donde salio.
+    const { data, error } = await supabase.rpc('create_sessions', {
+      batch: sessions.map((session) => ({ crew_id: crewId, ...toSessionRow(session) })),
+      source_assignment: assignmentId,
+    })
+
+    if (error) throw mapDataError(error)
+    return ((data ?? []) as SessionRow[]).map(toSession)
+  }
+
+  async findByAssignment(assignmentId: string): Promise<Session[]> {
+    const { data, error } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('assignment_id', assignmentId)
+      .order('date')
+      .order('time')
+
+    if (error) throw mapDataError(error)
+    return ((data ?? []) as SessionRow[]).map(toSession)
+  }
+
+  async shiftByAssignment(assignmentId: string, days: number): Promise<number> {
+    // Sumar dias a una fecha es aritmetica de Postgres, que PostgREST no
+    // expresa: va como funcion del servidor.
+    const { data, error } = await supabase.rpc('shift_sessions', {
+      source_assignment: assignmentId,
+      days,
+    })
+
+    if (error) throw mapDataError(error)
+    return typeof data === 'number' ? data : 0
+  }
+
+  async cancelByAssignment(assignmentId: string): Promise<number> {
+    const { data, error } = await supabase
+      .from('sessions')
+      .update({ status: 'cancelled' })
+      .eq('assignment_id', assignmentId)
+      .in('status', ['pending', 'confirmed'])
+      .select('id')
+
+    if (error) throw mapDataError(error)
+    return (data ?? []).length
+  }
+
   async update(sessionId: string, data: NewSession): Promise<void> {
     const { error } = await supabase.from('sessions').update(toSessionRow(data)).eq('id', sessionId)
 
@@ -137,8 +191,12 @@ export class SupabaseSessionRepository implements SessionRepository {
     if (error) throw mapDataError(error)
   }
 
-  /** TODO: sin suscripcion todavia. La agenda es la tercera en la lista del plan, §1.3. */
-  onChange(): () => void {
-    return () => undefined
+  /**
+   * La agenda es la tercera con tiempo real (plan, §1.3): una sesion que otro
+   * entrenador agenda o mueve aparece sin recargar. Lo que escribe este mismo
+   * cliente tambien llega por el canal, asi que no hacen falta oyentes locales.
+   */
+  onChange(listener: () => void): () => void {
+    return subscribeToTable('sessions', this.scope.current(), listener)
   }
 }

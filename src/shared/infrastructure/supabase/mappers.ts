@@ -736,11 +736,14 @@ export function toSession(row: SessionRow): Session {
     notes: row.notes,
     routineId: row.routine_id,
     result: row.result,
+    // El nulo de SQL muere aqui: en la entidad, «a mano» es no tener el campo.
+    assignmentId: row.assignment_id ?? undefined,
   }
 }
 
-export function toSessionRow(session: NewSession): Omit<SessionRow, 'id' | 'crew_id' | 'assignment_id'> {
+export function toSessionRow(session: NewSession): Omit<SessionRow, 'id' | 'crew_id'> {
   return {
+    assignment_id: session.assignmentId ?? null,
     student_id: session.studentId,
     title: session.title,
     kind: session.kind,

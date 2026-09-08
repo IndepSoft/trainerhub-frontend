@@ -199,3 +199,70 @@ describe('sessions: volcar un plan', () => {
     expect(stored).toHaveLength(2)
   })
 })
+
+describe('sessions: mover un volcado', () => {
+  const created: TestAccount[] = []
+  afterAll(() => deleteAccounts(created))
+
+  it('mueve las que quedan por hacer y deja quietas las hechas y las canceladas', async () => {
+    const trainer = await signedInAs('mueve', { intent: 'trainer', first_name: 'T', last_name: 'R' })
+    const crew = await createActiveCrewAs(trainer, 'Movidas')
+    const person = await signedInAs('movido', { intent: 'student', first_name: 'M', last_name: 'O' })
+    created.push(trainer, person)
+    const studentId = await enrollAs(trainer, crew.id, person)
+
+    const { data: plan } = await trainer.client
+      .from('plans')
+      .insert({
+        crew_id: crew.id,
+        title: 'Plan',
+        level: 'Principiante',
+        objective_id: 'hipertrofia',
+        split_id: 'full-body',
+        weekly_frequency: 3,
+        weeks: [{ number: 1, isDeload: false, days: [{ dayOfWeek: 1, routineId: null }] }],
+      })
+      .select('id')
+      .single()
+    const { data: assignment } = await trainer.client
+      .from('assignments')
+      .insert({ crew_id: crew.id, student_id: studentId, kind: 'plan', plan_id: plan?.id })
+      .select('id')
+      .single()
+
+    await trainer.client.rpc('create_sessions', {
+      batch: [
+        sessionFor(crew.id, studentId, 'Pendiente'),
+        { ...sessionFor(crew.id, studentId, 'Hecha'), status: 'completed' },
+        { ...sessionFor(crew.id, studentId, 'Cancelada'), status: 'cancelled' },
+      ],
+      source_assignment: assignment?.id,
+    })
+
+    const { data: moved, error } = await trainer.client.rpc('shift_sessions', {
+      source_assignment: assignment?.id,
+      days: 7,
+    })
+    expect(error).toBeNull()
+    expect(moved).toBe(1)
+
+    const { data: rows } = await adminClient()
+      .from('sessions')
+      .select('title, date')
+      .eq('assignment_id', assignment?.id)
+      .order('title')
+    expect(rows).toEqual([
+      { title: 'Cancelada', date: '2026-09-10' },
+      { title: 'Hecha', date: '2026-09-10' },
+      { title: 'Pendiente', date: '2026-09-17' },
+    ])
+
+    // Un alumno no mueve un volcado: la funcion corre con sus permisos, y el
+    // guardian de la sesion le corta el cambio de fecha.
+    const denied = await person.client.rpc('shift_sessions', {
+      source_assignment: assignment?.id,
+      days: 7,
+    })
+    expect(denied.error?.message).toBe('forbidden')
+  })
+})

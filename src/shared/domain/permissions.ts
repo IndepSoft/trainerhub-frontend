@@ -48,9 +48,11 @@ export type Capability =
  * lo que hace que conceder una llave suelta sirva de algo: antes se guardaba la
  * concesión y la puerta seguía cerrada.
  *
- * TODO: todo esto lo comprueba el navegador. Impide equivocarse, no impide
- * actuar. La tabla de qué política de servidor sustituye a cada regla está en
- * `docs/CAMBIOS-Y-ARQUITECTURA.md` §14.5.
+ * Todo esto lo comprueba el navegador PARA NO OFRECER lo que va a fallar; la
+ * que decide es la base. `role_capabilities` es esta tabla en SQL —vigilada por
+ * una prueba de contrato que compara las dos—, `has_capability` la lee desde
+ * cada política, y `guard_last_admin` es `lastAdminBlocker`. Un cliente
+ * modificado ya no escribe.
  */
 
 /** Todas, en el orden en el que se presentan. Gobernar primero. */

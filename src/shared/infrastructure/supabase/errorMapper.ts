@@ -52,6 +52,8 @@ const SERVER_REASONS: Partial<Record<string, [AppErrorCode, AppErrorReason]>> = 
   personNotInAnyCrew: [AppErrorCode.NOT_FOUND, 'personNotInAnyCrew'],
   enrollmentClosed: [AppErrorCode.VALIDATION, 'enrollmentClosed'],
   notFound: [AppErrorCode.NOT_FOUND, 'notFound'],
+  tooManyAttempts: [AppErrorCode.FORBIDDEN, 'tooManyAttempts'],
+  sessionExpired: [AppErrorCode.UNAUTHORIZED, 'sessionExpired'],
 }
 
 export function mapDataError(error: { code?: string; message: string }): AppError {

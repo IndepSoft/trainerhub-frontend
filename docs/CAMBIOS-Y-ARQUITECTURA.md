@@ -2681,3 +2681,107 @@ Lo demás de la fase 7 no es código de este repositorio: dos proyectos de
 Supabase, SMTP propio, la lista blanca de redirecciones con
 `/authentication/nueva-contrasena`, las copias de seguridad, y aplicar las seis
 migraciones nuevas en la nube con copia previa.
+
+## 27. Lo que faltaba del plan, hecho (9 sep 2026)
+
+Rama `feature/supabase-connection`. Cierra los huecos de §10 del plan, el
+tiempo real de §1.3, lo que quedaba de la fase 6 y la parte de la fase 7 que
+es código. Lo que sigue fuera está al final, y es corto.
+
+### 27.1 Controles que no hacían nada
+
+- **Los filtros filtran**, en alumnos y en rutinas: texto sin tildes ni
+  mayúsculas —`normalizeForSearch`— y nivel. EN MEMORIA y no en el puerto: son
+  decenas de fichas ya cargadas, y buscar por nombre es escribir y ver. El
+  botón «Filtros» se sustituyó por el único filtro que existe, el nivel: un
+  botón que abre un panel para elegir una cosa es un paso de más.
+- **Tempo e indicaciones** de un ejercicio tienen campo en el editor y se
+  leen en la ficha de la rutina. Se conservaban sin poder escribirse.
+- **La ficha de una sesión guarda estado y notas** con un solo botón, y
+  «Editar» abre el formulario del alta con la sesión puesta. Es el mismo
+  formulario porque es la misma decisión, y con `editing` cambia sólo lo que
+  pasa al enviar: `update` en vez de `create`, conservando estado y
+  resultado. Mover una sesión era el motivo de materializar las de un plan.
+- **«Vista previa»** se quitó del menú de rutina: la ficha ya lo es.
+- **El muro cuenta lo no leído** sobre la insignia del equipo, que es su
+  entrada. `countUnread` y `markAllRead` en el puerto; detrás,
+  `crew_wall_reads`. Abrir el muro lo da por leído una vez por visita, al
+  montar, y no en cada recarga de la lista: un anuncio que llegue mientras se
+  mira no puede quedar leído sin haberse visto.
+
+### 27.2 Lo que un volcado deja, y lo que se hace con ello
+
+`Session.assignmentId` existía en la base y no en la entidad: el volcado
+creaba las sesiones una a una con `create` y ninguna sabía de dónde salía.
+Ahora `createMany` manda el lote a `create_sessions` —todas o ninguna— y cada
+sesión guarda su asignación. Con eso:
+
+- **Volcar dos veces avisa**: el diálogo cuenta las que ya salieron de esa
+  asignación y el botón dice «Volcar otra vez». No lo impide, porque un ciclo
+  nuevo del mismo plan es legítimo; lo que no puede ser es que duplique en
+  silencio.
+- **Mover una semana y cancelar las pendientes**, en bloque, desde la lista de
+  asignaciones. `shift_sessions` es una función porque sumar días a una fecha
+  es aritmética de Postgres; cancelar es un `update` con filtro. Sólo lo que
+  está por ocurrir: una completada ya ocurrió y una cancelada ya se decidió.
+  Cancelar pide una segunda pulsación en el sitio, no un diálogo: es
+  reversible.
+
+### 27.3 Tiempo real, en el orden del plan
+
+`notices`, `crew_posts`, `crew_post_likes` y `sessions` entran en la
+publicación de `supabase_realtime`, y los tres adaptadores se suscriben con
+`subscribeToTable`, uno por tabla y acotado por crew. RLS decide qué filas
+llegan por el canal: un alumno no recibe las sesiones de sus compañeros
+aunque escuche la tabla entera. El aviso no lleva la fila —el contrato del
+puerto es «algo cambió»— y quien escucha vuelve a leer por el camino de
+siempre. El muro combina los oyentes locales con el canal: lo que escribe este
+cliente se ve al instante, lo que escriben otros llega por tiempo real.
+
+### 27.4 Fase 6, lo que quedaba
+
+- **Onboarding por cuenta**: `profiles.onboarded_at` detrás de un puerto
+  propio, `OnboardingRepository`. Propio y pequeño porque es un dato de la
+  CUENTA —lo vio esta persona, en el dispositivo que fuera— y no de la ficha
+  de entrenador ni de la de alumno. La guardia del layout espera la respuesta:
+  con `null` no manda a nadie a ningún sitio, porque decidir «no lo vio» antes
+  de saberlo devolvía al recorrido a quien ya lo terminó. La simulación sigue
+  usando la clave del dispositivo, que es lo que la suite de interfaz escribe.
+- **Fotos por Storage**: `PhotoStorage`, el primer puerto que guarda
+  ficheros. Recibe el fichero y devuelve la dirección con la que `photoUrl` ya
+  trabajaba; ni cubos ni rutas cruzan el puerto. Cubo `photos`, público en
+  lectura, y cada cuenta escribe sólo en su carpeta —la política compara el
+  primer tramo de la ruta con `auth.uid()`—. En Configuración, «Subir foto»
+  rellena el campo de la dirección y guardar sigue siendo el botón de abajo.
+- **Google, si se enciende**: el disparador del alta lee `full_name` y
+  `avatar_url` además de nombre y apellidos separados, y `profiles` gana
+  `photo_url`. El botón sigue apagado hasta que exista el cliente OAuth.
+
+### 27.5 Fase 7, lo que es código
+
+- **El token no se adivina a fuerza bruta**: `find_crew_by_join_token` anota
+  cada consulta por cuenta en `join_token_lookups` y a la vigésima en una hora
+  responde `tooManyAttempts`. Por cuenta y no por IP, porque Postgres no ve la
+  IP y la función ya no respondía sin sesión.
+- **Un fallo real de camino**: crear un equipo escribía el puesto del fundador
+  como segunda operación desde el hook, y `create_crew` ya lo sienta en la
+  misma transacción. Contra Supabase, la segunda escritura duplicaba el alta y
+  fallaba. `create` sienta al fundador en los dos adaptadores y el hook ya no
+  escribe nada después.
+
+### 27.6 La suite de interfaz, en su propio servidor
+
+Levanta el 5179 con `VITE_USE_FAKE_AUTH=true` por variable de entorno. Antes
+reutilizaba el 5178 y heredaba el `.env` de quien trabaja: con ese servidor
+contra Supabase, las ciento ochenta pruebas fallaban en el login por un motivo
+que no era el suyo.
+
+### 27.7 Lo que sigue fuera, y por qué
+
+Decisiones de producto que el plan dejó fuera y que nadie ha tomado: eventos
+del equipo, importes en las cuotas, libras, asistencia a sesiones grupales. Y
+lo que no es código de este repositorio: SMTP, dos proyectos, copias de
+seguridad, el cliente OAuth de Google, la lista blanca de redirecciones, los
+iconos de la PWA y un capturador de errores del cliente. El GPS de la sesión
+en vivo de cardio sigue simulado: es la otra pantalla que el plan no cableó
+porque no hay dato que guardar hasta que exista el recorrido real.

@@ -53,35 +53,25 @@ export function useCrewEditor(): UseCrewEditorResult {
   const createCrew = useCallback(
     (input: CreateCrewInput) =>
       run(async () => {
+        /*
+         * QUIEN CREA UN CREW NACE ADMINISTRADOR, y lo escribe el puerto en el
+         * mismo acto: con Supabase, `create_crew` en una transaccion; en la
+         * simulacion, el adaptador sienta al fundador al nacer. Aqui habia una
+         * segunda escritura -el puesto- que con la funcion del servidor
+         * duplicaba el alta y fallaba, y sin ella podia dejar un equipo sin
+         * nadie que pudiera entrar.
+         *
+         * `setActiveCrew` despues: el ambito se mueve al equipo recien nacido.
+         * Es el unico sitio donde se mueve a mano.
+         */
         const crew = await container.crews.create({
           name: input.name,
           denomination: input.denomination,
           ownerId: input.ownerId,
+          ownerName: input.ownerName,
+          ownerEmail: input.ownerEmail,
         })
-
-        /*
-         * QUIEN CREA UN CREW NACE ADMINISTRADOR, y hay que escribirlo: el rol ya
-         * no se deduce de haber fundado el equipo, sale del puesto. Sin esta
-         * alta, el fundador se quedaría fuera de su propio crew —sin puesto no
-         * hay pertenencia— y no podría ni entrar.
-         *
-         * `setActiveCrew` antes del alta porque el puesto se escribe en el crew
-         * ACTIVO, y en este instante el activo sigue siendo el anterior o
-         * ninguno. Es el único sitio donde el ámbito se mueve a mano, y es
-         * porque el equipo acaba de nacer.
-         *
-         * TODO: con backend, crear el crew y su primer puesto van en la misma
-         * transacción del servidor. Aquí, si lo segundo falla queda un equipo
-         * sin nadie que pueda entrar.
-         */
         setActiveCrew(crew.id)
-        await container.crewStaff.add({
-          profileId: input.ownerId,
-          role: 'admin',
-          extraCapabilities: [],
-          displayName: input.ownerName,
-          email: input.ownerEmail,
-        })
 
         return crew
       }),

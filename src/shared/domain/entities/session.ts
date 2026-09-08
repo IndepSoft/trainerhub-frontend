@@ -173,6 +173,16 @@ export interface Session {
    * otra entidad: no hay resultado sin sesión ni resultado de dos sesiones.
    */
   result: SessionResult | null
+  /**
+   * De qué volcado de plan salió, si salió de alguno. Ausente en una sesión
+   * agendada a mano.
+   *
+   * Es lo que permite mover o cancelar un volcado entero y saber que un plan
+   * ya se volcó antes de volcarlo dos veces. Se guarda la ASIGNACIÓN y no el
+   * plan: el mismo plan puede volcarse a dos alumnos, y a uno de ellos dos
+   * veces en ciclos distintos.
+   */
+  assignmentId?: string
 }
 
 /**

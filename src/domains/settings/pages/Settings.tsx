@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from 'react'
-import { Check, LogOut } from 'lucide-react'
+import { useId, useState, type FormEvent } from 'react'
+import { Check, LogOut, Upload } from 'lucide-react'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Button } from '@/shared/ui/button'
@@ -12,6 +12,7 @@ import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { useLogout } from '@/auth/hooks/useLogout'
 import { PasswordFields } from '@/auth/components/PasswordFields'
 import { useProfileEditor, type ProfileDraft } from '../hooks/useProfileEditor'
+import { usePhotoUpload } from '../hooks/usePhotoUpload'
 import { ThemeSelector } from '../components/ThemeSelector'
 import { LanguageSelector } from '../components/LanguageSelector'
 import { SoundToggle } from '../components/SoundToggle'
@@ -181,6 +182,19 @@ function ProfileFields({ initial, saving, onSave }: ProfileFieldsProps) {
   const [draft, setDraft] = useState(initial)
   const [justSaved, setJustSaved] = useState(false)
   const [missingName, setMissingName] = useState(false)
+  const { uploading, error: uploadError, upload } = usePhotoUpload()
+  const photoInputId = useId()
+
+  /*
+   * Subir rellena el campo de la direccion; guardar sigue siendo el boton de
+   * abajo. Asi la foto se ve antes de comprometerse, igual que una direccion
+   * pegada, y cancelar es no pulsar guardar.
+   */
+  const handlePhotoChosen = async (file: File | undefined) => {
+    if (file === undefined) return
+    const url = await upload(file, 'profile')
+    if (url !== null) setField('photoUrl', url)
+  }
 
   const setField = (field: keyof ProfileDraft, value: string) => {
     setDraft((current) => ({ ...current, [field]: value }))
@@ -228,6 +242,24 @@ function ProfileFields({ initial, saving, onSave }: ProfileFieldsProps) {
             placeholder="https://…"
             className="mt-1.5"
           />
+          {/* O subirla. El campo oculto lleva la etiqueta del boton: es lo que
+              hace que «Subir foto» abra el selector y siga siendo accesible. */}
+          <input
+            id={photoInputId}
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={(event) => void handlePhotoChosen(event.target.files?.[0])}
+          />
+          <Button asChild type="button" variant="outline" size="sm" className="mt-2 gap-1.5">
+            <label htmlFor={photoInputId}>
+              <Upload className="size-3.5" />
+              {uploading ? t('settings.profile.uploading') : t('settings.profile.upload')}
+            </label>
+          </Button>
+          {uploadError !== null && (
+            <p className="mt-1 text-[11px] font-semibold text-danger">{uploadError}</p>
+          )}
         </div>
       </div>
 

@@ -1023,4 +1023,17 @@ export const portuguese: Dictionary = {
   'newSession.saveChanges': 'Guardar alterações',
   'newSession.updated': 'Sessão atualizada',
   'crewSwitcher.unread': '{count} anúncios por ler no mural',
+  'planDump.alreadyDumped':
+    'Este plano já está na agenda: {count} sessões saíram dele. Voltar a lançá-lo duplica-as.',
+  'planDump.confirmAgain': 'Lançar outra vez',
+  'assignments.dumped': '{count} sessões na agenda, {open} por fazer',
+  'assignments.shiftWeek': 'Mover uma semana',
+  'assignments.shifted': '{count} sessões movidas uma semana',
+  'assignments.cancelOpen': 'Cancelar as pendentes',
+  'assignments.cancelConfirm': 'Sim, cancelar {count}',
+  'assignments.cancelled': '{count} sessões canceladas',
+  'error.notAnImage': 'O ficheiro não é uma imagem',
+  'error.photoTooLarge': 'A foto é demasiado pesada: o máximo são {max} MB',
+  'settings.profile.upload': 'Carregar foto',
+  'settings.profile.uploading': 'A carregar…',
 }

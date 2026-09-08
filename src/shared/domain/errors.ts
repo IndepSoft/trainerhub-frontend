@@ -55,6 +55,8 @@ export type AppErrorReason =
   | 'enrollmentClosed'
   | 'samePassword'
   | 'sessionExpired'
+  | 'notAnImage'
+  | 'photoTooLarge'
 
 /** Valores que el mensaje del motivo necesita para rellenar sus huecos. */
 export type AppErrorValues = Record<string, string | number>

@@ -1033,6 +1033,19 @@ export const spanish = {
   'newSession.saveChanges': 'Guardar cambios',
   'newSession.updated': 'Sesión actualizada',
   'crewSwitcher.unread': '{count} anuncios sin leer en el muro',
+  'planDump.alreadyDumped':
+    'Este plan ya está en la agenda: {count} sesiones salieron de él. Volcarlo otra vez las duplica.',
+  'planDump.confirmAgain': 'Volcar otra vez',
+  'assignments.dumped': '{count} sesiones en la agenda, {open} por hacer',
+  'assignments.shiftWeek': 'Mover una semana',
+  'assignments.shifted': '{count} sesiones movidas una semana',
+  'assignments.cancelOpen': 'Cancelar las pendientes',
+  'assignments.cancelConfirm': 'Sí, cancelar {count}',
+  'assignments.cancelled': '{count} sesiones canceladas',
+  'error.notAnImage': 'El fichero no es una imagen',
+  'error.photoTooLarge': 'La foto pesa demasiado: el máximo son {max} MB',
+  'settings.profile.upload': 'Subir foto',
+  'settings.profile.uploading': 'Subiendo…',
 } as const
 
 /** Toda clave que la aplicación puede traducir. */

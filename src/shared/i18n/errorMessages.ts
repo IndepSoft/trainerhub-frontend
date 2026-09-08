@@ -33,6 +33,8 @@ export const ERROR_REASON_KEY: Record<AppErrorReason, TranslationKey> = {
   enrollmentClosed: 'error.enrollmentClosed',
   samePassword: 'error.samePassword',
   sessionExpired: 'error.sessionExpired',
+  notAnImage: 'error.notAnImage',
+  photoTooLarge: 'error.photoTooLarge',
 }
 
 /**

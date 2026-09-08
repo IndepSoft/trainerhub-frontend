@@ -336,10 +336,25 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
 - La página del equipo tiene miembros, solicitudes, QR, muro y ranking.
   **Faltan los eventos.** Los entrenamientos grupales NO son una entidad nueva
   —`Session` ya tiene `kind: 'group'`—; un evento, una carrera o una quedada, sí.
-- El muro no avisa: un anuncio nuevo no se señala en ningún sitio. La marca de
-  «hasta dónde leí» ya existe en la base —`crew_wall_reads`—; falta el contador
-  en la entrada de navegación del equipo. Las notificaciones push son otro
-  trabajo.
+- El muro cuenta lo no leído sobre la insignia del equipo —`countUnread` y
+  `markAllRead` en el puerto, `crew_wall_reads` detrás— y abrir el muro lo da
+  por leído. Las notificaciones push son otro trabajo.
+- TIEMPO REAL sólo donde el plan lo pidió: avisos, muro y agenda, por
+  `postgres_changes` con `subscribeToTable`. RLS decide qué filas llegan por
+  el canal. Rutinas, planes y catálogo no lo tienen: los edita una persona y
+  los lee ella misma. Una tabla nueva con tiempo real se añade a la
+  publicación en su migración.
+- El onboarding se ve una vez POR CUENTA —`profiles.onboarded_at`, puerto
+  `OnboardingRepository`—; la simulación sigue con la clave del dispositivo,
+  que es la que escribe la suite. La guardia del layout espera la respuesta y
+  la ata a la ruta: leer el `false` de la ruta anterior devolvía al recorrido
+  a quien lo acababa de terminar.
+- Las FOTOS suben a Storage por `PhotoStorage`, cubo `photos`, público en
+  lectura y cada cuenta escribe sólo en su carpeta. El puerto recibe el
+  fichero y devuelve la dirección: ni cubos ni rutas cruzan el dominio.
+- El token de unión se limita a VEINTE consultas por cuenta y hora en
+  `find_crew_by_join_token` (`join_token_lookups`); a la vigésima responde
+  `tooManyAttempts`.
 - El «me gusta» viaja como CONTADOR y BANDERA calculados en el servidor
   —`crew_posts_view`—, nunca como lista. El simulado hace lo mismo en memoria.
 - **Las reglas de permisos las decide la BASE** —RLS, disparadores y las cuatro
@@ -369,10 +384,9 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   —medido— y el aviso llegaría tarde justo en el caso para el que se puso. Es la
   única de las tres señales que sobrevive a eso; con la pantalla apagada, en iOS
   no sobrevive ninguna y eso ya son notificaciones del sistema.
-- El TEMPO y las NOTAS de un ejercicio se conservan al editar una rutina pero no
-  se editan: no hay campo en el formulario y hoy sólo los trae la semilla. No
-  estaban en el borrador y editar los BORRABA en silencio; conservarlos era
-  obligatorio, darles interfaz es otra decisión.
+- El TEMPO y las INDICACIONES de un ejercicio tienen campo en el editor y se
+  leen en la ficha de la rutina. No estaban en el borrador y editar los BORRABA
+  en silencio; primero se conservaron, después se les dio campo.
 - El peso se prescribe como CARGA DE REFERENCIA, opcional, y no contradice al
   RIR: el RIR prescribe esfuerzo y el peso dónde empezar. El historial va SIEMPRE
   por delante de lo prescrito al rellenar el campo de la sesión —al revés, una
@@ -385,11 +399,14 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   y su eje vertical no arranca en cero: por eso la pendiente NO es comparable
   entre dos ejercicios. El 1RM no se da por encima de diez repeticiones, donde la
   fórmula se separa demasiado de la realidad.
-- Los filtros de `TrainingFilters` y `StudentFilters` no filtran.
-- Las sesiones volcadas desde un plan YA guardan de qué volcado salieron
-  —`assignment_id`, y `create_sessions` las crea todas o ninguna—, pero
-  moverlas o cancelarlas en bloque no tiene interfaz todavía, y volcar dos
-  veces sigue duplicando porque nadie lo comprueba antes.
+- Los filtros de alumnos y de rutinas filtran EN MEMORIA —texto sin tildes ni
+  mayúsculas, y nivel— porque son decenas de fichas ya cargadas. Si algún día
+  la lista se pagina, el filtro pasa al puerto como operación de negocio.
+- Las sesiones volcadas desde un plan guardan de qué volcado salieron
+  —`Session.assignmentId`, `createMany` las crea todas o ninguna— y desde la
+  lista de asignaciones se mueven una semana o se cancelan las pendientes en
+  bloque. Volcar dos veces AVISA y no lo impide: un ciclo nuevo del mismo plan
+  es legítimo.
 - La subestructura de carpetas difiere entre dominios; falta unificarla.
 - Las cuotas no guardan importes: la cola de cobros dice **quién vence y
   cuándo**, no cuánto. Poner precio exige decidir moneda y modelo de tarifas, y

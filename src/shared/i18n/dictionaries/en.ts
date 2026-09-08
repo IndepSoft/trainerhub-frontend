@@ -1023,4 +1023,17 @@ export const english: Dictionary = {
   'newSession.saveChanges': 'Save changes',
   'newSession.updated': 'Session updated',
   'crewSwitcher.unread': '{count} unread posts on the wall',
+  'planDump.alreadyDumped':
+    'This plan is already on the schedule: {count} sessions came from it. Dumping it again duplicates them.',
+  'planDump.confirmAgain': 'Dump again',
+  'assignments.dumped': '{count} sessions on the schedule, {open} still to do',
+  'assignments.shiftWeek': 'Move one week',
+  'assignments.shifted': '{count} sessions moved one week',
+  'assignments.cancelOpen': 'Cancel the pending ones',
+  'assignments.cancelConfirm': 'Yes, cancel {count}',
+  'assignments.cancelled': '{count} sessions cancelled',
+  'error.notAnImage': 'The file is not an image',
+  'error.photoTooLarge': 'The photo is too heavy: the limit is {max} MB',
+  'settings.profile.upload': 'Upload photo',
+  'settings.profile.uploading': 'Uploading…',
 }

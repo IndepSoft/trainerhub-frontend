@@ -49,6 +49,12 @@ import type { SubscriptionRepository } from '@/shared/domain/ports/SubscriptionR
 import { FakeSubscriptionRepository } from '@/shared/infrastructure/fake/FakeSubscriptionRepository'
 import type { NoticeRepository } from '@/shared/domain/ports/NoticeRepository'
 import { FakeNoticeRepository } from '@/shared/infrastructure/fake/FakeNoticeRepository'
+import type { OnboardingRepository } from '@/shared/domain/ports/OnboardingRepository'
+import { FakeOnboardingRepository } from '@/shared/infrastructure/fake/FakeOnboardingRepository'
+import { SupabaseOnboardingRepository } from '@/shared/infrastructure/supabase/SupabaseOnboardingRepository'
+import type { PhotoStorage } from '@/shared/domain/ports/PhotoStorage'
+import { FakePhotoStorage } from '@/shared/infrastructure/fake/FakePhotoStorage'
+import { SupabasePhotoStorage } from '@/shared/infrastructure/supabase/SupabasePhotoStorage'
 import { crewScope } from './crewScope'
 
 /**
@@ -84,6 +90,10 @@ export interface Container {
    */
   catalog: CatalogRepository
   blockLibrary: BlockLibraryRepository
+  /** Si quien ha entrado ya vio la bienvenida. De la cuenta, no del dispositivo. */
+  onboarding: OnboardingRepository
+  /** Las fotos. Primer puerto que guarda ficheros. */
+  photos: PhotoStorage
 }
 
 /**
@@ -147,10 +157,23 @@ function createAuthenticationAdapter(): AuthPort {
  * a proposito. Juntarlas es exactamente el trabajo de la raiz de composicion, y
  * el unico sitio donde puede ocurrir sin que nadie mas se entere.
  */
-const fakeCrews = new FakeCrewRepository()
+const fakeCrewStaff = new FakeCrewStaffRepository(crewScope)
+/*
+ * El equipo simulado sienta a su fundador al nacer, como hace `create_crew`.
+ * La raiz de composicion es quien conoce a la vez los dos almacenes; el de
+ * equipos solo recibe «que hacer con el fundador».
+ */
+const fakeCrews = new FakeCrewRepository(async (crewId, founder) => {
+  await fakeCrewStaff.addToCrew(crewId, {
+    profileId: founder.profileId,
+    role: 'admin',
+    extraCapabilities: [],
+    displayName: founder.displayName,
+    email: founder.email,
+  })
+})
 const fakeStudents = new FakeStudentRepository(crewScope)
 const fakeSessions = new FakeSessionRepository(crewScope)
-const fakeCrewStaff = new FakeCrewStaffRepository(crewScope)
 const trainers: TrainerRepository = fakeTrainers ?? new SupabaseTrainerRepository()
 
 /*
@@ -244,4 +267,8 @@ export const container: Container = {
   blockLibrary: shouldUseFakeAuthentication
     ? new FakeBlockLibraryRepository()
     : new SupabaseBlockLibraryRepository(crewScope),
+  onboarding: shouldUseFakeAuthentication
+    ? new FakeOnboardingRepository()
+    : new SupabaseOnboardingRepository(),
+  photos: shouldUseFakeAuthentication ? new FakePhotoStorage() : new SupabasePhotoStorage(),
 }

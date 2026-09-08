@@ -2310,9 +2310,13 @@ test.describe('volcar un plan a la agenda', () => {
 
     await page.goto('/students/student-2')
 
+    // Por el texto con el que EMPIEZA la seccion -su encabezado-: desde que la
+    // lista de asignaciones dice «11 sesiones en la agenda», un `hasText`
+    // suelto la contaba tambien. No por rol, porque con el dialogo abierto el
+    // resto de la pagina queda oculto para la accesibilidad.
     const filasDeSesion = page
       .locator('section')
-      .filter({ hasText: 'Sesiones' })
+      .filter({ hasText: /^\s*Sesiones/ })
       .locator('ul > li')
 
     const dialogo = await abrirVolcado(page)
@@ -2347,21 +2351,24 @@ test.describe('volcar un plan a la agenda', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0)
 
     /*
-     * El segundo choca con el primero ENTERO. Es el caso que hoy no esta
-     * resuelto -nada impide repetir el volcado, y saldrian once sesiones mas-,
-     * asi que al menos se ve venir: la previa lo dice antes de crear nada.
+     * El segundo choca con el primero ENTERO, y ademas se sabe que ya se
+     * volco: las sesiones guardan de que asignacion salieron. Avisa por los
+     * dos lados -«ya esta en la agenda» y «11 en conflicto»- y no lo impide,
+     * porque un ciclo nuevo del mismo plan es legitimo; el boton dice lo que
+     * va a pasar.
      *
      * Se provoca asi, y no agendando a mano en la fecha de inicio, porque eso
      * obligaba a navegar el calendario por meses y la prueba caducaba al cambiar
      * de mes.
      */
     const segundo = await abrirVolcado(page)
+    await expect(segundo).toContainText(/ya está en la agenda: 11 sesiones/)
     await ponerHoras(page, '08:00')
 
     await expect(segundo).toContainText('11 en conflicto')
     await expect(segundo.getByText(/· ocupado/).first()).toBeVisible()
-    // Avisa, no bloquea: el boton sigue disponible.
-    await expect(segundo.getByRole('button', { name: 'Agendar 11 sesiones' })).toBeEnabled()
+    // Avisa, no bloquea: el boton sigue disponible, y dice que es otra vez.
+    await expect(segundo.getByRole('button', { name: 'Volcar otra vez' })).toBeEnabled()
   })
 
   test('un plan sin fecha de inicio no ofrece volcarse', async ({ page }) => {
@@ -4934,5 +4941,50 @@ test.describe('muro: el contador de no leidos', () => {
     await expect(page.locator('section').filter({ hasText: 'Muro' }).first()).toBeVisible()
 
     await expect(page.getByLabel(/anuncios sin leer en el muro/)).toHaveCount(0)
+  })
+})
+
+test.describe('volcar un plan: lo que deja y lo que se hace con ello', () => {
+  test('el volcado se cuenta, se mueve una semana y se cancela en bloque', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students/student-2')
+
+    // Un plan sin volcar no tiene acciones en bloque.
+    await expect(page.getByRole('button', { name: 'Mover una semana' })).toHaveCount(0)
+
+    await page.getByRole('button', { name: /Volcar a la agenda/ }).click()
+    const dialogo = page.getByRole('dialog')
+    for (const dia of ['lunes', 'miércoles', 'jueves', 'viernes']) {
+      await elegirDelDesplegable(page, desplegables(page, dia), '08:00')
+    }
+    await dialogo.getByRole('button', { name: /Agendar \d+ sesiones/ }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    // Lo que dejo: N en la agenda, N por hacer.
+    const resumen = page.getByText(/sesiones en la agenda, \d+ por hacer/)
+    await expect(resumen).toBeVisible()
+    const cifras = (await resumen.textContent())?.match(/(\d+) sesiones en la agenda, (\d+) por hacer/)
+    expect(cifras).not.toBeNull()
+    const total = Number(cifras?.[1])
+    expect(total).toBeGreaterThan(0)
+    expect(Number(cifras?.[2])).toBe(total)
+
+    // Volcar otra vez avisa de que ya esta.
+    await page.getByRole('button', { name: /Volcar a la agenda/ }).click()
+    await expect(page.getByRole('dialog')).toContainText(/ya está en la agenda/)
+    await page.keyboard.press('Escape')
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    // Mover una semana mueve las que quedan por hacer.
+    await page.getByRole('button', { name: 'Mover una semana' }).click()
+    await expect(page.getByText(`${total} sesiones movidas una semana`)).toBeVisible()
+
+    // Cancelar pide una segunda pulsacion y deja cero por hacer.
+    await page.getByRole('button', { name: 'Cancelar las pendientes' }).click()
+    await page.getByRole('button', { name: `Sí, cancelar ${total}` }).click()
+    await expect(page.getByText(`${total} sesiones canceladas`)).toBeVisible()
+    await expect(page.getByText(new RegExp(`${total} sesiones en la agenda, 0 por hacer`))).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Mover una semana' })).toHaveCount(0)
   })
 })

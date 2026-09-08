@@ -5,6 +5,7 @@ import { AppError, AppErrorCode } from '@/shared/domain/errors'
 import { supabase } from './client'
 import { mapDataError } from './errorMapper'
 import { toNotice, type NoticeRow } from './mappers'
+import { subscribeToTable } from './realtime'
 
 /**
  * Implementacion de NoticeRepository sobre PostgREST.
@@ -57,11 +58,11 @@ export class SupabaseNoticeRepository implements NoticeRepository {
   }
 
   /**
-   * La campana es la primera pantalla que merece tiempo real (plan, §1.3), y
-   * llega con la publicacion de `notices` habilitada. Hasta entonces, no avisar
-   * es una implementacion valida del contrato.
+   * La campana es la primera pantalla con tiempo real (plan, §1.3): un aviso
+   * nuevo suena sin recargar. RLS decide que filas llegan por el canal; aqui
+   * solo se acota por crew para no escuchar lo de todos los equipos.
    */
-  onChange(): () => void {
-    return () => undefined
+  onChange(listener: () => void): () => void {
+    return subscribeToTable('notices', this.scope.current(), listener)
   }
 }

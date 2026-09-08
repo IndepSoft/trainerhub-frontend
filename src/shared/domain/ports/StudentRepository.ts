@@ -116,9 +116,9 @@ export interface StudentRepository {
    * alumno duplicado el primer día. Por eso es una sola operación y no un
    * «busca, y si no crea» repartido por un hook.
    *
-   * TODO: con backend esto es una función del servidor que además valida el
-   * token dentro de la misma transacción. Aquí, entre leer el crew y escribir la
-   * ficha cabe una rotación del token.
+   * Con Supabase es `claim_membership`, una función del servidor que valida el
+   * token dentro de la misma transacción: entre leer el crew y escribir la
+   * ficha ya no cabe una rotación. La simulación lo hace en memoria.
    */
   claimMembership(input: ClaimMembershipInput): Promise<Student>
 

@@ -5,6 +5,7 @@ import { AppError, AppErrorCode } from '@/shared/domain/errors'
 import { supabase } from './client'
 import { mapDataError } from './errorMapper'
 import { toCrewPost, type CrewPostRow } from './mappers'
+import { subscribeToTable, subscribeToWholeTable } from './realtime'
 
 /**
  * Implementacion de CrewPostRepository sobre PostgREST.
@@ -119,16 +120,22 @@ export class SupabaseCrewPostRepository implements CrewPostRepository {
   }
 
   /*
-   * Los oyentes se avisan de lo que ESTE cliente escribe: publicar, dar «me
-   * gusta», borrar o marcar como leido se ven al instante sin recargar. Lo que
-   * escriben otros llega por tiempo real, que se suscribe aparte.
+   * Dos fuentes de aviso, una baja. Lo que ESTE cliente escribe -publicar, dar
+   * «me gusta», borrar, marcar como leido- avisa al instante por los oyentes
+   * locales; lo que escriben otros llega por tiempo real, en dos canales
+   * porque los «me gusta» son una tabla aparte sin `crew_id`.
    */
   private readonly listeners = new Set<() => void>()
 
   onChange(listener: () => void): () => void {
     this.listeners.add(listener)
+    const unsubscribePosts = subscribeToTable('crew_posts', this.scope.current(), listener)
+    const unsubscribeLikes = subscribeToWholeTable('crew_post_likes', listener)
+
     return () => {
       this.listeners.delete(listener)
+      unsubscribePosts()
+      unsubscribeLikes()
     }
   }
 
