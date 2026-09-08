@@ -17,45 +17,48 @@
 -- ---------------------------------------------------------------------------
 -- Cuentas
 -- ---------------------------------------------------------------------------
-create or replace function pg_temp.seed_user(
-  user_id uuid,
-  user_email text,
-  first_name text,
-  last_name text,
-  intent text
-) returns void
-language plpgsql
-as $$
-begin
-  insert into auth.users (
-    id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
-    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
-    confirmation_token, recovery_token, email_change_token_new, email_change
-  ) values (
-    user_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-    user_email, crypt('desarrollo123', gen_salt('bf')), now(),
-    '{"provider":"email","providers":["email"]}'::jsonb,
-    jsonb_build_object('intent', intent, 'first_name', first_name, 'last_name', last_name),
-    now(), now(), '', '', '', ''
-  );
-
-  insert into auth.identities (
-    id, user_id, provider_id, identity_data, provider, last_sign_in_at, created_at, updated_at
-  ) values (
-    gen_random_uuid(), user_id, user_id::text,
-    jsonb_build_object('sub', user_id::text, 'email', user_email, 'email_verified', true),
-    'email', now(), now(), now()
-  );
-end;
-$$;
 
 -- El administrador de plataforma va ANTES que su cuenta: el disparador del alta
 -- lo busca en `platform_admin_emails` para darle el rol.
 insert into public.platform_admin_emails (email) values ('admin@indepsoft.com');
 
-select pg_temp.seed_user('10000000-0000-4000-8000-000000000001', 'entrenador@indepsoft.com', 'Marco', 'Salas', 'trainer');
-select pg_temp.seed_user('10000000-0000-4000-8000-000000000002', 'lucia@indepsoft.com', 'Lucía', 'Ferrer', 'trainer');
-select pg_temp.seed_user('10000000-0000-4000-8000-000000000003', 'admin@indepsoft.com', 'Ada', 'Plataforma', 'trainer');
+-- Un bloque `DO` y no una funcion en `pg_temp`: la CLI manda la semilla en
+-- lotes, y en ese modo el esquema temporal no existe todavia cuando se declara
+-- la funcion -medido en la CI con la 2.75.0: «schema "pg_temp" does not
+-- exist»-. El bloque no deja nada detras, que es lo que se queria de `pg_temp`.
+do $$
+declare
+  account record;
+begin
+  for account in
+    select * from (values
+      ('10000000-0000-4000-8000-000000000001'::uuid, 'entrenador@indepsoft.com', 'Marco', 'Salas', 'trainer'),
+      ('10000000-0000-4000-8000-000000000002'::uuid, 'lucia@indepsoft.com', 'Lucía', 'Ferrer', 'trainer'),
+      ('10000000-0000-4000-8000-000000000003'::uuid, 'admin@indepsoft.com', 'Ada', 'Plataforma', 'trainer')
+    ) as accounts (user_id, user_email, first_name, last_name, intent)
+  loop
+    insert into auth.users (
+      id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
+      raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+      confirmation_token, recovery_token, email_change_token_new, email_change
+    ) values (
+      account.user_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
+      account.user_email, crypt('desarrollo123', gen_salt('bf')), now(),
+      '{"provider":"email","providers":["email"]}'::jsonb,
+      jsonb_build_object('intent', account.intent, 'first_name', account.first_name, 'last_name', account.last_name),
+      now(), now(), '', '', '', ''
+    );
+
+    insert into auth.identities (
+      id, user_id, provider_id, identity_data, provider, last_sign_in_at, created_at, updated_at
+    ) values (
+      gen_random_uuid(), account.user_id, account.user_id::text,
+      jsonb_build_object('sub', account.user_id::text, 'email', account.user_email, 'email_verified', true),
+      'email', now(), now(), now()
+    );
+  end loop;
+end;
+$$;
 
 -- ---------------------------------------------------------------------------
 -- Equipos y puestos (fase 1)
