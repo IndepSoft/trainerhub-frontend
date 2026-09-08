@@ -145,15 +145,18 @@ begin
     return;
   end if;
 
+  -- Se anota ANTES de contar, para que la consulta que hace veinte sea la que
+  -- se rechaza. La excepcion deshace la anotacion, asi que la cuenta no crece
+  -- por insistir: quien esta bloqueado lo sigue estando hasta que pase la hora.
+  insert into public.join_token_lookups (profile_id) values (me);
+  delete from public.join_token_lookups l where l.profile_id = me and l.at < now() - interval '1 day';
+
   select count(*) into recent
   from public.join_token_lookups l
   where l.profile_id = me and l.at > now() - interval '1 hour';
   if recent >= 20 then
     raise exception 'tooManyAttempts' using errcode = 'insufficient_privilege';
   end if;
-
-  insert into public.join_token_lookups (profile_id) values (me);
-  delete from public.join_token_lookups l where l.profile_id = me and l.at < now() - interval '1 day';
 
   return query
   select c.id, c.name, c.denomination, c.photo_url, c.requires_approval, c.subscription_status
