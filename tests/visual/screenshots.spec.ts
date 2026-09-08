@@ -4551,9 +4551,11 @@ test.describe('configuracion', () => {
      */
     await page.getByLabel('Nombre').fill('Marcos')
     await page.getByLabel('Apellidos').fill('Salas Ruiz')
-    await page.getByRole('button', { name: 'Guardar' }).click()
+    // Exacto: desde que la cuenta tiene contraseña, en esta pantalla hay
+    // tambien un «Guardar la contraseña» y el nombre a secas casaba con los dos.
+    await page.getByRole('button', { name: 'Guardar', exact: true }).click()
 
-    await expect(page.getByRole('button', { name: 'Guardar' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Guardar', exact: true })).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Perfil guardado' })).toBeVisible()
 
     /*
