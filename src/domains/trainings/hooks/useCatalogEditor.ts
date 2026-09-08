@@ -1,6 +1,5 @@
 import { useCallback } from 'react'
 import { container } from '@/app/container'
-import { useCatalogStore } from '../stores/catalogStore'
 import { useTrainingCatalog } from './useTrainingCatalog'
 import { useRoutines } from './useRoutines'
 import {
@@ -30,6 +29,12 @@ interface UseCatalogEditorResult {
  * Es el hook quien consulta las dos colecciones, porque la comprobación cruza
  * catálogo y rutinas y ningún componente debería tener que saber eso.
  *
+ * EL MATERIAL TAMBIÉN VA POR EL PUERTO. Antes lo escribía un almacén de
+ * `zustand` y se perdía al recargar; ahora `container.catalog` lo guarda donde
+ * toque. Las escrituras se disparan sin esperar, igual que las de ejercicios:
+ * la pantalla se entera por `onChange`, y un formulario que espera a la red
+ * para cerrarse es un formulario que parece colgado.
+ *
  * Editar sí está permitido siempre: cambiarle el nombre a un ejercicio es
  * exactamente lo que se espera que se propague a todas las rutinas que lo
  * referencian. Ésa es la razón de referenciar por identificador en vez de
@@ -37,18 +42,12 @@ interface UseCatalogEditorResult {
  */
 export function useCatalogEditor(): UseCatalogEditorResult {
   const { plural } = useTranslation()
-  const catalog = useCatalogStore()
   const { routines } = useRoutines()
-
-  const { createEquipment, updateEquipment, deleteEquipment: removeEquipment } = catalog
   const { exercises } = useTrainingCatalog()
 
-  const createExercise = useCallback(
-    (data: Omit<Exercise, 'id'>) => {
-      void container.exercises.create(data)
-    },
-    []
-  )
+  const createExercise = useCallback((data: Omit<Exercise, 'id'>) => {
+    void container.exercises.create(data)
+  }, [])
 
   const updateExercise = useCallback((exerciseId: string, data: Omit<Exercise, 'id'>) => {
     void container.exercises.update(exerciseId, data)
@@ -73,6 +72,14 @@ export function useCatalogEditor(): UseCatalogEditorResult {
     [routines, plural]
   )
 
+  const createEquipment = useCallback((data: Omit<Equipment, 'id'>) => {
+    void container.catalog.createEquipment(data)
+  }, [])
+
+  const updateEquipment = useCallback((equipmentId: string, data: Omit<Equipment, 'id'>) => {
+    void container.catalog.updateEquipment(equipmentId, data)
+  }, [])
+
   const deleteEquipment = useCallback(
     (equipmentId: string): DeletionResult => {
       const enUso = findExercisesUsingEquipment(exercises, equipmentId)
@@ -85,10 +92,10 @@ export function useCatalogEditor(): UseCatalogEditorResult {
         }
       }
 
-      removeEquipment(equipmentId)
+      void container.catalog.removeEquipment(equipmentId)
       return { deleted: true }
     },
-    [exercises, removeEquipment, plural]
+    [exercises, plural]
   )
 
   return {

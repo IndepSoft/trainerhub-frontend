@@ -1,10 +1,10 @@
 import { useCallback, useState } from 'react'
 import { container } from '@/app/container'
 import { useAuthStore } from '@/app/stores/authStore'
-import { AppError } from '@/shared/domain/errors'
 import { canEnrollMembers } from '@/shared/domain/entities/crew'
 import type { Crew } from '@/shared/domain/entities/crew'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { describeError } from '@/shared/i18n/errorMessages'
 
 /** Cómo acabó el intento, para que la pantalla sepa qué decir. */
 export type JoinOutcome =
@@ -83,6 +83,7 @@ export function useJoinCrew(): UseJoinCrewResult {
 
         await container.students.claimMembership({
           crewId: crew.id,
+          joinToken: crew.joinToken,
           profileId: user.id,
           email: user.email,
           status: crew.requiresApproval ? 'pending' : 'active',
@@ -90,7 +91,7 @@ export function useJoinCrew(): UseJoinCrewResult {
 
         return crew.requiresApproval ? { kind: 'pending', crew } : { kind: 'joined', crew }
       } catch (caught) {
-        setError(AppError.is(caught) ? caught.message : t('join.error'))
+        setError(describeError(caught, t, 'join.error'))
         return null
       } finally {
         setJoining(false)

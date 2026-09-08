@@ -13,16 +13,27 @@ import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Chrome } from 'lucide-react'
 import { useLogin } from '../hooks/useLogin'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { ForgotPasswordForm } from './ForgotPasswordForm'
 
 export function LoginForm() {
   const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [recovering, setRecovering] = useState(false)
   const { loginWithEmail, loginWithGoogle, error, loading } = useLogin()
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     await loginWithEmail({ email, password })
+  }
+
+  /*
+   * Recuperar la contraseña es un desvío DENTRO de esta pestaña, no otra ruta:
+   * un paso y se vuelve. El correo tecleado viaja al desvío para no pedirlo
+   * dos veces.
+   */
+  if (recovering) {
+    return <ForgotPasswordForm initialEmail={email} onBack={() => setRecovering(false)} />
   }
 
   return (
@@ -61,17 +72,13 @@ export function LoginForm() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="login-password">{t('auth.password')}</Label>
-              {/*
-                TODO: la recuperacion de contraseña no esta implementada. El
-                boton llevaba un console.log como manejador, que habria acabado
-                en produccion. Requiere resetPasswordForEmail en AuthPort.
-              */}
               <Button
                 type="button"
                 variant="link"
                 size="sm"
                 className="px-0 font-normal"
-                disabled
+                onClick={() => setRecovering(true)}
+                disabled={loading}
               >
                 {t('auth.forgotPassword')}
               </Button>

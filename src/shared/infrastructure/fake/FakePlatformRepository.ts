@@ -153,7 +153,7 @@ export class FakePlatformRepository implements PlatformRepository {
     } else {
       const student = this.students.listAll().find((entry) => entry.id === input.membershipId)
       if (student === undefined) {
-        throw new AppError(AppErrorCode.NOT_FOUND, 'Esa persona ya no está en ningún equipo.')
+        throw new AppError(AppErrorCode.NOT_FOUND, 'personNotInAnyCrew')
       }
 
       if (input.role === 'student') {
@@ -171,10 +171,7 @@ export class FakePlatformRepository implements PlatformRepository {
          * no es el activo —quien administra la plataforma está en el suyo—.
          */
         if (student.profileId === null) {
-          throw new AppError(
-            AppErrorCode.VALIDATION,
-            'Todavía no ha reclamado su cuenta: no se le puede dar un puesto sin ella.'
-          )
+          throw new AppError(AppErrorCode.VALIDATION, 'accountNotClaimed')
         }
 
         await this.staff.addToCrew(student.crewId, {

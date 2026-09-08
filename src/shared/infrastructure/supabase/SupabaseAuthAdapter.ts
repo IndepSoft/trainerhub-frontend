@@ -6,7 +6,7 @@ import type {
 } from '@/shared/domain/entities/auth'
 import { AppError, AppErrorCode } from '@/shared/domain/errors'
 import { supabase } from './client'
-import { mapAuthError } from './errorMapper'
+import { mapAuthError, mapDataError } from './errorMapper'
 import { toAuthUser, toSignUpMetadata } from './mappers'
 
 /** Implementacion de AuthPort sobre Supabase Auth. */
@@ -19,7 +19,7 @@ export class SupabaseAuthAdapter implements AuthPort {
 
     if (error) throw mapAuthError(error)
     if (!data.user) {
-      throw new AppError(AppErrorCode.UNKNOWN, 'No se pudo obtener datos del usuario')
+      throw new AppError(AppErrorCode.UNKNOWN, 'userDataUnavailable')
     }
 
     return toAuthUser(data.user)
@@ -56,7 +56,7 @@ export class SupabaseAuthAdapter implements AuthPort {
 
     if (error) throw mapAuthError(error)
     if (!data.user) {
-      throw new AppError(AppErrorCode.UNKNOWN, 'No se pudo crear la cuenta')
+      throw new AppError(AppErrorCode.UNKNOWN, 'accountNotCreated')
     }
 
     /*
@@ -80,7 +80,51 @@ export class SupabaseAuthAdapter implements AuthPort {
   async signOut(): Promise<void> {
     const { error } = await supabase.auth.signOut()
     if (error) {
-      throw new AppError(AppErrorCode.UNKNOWN, 'Error al cerrar sesión', error)
+      throw new AppError(AppErrorCode.UNKNOWN, 'signOutFailed', error)
+    }
+  }
+
+  async requestPasswordReset(email: string): Promise<void> {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      /*
+       * El enlace del correo abre esta ruta con la sesion ya establecida:
+       * `detectSessionInUrl` lee los tokens del fragmento y los cambia por una
+       * sesion antes de que la pantalla pregunte. La ruta tiene que estar en
+       * la lista blanca del panel, igual que la de confirmacion.
+       */
+      redirectTo: `${window.location.origin}/authentication/nueva-contrasena`,
+    })
+
+    if (error) throw mapAuthError(error)
+  }
+
+  async updatePassword(newPassword: string): Promise<void> {
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+
+    if (error) throw mapAuthError(error)
+  }
+
+  async resendConfirmation(email: string): Promise<void> {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/authentication` },
+    })
+
+    if (error) throw mapAuthError(error)
+  }
+
+  async deleteAccount(): Promise<void> {
+    const { error } = await supabase.rpc('delete_account')
+    if (error) throw mapDataError(error)
+
+    /*
+     * Solo la sesion LOCAL: la cuenta ya no existe y pedirle al servidor que
+     * la cierre devolveria un error por una sesion que ya no es de nadie.
+     */
+    const { error: signOutError } = await supabase.auth.signOut({ scope: 'local' })
+    if (signOutError) {
+      throw new AppError(AppErrorCode.UNKNOWN, 'signOutFailed', signOutError)
     }
   }
 

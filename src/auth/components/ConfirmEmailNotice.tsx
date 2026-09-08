@@ -1,6 +1,9 @@
 import { MailCheck } from 'lucide-react'
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
+import { Button } from '@/shared/ui/button'
+import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { useResendConfirmation } from '../hooks/useResendConfirmation'
 
 interface ConfirmEmailNoticeProps {
   /** La dirección a la que ha ido el enlace. Se enseña para poder detectar un error al teclearla. */
@@ -28,9 +31,14 @@ interface ConfirmEmailNoticeProps {
  * justo encima y visible. Un botón obligaría a controlar las pestañas desde la
  * página y a pasar el manejador por tres componentes para un gesto que ya está
  * a un toque.
+ *
+ * SÍ LLEVA «volver a enviar», y una sola vez: era la salida que no existía
+ * cuando el correo no llega. Una sola porque el proveedor limita los envíos por
+ * hora y el segundo reenvío seguido sólo gasta el cupo.
  */
 export function ConfirmEmailNotice({ email }: ConfirmEmailNoticeProps) {
   const { t } = useTranslation()
+  const { loading, error, resent, resend } = useResendConfirmation()
 
   return (
     <>
@@ -45,6 +53,26 @@ export function ConfirmEmailNotice({ email }: ConfirmEmailNoticeProps) {
       <CardContent className="space-y-3 px-2 text-center">
         <p className="text-sm text-ink/70">{t('register.confirm.body')}</p>
         <p className="text-xs text-ink/45">{t('register.confirm.spam')}</p>
+
+        {error !== null && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {resent ? (
+          <p className="text-sm font-medium text-cobalt">{t('register.confirm.resent')}</p>
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => resend(email)}
+            disabled={loading}
+          >
+            {loading ? t('register.confirm.resending') : t('register.confirm.resend')}
+          </Button>
+        )}
       </CardContent>
     </>
   )

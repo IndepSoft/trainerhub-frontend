@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { container } from '@/app/container'
 import type { TrainingPlan } from '@/shared/domain/entities/plan'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { describeError } from '@/shared/i18n/errorMessages'
 
 interface UsePlansResult {
   plans: TrainingPlan[]
@@ -38,7 +39,7 @@ export function usePlans(): UsePlansResult {
           if (active) setPlans(result)
         })
         .catch((cause: unknown) => {
-          if (active) setError(cause instanceof Error ? cause.message : t('plan.loadError'))
+          if (active) setError(describeError(cause, t, 'plan.loadError'))
         })
         .finally(() => {
           if (active) setLoading(false)
@@ -86,7 +87,7 @@ export function usePlan(planId: string | undefined): UsePlanResult {
           if (active) setPlan(result)
         })
         .catch((cause: unknown) => {
-          if (active) setError(cause instanceof Error ? cause.message : t('plan.loadOneError'))
+          if (active) setError(describeError(cause, t, 'plan.loadOneError'))
         })
         .finally(() => {
           if (active) setLoading(false)

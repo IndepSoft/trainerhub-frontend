@@ -1,3 +1,4 @@
+import type { AppErrorReason } from './errors'
 import type { CrewRole } from './entities/crew'
 
 /**
@@ -148,7 +149,7 @@ export function lastAdminBlocker(
   staff: Array<{ id: string; role: CrewRole }>,
   staffId: string,
   nextRole: CrewRole | null
-): string | undefined {
+): AppErrorReason | undefined {
   const target = staff.find((entry) => entry.id === staffId)
   if (target === undefined || target.role !== 'admin') return undefined
 
@@ -160,5 +161,7 @@ export function lastAdminBlocker(
   const admins = staff.filter((entry) => entry.role === 'admin')
   if (admins.length > 1) return undefined
 
-  return 'Es el único administrador del equipo. Nombra a otro antes de cambiarle el papel.'
+  // Un MOTIVO y no un texto: el dominio no conoce el diccionario. Quien lo
+  // enseña lo traduce con `ERROR_REASON_KEY`.
+  return 'lastAdmin'
 }

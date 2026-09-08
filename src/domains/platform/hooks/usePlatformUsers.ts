@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { container } from '@/app/container'
-import { AppError } from '@/shared/domain/errors'
 import type {
   PlatformUser,
   SetMembershipInput,
 } from '@/shared/domain/ports/PlatformRepository'
 import type { CrewRole } from '@/shared/domain/entities/crew'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { describeError } from '@/shared/i18n/errorMessages'
 
 /**
  * Cuántas cuentas por página.
@@ -61,7 +61,7 @@ export function usePlatformUsers(): UsePlatformUsersResult {
       setTotal(result.total)
       setError(null)
     } catch (caught) {
-      setError(AppError.is(caught) ? caught.message : t('platform.users.error'))
+      setError(describeError(caught, t, 'platform.users.error'))
     } finally {
       setLoading(false)
     }
@@ -79,7 +79,7 @@ export function usePlatformUsers(): UsePlatformUsersResult {
       await container.platform.setMembership(input)
       setError(null)
     } catch (caught) {
-      setError(AppError.is(caught) ? caught.message : t('platform.users.saveError'))
+      setError(describeError(caught, t, 'platform.users.saveError'))
     }
   }, [t])
 

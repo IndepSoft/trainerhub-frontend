@@ -48,7 +48,8 @@ export class FakeCrewPostRepository implements CrewPostRepository {
       ...data,
       createdAt: new Date().toISOString(),
       // Nace sin «me gusta»: nadie ha reaccionado a algo que acaba de aparecer.
-      likedBy: [],
+      likeCount: 0,
+      likedByMe: false,
     }
 
     this.posts = [post, ...this.posts]
@@ -56,16 +57,19 @@ export class FakeCrewPostRepository implements CrewPostRepository {
     return post
   }
 
-  async toggleLike(postId: string, profileId: string): Promise<void> {
+  /*
+   * La simulacion tiene UN solo espectador -quien ha entrado-, asi que «si me
+   * gusta a mi» y el contador se mueven juntos. En Supabase los «me gusta» son
+   * una tabla y los dos campos se calculan para quien pregunta.
+   */
+  async toggleLike(postId: string): Promise<void> {
     this.posts = this.posts.map((post) => {
       if (post.id !== postId) return post
 
-      const liked = post.likedBy.includes(profileId)
       return {
         ...post,
-        likedBy: liked
-          ? post.likedBy.filter((entry) => entry !== profileId)
-          : [...post.likedBy, profileId],
+        likedByMe: !post.likedByMe,
+        likeCount: post.likedByMe ? post.likeCount - 1 : post.likeCount + 1,
       }
     })
     this.notify()

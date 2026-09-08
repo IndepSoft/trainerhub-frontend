@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { container } from '@/app/container'
 import type { Assignment, NewAssignment } from '@/shared/domain/entities/assignment'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { describeError } from '@/shared/i18n/errorMessages'
 
 interface UseStudentAssignmentsResult {
   assignments: Assignment[]
@@ -46,7 +47,7 @@ export function useStudentAssignments(studentId: string | undefined): UseStudent
         })
         .catch((cause: unknown) => {
           if (active) {
-            setError(cause instanceof Error ? cause.message : t('students.assignmentsError'))
+            setError(describeError(cause, t, 'students.assignmentsError'))
           }
         })
         .finally(() => {

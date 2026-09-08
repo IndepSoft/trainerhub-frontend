@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { container } from '@/app/container'
+import { setActiveCrew } from '@/app/crewScope'
 import type { AuthUser } from '@/shared/domain/entities/auth'
 
 interface AuthState {
@@ -24,6 +25,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout: async () => {
     await container.auth.signOut()
+    /*
+     * El ambito se suelta con la sesion. Vivia en `localStorage` y nadie lo
+     * borraba, asi que en un dispositivo compartido quien entraba despues
+     * heredaba el equipo activo del anterior. Con datos simulados era una
+     * molestia; con datos reales es una fuga.
+     */
+    setActiveCrew(null)
     set({ user: null })
   },
 

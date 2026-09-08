@@ -10,10 +10,12 @@ import { getInitials } from '@/shared/lib/personName'
 import { cn } from '@/shared/lib/utils'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { useLogout } from '@/auth/hooks/useLogout'
+import { PasswordFields } from '@/auth/components/PasswordFields'
 import { useProfileEditor, type ProfileDraft } from '../hooks/useProfileEditor'
 import { ThemeSelector } from '../components/ThemeSelector'
 import { LanguageSelector } from '../components/LanguageSelector'
 import { SoundToggle } from '../components/SoundToggle'
+import { DeleteAccountSection } from '../components/DeleteAccountSection'
 
 const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
 const SECTION_TITLE =
@@ -39,7 +41,9 @@ const SECTION_TITLE =
  *    se ponía por no poder callarlo —un pitido que no se apaga en una sala
  *    compartida es peor que ninguno—, así que el interruptor no acompaña a la
  *    función: es su condición.
- *  - CONTRASEÑA: no. `AuthPort` no expone cambiarla.
+ *  - CONTRASEÑA: sí, desde que `AuthPort` expone `updatePassword`. Es el
+ *    mismo formulario que la vuelta del correo de recuperación; aquí no pide
+ *    la anterior porque ya se entró con ella.
  *  - NOTIFICACIONES: no. No hay más canal que la campana, y ésa no se apaga.
  *
  * Los ajustes del EQUIPO no están aquí sino en `/crew/ajustes`: son de la casa,
@@ -145,10 +149,20 @@ export default function Settings() {
               </p>
             </div>
 
+            <div>
+              <span className={cn('block', FIELD_LABEL)}>{t('settings.password')}</span>
+              <p className="mb-3 mt-1 text-xs text-ink/45">{t('settings.password.hint')}</p>
+              {/* Quedarse aquí al guardar: no hay a dónde ir, y el acuse lo
+                  pone el propio botón. */}
+              <PasswordFields idPrefix="ajustes" onSaved={() => undefined} />
+            </div>
+
             <Button variant="outline" className="w-full gap-2" onClick={handleLogout}>
               <LogOut className="size-4" />
               {t('userMenu.logout')}
             </Button>
+
+            <DeleteAccountSection />
           </section>
         </div>
       </div>

@@ -4,14 +4,15 @@ import type {
   MuscleGroup,
   TrainingObjective,
   TrainingSplit,
-} from '../types/catalog.types'
+} from '@/shared/domain/entities/catalog'
 
 /**
- * Catálogos de referencia.
+ * Catalogo de referencia, simulado.
  *
- * TODO: pasan al backend cuando exista. Son datos de sistema, no del entrenador:
- * cuando haya repositorio, se sirven igual para todos y no se editan desde la
- * aplicación.
+ * Vivia en `domains/trainings/data/catalog.mock.ts` y baja aqui por la regla de
+ * siempre: los datos de prueba de una entidad compartida pertenecen a su
+ * implementacion falsa. Es el mismo contenido que siembra `supabase/seed.sql`
+ * en la base real; si uno cambia, cambia el otro.
  */
 
 export const MUSCLE_GROUPS: MuscleGroup[] = [

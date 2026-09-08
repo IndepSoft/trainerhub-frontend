@@ -4,6 +4,7 @@ import { lazy } from 'react'
 import type { RouteObject } from 'react-router-dom'
 
 const Authentication = lazy(() => import('@/auth/pages/Authentication'))
+const NewPassword = lazy(() => import('@/auth/pages/NewPassword'))
 
 export const authRoutes: RouteObject[] = [
   {
@@ -14,5 +15,14 @@ export const authRoutes: RouteObject[] = [
      * a ver.
      */
     element: withGuestRoute(withSuspense(<Authentication />)),
+  },
+  {
+    /*
+     * Sin guardia, a propósito: el enlace del correo llega CON sesión, y la
+     * guardia de invitado se la llevaría a la raíz antes de cambiar nada. La
+     * propia página distingue «sin sesión» y lo explica.
+     */
+    path: '/authentication/nueva-contrasena',
+    element: withSuspense(<NewPassword />),
   },
 ]

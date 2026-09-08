@@ -42,6 +42,14 @@ export interface SignUpProfile {
   specialty?: string
   yearsOfExperience?: string
   location?: string
+  /**
+   * El código del equipo al que se quiere entrar, si ya se tiene.
+   *
+   * Viaja con el alta por lo mismo que la intención: es el único momento en que
+   * el cliente puede decir algo, y el servidor lo honra en la misma transacción
+   * que crea la cuenta. Un código que no vale no tumba el alta.
+   */
+  joinCode?: string
 }
 
 /**

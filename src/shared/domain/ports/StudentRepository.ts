@@ -135,6 +135,13 @@ export interface StudentProfile {
 
 export interface ClaimMembershipInput {
   crewId: string
+  /**
+   * El token con el que se llegó. ES LA LLAVE, no un dato más: contra un
+   * servidor, la pertenencia se reclama por el token y se valida en la misma
+   * transacción, así que conocer el identificador de un crew no basta para
+   * entrar en él. La simulación lo ignora porque ya validó el token antes.
+   */
+  joinToken: string
   profileId: string
   email: string
   /** `pending` si el crew pide aprobación; `active` si es abierto. */

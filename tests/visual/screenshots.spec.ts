@@ -4712,3 +4712,95 @@ test.describe('configuracion', () => {
     )
   })
 })
+
+/**
+ * La cuenta completa: recuperar la contraseña, cambiarla, y darse de baja.
+ *
+ * Contra el adaptador simulado no hay buzon: lo que se comprueba es que cada
+ * pantalla existe, valida lo suyo y lleva a donde dice. El correo de verdad y
+ * el enlace con sesion se prueban contra el proveedor, a mano.
+ */
+test.describe('cuenta', () => {
+  test('olvide la contraseña: pide el correo y no dice si existe', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.goto('/authentication')
+    await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
+
+    // El correo tecleado viaja al desvio para no pedirlo dos veces.
+    await page.getByPlaceholder('tu@email.com').fill('olvidadiza@correo.com')
+    await page.getByRole('button', { name: '¿Olvidaste tu contraseña?' }).click()
+
+    // Los titulos de las tarjetas de acceso no son encabezados: se buscan por texto.
+    await expect(page.getByText('Recuperar la contraseña')).toBeVisible()
+    await expect(page.getByLabel('Email')).toHaveValue('olvidadiza@correo.com')
+
+    await page.getByRole('button', { name: 'Enviar el enlace' }).click()
+
+    // La misma respuesta exista o no la cuenta, y con la direccion a la vista.
+    await expect(page.getByText(/Si hay una cuenta con olvidadiza@correo\.com/)).toBeVisible()
+
+    await page.getByRole('button', { name: 'Volver a iniciar sesión' }).click()
+    await expect(page.getByText('Bienvenido de vuelta')).toBeVisible()
+  })
+
+  test('cambiar la contraseña desde Configuracion exige que coincidan', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/settings')
+
+    await page.getByLabel('Contraseña nueva').fill('nueva-123')
+    await page.getByLabel('Repite la contraseña').fill('otra-123')
+    await page.getByRole('button', { name: 'Guardar la contraseña' }).click()
+    await expect(page.getByText('Las dos contraseñas no coinciden')).toBeVisible()
+
+    await page.getByLabel('Repite la contraseña').fill('nueva-123')
+    await page.getByRole('button', { name: 'Guardar la contraseña' }).click()
+    await expect(page.getByRole('button', { name: 'Contraseña cambiada' })).toBeVisible()
+
+    // Sin desbordamiento a 375 px: el formulario nuevo cabe.
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth
+    )
+    expect(overflow).toBe(0)
+  })
+
+  test('la vuelta del enlace sin sesion lo dice; con sesion cambia y entra', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.goto('/authentication/nueva-contrasena')
+
+    // El enlace caducado llega sin sesion: se explica, no se finge un formulario.
+    await expect(page.getByText(/Este enlace ya no vale/)).toBeVisible()
+    await expect(page.getByLabel('Contraseña nueva')).toHaveCount(0)
+
+    await signIn(page)
+    await page.goto('/authentication/nueva-contrasena')
+    await page.getByLabel('Contraseña nueva').fill('recuperada-123')
+    await page.getByLabel('Repite la contraseña').fill('recuperada-123')
+    await page.getByRole('button', { name: 'Guardar la contraseña' }).click()
+
+    // La sesion ya estaba abierta: se entra sin volver a teclearla.
+    await page.waitForURL((url) => !url.pathname.includes('nueva-contrasena'))
+    await expect(page.getByText('Nueva contraseña', { exact: true })).toHaveCount(0)
+  })
+
+  test('eliminar la cuenta pide confirmacion y echa fuera', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/settings')
+
+    await page.getByRole('button', { name: 'Eliminar la cuenta' }).click()
+    const dialog = page.getByRole('dialog')
+    await expect(dialog.getByRole('heading', { name: '¿Eliminar tu cuenta?' })).toBeVisible()
+
+    // Cancelar no hace nada.
+    await dialog.getByRole('button', { name: 'Cancelar' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(page).toHaveURL(/\/settings/)
+
+    await page.getByRole('button', { name: 'Eliminar la cuenta' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Sí, eliminar mi cuenta' }).click()
+
+    await page.waitForURL(/\/authentication/)
+    await expect(page.getByText('Bienvenido de vuelta')).toBeVisible()
+  })
+})

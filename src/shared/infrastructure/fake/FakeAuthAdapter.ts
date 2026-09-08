@@ -77,18 +77,17 @@ export class FakeAuthAdapter implements AuthPort {
     // Se validan las credenciales, aunque sean simuladas, para que el
     // formulario ejercite sus caminos de error igual que contra el proveedor.
     if (!EMAIL_PATTERN.test(credentials.email)) {
-      throw new AppError(AppErrorCode.VALIDATION, 'El email no tiene un formato válido')
+      throw new AppError(AppErrorCode.VALIDATION, 'invalidEmailFormat')
     }
 
     if (credentials.password.length < MINIMUM_PASSWORD_LENGTH) {
-      throw new AppError(
-        AppErrorCode.VALIDATION,
-        `La contraseña debe tener al menos ${MINIMUM_PASSWORD_LENGTH} caracteres`
-      )
+      throw new AppError(AppErrorCode.VALIDATION, 'passwordTooShort', undefined, {
+        min: MINIMUM_PASSWORD_LENGTH,
+      })
     }
 
     if (credentials.email === FAILING_EMAIL_ADDRESS) {
-      throw new AppError(AppErrorCode.UNAUTHORIZED, 'Email o contraseña incorrectos')
+      throw new AppError(AppErrorCode.UNAUTHORIZED, 'invalidCredentials')
     }
 
     const user: AuthUser = {
@@ -107,18 +106,17 @@ export class FakeAuthAdapter implements AuthPort {
     // formulario recorra sus caminos de error contra el adaptador falso
     // exactamente igual que contra el proveedor.
     if (!EMAIL_PATTERN.test(credentials.email)) {
-      throw new AppError(AppErrorCode.VALIDATION, 'El email no tiene un formato válido')
+      throw new AppError(AppErrorCode.VALIDATION, 'invalidEmailFormat')
     }
 
     if (credentials.password.length < MINIMUM_PASSWORD_LENGTH) {
-      throw new AppError(
-        AppErrorCode.VALIDATION,
-        `La contraseña debe tener al menos ${MINIMUM_PASSWORD_LENGTH} caracteres`
-      )
+      throw new AppError(AppErrorCode.VALIDATION, 'passwordTooShort', undefined, {
+        min: MINIMUM_PASSWORD_LENGTH,
+      })
     }
 
     if (credentials.email === FAILING_EMAIL_ADDRESS) {
-      throw new AppError(AppErrorCode.VALIDATION, 'Ya existe una cuenta con ese correo')
+      throw new AppError(AppErrorCode.VALIDATION, 'emailTaken')
     }
 
     const user: AuthUser = {
@@ -165,6 +163,53 @@ export class FakeAuthAdapter implements AuthPort {
   }
 
   async signOut(): Promise<void> {
+    this.clearPersistedSession()
+    this.setCurrentUser(null)
+  }
+
+  /*
+   * Las tres operaciones de correo y contraseña no tienen nada que hacer en
+   * memoria -no hay buzon ni contraseña guardada-, pero validan lo mismo que el
+   * proveedor para que las pantallas recorran sus caminos de error.
+   */
+  async requestPasswordReset(email: string): Promise<void> {
+    if (!EMAIL_PATTERN.test(email)) {
+      throw new AppError(AppErrorCode.VALIDATION, 'invalidEmailFormat')
+    }
+    if (email === FAILING_EMAIL_ADDRESS) {
+      throw new AppError(AppErrorCode.UNAUTHORIZED, 'tooManyAttempts')
+    }
+  }
+
+  async updatePassword(newPassword: string): Promise<void> {
+    if (this.currentUser === null) {
+      throw new AppError(AppErrorCode.UNAUTHORIZED, 'sessionExpired')
+    }
+    if (newPassword.length < MINIMUM_PASSWORD_LENGTH) {
+      throw new AppError(AppErrorCode.VALIDATION, 'passwordTooShort', undefined, {
+        min: MINIMUM_PASSWORD_LENGTH,
+      })
+    }
+  }
+
+  async resendConfirmation(email: string): Promise<void> {
+    if (!EMAIL_PATTERN.test(email)) {
+      throw new AppError(AppErrorCode.VALIDATION, 'invalidEmailFormat')
+    }
+    if (email === FAILING_EMAIL_ADDRESS) {
+      throw new AppError(AppErrorCode.UNAUTHORIZED, 'tooManyAttempts')
+    }
+  }
+
+  /*
+   * En memoria no hay nada que borrar: las semillas no son de nadie y vuelven
+   * al recargar. Lo que si se puede reproducir es la salida, que es lo que la
+   * pantalla comprueba.
+   */
+  async deleteAccount(): Promise<void> {
+    if (this.currentUser === null) {
+      throw new AppError(AppErrorCode.UNAUTHORIZED, 'sessionExpired')
+    }
     this.clearPersistedSession()
     this.setCurrentUser(null)
   }

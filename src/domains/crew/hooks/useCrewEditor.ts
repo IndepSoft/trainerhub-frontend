@@ -1,10 +1,10 @@
 import { useCallback, useState } from 'react'
 import { container } from '@/app/container'
 import { setActiveCrew } from '@/app/crewScope'
-import { AppError } from '@/shared/domain/errors'
 import type { Crew, CrewDenomination } from '@/shared/domain/entities/crew'
 import type { CrewSettings } from '@/shared/domain/ports/CrewRepository'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { describeError } from '@/shared/i18n/errorMessages'
 
 interface CreateCrewInput {
   name: string
@@ -43,7 +43,7 @@ export function useCrewEditor(): UseCrewEditorResult {
     try {
       return await operation()
     } catch (caught) {
-      setError(AppError.is(caught) ? caught.message : t('crew.saveError'))
+      setError(describeError(caught, t, 'crew.saveError'))
       return null
     } finally {
       setSaving(false)

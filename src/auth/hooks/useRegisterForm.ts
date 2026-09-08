@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { container } from '@/app/container'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { useAuthStore } from '@/app/stores/authStore'
-import { AppError } from '@/shared/domain/errors'
 import { canEnrollMembers } from '@/shared/domain/entities/crew'
 import { readIntendedPath } from '../libs/intendedPath'
 import type {
@@ -11,6 +10,7 @@ import type {
   RegisterFormField,
   RegisterIntent,
 } from '../types/register.types'
+import { describeError } from '@/shared/i18n/errorMessages'
 
 const EMPTY_FORM: RegisterFormData = {
   firstName: '',
@@ -39,10 +39,6 @@ const REQUIRED_BY_INTENT: Record<RegisterIntent, RegisterFormField[]> = {
   trainer: ['firstName', 'lastName', 'email', 'password', 'specialty'],
   student: ['firstName', 'lastName', 'email', 'password'],
 }
-
-/* El mensaje de reserva llega de fuera. Ver `useLogin` para el porque. */
-const messageFor = (error: unknown, fallback: string) =>
-  AppError.is(error) ? error.message : fallback
 
 interface UseRegisterFormResult {
   formData: RegisterFormData
@@ -144,6 +140,13 @@ export function useRegisterForm(intent: RegisterIntent): UseRegisterFormResult {
           specialty: trainerOnly(formData.specialty),
           yearsOfExperience: trainerOnly(formData.yearsOfExperience),
           location: trainerOnly(formData.location),
+          /*
+           * El codigo de equipo viaja CON el alta, como la intencion: con la
+           * confirmacion por correo no hay sesion despues, y el servidor lo
+           * honra en la misma transaccion que crea la cuenta. `joinWithCode`,
+           * mas abajo, es el mismo paso para la simulacion, que si abre sesion.
+           */
+          joinCode: intent === 'student' ? optionalField(formData.joinCode) : undefined,
         },
       })
 
@@ -173,7 +176,7 @@ export function useRegisterForm(intent: RegisterIntent): UseRegisterFormResult {
       // raíz, que es donde `HomeRedirect` decide según el papel.
       navigate(readIntendedPath(location.state) ?? '/', { replace: true })
     } catch (caught) {
-      setError(messageFor(caught, t('register.error')))
+      setError(describeError(caught, t, 'register.error'))
     } finally {
       setLoading(false)
     }
@@ -202,6 +205,7 @@ async function joinWithCode(code: string, profileId: string, email: string): Pro
 
   await container.students.claimMembership({
     crewId: crew.id,
+    joinToken: crew.joinToken,
     profileId,
     email,
     status: crew.requiresApproval ? 'pending' : 'active',

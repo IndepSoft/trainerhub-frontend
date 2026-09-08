@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { container } from '@/app/container'
 import type { TrainingPlan } from '@/shared/domain/entities/plan'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { describeError } from '@/shared/i18n/errorMessages'
 
 interface UseAssignablePlansResult {
   plans: TrainingPlan[]
@@ -32,7 +33,7 @@ export function useAssignablePlans(): UseAssignablePlansResult {
           if (active) setPlans(result)
         })
         .catch((cause: unknown) => {
-          if (active) setError(cause instanceof Error ? cause.message : t('students.plansError'))
+          if (active) setError(describeError(cause, t, 'students.plansError'))
         })
         .finally(() => {
           if (active) setLoading(false)

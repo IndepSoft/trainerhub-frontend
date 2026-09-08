@@ -36,6 +36,34 @@ export interface AuthPort {
 
   signOut(): Promise<void>
 
+  /**
+   * Pide el correo para restablecer la contraseña.
+   *
+   * NO DICE SI LA CUENTA EXISTE. Resuelve igual con un correo desconocido, y a
+   * proposito: distinguirlo dejaria comprobar desde el formulario quien tiene
+   * cuenta y quien no. El enlace del correo abre la pantalla de nueva
+   * contraseña ya con sesion, y ahi se llama a `updatePassword`.
+   */
+  requestPasswordReset(email: string): Promise<void>
+
+  /**
+   * Cambia la contraseña de la sesion vigente. Sirve para las dos puertas:
+   * la vuelta del correo de recuperacion y Configuracion.
+   */
+  updatePassword(newPassword: string): Promise<void>
+
+  /** Vuelve a mandar el correo de confirmacion del alta. */
+  resendConfirmation(email: string): Promise<void>
+
+  /**
+   * Borra la cuenta de la sesion vigente y cierra la sesion.
+   *
+   * Lo que pasa con lo que deja detras -equipos, fichas, historial- lo decide
+   * el otro lado, que es quien conoce las cascadas. Puede negarse: quien es el
+   * unico administrador de un equipo con mas gente recibe `lastAdmin`.
+   */
+  deleteAccount(): Promise<void>
+
   /** Usuario de la sesion vigente, o null si no hay. */
   getCurrentUser(): Promise<AuthUser | null>
 
