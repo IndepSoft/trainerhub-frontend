@@ -52,13 +52,10 @@ grant update (onboarded_at) on public.profiles to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Lo que Google manda en el alta, si algun dia se enciende: `full_name` y
--- `avatar_url` en vez de `first_name`/`last_name`. El disparador lee los dos.
--- Foto de perfil en `profiles` para poder guardar la de Google y la que se
--- suba desde Configuracion.
+-- `avatar_url` en vez de `first_name`/`last_name`. El disparador lee los dos
+-- y guarda la foto en `profiles.photo_url`, que existe desde la tercera
+-- migracion.
 -- ---------------------------------------------------------------------------
-alter table public.profiles add column photo_url text;
-grant update (photo_url) on public.profiles to authenticated;
-
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
