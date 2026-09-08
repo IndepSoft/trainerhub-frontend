@@ -112,9 +112,14 @@ jobs:
           node-version-file: '.nvmrc'
           cache: 'npm'
       - run: npm ci
+      # Version FIJA, la misma que la CLI de las maquinas del equipo. Con
+      # `latest` la accion pregunta a la API de GitHub cual es, y esa llamada
+      # comparte el cupo anonimo del runner y se agota -medido aqui: «Failed to
+      # resolve latest Supabase CLI release: rate limit exceeded»-. Una version
+      # fija se resuelve contra npm y no pasa por ahi. La accion no admite token.
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.75.0
       # Sin el estudio ni los servicios que no hacen falta para probar la API:
       # arranca antes y consume menos.
       - name: Supabase local
