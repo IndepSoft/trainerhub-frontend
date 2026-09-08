@@ -54,7 +54,9 @@ as $function$
     and coalesce((result ->> 'completedSets')::numeric, -1) >= 0
     and coalesce((result ->> 'totalSets')::numeric, -1) >= 0
     and coalesce((result ->> 'elapsedSeconds')::numeric, -1) >= 0
-    and (result ->> 'completedAt') ~ '^\d{4}-\d{2}-\d{2}$'
+    -- `coalesce` porque una clave ausente da NULL, y NULL en un CHECK no es
+    -- «falso»: es «no se sabe», y Postgres deja pasar la fila.
+    and coalesce(result ->> 'completedAt', '') ~ '^\d{4}-\d{2}-\d{2}$'
     and (
       not (result ? 'sets')
       or (

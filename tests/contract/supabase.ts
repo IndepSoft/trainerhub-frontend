@@ -130,6 +130,9 @@ export async function signedInAs(
 export async function deleteAccounts(accounts: TestAccount[]): Promise<void> {
   const admin = adminClient()
   for (const account of accounts) {
+    // Una cuenta que no llego a crearse no tiene id: borrarla tiraria el
+    // `afterAll` entero y taparia el fallo de la prueba que la esperaba.
+    if (account.id === '') continue
     await admin.auth.admin.deleteUser(account.id)
   }
 }

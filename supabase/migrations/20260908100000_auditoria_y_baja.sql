@@ -136,6 +136,12 @@ begin
   )
   where c.created_by = me;
 
+  -- La ficha de alumno se va CON la persona, no se queda huerfana: la clave
+  -- foranea de `students.profile_id` es `set null` -pensada para que un
+  -- entrenador borre una cuenta sin perder su libreta-, pero aqui es la
+  -- persona la que se va, y su nombre, su correo y su historial son suyos.
+  delete from public.students where profile_id = me;
+
   delete from auth.users where id = me;
 end;
 $function$;

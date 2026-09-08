@@ -168,15 +168,28 @@ create policy "las fichas las borra quien tiene students.manage"
 -- Un alumno cambia SU nombre y SU foto, y nada mas. La politica de arriba le
 -- deja tocar su fila; este disparador decide que columnas. Aprobar una
 -- solicitud pide `crew.members`; conceder capacidades, `crew.staff`.
+-- SECURITY INVOKER a proposito, y es lo que hace funcionar la guardia: corre
+-- con el papel de quien escribe. Una escritura directa por la API llega como
+-- `authenticated` y se vigila; la que hace una funcion del servidor en nombre
+-- de alguien -`claim_membership_as`, el disparador del alta, la baja- llega
+-- como el dueño de esa funcion y pasa, porque esa funcion ya decidio. Con
+-- `security definer` la guardia se veia a si misma como `postgres` siempre y
+-- no podia distinguir los dos casos: el alta con ficha invitada fallaba entera.
 create or replace function public.guard_student_update()
 returns trigger
 language plpgsql
-security definer
+security invoker
 set search_path to 'public'
 as $function$
 declare
-  manages boolean := public.has_capability(old.crew_id, 'students.manage');
+  manages boolean;
 begin
+  if current_user <> 'authenticated' then
+    return new;
+  end if;
+
+  manages := public.has_capability(old.crew_id, 'students.manage');
+
   if new.crew_id <> old.crew_id then
     raise exception 'forbidden' using errcode = 'insufficient_privilege';
   end if;

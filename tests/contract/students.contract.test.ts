@@ -117,6 +117,9 @@ describe('students: el alta que enlaza, en el servidor', () => {
       email_confirm: true,
       user_metadata: { intent: 'student', first_name: 'Ines', last_name: 'Invitada' },
     })
+    // Si el disparador del alta falla, el alta entera falla: hay que decirlo
+    // aqui, y no en una comparacion de fichas tres lineas mas abajo.
+    expect(signup.error).toBeNull()
     const personId = signup.data.user?.id ?? ''
     created.push({ id: personId, email: invitedEmail, client: admin })
 

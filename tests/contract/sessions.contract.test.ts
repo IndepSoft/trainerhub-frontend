@@ -157,16 +157,26 @@ describe('sessions: volcar un plan', () => {
     created.push(trainer, person)
     const studentId = await enrollAs(trainer, crew.id, person)
 
-    const { data: plan } = await trainer.client
+    const { data: plan, error: planError } = await trainer.client
       .from('plans')
-      .insert({ crew_id: crew.id, title: 'Plan', level: 'Principiante', weeks: [] })
+      .insert({
+        crew_id: crew.id,
+        title: 'Plan',
+        level: 'Principiante',
+        objective_id: 'hipertrofia',
+        split_id: 'full-body',
+        weekly_frequency: 3,
+        weeks: [{ number: 1, isDeload: false, days: [{ dayOfWeek: 1, routineId: null }] }],
+      })
       .select('id')
       .single()
-    const { data: assignment } = await trainer.client
+    expect(planError).toBeNull()
+    const { data: assignment, error: assignmentError } = await trainer.client
       .from('assignments')
       .insert({ crew_id: crew.id, student_id: studentId, kind: 'plan', plan_id: plan?.id })
       .select('id')
       .single()
+    expect(assignmentError).toBeNull()
 
     const batch = [sessionFor(crew.id, studentId, 'Semana 1'), sessionFor(crew.id, studentId, 'Semana 2')]
     const { data: rows, error } = await trainer.client.rpc('create_sessions', {
