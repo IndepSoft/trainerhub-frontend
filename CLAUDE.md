@@ -291,10 +291,11 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   misma transacción. Por eso `TrainerRepository` ya no tiene `create`.
 - El ESQUEMA vive entero en `supabase/migrations/`: siete migraciones. Las dos
   primeras se aplicaron por herramienta y se RECONSTRUYERON desde el esquema
-  vivo, porque `supabase db pull` exige `supabase login`. Las cinco del plan
-  —equipos, alumnos, entrenamiento, agenda, muro— están aplicadas en local y
-  probadas por contrato; en la NUBE todavía no: aplicarlas allí es un paso de
-  la fase 7, con copia de seguridad antes.
+  vivo, porque `supabase db pull` exige `supabase login`. Las nueve están
+  aplicadas en la nube y probadas por contrato en la CI. Una migración nueva
+  se aplica en la nube DESPUÉS de pasar los contratos, nunca antes, y el
+  catálogo de sistema de `seed.sql` —grupos, patrones, material, ejercicios—
+  está sembrado allí a mano: las cuentas de la semilla, no.
 - Supabase LIMITA los envíos de correo por hora en el plan gratuito. Al probar el
   alta varias veces seguidas, el registro empieza a devolver «Demasiados
   intentos»: es el límite del proveedor, no un fallo de la aplicación.
@@ -346,9 +347,10 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   `is_platform_admin`—. El cliente conserva `can`, `lastAdminBlocker` y
   `canEnrollMembers` sólo para no ofrecer lo que va a fallar; un cliente
   modificado ya no escribe. Cada regla del servidor tiene prueba de contrato.
-- La lista de administradores de plataforma es una tabla, `platform_admins`,
-  que sólo escribe el rol de servicio. En local la siembra `seed.sql`; en la
-  nube hay que insertarla a mano.
+- Administrar la plataforma es tener `role = 'admin'` en `profiles`, y ese rol
+  lo da el disparador del alta a quien esté en `platform_admin_emails`, una
+  tabla que sólo escribe el rol de servicio. En local la siembra `seed.sql`;
+  en la nube se insertó a mano.
 - No hay cobro: activar una suscripción es una decisión manual desde `/admin`.
 - Hay registro de auditoría de lo que CAMBIA —`audit_log`, escrito por un
   disparador en equipos, puestos, fichas y cuotas; lo lee quien gobierna el
