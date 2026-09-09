@@ -16,7 +16,13 @@ import { adminClient, deleteAccounts, signedInAs, type TestAccount } from './sup
  * afirma aqui es que el servidor emite, no que el cliente llame bien.
  */
 
-const ESPERA_MAXIMA_MS = 10_000
+/*
+ * Quince segundos y no diez: el Realtime del runner de la CI tarda mas que el
+ * de la nube en repartir el primer evento de una suscripcion recien abierta.
+ * Medido: contra la nube el aviso de fundar un equipo llega en menos de dos
+ * segundos; en la CI, con diez no llegaba.
+ */
+const ESPERA_MAXIMA_MS = 15_000
 
 /** Lo que se espera cuando se afirma que algo NO llega. Ver `no se entera`. */
 const ESPERA_DEL_SILENCIO_MS = 4_000
@@ -36,7 +42,7 @@ interface Watcher {
  * vuelta por websocket, y escribir antes de que termine haria una prueba que
  * pasa o falla segun lo cargada que este la maquina.
  */
-function watch(client: SupabaseClient, table: string): Watcher {
+function watch(client: SupabaseClient, tables: string | readonly string[]): Watcher {
   let announceReady = (): void => undefined
   const ready = new Promise<void>((resolve) => {
     announceReady = resolve
@@ -45,15 +51,19 @@ function watch(client: SupabaseClient, table: string): Watcher {
   let received = 0
   let waiting: (() => void) | null = null
 
-  const channel = client
-    .channel(`contrato:${table}:${Math.random()}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table }, () => {
+  // Varias tablas en un canal, como hace `subscribeToTables`: es lo que la
+  // aplicacion abre, y lo que aqui se afirma que emite.
+  const watched = typeof tables === 'string' ? [tables] : tables
+  const channel = client.channel(`contrato:${watched.join('+')}:${Math.random()}`)
+  for (const table of watched) {
+    channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => {
       received += 1
       waiting?.()
     })
-    .subscribe((status) => {
-      if (status === 'SUBSCRIBED') announceReady()
-    })
+  }
+  channel.subscribe((status) => {
+    if (status === 'SUBSCRIBED') announceReady()
+  })
 
   return {
     ready,
@@ -119,9 +129,15 @@ describe('tiempo real: lo publicado emite y RLS decide a quien', () => {
      * quien funda todavia no es miembro, y la politica de lectura de `crews`
      * exige serlo. Llega porque `create_crew` escribe el equipo y el puesto en
      * la MISMA transaccion, asi que cuando Realtime evalua la politica el
-     * puesto ya existe.
+     * puesto ya existe. Medido contra la nube: el INSERT de `crews` llega al
+     * fundador; el de `crew_staff`, no siempre.
+     *
+     * Se escuchan LAS CUATRO TABLAS que escucha `useViewer`, y no solo `crews`:
+     * lo que la aplicacion necesita es enterarse del equipo nuevo por alguna
+     * de ellas, y es eso lo que se afirma. Que tabla emite primero depende de
+     * la version de Realtime, y la de la CI no es la de la nube.
      */
-    const watcher = watch(founder.client, 'crews')
+    const watcher = watch(founder.client, ['crews', 'crew_staff', 'students', 'profiles'])
     await watcher.ready
 
     await createActiveCrewAs(founder, 'Equipo en directo')
