@@ -36,7 +36,16 @@ export class SupabaseCrewProgressRepository implements CrewProgressRepository {
     return ((data ?? []) as CrewProgressRow[]).map(toCrewMemberProgress)
   }
 
-  /** TODO: sin suscripcion todavia. Ver el plan, §1.3. */
+  /**
+   * Sin canal propio, y esta vez por una razon y no por un pendiente: el
+   * ranking NO TIENE TABLA. Sale de `crew_ranking`, que agrega sesiones al
+   * vuelo, asi que lo que lo mueve es exactamente lo que mueve a `sessions`.
+   *
+   * Sus dos consumidores -`useCrewRanking` y `useStudentsProgress`- ya escuchan
+   * ademas a `container.sessions`, que si tiene canal. Abrir aqui un segundo
+   * canal sobre la misma tabla les haria recargar dos veces por cada serie
+   * anotada.
+   */
   onChange(): () => void {
     return () => undefined
   }

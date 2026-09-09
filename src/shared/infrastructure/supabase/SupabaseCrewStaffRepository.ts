@@ -6,6 +6,7 @@ import { AppError, AppErrorCode } from '@/shared/domain/errors'
 import { supabase } from './client'
 import { mapDataError } from './errorMapper'
 import { toCrewStaff, type CrewStaffRow } from './mappers'
+import { subscribeToTable } from './realtime'
 
 /**
  * Las columnas del puesto, con el perfil de la persona incrustado.
@@ -122,9 +123,14 @@ export class SupabaseCrewStaffRepository implements CrewStaffRepository {
     if (error) throw mapDataError(error)
   }
 
-  /** TODO: sin suscripcion todavia. Ver el plan, §1.3. */
-  onChange(): () => void {
-    return () => undefined
+  /**
+   * SIN ACOTAR AL EQUIPO ACTIVO, a proposito: el puesto que mas importa
+   * anunciar es el que todavia no se tiene. Fundar un equipo o ser ascendido
+   * crea una fila en un crew que en ese instante no es el activo -o no hay
+   * ninguno-, y `useViewer` depende de este aviso para enterarse.
+   */
+  onChange(listener: () => void): () => void {
+    return subscribeToTable('crew_staff', listener)
   }
 
   private async findOne(staffId: string): Promise<CrewStaff> {

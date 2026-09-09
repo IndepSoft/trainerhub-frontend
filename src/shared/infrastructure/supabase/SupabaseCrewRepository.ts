@@ -4,6 +4,7 @@ import { AppError, AppErrorCode } from '@/shared/domain/errors'
 import { supabase } from './client'
 import { mapDataError } from './errorMapper'
 import { toCrew, toCrewSettingsRow, type CrewRow } from './mappers'
+import { subscribeToTable } from './realtime'
 
 /**
  * Implementacion de CrewRepository sobre PostgREST.
@@ -71,12 +72,17 @@ export class SupabaseCrewRepository implements CrewRepository {
   }
 
   /**
-   * TODO: sin suscripcion todavia. Ver el plan, §1.3: el tiempo real llega por
-   * tabla y los equipos no estan entre las primeras. No avisar es una
-   * implementacion valida del contrato.
+   * EL CASO QUE DESTAPO QUE ESTO FALTABA. Un entrenador creaba su equipo y su
+   * propia barra lateral seguia diciendo «Sin equipo» hasta que recargaba:
+   * `useViewer` estaba suscrito aqui desde el principio y no llegaba nada,
+   * porque `crews` no estaba publicada.
+   *
+   * Se escucha la tabla entera y no un equipo concreto porque el aviso que
+   * importa es el del equipo que aun no se tiene. Quien recibe cada fila lo
+   * decide la politica de lectura: los miembros del equipo, y la plataforma.
    */
-  onChange(): () => void {
-    return () => undefined
+  onChange(listener: () => void): () => void {
+    return subscribeToTable('crews', listener)
   }
 }
 

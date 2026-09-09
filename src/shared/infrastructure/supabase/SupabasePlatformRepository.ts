@@ -9,6 +9,7 @@ import type { SubscriptionStatus } from '@/shared/domain/entities/crew'
 import { meaningfulExtras } from '@/shared/domain/permissions'
 import { supabase } from './client'
 import { mapDataError } from './errorMapper'
+import { subscribeToTables } from './realtime'
 import {
   toCrewOverview,
   toPlatformUser,
@@ -80,8 +81,16 @@ export class SupabasePlatformRepository implements PlatformRepository {
     if (error) throw mapDataError(error)
   }
 
-  /** TODO: sin suscripcion todavia. Ver el plan, §1.3. */
-  onChange(): () => void {
-    return () => undefined
+  /**
+   * TRES TABLAS EN UN SOLO CANAL, porque el panel de plataforma pinta lo que
+   * sale de las tres: las cuentas de `profiles`, los puestos de `crew_staff` y
+   * los equipos con su suscripcion de `crews`.
+   *
+   * No se acota a nada: quien administra la plataforma mira por encima de los
+   * equipos, y es RLS -`is_platform_admin`- quien decide que le llega. A quien
+   * no administra no le llega nada de esto aunque escuche.
+   */
+  onChange(listener: () => void): () => void {
+    return subscribeToTables(['profiles', 'crew_staff', 'crews'], listener)
   }
 }

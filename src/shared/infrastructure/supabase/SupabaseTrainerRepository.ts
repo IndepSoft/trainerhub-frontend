@@ -4,6 +4,7 @@ import { AppErrorCode } from '@/shared/domain/errors'
 import { supabase } from './client'
 import { mapDataError } from './errorMapper'
 import { toProfileUpdate, toTrainer, type ProfileRow } from './mappers'
+import { subscribeToTable } from './realtime'
 
 /**
  * Los roles de `profiles` que tienen ficha de entrenador.
@@ -69,14 +70,13 @@ export class SupabaseTrainerRepository implements TrainerRepository {
   }
 
   /**
-   * TODO: sin suscripción de verdad todavía.
+   * Sobre `profiles`, que es donde vive la ficha del entrenador.
    *
-   * Devuelve una baja que no hace nada, y NO es un descuido disfrazado: el
-   * contrato es «avísame si cambia», y no avisar nunca es una implementación
-   * válida —conservadora— mientras no haya `postgres_changes` montado. Lo que
-   * no sería válido es que quien suscribe tuviera que saberlo.
+   * `useViewer` lo necesita en el arranque: al registrarse, la fila nace por
+   * disparador DESPUES de que la sesion se haya resuelto, asi que sin este
+   * aviso el recien registrado se quedaba sin rol hasta recargar.
    */
-  onChange(): () => void {
-    return () => undefined
+  onChange(listener: () => void): () => void {
+    return subscribeToTable('profiles', listener)
   }
 }

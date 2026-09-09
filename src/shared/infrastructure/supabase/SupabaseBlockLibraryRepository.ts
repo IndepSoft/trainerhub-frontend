@@ -6,6 +6,7 @@ import { AppError, AppErrorCode } from '@/shared/domain/errors'
 import { supabase } from './client'
 import { mapDataError } from './errorMapper'
 import { toSavedBlock, type SavedBlockRow } from './mappers'
+import { subscribeToTable } from './realtime'
 
 /**
  * Implementacion de BlockLibraryRepository sobre PostgREST.
@@ -63,8 +64,11 @@ export class SupabaseBlockLibraryRepository implements BlockLibraryRepository {
     if (error) throw mapDataError(error)
   }
 
-  /** TODO: sin suscripcion todavia. Ver el plan, §1.3. */
-  onChange(): () => void {
-    return () => undefined
+  /**
+   * La biblioteca es del equipo tecnico entero, no de quien guardo el bloque:
+   * dos entrenadores construyendo rutinas a la vez comparten lo que guardan.
+   */
+  onChange(listener: () => void): () => void {
+    return subscribeToTable('saved_blocks', listener)
   }
 }

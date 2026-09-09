@@ -5,7 +5,7 @@ import { AppError, AppErrorCode } from '@/shared/domain/errors'
 import { supabase } from './client'
 import { mapDataError } from './errorMapper'
 import { toCrewPost, type CrewPostRow } from './mappers'
-import { subscribeToTable, subscribeToWholeTable } from './realtime'
+import { subscribeToTables } from './realtime'
 
 /**
  * Implementacion de CrewPostRepository sobre PostgREST.
@@ -129,13 +129,11 @@ export class SupabaseCrewPostRepository implements CrewPostRepository {
 
   onChange(listener: () => void): () => void {
     this.listeners.add(listener)
-    const unsubscribePosts = subscribeToTable('crew_posts', this.scope.current(), listener)
-    const unsubscribeLikes = subscribeToWholeTable('crew_post_likes', listener)
+    const unsubscribe = subscribeToTables(['crew_posts', 'crew_post_likes'], listener)
 
     return () => {
       this.listeners.delete(listener)
-      unsubscribePosts()
-      unsubscribeLikes()
+      unsubscribe()
     }
   }
 

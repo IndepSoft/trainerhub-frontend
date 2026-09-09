@@ -4,6 +4,7 @@ import type { StudentSubscription } from '@/shared/domain/entities/studentSubscr
 import { supabase } from './client'
 import { mapDataError } from './errorMapper'
 import { toSubscription, toSubscriptionRow, type SubscriptionRow } from './mappers'
+import { subscribeToTable } from './realtime'
 
 /**
  * Implementacion de SubscriptionRepository sobre PostgREST.
@@ -40,8 +41,11 @@ export class SupabaseSubscriptionRepository implements SubscriptionRepository {
     if (error) throw mapDataError(error)
   }
 
-  /** TODO: sin suscripcion todavia. Ver el plan, §1.3. */
-  onChange(): () => void {
-    return () => undefined
+  /**
+   * La cuota la marca quien lleva las altas y la mira el alumno en su ficha:
+   * dos personas distintas en dos pantallas distintas.
+   */
+  onChange(listener: () => void): () => void {
+    return subscribeToTable('student_subscriptions', listener)
   }
 }

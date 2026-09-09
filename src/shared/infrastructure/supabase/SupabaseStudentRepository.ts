@@ -11,6 +11,7 @@ import { AppError, AppErrorCode } from '@/shared/domain/errors'
 import { supabase } from './client'
 import { mapDataError } from './errorMapper'
 import { toStudent, toStudentProfileRow, toStudentRow, type StudentRow } from './mappers'
+import { subscribeToTable } from './realtime'
 
 /**
  * Implementacion de StudentRepository sobre PostgREST.
@@ -191,8 +192,14 @@ export class SupabaseStudentRepository implements StudentRepository {
     if (error) throw mapDataError(error)
   }
 
-  /** TODO: sin suscripcion todavia. Ver el plan, §1.3. */
-  onChange(): () => void {
-    return () => undefined
+  /**
+   * SIN ACOTAR AL EQUIPO ACTIVO, y es lo que hace que unirse a un equipo se
+   * vea. La ficha nace en el crew al que se solicita entrar, que por definicion
+   * todavia no es el activo; y cuando el entrenador aprueba la solicitud, el
+   * cambio de estado le llega al alumno por su propia politica de lectura
+   * -«cada alumno la suya»- sin que haya que adivinar en que crew mirar.
+   */
+  onChange(listener: () => void): () => void {
+    return subscribeToTable('students', listener)
   }
 }
