@@ -2785,3 +2785,116 @@ seguridad, el cliente OAuth de Google, la lista blanca de redirecciones, los
 iconos de la PWA y un capturador de errores del cliente. El GPS de la sesión
 en vivo de cardio sigue simulado: es la otra pantalla que el plan no cableó
 porque no hay dato que guardar hasta que exista el recorrido real.
+
+---
+
+## 28. Tiempo real: la mitad que faltaba (9 sep 2026)
+
+Rama `fix/deploy-01`. La petición fue directa: «cada que se cree algo o haya un
+cambio de estado el sistema lo escuche y se actualice, sin la recarga de toda la
+página».
+
+### 28.1 El diagnóstico: la aplicación ya escuchaba
+
+Lo primero que apareció al medir es que **el trabajo de aplicación estaba
+hecho**. Treinta hooks con treinta y siete puntos de suscripción —`useStudents`,
+`useCalendar`, `useCrewWall`, `usePlatformUsers`, la campana de avisos, todos—
+llamando a `container.<lo que sea>.onChange(...)` y dándose de baja al
+desmontar. La arquitectura estaba entera.
+
+Lo que faltaba era la otra mitad, y en dos capas a la vez:
+
+- **En la base**, sólo cuatro tablas estaban en la publicación
+  `supabase_realtime`. Una tabla sin publicar no emite nada.
+- **En los adaptadores**, trece de dieciséis devolvían `() => undefined` bajo un
+  `TODO`.
+
+### 28.2 Por qué no lo detectó nada
+
+Es el punto que merece quedar escrito, porque la misma forma de fallo puede
+repetirse con cualquier otro puerto.
+
+**No avisar es una implementación sintácticamente válida del contrato.** El
+puerto promete «avísame si cambia»; un adaptador que no avisa nunca cumple la
+firma, compila y pasa el lint. La suite de interfaz tampoco lo veía: corre
+contra los adaptadores simulados, donde el aviso es una llamada en memoria que
+funciona perfectamente. Y las pruebas de contrato de entonces ejercitaban
+lecturas y políticas, no canales.
+
+Resultado: un defecto que sólo se manifestaba abriendo la aplicación y pulsando
+F5. El caso que lo destapó fue el más básico —un entrenador crea su equipo y su
+propia barra lateral sigue diciendo «Sin equipo»—: `useViewer` llevaba desde
+siempre suscrito a `crews`, `crew_staff`, `students` y `profiles`, y ninguna de
+las cuatro estaba publicada.
+
+### 28.3 Fuera el filtro por equipo
+
+El canal filtraba con `filter: crew_id=eq.<crew activo>`. Se ha quitado, y no
+por simplificar: filtraba mal de tres maneras independientes.
+
+1. **Se tragaba los borrados.** El registro de un DELETE llevaba sólo la clave
+   primaria, así que no había `crew_id` que comparar y el evento se descartaba
+   en silencio.
+2. **Se quedaba viejo.** El ámbito se leía UNA VEZ, al suscribirse, y los hooks
+   montan su efecto con dependencias vacías. Cambiar de equipo en el conmutador
+   dejaba el canal escuchando al anterior.
+3. **No sabía expresar lo que más falta.** El aviso que `useViewer` necesita es
+   el de un equipo en el que TODAVÍA NO SE ESTÁ: el recién fundado, o aquel cuya
+   solicitud acaban de aceptar. Un filtro por el equipo activo es justo el que no
+   puede verlo, y sin equipo activo la función ni siquiera se suscribía.
+
+Lo que ocupa su lugar ya estaba y es más fuerte: **RLS decide quién recibe cada
+fila**, evaluada por suscriptor, y **el ámbito lo aplica la relectura**, que lee
+el crew activo en ese momento. Un aviso de otro equipo propio cuesta una consulta
+de más; el filtro costaba pantallas que no se actualizaban.
+
+### 28.4 `replica identity full`, que corrige una fuga
+
+Las cuatro tablas ya publicadas tenían la identidad por defecto, y de ahí salían
+dos consecuencias:
+
+- **De corrección:** el filtro por columna descartaba los DELETE, como arriba.
+- **De privacidad:** Realtime no puede evaluar RLS sobre una fila que sólo lleva
+  su identificador, así que **el evento de borrado se reparte a todos los
+  suscriptores de la tabla**. Se filtraba el identificador de una fila que el
+  receptor no tenía derecho a leer.
+
+Con la fila vieja entera, RLS se evalúa igual que en un alta. El coste es más
+volumen en el registro de escritura, irrelevante a esta escala frente a las dos
+cosas que corrige.
+
+### 28.5 Qué se publica y qué no
+
+Quince tablas. Las de **pertenencia e identidad** —`crews`, `crew_staff`,
+`students`, `profiles`—, de las que sale quién eres y dónde estás, y las de
+**datos del equipo** —`assignments`, `plans`, `routines`, `exercises`,
+`equipment`, `saved_blocks`, `student_subscriptions`, más las cuatro que ya
+estaban—.
+
+Se cae el argumento con el que la migración anterior las dejó fuera —«los edita
+una persona y los lee ella misma»—: describe al autor, no al público. Una rutina
+la escribe el entrenador y la esperan sus alumnos; una cuota la marca quien lleva
+las altas mientras el alumno mira su ficha.
+
+Fuera quedan, y está escrito en la migración para que no se confunda con un
+olvido: la auditoría —es registro, no pantalla—, las marcas de lectura del muro
+—el aviso llegaría a quien acaba de provocarlo—, la contabilidad del límite de
+tokens, la lista de administradores, las capacidades por rol, y el catálogo de
+sistema —grupos, patrones, objetivos, divisiones—, que se siembra y no cambia en
+caliente.
+
+`CrewProgressRepository` sigue sin canal, pero ahora por una razón y no por un
+pendiente: **el ranking no tiene tabla**. Sale de `crew_ranking`, que agrega
+sesiones al vuelo, así que lo que lo mueve es lo que mueve a `sessions`. Sus dos
+consumidores ya escuchan `sessions`; abrirle canal propio les haría recargar dos
+veces por cada serie anotada.
+
+### 28.6 La prueba que faltaba
+
+`tests/contract/realtime.contract.test.ts`, contra la base y con canales de
+verdad, porque lo que hay que afirmar es **que el servidor emite**, no que el
+cliente llame bien: fundar un equipo avisa a quien lo funda —que no es evidente,
+porque en el instante del INSERT quien funda todavía no es miembro y la política
+exige serlo; llega porque `create_crew` escribe equipo y puesto en la misma
+transacción—, borrar también avisa, y un extraño no recibe las fichas de un
+equipo ajeno.

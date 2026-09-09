@@ -1,4 +1,4 @@
-# Traspaso de sesión — 1 sep 2026
+# Traspaso de sesión — 9 sep 2026
 
 Contexto **de sesión**, no de proyecto. Sirve para que la siguiente sesión
 retome el trabajo sin volver a deducirlo todo. Las reglas permanentes viven en
@@ -6,481 +6,425 @@ retome el trabajo sin volver a deducirlo todo. Las reglas permanentes viven en
 [`CAMBIOS-Y-ARQUITECTURA.md`](CAMBIOS-Y-ARQUITECTURA.md); la lista de la
 adaptación móvil, en [`PWA-SEGUIMIENTO.md`](PWA-SEGUIMIENTO.md).
 
-**Se pone al día cada sesión, y se reescribe cuando hace falta.** La versión del
-27 de agosto se escribió para la rama `feature/pwa-adaptation` y en dos días
-quedó desfasada en cuatro puntos a la vez: daba una ruta de proyecto que ya no
-existía, una rama activa que ya se había fusionado, un «paso 4 de 6» que eran
-ocho pasos cerrados, y afirmaba que no había pruebas cuando ya había decenas. Un
-traspaso caducado hace más daño que ninguno, porque se lee como si fuera cierto.
-
-Aquel documento se declaraba efímero —«cuando la adaptación a PWA esté
-fusionada, se borra»—. Se fusionó, así que la condición ya se cumplió. Se
-conserva el fichero con otro propósito: traspaso rodante entre sesiones.
+**Se pone al día cada sesión, y se reescribe cuando hace falta.** Esta versión
+sustituye entera a la del 1 de septiembre, que había caducado en casi todo lo
+que afirmaba: daba una ruta de proyecto que no es la de esta máquina, «tres
+puertos» cuando hay veinte, «no están en CI» cuando la CI tiene tres trabajos, y
+credenciales de `FakeAuthAdapter` como si así se entrara en la aplicación
+desplegada. **Un traspaso caducado hace más daño que ninguno, porque se lee como
+si fuera cierto.**
 
 ---
 
-## Dónde estamos ahora mismo
+## 🔴 Lo primero: lo que está a medias ahora mismo
+
+La rama **`fix/deploy-01`** está subida a origin (`97ae656`) con el tiempo real
+cableado. Su migración **NO está aplicada en la nube**, así que hasta que se
+aplique el código está suscrito a tablas que no emiten y no se nota ningún
+cambio en la aplicación desplegada.
+
+Los contratos tampoco se pasaron: la sesión que escribió esto corrió en una
+máquina **sin Docker y sin la CLI de Supabase**. La máquina del usuario sí los
+tiene. El runbook completo está abajo, en «Cerrar `fix/deploy-01`».
+
+---
+
+## Dónde estamos
 
 | Rama | Commit | Estado |
 |---|---|---|
-| `feature/redesign-ui` | el tip | **rama activa** |
-| `develop` | `1492aed` en origin | 32 commits por detrás de la rama activa |
-| `main` | `91d0fd8` | 90 commits por detrás; PR abierto sin fusionar |
-| `feature/pwa-adaptation` | `23d110c` | fusionada en `develop` (PR #6): se puede borrar |
-| `backup/supabase-test` | `d117d93` | recuperada de origin — ver «Trampas» |
+| `main` | `3102330` | **al día**: contiene todo lo de `develop` (PR #11) |
+| `develop` | `3aeb6b1` | 0 commits por delante de `main` |
+| `fix/deploy-01` | `97ae656` | **rama activa**, subida, sin PR abierto |
+| `feature/supabase-connection` | — | fusionada (PR #10) |
+| `feature/redesign-ui` | `f6ef04e` | fusionada |
+| `feature/pwa-adaptation` | `23d110c` | fusionada |
+| `feature/supabase-integration` | `cdd2586` | **2 por delante, 110 por detrás — no fusionar** |
+| `backup/supabase-test` | `d117d93` | sólo local, sin respaldo en origin |
 
-⚠️ **La copia local de `develop` está en `513e9b5`, doce commits por detrás de
-`origin/develop`.** Ramificar desde ella sin un `git pull` previo parte de un
-punto viejo.
+`main` y `develop` dejaron de estar desalineadas el 9 de septiembre. La época en
+que «`main` está 90 commits por detrás y no compila» terminó.
 
-Estado verificado el 1 de septiembre, ejecutado y no supuesto: `npm run lint`
-limpio, `npm run build` en verde, **156 pruebas de Playwright en verde**.
+**`feature/supabase-integration` es un callejón sin salida.** Sus dos aportes
+—registro por etapas y pestañas con subrayado— están rehechos, y mejor, en lo que
+hoy es `main`: `useRegisterForm` allí tiene `REQUIRED_BY_INTENT` para distinguir
+alumno de entrenador, cosa que la rama no hace. Fusionarla son 14 ficheros en
+conflicto, incluido un modificado-contra-borrado por el renombrado de
+`Gamification` a `progress`. La recomendación dada al usuario fue **cerrar el PR
+sin fusionar**; no ha respondido.
+
+Verificado el 9 de septiembre, ejecutado y no supuesto, sobre `fix/deploy-01`:
+`npm run build` en verde y `npm run lint` limpio. Los contratos y Playwright,
+no: ver arriba.
+
+---
+
+## Cerrar `fix/deploy-01` — el runbook
+
+Esto es lo que hay que hacer en una máquina con Docker y la CLI de Supabase.
+
+### 1. Traer la rama
+
+```bash
+git fetch origin && git checkout fix/deploy-01 && npm ci
+```
+
+`npm ci` y no `npm install`: `.npmrc` lleva `engine-strict=true`, así que si el
+Node no llega a 22.12 falla ahí en vez de dejar un árbol a medias. `.nvmrc` pide
+la 22.
+
+### 2. Contratos en local
+
+```bash
+supabase start -x studio,imgproxy,inbucket,logflare,vector,edge-runtime
+```
+
+Es la misma exclusión que usa la CI: arranca bastante antes y `realtime`, que es
+lo que aquí se prueba, sigue dentro. Aplica las once migraciones y la semilla
+desde cero.
+
+```bash
+npm run test:contract
+```
+
+Lo nuevo es `tests/contract/realtime.contract.test.ts`, tres casos: que fundar un
+equipo avisa a quien lo funda, que borrar también avisa —la regresión de
+`replica identity full`— y que un extraño no recibe las fichas de un equipo
+ajeno. Si algo se atasca, `npm run db:reset` rehace la base.
+
+La CI clava la CLI en **2.75.0**. Si la local es muy distinta y pasa algo raro,
+igualarla antes de sospechar del código.
+
+### 3. Aplicar la migración en la nube
+
+⚠️ **NO usar `supabase db push`.** Las versiones registradas en
+`supabase_migrations.schema_migrations` no coinciden con los nombres de fichero
+en 8 de las 10 migraciones ya aplicadas:
+
+| fichero local | registrado en la nube |
+|---|---|
+| `20260905090000_perfil_editable_y_rol_declarado` | `20260905055616` |
+| `20260907100000_equipos_y_puestos` | `20260908221414` |
+| `20260907110000_alumnos_pertenencia_cuotas_avisos` | `20260908221545` |
+| `20260907120000_entrenamiento` | `20260908221649` |
+| `20260907130000_agenda_y_sesion` | `20260908221737` |
+| `20260907140000_progreso_y_muro` | `20260908221810` |
+| `20260908100000_auditoria_y_baja` | `20260908221856` |
+| `20260909100000_huecos_del_plan` | `20260908235442` |
+
+Viene de que se aplicaron por herramienta y se reconstruyeron después desde el
+esquema vivo. `db push` vería ocho migraciones «pendientes» e intentaría
+reejecutarlas enteras sobre una base que ya las tiene.
+
+El camino seguro es el **editor SQL del panel**, pegando el contenido de
+`supabase/migrations/20260909170000_tiempo_real_completo.sql`. Son once
+`alter publication ... add table` y quince `alter table ... replica identity
+full`. No toca ninguna política ni ninguna columna.
+
+**No es reejecutable**: `alter publication add table` falla si la tabla ya está
+publicada. Si hay que reintentar tras un corte, quitar del script lo que ya pasó.
+
+Después, para que quede registrada:
+
+```sql
+insert into supabase_migrations.schema_migrations (version, name)
+values ('20260909170000', 'tiempo_real_completo');
+```
+
+### 4. Comprobar
+
+```sql
+select
+  (select count(*) from pg_publication_tables where pubname = 'supabase_realtime') as publicadas,
+  (select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public' and c.relreplident = 'f') as con_identidad_completa;
+```
+
+**15 y 15.** Antes de aplicar son 4 y 0.
+
+Y a mano, que es lo que de verdad importa: dos navegadores, las dos cuentas
+reales. Con el administrador activar la suscripción de «Piedras y Palos» desde
+`/admin`; en la ventana del entrenador el aviso de suscripción pendiente debe
+desaparecer solo, sin recargar.
+
+### 5. PR
+
+`gh` no está instalado en la máquina de la sesión anterior. Si lo está en la
+actual:
+
+```bash
+gh pr create --base develop --head fix/deploy-01 --title "fix(tiempo-real): las tablas que la aplicacion ya escuchaba"
+```
 
 ---
 
 ## Cómo levantar el entorno
 
-El proyecto está en `D:\Develop\zdev-freelancer\trainerhub-frontend`.
-**Ya no está en `C:\ddd-2`**: ese clon no existe en esta máquina.
+El proyecto está en **`C:\ddd-2\trainerhub-frontend`**. Ojo: el traspaso
+anterior afirmaba que vivía en `D:\Develop\zdev-freelancer\` y que el clon de
+`C:\ddd-2` no existía. En esta máquina es al revés.
 
 ```bash
 npm run dev
 ```
 
-`.claude/launch.json` define dos configuraciones de vista previa:
-`trainerhub-dev` en el puerto 5178 y `trainerhub-preview` en el 4178.
+`.claude/launch.json` define `trainerhub-dev` en el 5178 y `trainerhub-preview`
+en el 4178.
 
-**Credenciales de desarrollo.** El `.env` local tiene `VITE_USE_FAKE_AUTH=true`,
-así que entra `FakeAuthAdapter`, no Supabase:
+**Tres suites, y cada una prueba otra cosa:**
 
-- `entrenador@indepsoft.com` — entrenador con ficha y con el crew de ejemplo,
-  «Hierro y Asfalto», ya activo. Su código de invitación es `HIERRO24`.
-- `admin@indepsoft.com` — administrador de plataforma. Aterriza en `/admin`,
-  activa suscripciones y gestiona cuentas. **Sólo entra en su propio equipo,
-  `CREWTEST`**: los de los demás son privados.
-- `lucia@indepsoft.com` — entrenadora de «Hierro y Asfalto», sin gobierno del
-  equipo. Es el caso del gimnasio, y trae además una concesión suelta —los
-  ajustes— para poder ver el caso intermedio.
-- Cualquier otro correo con formato válido entra sin ficha: cuenta sin equipo,
-  que es como se prueba el flujo del alumno.
-- Contraseña: seis caracteres o más, p. ej. `desarrollo123`
-- `error@test.local` falla a propósito, para probar la interfaz de error
+| Comando | Contra qué | Necesita |
+|---|---|---|
+| `npm run test:e2e` | Playwright, adaptadores **simulados** | nada |
+| `npm run test:contract` | Vitest contra Supabase **local** | Docker + CLI |
+| `npm run build` / `lint` | tipos y estilo | nada |
+
+La CI (`.github/workflows/ci.yml`) tiene los tres como trabajos separados en
+cada PR hacia `develop` y `main`: `verify`, `interface` y `contracts`.
+
+**`.env` conserva `VITE_USE_FAKE_AUTH=true` a propósito**: la suite de Playwright
+vive de las semillas falsas. Con ese flag no se ve la base — para probar contra
+Supabase hay que quitarlo. El interruptor elige el juego **entero** de
+adaptadores, nunca una mezcla:
+
+```ts
+import.meta.env.DEV && import.meta.env.VITE_USE_FAKE_AUTH === 'true'
+```
+
+`import.meta.env.DEV` es literalmente `false` en un build de producción, así que
+los adaptadores falsos no entran en el bundle desplegado. En Vercel el flag no
+hace nada; ponerlo ahí tampoco tendría efecto, y si lo tuviera sería que
+cualquiera puede entrar como cualquiera.
 
 ---
 
-## Pruebas: sí las hay
+## Cuentas y datos REALES en Supabase
 
-Es el punto donde más se equivocaba la versión anterior de este documento.
+Proyecto `gntwwopcvmzemlbdbzxs`. Estas son cuentas de verdad, no la semilla.
 
-- `tests/visual/screenshots.spec.ts`: **156 pruebas**. Muchas están
-  parametrizadas por tres anchos —375, 768 y 1440— desde la constante
-  `VIEWPORTS`.
-- Se lanzan con `npx playwright test`. **No hay script `test` en
-  `package.json`**; `--list` funciona sin levantar el servidor.
-- `playwright.config.ts` arranca el servidor solo y reutiliza el que ya esté
-  escuchando en el 5178. El *timeout* está en 240 s a propósito: Vite tarda más
-  de dos minutos en el primer arranque tras cambiar dependencias.
-- **No están en CI.** `.github/workflows/ci.yml` corre `npm ci`, `npm run lint`
-  y `npm run build`, y sube `dist/` como artefacto. Nada más.
-- Nacieron como capturas de revisión que «no afirman nada», pero la mayoría ya
-  afirma: desbordamiento horizontal cero, controles de 44 px, contenedores por
-  encima de 280, que la duración que muestra un formulario sea la que se guarda,
-  y que un bloque insertado desde la biblioteca sea una copia y no una
-  referencia.
-- Una trampa que ya mordió: **`page.goto` recarga la aplicación**, y los
-  adaptadores falsos vuelven a su semilla. Cualquier prueba que cree algo y
-  luego compruebe otra pantalla tiene que navegar POR LA INTERFAZ, o estará
-  comprobando la semilla.
-- Y otra: la ruta del catálogo es `lazy`, así que su primera carga en desarrollo
-  pasa de los cinco segundos por defecto cuando la máquina va cargada. Esa
-  espera lleva margen explícito.
-- **Pruebas atadas a la semilla.** Tres se rompieron al añadir historial de
-  sesiones cerradas a `sessionsSeed`, sin que nada de la aplicación fallara:
-  afirmaban «Completadas 0» y «Confirmadas 2», que eran las cifras exactas de la
-  semilla de entonces. Se reescribieron en DIFERENCIAS —leer el contador antes y
-  esperar uno más—. Regla que sale de ahí: una prueba de comportamiento no debe
-  afirmar un número absoluto de datos de ejemplo.
+| Correo | `profiles.role` | Equipo | Puesto |
+|---|---|---|---|
+| `zuniganoriegadenzel@gmail.com` | `admin` | ninguno | — |
+| `soportedesarrollonext@gmail.com` | `trainer` | Piedras y Palos | `admin` del crew |
 
-**Y una trampa del panel de vista previa, no de la aplicación:
-`requestAnimationFrame` no entrega nunca un fotograma ahí**, aunque
-`document.visibilityState` diga `visible`. Cualquier cosa animada por fotogramas
-—contadores, transiciones de salida de Radix— se queda congelada en su último
-valor. Eso destapó un defecto real en `useCountUp`, que se ha corregido; pero al
-verificar en ese panel hay que distinguir «no anima» de «no funciona».
+- **La tribu «Piedras y Palos»** (`4acb9961-…`) tiene código de unión `BCJXZHWM`,
+  aprobación requerida, ranking activo y **`subscription_status = 'pending'`**.
+  Mientras esté en `pending` nadie puede unirse: el servidor corta con
+  `enrollmentClosed`. La activa el administrador de plataforma desde `/admin`.
+- **El rol de plataforma no se pide, se concede por correo.** El disparador
+  `handle_new_user` mira `platform_admin_emails` ANTES que el `intent` del
+  formulario. Por eso `zuniganoriegadenzel@gmail.com` salió `admin` aunque se
+  registrara eligiendo «Entreno»: su correo está en esa lista desde el 8 de
+  septiembre. Para probar el alta de entrenador **hace falta otro correo** —el
+  truco del `+` de Gmail vale—.
+- `profiles.role` = plataforma. `crew_staff.role` = equipo. Son ejes distintos:
+  se puede administrar la plataforma y además entrenar en el propio equipo.
+  `is_platform_admin()` es la única definición de lo primero, y la usan tanto las
+  políticas como `PlatformRepository.isAdmin`.
+
+---
+
+## ⚠️ Estado de Supabase que hay que revertir antes de producción
+
+**La confirmación por correo está APAGADA.** Se apagó el 9 de septiembre a las
+15:37 UTC para desbloquear el registro, y funcionó: el alta pasó a abrir sesión
+al instante, sin enviar correo. Queda constancia en los logs de Auth
+(`reloading api with new configuration`, y un `/signup` posterior sin
+`mail.send`).
+
+Con eso, **cualquiera puede registrarse con el correo de otra persona sin
+demostrar que es suyo**. Para desarrollo está bien; abrir la aplicación así, no.
+
+Y no basta con volver a encenderla: sin SMTP propio se vuelve al tope del plan
+gratuito, que son **2 correos por hora** con el remitente incorporado de
+Supabase. Medido: dos envíos a las 14:44:45 y 14:47:36 dejaron el `/signup`
+devolviendo `429: email rate limit exceeded` durante la hora siguiente. La
+aplicación lo traduce a «Demasiados intentos», que es correcto pero suena a culpa
+del usuario cuando es un tope del proyecto entero.
+
+**Las dos cosas van juntas, en la misma tanda**: encender la confirmación y
+montar SMTP (Resend o Brevo) con su límite en *Authentication → Rate Limits*.
+
+---
+
+## Qué hizo esta sesión — 9 sep
+
+**Tiempo real, que estaba a medias sin que nada lo delatara.** La aplicación
+tenía 37 puntos de suscripción repartidos por 30 hooks; sólo cuatro tablas
+estaban publicadas y 13 de 16 adaptadores devolvían `() => undefined` con un
+`TODO`. No lo detectaba nada porque **no avisar es una implementación
+sintácticamente válida del contrato**: compila, pasa el lint, y las pruebas de
+interfaz corren contra los adaptadores simulados, donde el aviso es una llamada
+en memoria. Sólo se veía recargando a mano.
+
+El caso que lo destapó: crear un equipo y que la propia barra lateral siguiera
+diciendo «Sin equipo». `useViewer` llevaba desde siempre suscrito a `crews`,
+`crew_staff`, `students` y `profiles`, y ninguna de las cuatro emitía.
+
+Lo hecho, en `fix/deploy-01`:
+
+- Once tablas más publicadas, quince en total.
+- Doce adaptadores suscritos de verdad, cada uno con su motivo escrito.
+  `CrewProgressRepository` sigue sin canal, pero ahora por una razón y no por un
+  pendiente: el ranking no tiene tabla, sale de agregar sesiones, y sus dos
+  consumidores ya escuchan `sessions`.
+- **Fuera el `filter=crew_id` del canal.** Filtraba mal de tres maneras: se
+  tragaba los borrados —el registro de un DELETE no lleva esa columna—, se
+  quedaba viejo al cambiar de equipo —el ámbito se leía una vez, al suscribirse,
+  y los hooks montan el efecto con dependencias vacías— y no sabía expresar «un
+  equipo en el que todavía no estoy», que es justo el aviso que hace falta al
+  fundar uno. En su lugar: RLS decide quién recibe, y el ámbito lo aplica la
+  relectura del repositorio, que lee el crew activo EN ESE MOMENTO.
+- **`replica identity full` en todo lo publicado.** Arregla un fallo que ya
+  tenían las cuatro originales: sin la fila vieja entera, Realtime no puede
+  evaluar RLS sobre un borrado y el evento se reparte a **todos** los
+  suscriptores.
+- Prueba de contrato nueva, y §6 de `CLAUDE.md` actualizada con la regla: una
+  tabla nueva con tiempo real se añade a la publicación **y** se le pone la
+  identidad completa, en su migración, con su prueba.
+
+Antes de eso, en la misma sesión: se confirmó que la cuenta del usuario ya era
+administrador de plataforma —no hizo falta promoverla— y se diagnosticó el
+bloqueo del registro como el tope de correos, no como un fallo de la aplicación.
 
 ---
 
 ## Trampas de este entorno
 
-**`backup/supabase-test` se había perdido y se ha recuperado.** El traspaso
-anterior advertía de que esa rama existía sólo en la máquina antigua y de que si
-se borraba la copia el trabajo desaparecía. Al mudarse el proyecto de `C:\ddd-2`
-a `D:\Develop`, la rama no viajó. GitHub todavía conservaba el objeto, así que se
-ha rescatado:
+**El clasificador de permisos bloquea acciones legítimas.** En esta sesión negó
+`apply_migration` contra la nube. No es un fallo que se pueda rodear: hay que
+parar, decírselo al usuario y dejar que decida. Ya pasó antes con `npm run build`
+durante un cambio de la puerta de Vercel.
 
-```bash
-git fetch origin d117d93f35ece5c48b5fef82694eb0800dc310d4
-```
+**Las versiones de las migraciones tienen deriva.** Ver el paso 3 del runbook. Es
+la trampa más cara de este repositorio ahora mismo.
 
-Ahora vive en la rama local `backup/supabase-test`. Son **10 commits de Diase13
-y Edward Josué Mamani**, 138 ficheros y unas 15.600 líneas frente a `main`, con
-un dominio `workouts` entero que nunca se fusionó. **Sigue existiendo sólo en
-local y sigue siendo frágil.** Si de verdad importa, lo correcto es empujarla a
-origin; si no importa, borrarla y dejarlo escrito. Lo que no puede es quedarse
-en este limbo por tercera vez.
+**`gh` no está instalado.** Los PR se abren por la URL de `compare`.
 
-**Los 404 de `trainers` YA NO OCURREN, y dejaron de ser esperados.** Eran
-razonables mientras la base estuvo vacía; cuando se creó `profiles` y nadie
-apuntó el código hacia ella, pasaron a ser un defecto. El repositorio de
-entrenadores va ahora contra `profiles`. Ver CAMBIOS §25.
+**`git mv` falla en Windows con «Permission denied»** por bloqueos de ficheros de
+procesos node. Funciona `cp -r` + `rm -rf`; git lo detecta igual como renombrado.
 
-**El buffer de consola del navegador arrastra errores de sesiones anteriores.**
-Tras reiniciar la vista previa aparecen `ERR_CONNECTION_REFUSED` y fallos de
-módulos que ya no existen. Para leer errores de verdad, abrir pestaña nueva.
-
-**El panel del navegador arranca a ~568 px, que ya es móvil.** Sin fijar el
-viewport con `resize_window`, las mediciones salen mal. Devolverlo a `desktop`
-al terminar.
-
-**Y el panel ESCALA la página, así que `getBoundingClientRect` miente.** Medido:
-un control de 44 px devolvía 41,8 —factor 0,95—, lo que hace parecer que
-incumple el objetivo táctil cuando no lo incumple. Para medir alturas y anchos
-en el panel hay que usar `offsetHeight` / `offsetWidth`, que son de disposición
-y no llevan la escala; `getBoundingClientRect` sólo es fiable en Playwright, que
-fija un viewport real. Comprobarlo es una división:
-`rect.height / offsetHeight`.
-
-**`git mv` falla en Windows con «Permission denied»** por bloqueos de fichero de
-procesos node. La alternativa que funciona es `cp -r` + `rm -rf`; git lo detecta
-igual como renombrado.
-
-**`getByLabel` sobre un `Select` de Radix devuelve DOS elementos.** Radix pinta,
-junto al botón visible, un `<select>` nativo oculto para que el control participe
-en el formulario, y la etiqueta alcanza a los dos. Con dos desplegables
-«Ejercicio» en pantalla, `getByLabel('Ejercicio').nth(1)` era el select oculto
-del primero, no el disparador del segundo — y hacer clic en un `<select>` oculto
-no abre nada **ni da error**, así que la prueba moría mucho después buscando una
-opción que nunca apareció. Se filtra por rol y nombre: `getByRole('combobox',
-{ name, exact: true })`, que el nativo no tiene. Los ayudantes `desplegables` y
-`elegirDelDesplegable` de la suite ya lo hacen.
+**Comprobar la rama antes de commitear.** Han caído commits en la rama
+equivocada más de una vez —siete en una sesión, y tres en otra sobre una
+`refactor-claude` que acabó borrada—. `git branch --show-current` cuesta nada.
 
 **Los *heredoc* de bash no sirven para escribir estos documentos.** La
-herramienta envuelve el comando en comillas simples, así que cualquier comilla
-del contenido —o el propio delimitador citado— rompe el análisis sintáctico. Se
-escriben con la herramienta de escritura de ficheros.
+herramienta envuelve el comando en comillas simples y cualquier comilla del
+contenido rompe el análisis. Se escriben con la herramienta de escritura.
 
-**`gh` no está instalado** (comprobado el 30 de agosto). Los PR no se pueden
-crear por CLI: hay que abrir la URL de `compare` en el navegador.
+**`page.goto` recarga la aplicación**, y los adaptadores falsos vuelven a su
+semilla. Una prueba que cree algo y luego mire otra pantalla tiene que navegar
+POR LA INTERFAZ.
 
-**Comprobar la rama antes de commitear.** En una sesión anterior siete commits
-cayeron en una rama equivocada. `git branch --show-current` cuesta nada.
+**Una prueba de comportamiento no afirma un número absoluto de datos de
+ejemplo.** Tres se rompieron al ampliar `sessionsSeed` sin que nada de la
+aplicación fallara. Se reescribieron en diferencias: leer el contador antes y
+esperar uno más.
+
+**`getByLabel` sobre un `Select` de Radix devuelve DOS elementos**: el botón
+visible y un `<select>` nativo oculto. Hacer clic en el oculto no abre nada **ni
+da error**, así que la prueba muere mucho después. Se filtra por rol:
+`getByRole('combobox', { name, exact: true })`.
+
+**El panel del navegador ESCALA la página, así que `getBoundingClientRect`
+miente**: un control de 44 px devolvía 41,8. Para medir en el panel,
+`offsetHeight` / `offsetWidth`. Y arranca a ~568 px, que ya es móvil: fijar el
+viewport con `resize_window` y devolverlo a `desktop` al terminar.
+
+**`requestAnimationFrame` no entrega fotogramas en el panel de vista previa**,
+aunque `visibilityState` diga `visible`. Lo animado por fotogramas se queda
+congelado. Distinguir «no anima» de «no funciona».
+
+**El buffer de consola arrastra errores de sesiones anteriores.** Para leer
+errores de verdad, pestaña nueva.
+
+**`shared/ui` trae ~20 clases de Tailwind 4 que aquí no generan nada** —la forma
+con paréntesis, `shadow-xs`, `outline-hidden`, `field-sizing-content`—. No es
+cosmético siempre: en `select.tsx` la clase muerta era el tope de altura del
+panel. Se arreglaron los dos `max-h-`; el resto sigue inerte y sin auditar.
+
+```bash
+grep -rn "\-(\-\-\|shadow-xs\|outline-hidden\|field-sizing" src/shared/ui/
+```
+
+**Y un apilamiento de Tailwind que no genera CSS:** un variante `data-[...]`
+sobre un pseudoelemento. `data-[state=active]:after:bg-primary` llegaba al
+elemento y Tailwind no emitía ninguna regla —comprobado recorriendo las hojas de
+estilo—, así que el subrayado de la pestaña activa salía transparente. Se
+resolvió con `border-b-2`.
 
 ---
 
 ## Decisiones ya tomadas — no volver a discutirlas
 
 - **Puertos y adaptadores.** El SDK de Supabase sólo se importa en
-  `shared/infrastructure/supabase`. Lo impide una regla de eslint, no una
+  `shared/infrastructure/supabase`. Lo impide `no-restricted-imports`, no una
   convención. Migrar de backend = escribir adaptadores y tocar `app/container.ts`.
+  **Hay veinte puertos**, y todos tienen adaptador real y gemelo simulado.
+- **El rol NUNCA vive en `user_metadata`.** Lo puede editar el propio usuario con
+  una llamada. `intent` en el alta es una PETICIÓN; quien decide es el servidor.
+  `profiles.role` tiene el `UPDATE` revocado para `authenticated` a propósito.
+- **El perfil se crea DENTRO del alta**, por disparador y en la misma
+  transacción, no con un INSERT posterior desde el cliente. Sin sesión —que es lo
+  que pasa con la confirmación por correo activada— RLS no dejaría escribir la
+  fila.
+- **Los errores viajan como RAZONES**, no como texto: `AppError.reason` es un
+  tipo cerrado y `describeError` lo traduce al pintar. Una razón nueva se añade
+  en tres sitios o no compila.
 - **TypeScript se queda en 5.9.3.** `typescript-eslint@8` declara
   `typescript: ">=4.8.4 <6.1.0"`; TS 7 dejaría el proyecto sin lint tipado.
-- **Cada dominio sigue el mismo esquema:** `types/`, `data/`, `hooks/`,
-  `components/` plano, `libs/` para lo puro, `infrastructure/routes.tsx`, y una
-  página que sólo compone.
-- **Los datos simulados se sirven por un hook**, que es la costura donde entra
-  el repositorio real.
 - **Interfaz en castellano, código en inglés.** Por eso el dominio es `progress`
-  y la etiqueta del menú dice «Progreso».
-- **Desafíos y rachas viven en Entrenamientos, no en Progreso.** Son cosas que
-  el entrenador *crea para asignar*; en Progreso queda lo que el estudiante
-  *consigue*. Se vaciaron a `ComingSoon` porque las ~2000 líneas que había
-  operaban sobre datos globales, sin ligar a ningún estudiante y sin forma de
-  asignarlos.
-- **«Plantilla» ya no existe.** Fue una marca sin comportamiento: sólo repartía
-  la lista en dos pestañas. Como **nada se asigna a ningún estudiante**, todas
-  las rutinas eran igualmente plantillas y la distinción no distinguía. Cuando
-  exista la asignación será derivable, o se sustituirá por carpetas o favoritos.
-- **Se referencia el vocabulario, se copia la decisión.** Es la regla que ordena
-  el dominio. El ejercicio se referencia por identificador —si cambia de nombre,
-  cambia en todas partes, y por eso su borrado está protegido—. El bloque
-  guardado se **copia** al insertarlo: si se referenciara, editar la entrada de
-  la biblioteca cambiaría en silencio el programa que alguien está haciendo esta
-  semana.
-- **De los seis catálogos sólo se editan dos.** Ejercicios y equipamiento son
-  del entrenador. Grupos musculares, patrones, objetivos y divisiones son
-  vocabulario: abrirlos a texto libre rompe el filtrado en cuanto uno escribe
-  «Pecho» y otro «Pectoral».
+  y la etiqueta dice «Progreso».
+- **Se referencia el vocabulario, se copia la decisión.** El ejercicio se
+  referencia por identificador; el bloque guardado se **copia** al insertarlo,
+  porque si se referenciara, editar la biblioteca cambiaría en silencio el
+  programa que alguien está haciendo esta semana.
+- **De los seis catálogos sólo se editan dos.** Ejercicios y material son del
+  entrenador. Grupos, patrones, objetivos y divisiones son vocabulario: abrirlos
+  a texto libre rompe el filtrado en cuanto uno escribe «Pecho» y otro
+  «Pectoral».
+- **Responsive obligatorio, el móvil es el caso base.** Es una regla del proyecto
+  porque el objetivo es una PWA instalable. Ver §1.6 de `CLAUDE.md`.
 
 ---
 
-## Qué hizo la sesión del 29 de agosto — 20 commits
+## Pendiente
 
-**Sistema de diseño.** `c612e66` introduce los tokens y `1a01d78` barre 142
-colores escritos a mano. De ahí salen la paleta con nombre —`cobalt`, `ember`,
-`ink`, `bone`, `scale-1..3`—, dos radios en lugar de una escala uniforme
-(`radius-block` a escuadra para bloques, `radius-action` en píldora para
-acciones) y Barlow con su corte Condensed como única familia en dos anchos.
-Encima: `PageHeader` único para las seis páginas, logros como placas, pulsación
-larga, esqueletos de carga, deslizar entre pestañas y tirar para recargar.
+**Del tiempo real:**
 
-**Calendario**, cinco commits. La sesión pasa a ser una tarjeta con la estética
-de `students`; la celda semanal es su versión reducida; las sesiones se colocan
-sobre una escala de tiempo real (`libs/sessionLayout.ts`); la cabecera queda
-fija y la rejilla gana campo de visión.
+- Aplicar la migración y pasar los contratos. Es el paso 2 y 3 del runbook.
+- Abrir el PR de `fix/deploy-01` hacia `develop`.
 
-**Entrenamientos**, cuatro commits, los últimos de la sesión:
+**Del proyecto:**
 
-1. Desafíos y rachas salen de Progreso y entran aquí, vaciados a `ComingSoon`.
-2. Modelo de dominio `Ejercicio → Bloque → Rutina → Plan`, con cinco catálogos
-   de referencia, `BlockMethod` —simple, superserie, triserie, circuito— y
-   duración **calculada** en `libs/routine.utils.ts` en vez de almacenada.
-3. Corrección: plantillas y rutinas seguían siendo dos arrays separados y
-   `isTemplate` no lo leía nadie.
-
----
-
-## Qué hizo la sesión del 30–31 de agosto — 5 commits
-
-1. **Creación de rutinas** (`b811963`). La pantalla que faltaba. Guardar guarda
-   de verdad: la colección pasa a `stores/routinesStore.ts` y el mock queda como
-   semilla. El resumen en vivo usa las mismas funciones que la tarjeta y la
-   ficha, así que la duración que se ve al escribir es la que se guarda. De paso,
-   los planes dejan de ser inalcanzables: pasan a una pestaña.
-2. **Fuera «plantilla»** (`0023e8b`). Ver «Decisiones ya tomadas».
-3. **Catálogo** (`5b51f37`), en `/trainings/catalog`. Era un agujero abierto por
-   el commit 1: la creación de rutinas ofrecía quince ejercicios fijos y no
-   había forma de añadir el decimosexto.
-4. **Biblioteca de bloques** (`e129486`). Guardar un bloque con un gesto y
-   volver a insertarlo, copiando.
-5. **Ficha de plan y borrado con integridad.** La tarjeta lleva a una ficha que
-   se lee; editar es una acción de dentro. Una rutina que algún plan programa no
-   se puede borrar, y el diálogo dice quién lo impide.
-6. **`Routine` sube a `shared/domain/entities` y nace `RoutineRepository`.** Se
-   cumplió la condición que este documento dejaba escrita: la agenda cuelga una
-   rutina de una sesión, así que la entidad cruza a un segundo dominio. Los dos
-   la leen por el puerto, vía `container`, y ninguno importa del otro —igual que
-   con los alumnos—. El almacén de zustand desaparece; su sitio lo ocupa
-   `FakeRoutineRepository`.
-7. **`Session` sube a `shared/domain/entities` y nace `SessionRepository`.** La
-   ficha del estudiante lista y agenda sus sesiones, así que la entidad cruza a
-   `students`. El alumno pasa a guardarse por IDENTIFICADOR: era su nombre en
-   texto, y el dato ya estaba corrompido —las sesiones decían «María García» y
-   «Ana Martínez» cuando en el padrón estaban «María Gómez» y «Ana Torres»—.
-   Lo agendado en la ficha aparece en el calendario y al revés, sin que ninguno
-   de los dos dominios sepa del otro: comparten origen, no estado.
-8. **Edición de rutinas y planes completos.** `RoutineForm` y `PlanForm` sirven
-   para alta y edición: la ruta decide, y `submit` devuelve datos sin
-   identificador para que quien llama elija si crea o actualiza. La acción
-   primaria de la cabecera sigue a la pestaña —«Nueva Rutina» / «Nuevo Plan»— y
-   la pestaña activa pasó a vivir en la URL, que es lo que permite volver a
-   `/trainings?tab=planes` tras guardar un plan en vez de aterrizar donde no se
-   ve lo que acabas de crear.
-
----
-
-## ⚠️ La deuda que salió del análisis y NO se ha tocado
-
-**El plan no puede expresar progresión, que es su única razón de existir.**
-
-`PlanDay` sólo guarda un `routineId`, y la rutina lleva dentro toda la
-prescripción. Resultado: no hay forma de decir «la misma sesión, con más volumen
-la semana 3». Para progresar hay que duplicar la rutina entera por semana, que
-es la misma duplicación que la biblioteca de bloques resuelve un nivel más
-abajo — pero sin resolver.
-
-Ya se nota en los datos, y es medible: en `plans.mock.ts`, la semana 4 está
-marcada `isDeload: true` y **apunta a la misma rutina con la misma prescripción
-que las tres anteriores**. La descarga está rotulada y no descarga nada. Es
-exactamente la enfermedad que tenía `isTemplate`: una marca sin comportamiento.
-
-El eje que lo arreglaría es **estructura fija / dosis variable**, aplicado al par
-plan-semana: la sesión define qué ejercicios y con qué método, y la semana del
-plan define series, repeticiones y RIR. Es un rediseño del modelo de planes y se
-decidió posponerlo, no hacerlo a medias.
-
-Mientras tanto, los planes son de sólo lectura: no hay ficha de plan ni forma de
-crearlos.
-
----
-
-## Estado estructural, medido
-
-**Puertos: sólo tres.** `AuthPort`, `TrainerRepository` y `StudentRepository`.
-No existen `RoutineRepository`, `SessionRepository` ni `DashboardRepository`; los
-ficheros `*.mock.ts` los esperan con un `TODO` que nombra la costura.
-
-**Siete puertos**: `AuthPort`, `TrainerRepository`, `StudentRepository`,
-`RoutineRepository`, `SessionRepository`, `PlanRepository` y
-`AssignmentRepository`. Y tres módulos de reglas puras en `shared/domain`:
-`sessionScheduling` (choques), `planScheduling` (volcado) y `routineDuration`. Cada uno nació al cumplirse su condición —una entidad
-sube cuando la necesitan DOS dominios, según `shared/domain/entities/student.ts`—
-y no antes.
-
-**Siguen en zustand, y siguen sin ser puertos**: `catalogStore` y
-`blockLibraryStore` en `trainings`. Ninguna de esas entidades cruza todavía.
-
-**ASIGNAR NO ES AGENDAR**, y son tres compromisos independientes:
-
-| | Qué dice | ¿Ocupa un hueco? |
-|---|---|---|
-| Sesión | «esto, este día a esta hora» | sí, por definición |
-| Rutina asignada | «éste es tu repertorio» | no |
-| Plan asignado | «éste es tu programa» | no |
-
-No son excluyentes: un alumno puede tener un plan y tres rutinas a la vez. Y un
-plan puede estar asignado **sin fecha de inicio**, que es un estado legítimo
-—«ya veremos cuándo empiezas»— y por eso `startDate` admite `null`.
-
-**Volcar un plan a la agenda** es la cuarta acción, y ya existe: desde la
-asignación, con una hora por cada día de la semana que el plan usa, una previa
-que marca los conflictos y confirmación explícita. Genera las sesiones
-—materializadas, no derivadas— con la duración estimada de cada rutina.
-
-Sólo se ofrece en planes **con fecha de inicio**: sin ella no hay desde cuándo
-contar las semanas.
-
-**Cada dominio tiene su propio hook sobre el puerto compartido** en vez de
-importar del vecino: `useSchedulableStudents` y `useSchedulableRoutines` en
-`calendar`, `useStudentSessions` y `useAssignableRoutines` en `students`. Se
-repite la forma a propósito; lo que no se repite es el origen del dato.
-
-⚠️ **Todo lo creado vive sólo en memoria.** Al recargar la página vuelven las
-semillas: la rutina creada, el ejercicio dado de alta y la biblioteca entera
-desaparecen. No se persiste en `localStorage` a propósito, porque sería fingir
-un backend. Tenerlo presente al probar a mano —y en las pruebas, que navegan por
-la interfaz y no con `page.goto` justamente por esto.
-
-**`FakeStudentRepository` está activo en producción**, marcado en
-`app/container.ts`. Es el único adaptador falso que no se elimina por
-*tree-shaking*, porque no está detrás de `import.meta.env.DEV` como el de auth.
-
-**37 `TODO` en `src/`** (sin contar `shared/ui`), en cuatro familias: datos
-simulados esperando repositorio; acciones declaradas y no conectadas —cinco en
-`StudentCard`, cinco en `RoutineCard`, dos en cada ficha de detalle, y los dos
-componentes de filtros, que no filtran nada—; autenticación incompleta
-—`AuthPort` no expone `signUp`, así que «Crear cuenta» no da de alta a nadie, y
-recuperar contraseña tampoco existe—; y copy pendiente de producto.
-
-**Rutinas y planes se crean y se editan.** Lo que sigue sin conectar es «Usar en
-una sesión» y «Eliminar», que dependen del flujo de asignación.
-
-**No hay ficha de plan.** La tarjeta lleva directamente a su formulario de
-edición, que por ahora ES la vista de un plan.
-
-**`navigation.config.ts` sigue declarando `/settings` y `/login` sin ruta
-registrada.** `/reports` se resolvió en el paso 5 de la adaptación móvil.
-
-⚠️ **`shared/ui` trae ~20 clases de Tailwind 4 que aquí no generan nada.** Los
-componentes de shadcn se copiaron de una version pensada para Tailwind 4 y el
-proyecto usa la 3.4, asi que la forma con parentesis —`max-h-(--variable)`,
-`size-(--cell-size)`, `origin-(--variable)`— es sintaxis invalida y Tailwind no
-emite ninguna regla. Tambien estan muertas `shadow-xs`, `outline-hidden` y
-`field-sizing-content`, que en la 3 se llaman de otra forma o no existen.
-
-No es cosmetico en todos los casos: en `select.tsx` la clase muerta era el TOPE
-DE ALTURA del panel, asi que el desplegable de veintisiete tramos horarios crecia
-por encima de la ventana y parte de la lista quedaba inalcanzable. Comprobado en
-el navegador: `max-height` computaba a `none` y no habia ni una regla en la hoja
-de estilos que mencionara la variable.
-
-Arreglados los dos `max-h-` —`select` y `dropdown-menu`— por su consecuencia
-funcional. El resto sigue inerte y sin auditar; el sospechoso mas probable es
-`size-(--cell-size)` en `calendar.tsx`. Se encuentran con:
-
-```bash
-grep -rn "\-(\-\-\|shadow-xs\|outline-hidden\|field-sizing" src/shared/ui/
-```
-
-**El chunk `index` pesa 591 kB**, por encima del aviso de Vite. Nadie ha decidido
-todavía si merece `manualChunks`.
-
----
-
-## El plan en curso: cerrar el flujo sin huecos
-
-Decidido con el usuario. El orden lo imponen las dependencias, no las ganas.
-
-### Hecho
-
-1. **Ciclo de vida de la sesión.** `completed` existe y el cambio de estado
-   persiste. Antes nacía pendiente y ahí se quedaba.
-2. **La pantalla de ejecución.** Dos modos: fuerza —los bloques de su rutina,
-   avance en series— y cardio, que es la que había. Terminar marca la sesión
-   como completada, y ahí se cierra el bucle.
-3. **El panel dice la verdad.** Indicadores contados, próximas sesiones de la
-   agenda, actividad reciente = sesiones completadas. Fuera el indicador de
-   ingresos y las tendencias: no hay fuente ni histórico.
-
-4. **Crear, editar y borrar estudiantes.** `StudentRepository` era el ÚNICO
-   puerto sin `create`. Ya lo tiene, más `update`, `remove` y `linkAccount`.
-   «Añadir estudiante» e «Invitar estudiante» eran dos `console.log` y ahora son
-   un solo botón que da de alta de verdad: desde que el alumno se enlaza con su
-   cuenta por el correo que se escribe ahí, dar de alta ES invitar. Borrar está
-   protegido —un alumno con sesiones agendadas no se borra— con la misma regla
-   que ya gobernaba rutinas y catálogo. Se quitó «Duplicar»: duplicar a una
-   persona daría dos fichas con el mismo correo, que es justo la clave del
-   enlace.
-5. **`AuthPort.signUp`.** «Crear cuenta» daba de alta a nadie. Ahora crea la
-   cuenta y **el perfil que va con ella**, y decide cuál por el correo: si ya
-   tiene ficha de alumno, la cuenta se ata a esa ficha; si no, nace un
-   entrenador. El rol no se guarda en la cuenta, se deduce de qué repositorio
-   conoce el perfil.
-
-   Salió de ahí `FakeTrainerRepository`: con autenticación simulada, el
-   identificador de perfil lo inventa el adaptador falso, así que preguntarle
-   por él a Supabase no encontraba nada. Los dos adaptadores falsos se eligen
-   ahora con la misma condición, para que no puedan desparejarse.
-6. **Reglas de gamificación.** Construidas, y todo sale de las sesiones
-   cerradas.
-
-   Primero hubo que guardar el hecho: `Session` gana `result` —series marcadas,
-   series prescritas, tiempo y día de cierre— y el puerto gana `complete()`, una
-   sola operación en vez de un cambio de estado seguido de una escritura. Antes,
-   terminar una sesión perdía las series y el tiempo con el componente.
-
-   Sobre eso, `progressRules.ts`, puro: 20 XP por sesión más 1 por serie —el
-   fijo existe porque el cardio no tiene series—, niveles de coste lineal, y la
-   racha contada hacia atrás desde hoy, que **no se rompe por no haber entrenado
-   hoy todavía**. Los logros dejan de tener la condición en prosa: cada uno lleva
-   una función, y su fecha de desbloqueo se obtiene repasando el historial día a
-   día, así que es real. Diez logros se fueron —«métricas» y «desafíos»—: no hay
-   registro corporal ni sistema de desafíos, y un logro inalcanzable es peor que
-   no ofrecerlo.
-7. **El progreso ya es de alguien.** La pantalla enseñaba una racha y un nivel
-   sin decir de quién. Ahora lleva `?student=<id>` en la URL, un selector en la
-   cabecera, y «Ver progreso» desde la ficha del alumno lleva al suyo.
-
-### Pendiente después
-
-- **Roles y acceso de estudiante, la mitad que falta.** El registro ya distingue
-  quién eres, pero después nadie lo usa: entrenador y alumno aterrizan los dos en
-  `/dashboard`. Faltan las guardas por rol, la navegación filtrada y la
-  superficie del alumno.
-- Filtros de rutinas y de estudiantes: los controles no filtran nada.
-- `/settings` sigue en el menú lateral sin ruta registrada; `/login` es
-  configuración muerta que nadie pinta.
-- «Vista previa» en las rutinas.
-- Reportes: cuatro pestañas vacías.
-- `planAssignmentId` en las sesiones volcadas, y el volcado duplicado.
+- Decidir qué se hace con el PR de `feature/supabase-integration`. La
+  recomendación es cerrarlo sin fusionar.
+- **`backup/supabase-test`**: sigue sólo en local, sin respaldo en origin. Son 10
+  commits de otros autores y un dominio `workouts` entero que nunca se fusionó.
+  O se empuja o se borra dejándolo escrito; el limbo ya va por la tercera
+  sesión.
+- Encender la confirmación por correo y montar SMTP. Ver arriba.
+- Activar la suscripción de «Piedras y Palos» para poder probar el flujo de unión
+  con el QR.
+- **El plan no puede expresar progresión.** `PlanDay` sólo guarda un `routineId`
+  y la rutina lleva toda la prescripción, así que no hay forma de decir «la misma
+  sesión con más volumen la semana 3». Se nota en los datos: hay una semana
+  marcada `isDeload: true` que apunta a la misma rutina sin descargar nada. El
+  eje que lo arreglaría es **estructura fija / dosis variable** aplicado al par
+  plan-semana. Se decidió posponerlo, no hacerlo a medias.
+- El chunk `index` pesa 769 kB, por encima del aviso de Vite. Nadie ha decidido
+  si merece `manualChunks`.
 
 ---
 
 ## Preguntas abiertas para el usuario
 
-0. **Subir los 5 commits de esta sesión.** Están sólo en esta máquina.
-1. **PR a `main`**: 90 commits esperando. `main` hoy no compila —conserva
-   marcadores de conflicto y el router desconectado—, así que fusionar lo
-   arreglaría.
-2. **Qué hacer con `backup/supabase-test`**: empujarla a origin o borrarla. Hoy
-   está sólo en local y sin respaldo, que es lo peor de las dos opciones.
+1. **¿Se cierra el PR de `feature/supabase-integration` sin fusionar?** Preguntado
+   y sin respuesta.
+2. **¿`backup/supabase-test` se empuja o se borra?** Tercera sesión en el limbo.
 3. **Los peldaños de la escalera de hitos y las constantes de XP son una
-   propuesta.** 3, 7, 12, 20 y 30 sesiones; 20 XP por sesión y 1 por serie. Están
+   propuesta**: 3, 7, 12, 20 y 30 sesiones; 20 XP por sesión y 1 por serie. Están
    juntos y con nombre en `progressRules.ts` para que ajustarlos sea cambiar una
    constante, pero nadie los ha validado como producto.
 4. **La lista de especialidades del registro es una propuesta**, no un dato
-   validado. Lleva su `TODO`.
-5. **Meter Playwright en CI**, y con ello un script `test` en `package.json`.
-   Con 72 pruebas que ya afirman cosas, dejarlas fuera de CI es desperdiciarlas.
-6. **La progresión del mesociclo**, arriba. Es el rediseño más grande pendiente.
-7. **Dónde aterriza un alumno al entrar.** Hoy, en el panel del entrenador. Es
-   la pieza que queda del acceso de estudiante y hace falta decidir qué ve.
+   validado.
