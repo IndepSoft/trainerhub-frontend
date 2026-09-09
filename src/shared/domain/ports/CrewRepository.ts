@@ -34,6 +34,15 @@ export interface CrewRepository {
   create(data: NewCrew): Promise<Crew>
   update(crewId: string, data: CrewSettings): Promise<void>
 
+  /**
+   * Deja constancia de que el equipo pide la activación de su suscripción.
+   *
+   * No la activa: eso es de `PlatformRepository`. Pedirla es lo único que el
+   * equipo puede hacer con su suscripción, y sin esta operación el aviso de
+   * «hace falta activar» no llevaba a ninguna parte.
+   */
+  requestActivation(crewId: string): Promise<void>
+
   /** Genera un token nuevo e invalida el anterior. Devuelve el nuevo. */
   rotateJoinToken(crewId: string): Promise<string>
 

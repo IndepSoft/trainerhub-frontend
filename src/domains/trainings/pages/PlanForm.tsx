@@ -41,9 +41,7 @@ export default function PlanForm() {
         <p className="font-display text-2xl font-extrabold uppercase text-ink">
           {t('plan.notFound')}
         </p>
-        <p className="text-sm text-ink/50">
-          {t('plan.notFoundHint')}
-        </p>
+        <p className="text-sm text-ink/50">{t('plan.notFoundHint')}</p>
         <Button asChild variant="outline">
           <Link to="/trainings?tab=planes">{t('plan.back')}</Link>
         </Button>
@@ -91,7 +89,10 @@ function PlanFormFields({ plan }: PlanFormFieldsProps) {
   // Alfabético, para que elegir la rutina de un día no sea buscar en el orden
   // en que se crearon.
   const sortedRoutines = useMemo(
-    () => [...routines].sort((left, right) => left.title.localeCompare(right.title, activeLocale())),
+    () =>
+      [...routines].sort((left, right) =>
+        left.title.localeCompare(right.title, activeLocale())
+      ),
     [routines]
   )
 
@@ -112,10 +113,15 @@ function PlanFormFields({ plan }: PlanFormFieldsProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden bg-bone">
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-1 flex-col overflow-hidden bg-bone"
+    >
       <PageHeader>
         <Link
-          to={isEditing ? `/trainings/plans/${planId}` : '/trainings?tab=planes'}
+          to={
+            isEditing ? `/trainings/plans/${planId}` : '/trainings?tab=planes'
+          }
           className="-ms-2 mb-3 inline-flex h-11 items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/45 transition-colors hover:text-cobalt"
         >
           <ArrowLeft className="size-4" />
@@ -125,7 +131,9 @@ function PlanFormFields({ plan }: PlanFormFieldsProps) {
         <PageHeader.Content>
           <div className="min-w-0">
             <PageHeader.Eyebrow>{t('trainings.eyebrow')}</PageHeader.Eyebrow>
-            <PageHeader.Title>{isEditing ? t('plan.editTitle') : t('plan.newTitle')}</PageHeader.Title>
+            <PageHeader.Title>
+              {isEditing ? t('plan.editTitle') : t('plan.newTitle')}
+            </PageHeader.Title>
           </div>
 
           <PageHeader.Actions>
@@ -133,7 +141,11 @@ function PlanFormFields({ plan }: PlanFormFieldsProps) {
               type="button"
               variant="outline"
               onClick={() =>
-                navigate(isEditing ? `/trainings/plans/${planId}` : '/trainings?tab=planes')
+                navigate(
+                  isEditing
+                    ? `/trainings/plans/${planId}`
+                    : '/trainings?tab=planes'
+                )
               }
             >
               {t('common.cancel')}
@@ -172,8 +184,14 @@ function PlanFormFields({ plan }: PlanFormFieldsProps) {
             </h2>
 
             {routines.length === 0 ? (
-              <p className="rounded-block border border-cobalt-tint-3 bg-surface px-4 py-6 text-center text-sm text-ink/45">
-                {t('plan.noRoutines')}
+              <p className="rounded-block border border-cobalt-tint-3 bg-surface px-4 py-6 text-center text-sm text-ink/60">
+                {t('plan.noRoutines')}{' '}
+                <Link
+                  to="/trainings/new"
+                  className="inline-flex min-h-11 items-center font-semibold text-cobalt underline-offset-4 hover:underline"
+                >
+                  {t('trainings.newRoutine')}
+                </Link>
               </p>
             ) : (
               <ul className="space-y-4">
@@ -197,7 +215,12 @@ function PlanFormFields({ plan }: PlanFormFieldsProps) {
 
             {/* Añadir una semana copia la anterior: en un mesociclo la
                 estructura se repite. Ver `libs/planDraft.ts`. */}
-            <Button type="button" variant="outline" className="mt-4 w-full gap-2" onClick={addWeek}>
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-4 w-full gap-2"
+              onClick={addWeek}
+            >
               <CalendarPlus className="size-4" />
               {t('plan.addWeek')}
             </Button>

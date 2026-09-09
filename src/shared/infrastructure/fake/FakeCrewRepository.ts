@@ -77,6 +77,7 @@ export class FakeCrewRepository implements CrewRepository {
        * activacion es meter alumnos. Ver `canEnrollMembers`.
        */
       subscriptionStatus: 'pending',
+      activationRequestedAt: null,
     }
 
     this.crews = [...this.crews, crew]
@@ -92,6 +93,14 @@ export class FakeCrewRepository implements CrewRepository {
 
   async update(crewId: string, data: CrewSettings): Promise<void> {
     this.crews = this.crews.map((crew) => (crew.id === crewId ? { ...crew, ...data } : crew))
+    this.notify()
+  }
+
+  async requestActivation(crewId: string): Promise<void> {
+    const activationRequestedAt = new Date().toISOString()
+    this.crews = this.crews.map((crew) =>
+      crew.id === crewId ? { ...crew, activationRequestedAt } : crew
+    )
     this.notify()
   }
 

@@ -18,6 +18,8 @@ import { useCalendar } from '../hooks/useCalendar'
 import { useSchedulableStudents } from '../hooks/useSchedulableStudents'
 import { container } from '@/app/container'
 import { useViewerContext } from '@/app/ViewerContext'
+import { activeLocale } from '@/shared/i18n/activeLocale'
+import { parseLocalDateKey } from '../libs/calendar.utils'
 import type { CalendarViewMode, Session } from '../types/calendar.types'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 
@@ -84,7 +86,7 @@ export default function Calendar() {
    * podian reflejar la semilla y nada de lo que hacia el entrenador podia darse
    * por hecho.
    */
-  const handleSave = (sessionId: string, changes: SessionDetailsChanges) => {
+  const handleSave = async (sessionId: string, changes: SessionDetailsChanges) => {
     if (selectedSession === null || selectedSession.id !== sessionId) return
     /*
      * Una sola escritura con la sesion entera y lo cambiado encima. `update`
@@ -92,11 +94,33 @@ export default function Calendar() {
      * reutilizarlo evita un metodo del puerto solo para las notas.
      */
     const { id: _sessionId, crewId: _crewId, ...current } = selectedSession
-    void container.sessions.update(sessionId, { ...current, ...changes })
+    await container.sessions.update(sessionId, { ...current, ...changes })
   }
 
-  const handleDelete = (sessionId: string) => {
-    void container.sessions.remove(sessionId)
+  const handleDelete = async (sessionId: string) => {
+    await container.sessions.remove(sessionId)
+  }
+
+  /*
+   * El recordatorio es un AVISO en la bandeja del alumno, el mismo canal que
+   * las cuotas. El texto se compone aqui y se guarda tal cual: es lo que dice
+   * el selector de idioma, lo escrito queda en el idioma en que se escribio.
+   */
+  const handleSendReminder = async (session: Session) => {
+    if (session.studentId === null) return
+    await container.notices.send({
+      studentId: session.studentId,
+      kind: 'general',
+      body: t('sessionDetails.reminderBody', {
+        title: session.title,
+        date: parseLocalDateKey(session.date).toLocaleDateString(activeLocale(), {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+        }),
+        time: session.time,
+      }),
+    })
   }
 
   /*
@@ -213,6 +237,7 @@ export default function Calendar() {
           onSave={handleSave}
           onEdit={setEditingSession}
           onDelete={handleDelete}
+          onSendReminder={handleSendReminder}
         />
       )}
 

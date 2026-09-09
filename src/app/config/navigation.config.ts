@@ -88,6 +88,11 @@ export interface NavigationItem {
    * ver su panel igual.
    */
   platformOnly?: boolean
+  /**
+   * Sólo con un equipo activo, sea cual sea el papel en él. Es la página del
+   * equipo: sin equipo no hay nada que enseñar, y con él la ve hasta el alumno.
+   */
+  crewOnly?: boolean
   children?: NavigationItem[]
 }
 
@@ -142,6 +147,22 @@ export const navigationConfig: NavigationItem[] = [
     showInMobile: true,
   },
   {
+    /*
+     * El equipo: muro, ranking, miembros, solicitudes y QR. Solo se llegaba
+     * por el conmutador de equipo, y para el alumno es su unico lugar social;
+     * para quien gobierna, donde aprueba solicitudes. `crewOnly`: sin equipo no
+     * hay pagina que enseñar.
+     */
+    id: 'crew',
+    labelKey: 'nav.crew',
+    href: '/crew',
+    icon: Users,
+    requiresAuth: true,
+    crewOnly: true,
+    showInSidebar: true,
+    showInMobile: true,
+  },
+  {
     id: 'reports',
     minRole: 'trainer',
     labelKey: 'nav.reports',
@@ -149,6 +170,8 @@ export const navigationConfig: NavigationItem[] = [
     icon: BarChart3,
     requiresAuth: true,
     showInSidebar: true,
+    // Fuera de la barra inferior por sitio; en movil se llega por el menu de
+    // usuario, que lo ofrece a quien lo tiene en la barra lateral.
     showInMobile: false,
   },
   {
@@ -159,8 +182,8 @@ export const navigationConfig: NavigationItem[] = [
     requiresAuth: true,
     showInSidebar: true,
     // Fuera de la barra inferior: cinco destinos es el maximo antes de que la
-    // etiqueta deje de caber a 375 px, y este es el menos frecuente. Ademas
-    // `/settings` sigue sin ruta registrada (deuda conocida).
+    // etiqueta deje de caber a 375 px, y este es el menos frecuente. En movil
+    // se llega por el menu de usuario.
     showInMobile: false,
   },
 
@@ -189,14 +212,29 @@ export const navigationConfig: NavigationItem[] = [
 ]
 
 /**
+ * Lo que decide si un destino le corresponde a alguien: las cinco condiciones
+ * de un `NavigationItem`, sin el resto. Es lo que una RUTA declara para
+ * cerrarse, con las mismas palabras con las que la barra decide ofrecerla.
+ */
+export type AccessRule = Pick<
+  NavigationItem,
+  'capability' | 'minRole' | 'ownTrainingOnly' | 'platformOnly' | 'crewOnly'
+>
+
+/**
  * Si un destino le corresponde a este papel.
  *
  * Sin crew -`role` a `null`- se ofrece SOLO lo que no pide rol: un alumno recien
  * registrado navega Calendario y Progreso, los ve vacios, y todo le empuja a
  * unirse a un equipo. Es deliberado: enseñarle lo que va a tener explica el
  * producto mucho mejor que una pantalla unica que le corta el paso.
+ *
+ * EXPORTADA PARA LAS RUTAS. La barra no ofrecia Estudiantes a un alumno, pero
+ * `/students` tecleada a mano le abria la pantalla y las consultas fallaban
+ * una a una por RLS. La ruta se cierra con la misma regla que la esconde: si
+ * se escribieran dos, una se quedaria atras.
  */
-function matchesViewer(item: NavigationItem, viewer: NavigationViewer): boolean {
+export function viewerMayVisit(item: AccessRule, viewer: NavigationViewer): boolean {
   // El panel de plataforma sólo lo ve quien la administra, y lo ve siempre:
   // no depende de en qué equipo esté, ni de estar en alguno.
   if (item.platformOnly === true) return viewer.isPlatformAdmin
@@ -205,6 +243,9 @@ function matchesViewer(item: NavigationItem, viewer: NavigationViewer): boolean 
   // hay ficha. Escrita dos veces, una de las dos se queda atras -y se quedo: la
   // celebracion devolvia al entrenador a una pantalla que su menu ya no ofrece-.
   if (item.ownTrainingOnly === true) return viewer.hasOwnProgress
+
+  // Tener equipo es tener papel en el: `role` a `null` es no tener ninguno.
+  if (item.crewOnly === true) return viewer.role !== null
 
   // La capacidad manda sobre el rango: incluye lo que el rol trae de serie Y lo
   // que se haya concedido aparte, que es lo que hace útil una concesión suelta.
@@ -234,13 +275,13 @@ export interface NavigationViewer {
 // Helpers para filtrar rutas
 export const getSidebarRoutes = (viewer: NavigationViewer) =>
   navigationConfig.filter(
-    (item) => item.showInSidebar && item.requiresAuth && matchesViewer(item, viewer)
+    (item) => item.showInSidebar && item.requiresAuth && viewerMayVisit(item, viewer)
   )
 
 /** Destinos de la barra inferior en movil. Maximo cinco. */
 export const getMobileRoutes = (viewer: NavigationViewer) =>
   navigationConfig.filter(
-    (item) => item.showInMobile && item.requiresAuth && matchesViewer(item, viewer)
+    (item) => item.showInMobile && item.requiresAuth && viewerMayVisit(item, viewer)
   )
 
 export const getGuestRoutes = () =>

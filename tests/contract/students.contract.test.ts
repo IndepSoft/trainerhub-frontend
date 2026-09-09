@@ -198,6 +198,53 @@ describe('students: el alta que enlaza, en el servidor', () => {
   })
 })
 
+describe('students: una solicitud pendiente la retira quien la hizo', () => {
+  const created: TestAccount[] = []
+  afterAll(() => deleteAccounts(created))
+
+  it('el solicitante borra su ficha pendiente; la activa y las ajenas, no', async () => {
+    const trainer = await signedInAs('retiro', { intent: 'trainer', first_name: 'T', last_name: 'R' })
+    const crew = await createActiveCrewAs(trainer, 'Con puerta')
+    const waiting = await signedInAs('espera', { intent: 'student', first_name: 'E', last_name: 'S' })
+    const other = await signedInAs('otro', { intent: 'student', first_name: 'O', last_name: 'T' })
+    created.push(trainer, waiting, other)
+
+    // El equipo pide aprobacion: las dos solicitudes quedan pendientes.
+    const first = await waiting.client.rpc('claim_membership', { crew_token: crew.join_token })
+    const second = await other.client.rpc('claim_membership', { crew_token: crew.join_token })
+    expect(first.error).toBeNull()
+    expect(second.error).toBeNull()
+    const waitingId = (first.data as { id: string }).id
+    const otherId = (second.data as { id: string }).id
+
+    // La ajena no se toca: el borrado no alcanza ninguna fila.
+    await waiting.client.from('students').delete().eq('id', otherId)
+    const { count: stillThere } = await adminClient()
+      .from('students')
+      .select('id', { count: 'exact', head: true })
+      .eq('id', otherId)
+    expect(stillThere).toBe(1)
+
+    // La propia, pendiente, si.
+    const withdrawn = await waiting.client.from('students').delete().eq('id', waitingId)
+    expect(withdrawn.error).toBeNull()
+    const { count: gone } = await adminClient()
+      .from('students')
+      .select('id', { count: 'exact', head: true })
+      .eq('id', waitingId)
+    expect(gone).toBe(0)
+
+    // Aprobada, ya no es una solicitud: darse de baja es otra decision.
+    await adminClient().from('students').update({ membership_status: 'active' }).eq('id', otherId)
+    await other.client.from('students').delete().eq('id', otherId)
+    const { count: kept } = await adminClient()
+      .from('students')
+      .select('id', { count: 'exact', head: true })
+      .eq('id', otherId)
+    expect(kept).toBe(1)
+  })
+})
+
 describe('platform: solo quien administra', () => {
   const created: TestAccount[] = []
   afterAll(() => deleteAccounts(created))

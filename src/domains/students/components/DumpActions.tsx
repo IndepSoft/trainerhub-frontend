@@ -3,6 +3,7 @@ import { CalendarClock, CalendarX } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/shared/ui/button'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { describeError } from '@/shared/i18n/errorMessages'
 import { useDumpedSessions } from '../hooks/useDumpedSessions'
 
 interface DumpActionsProps {
@@ -25,15 +26,25 @@ export function DumpActions({ assignmentId }: DumpActionsProps) {
 
   if (sessions.length === 0) return null
 
+  // Se avisa de lo que OCURRIO: si el puerto falla, se dice el fallo y no el
+  // numero que se esperaba mover.
   const handleShift = async () => {
-    const moved = await shiftOneWeek()
-    toast.success(t('assignments.shifted', { count: moved }))
+    try {
+      const moved = await shiftOneWeek()
+      toast.success(t('assignments.shifted', { count: moved }))
+    } catch (caught) {
+      toast.error(describeError(caught, t, 'assignments.actionError'))
+    }
   }
 
   const handleCancel = async () => {
-    const cancelled = await cancelOpen()
-    setConfirmingCancel(false)
-    toast.success(t('assignments.cancelled', { count: cancelled }))
+    try {
+      const cancelled = await cancelOpen()
+      setConfirmingCancel(false)
+      toast.success(t('assignments.cancelled', { count: cancelled }))
+    } catch (caught) {
+      toast.error(describeError(caught, t, 'assignments.actionError'))
+    }
   }
 
   return (

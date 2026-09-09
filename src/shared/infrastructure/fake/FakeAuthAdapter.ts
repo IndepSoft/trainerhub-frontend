@@ -152,16 +152,6 @@ export class FakeAuthAdapter implements AuthPort {
     return user
   }
 
-  async signInWithGoogle(): Promise<void> {
-    const user: AuthUser = {
-      id: profileIdFromEmail('google@test.local'),
-      email: 'google@test.local',
-    }
-
-    this.persistSession(user)
-    this.setCurrentUser(user)
-  }
-
   async signOut(): Promise<void> {
     this.clearPersistedSession()
     this.setCurrentUser(null)

@@ -25,9 +25,19 @@ interface CrewInviteCardProps {
  * permiso denegado, lente sucia, teléfono viejo. Cuesta una línea y evita que el
  * alta dependa de que un hardware ajeno funcione.
  */
-export function CrewInviteCard({ crew, onRotate, rotating }: CrewInviteCardProps) {
+export function CrewInviteCard({
+  crew,
+  onRotate,
+  rotating,
+}: CrewInviteCardProps) {
   const { t } = useTranslation()
   const [copied, setCopied] = useState(false)
+  const [confirmingRotate, setConfirmingRotate] = useState(false)
+
+  const handleRotate = async () => {
+    await onRotate()
+    setConfirmingRotate(false)
+  }
   const joinUrl = buildJoinUrl(crew.joinToken)
 
   const handleCopy = async () => {
@@ -75,25 +85,54 @@ export function CrewInviteCard({ crew, onRotate, rotating }: CrewInviteCardProps
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
-        <Button variant="outline" className="gap-2" onClick={() => void handleCopy()}>
+        <Button
+          variant="outline"
+          className="gap-2"
+          onClick={() => void handleCopy()}
+        >
           <Copy className="size-4" />
           {copied ? t('crew.linkCopied') : t('crew.copyLink')}
         </Button>
 
-        <Button
-          variant="outline"
-          className="gap-2"
-          disabled={rotating}
-          onClick={() => void onRotate()}
-        >
-          <RefreshCw className="size-4" />
-          {rotating ? t('crew.rotating') : t('crew.rotate')}
-        </Button>
+        {/*
+          Rotar pide una SEGUNDA pulsacion en el sitio. Un toque invalida el QR
+          impreso en la pared del gimnasio y no hay vuelta atras; antes bastaba
+          uno, al lado de «copiar», y el pulgar no distingue.
+        */}
+        {confirmingRotate ? (
+          <>
+            <Button
+              variant="destructive"
+              className="gap-2"
+              disabled={rotating}
+              onClick={() => void handleRotate()}
+            >
+              <RefreshCw className="size-4" />
+              {rotating ? t('crew.rotating') : t('crew.rotateConfirm')}
+            </Button>
+            <Button
+              variant="ghost"
+              disabled={rotating}
+              onClick={() => setConfirmingRotate(false)}
+            >
+              {t('common.cancel')}
+            </Button>
+          </>
+        ) : (
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => setConfirmingRotate(true)}
+          >
+            <RefreshCw className="size-4" />
+            {t('crew.rotate')}
+          </Button>
+        )}
       </div>
 
-      <p className="text-center text-xs text-ink/45">
+      <p className="text-center text-xs text-ink/55">
         {/* El porqué del botón de rotar, dicho donde se decide usarlo. */}
-        {t('crew.rotateHint')}
+        {confirmingRotate ? t('crew.rotateWarning') : t('crew.rotateHint')}
       </p>
     </section>
   )

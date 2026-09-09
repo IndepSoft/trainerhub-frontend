@@ -19,6 +19,7 @@ interface UseCrewEditorResult {
   createCrew: (input: CreateCrewInput) => Promise<Crew | null>
   updateCrew: (crewId: string, settings: CrewSettings) => Promise<void>
   rotateJoinToken: (crewId: string) => Promise<string | null>
+  requestActivation: (crewId: string) => Promise<void>
   saving: boolean
   error: string | null
 }
@@ -90,5 +91,12 @@ export function useCrewEditor(): UseCrewEditorResult {
     [run]
   )
 
-  return { createCrew, updateCrew, rotateJoinToken, saving, error }
+  const requestActivation = useCallback(
+    async (crewId: string) => {
+      await run(() => container.crews.requestActivation(crewId))
+    },
+    [run]
+  )
+
+  return { createCrew, updateCrew, rotateJoinToken, requestActivation, saving, error }
 }

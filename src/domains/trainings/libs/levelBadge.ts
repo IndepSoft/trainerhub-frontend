@@ -15,7 +15,7 @@ export const LEVEL_BADGE: Record<TrainingLevel, string> = {
 
 /** El mismo nivel, sobre el bloque de Ink de la tarjeta editorial. */
 export const LEVEL_BADGE_ON_INK: Record<TrainingLevel, string> = {
-  Principiante: 'border-scale-1/60 text-scale-1',
-  Intermedio: 'border-scale-2/60 text-scale-2',
-  Avanzado: 'border-scale-3/60 text-scale-3',
+  Principiante: 'border-scale-1-lift/60 text-scale-1-lift',
+  Intermedio: 'border-scale-2-lift/60 text-scale-2-lift',
+  Avanzado: 'border-scale-3-lift/60 text-scale-3-lift',
 }

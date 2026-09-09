@@ -21,6 +21,7 @@ import { Calendar } from '@/shared/ui/calendar'
 import { CalendarCheck, Plus, User, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/shared/lib/utils'
+import { describeError } from '@/shared/i18n/errorMessages'
 import { getShortName } from '@/shared/lib/personName'
 import { useSchedulableStudents } from '../hooks/useSchedulableStudents'
 import { useSchedulableRoutines } from '../hooks/useSchedulableRoutines'
@@ -239,12 +240,19 @@ export function CreateSessionModal({
         return
       }
 
-      scheduleSession()
+      void scheduleSession()
     })
   }
 
-  /** El alta, ya sin comprobaciones: la decisión está tomada. */
-  const scheduleSession = () => {
+  /**
+   * El alta, ya sin comprobaciones: la decisión está tomada.
+   *
+   * SE ESPERA AL PUERTO antes de avisar y cerrar. Antes el aviso salia y el
+   * dialogo se cerraba mientras la escritura viajaba, y si la base la
+   * rechazaba la sesion «agendada» no existia. Si falla, el dialogo se queda
+   * abierto con lo escrito y lo dice.
+   */
+  const scheduleSession = async () => {
     const student = students.find((candidate) => candidate.id === studentId)
     const quien = isGroupSession
       ? t('newSession.theGroupClass')
@@ -287,24 +295,34 @@ export function CreateSessionModal({
        * reinicia. Una completada con su resultado sigue completada aunque se
        * le corrija el lugar.
        */
-      void container.sessions.update(editing.id, {
-        ...data,
-        status: editing.status,
-        result: editing.result,
-      })
+      try {
+        await container.sessions.update(editing.id, {
+          ...data,
+          status: editing.status,
+          result: editing.result,
+        })
+      } catch (caught) {
+        toast.error(describeError(caught, t, 'newSession.error'))
+        return
+      }
       toast.success(t('newSession.updated'))
       setIsOpen(false)
       return
     }
 
-    void container.sessions.create({
-      ...data,
-      // Recien creada esta pendiente, no confirmada: confirmarla es un acto
-      // aparte y fingirlo aqui vaciaria de sentido el estado.
-      status: 'pending',
-      // Nace sin resultado: no ha ocurrido todavia.
-      result: null,
-    })
+    try {
+      await container.sessions.create({
+        ...data,
+        // Recien creada esta pendiente, no confirmada: confirmarla es un acto
+        // aparte y fingirlo aqui vaciaria de sentido el estado.
+        status: 'pending',
+        // Nace sin resultado: no ha ocurrido todavia.
+        result: null,
+      })
+    } catch (caught) {
+      toast.error(describeError(caught, t, 'newSession.error'))
+      return
+    }
 
     toast.success(
       t('newSession.scheduled', {

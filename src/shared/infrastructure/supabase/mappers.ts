@@ -180,6 +180,7 @@ export interface CrewRow {
   requires_approval: boolean
   ranking_enabled?: boolean | null
   subscription_status: string
+  activation_requested_at?: string | null
   photo_url?: string | null
 }
 
@@ -216,6 +217,7 @@ export function toCrew(row: CrewRow): Crew {
     subscriptionStatus: isSubscriptionStatus(row.subscription_status)
       ? row.subscription_status
       : 'pending',
+    activationRequestedAt: row.activation_requested_at ?? null,
     photoUrl: optional(row.photo_url),
   }
 }

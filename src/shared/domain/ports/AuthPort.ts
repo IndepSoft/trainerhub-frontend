@@ -28,12 +28,6 @@ export interface AuthPort {
    */
   signUp(credentials: SignUpCredentials): Promise<AuthUser>
 
-  /**
-   * Arranca un login federado. No devuelve usuario: el proveedor redirige el
-   * navegador y la sesion se resuelve al volver, via getCurrentUser/onChange.
-   */
-  signInWithGoogle(): Promise<void>
-
   signOut(): Promise<void>
 
   /**

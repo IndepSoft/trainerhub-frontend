@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { container } from '@/app/container'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { useAuthStore } from '@/app/stores/authStore'
+import { JOIN_CODE_PARAM } from '@/domains/crew/libs/joinLink'
 import { canEnrollMembers } from '@/shared/domain/entities/crew'
 import { readIntendedPath } from '../libs/intendedPath'
 import type {
@@ -168,7 +169,20 @@ export function useRegisterForm(intent: RegisterIntent): UseRegisterFormResult {
       await container.students.claimByEmail(email, user.id)
 
       if (intent === 'student' && formData.joinCode.trim() !== '') {
-        await joinWithCode(formData.joinCode, user.id, email)
+        const joined = await joinWithCode(formData.joinCode, user.id, email)
+        if (!joined) {
+          /*
+           * El codigo no valia y SE DICE: la cuenta esta creada y se entra,
+           * pero en la pantalla de unirse, con el codigo puesto, que es la
+           * que explica por que no vale. Antes se ignoraba en silencio y la
+           * persona aterrizaba en un progreso vacio sin saber que no entro.
+           */
+          setUser(user)
+          navigate(`/crew/unirse?${JOIN_CODE_PARAM}=${encodeURIComponent(formData.joinCode.trim())}`, {
+            replace: true,
+          })
+          return
+        }
       }
 
       setUser(user)
@@ -192,16 +206,16 @@ function optionalField(value: string): string | undefined {
 }
 
 /**
- * Entra al equipo cuyo código se ha escrito en el alta.
+ * Entra al equipo cuyo código se ha escrito en el alta. Devuelve si entró.
  *
  * UN CÓDIGO QUE NO VALE NO TUMBA EL REGISTRO. La cuenta ya está creada y es lo
  * importante; equivocarse al copiar ocho caracteres no puede costar volver a
- * empezar. Se ignora en silencio y quien lo escribió lo reintenta desde la
- * pantalla de unirse, que es donde el error sí se explica.
+ * empezar. Devuelve `false` y quien llama lleva a la persona a la pantalla de
+ * unirse, que es donde el error sí se explica.
  */
-async function joinWithCode(code: string, profileId: string, email: string): Promise<void> {
+async function joinWithCode(code: string, profileId: string, email: string): Promise<boolean> {
   const crew = await container.crews.findByJoinToken(code)
-  if (crew === null || !canEnrollMembers(crew)) return
+  if (crew === null || !canEnrollMembers(crew)) return false
 
   await container.students.claimMembership({
     crewId: crew.id,
@@ -210,4 +224,5 @@ async function joinWithCode(code: string, profileId: string, email: string): Pro
     email,
     status: crew.requiresApproval ? 'pending' : 'active',
   })
+  return true
 }

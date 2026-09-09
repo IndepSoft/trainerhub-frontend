@@ -10,7 +10,7 @@ import { CAPABILITY_LABEL_KEY, ROLE_LABEL_KEY } from '@/shared/i18n/domainLabels
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { useViewerContext } from '@/app/ViewerContext'
 import { useCrewStaff } from '../hooks/useCrewStaff'
-import { NotAllowedHere } from '../components/NotAllowedHere'
+import { NotAllowedHere } from '@/shared/components/NotAllowedHere'
 import type { CrewRole, CrewStaff } from '@/shared/domain/entities/crew'
 
 const ROLE_BADGE: Record<CrewRole, string> = {
@@ -41,7 +41,7 @@ export default function CrewStaffPage() {
   if (loadingViewer) return null
   if (active === null || !can('crew.staff')) {
     return (
-      <NotAllowedHere description={t('crew.staffNotAllowed')} />
+      <NotAllowedHere backTo="/crew" description={t('crew.staffNotAllowed')} />
     )
   }
 

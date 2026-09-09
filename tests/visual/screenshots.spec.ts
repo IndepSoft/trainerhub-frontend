@@ -312,11 +312,11 @@ test('la barra inferior encaja a 375 px', async ({ page }) => {
   expect(medidas).not.toBeNull()
   expect(medidas!.desbordeDePagina).toBe(0)
   /*
-   * CUATRO, no cinco: Progreso salio de la navegacion del entrenador. El
-   * progreso de sus alumnos vive en sus tarjetas y en su ficha, que es donde se
-   * pregunta por el; el modulo aparte obligaba a salir y buscar a la persona.
+   * CINCO, y es el maximo: Progreso salio de la navegacion del entrenador -el
+   * de sus alumnos vive en sus fichas- y entro Equipo, que solo se alcanzaba
+   * por el conmutador. Las etiquetas se miden abajo: a la sexta dejan de caber.
    */
-  expect(medidas!.pestanas).toHaveLength(4)
+  expect(medidas!.pestanas).toHaveLength(5)
 
   for (const pestana of medidas!.pestanas) {
     expect(pestana.alto, `alto de «${pestana.texto}»`).toBeGreaterThanOrEqual(44)
@@ -905,9 +905,14 @@ test.describe('reparto de secciones', () => {
     await page.waitForTimeout(1800)
 
     const lista = page.getByRole('tablist').first()
-    for (const etiqueta of [/Rutinas/, /Planes/, /Desafíos/, /Rachas/]) {
+    for (const etiqueta of [/Rutinas/, /Planes/]) {
       await expect(lista.getByRole('tab', { name: etiqueta })).toBeVisible()
     }
+
+    // Desafios y rachas no tienen pestaña: la tuvieron con un cartel de
+    // «proximamente», y una pestaña que no lleva a nada es una fuga.
+    await expect(lista.getByRole('tab', { name: /Desafíos/ })).toHaveCount(0)
+    await expect(lista.getByRole('tab', { name: /Rachas/ })).toHaveCount(0)
 
     /*
      * NO hay pestana de plantillas, y la prueba lo fija.
@@ -924,18 +929,6 @@ test.describe('reparto de secciones', () => {
     await expect(page.getByRole('link', { name: 'Torso · Empuje y tracción' })).toBeVisible()
 
     await page.screenshot({ path: 'tests/visual/salida/rutinas-desktop.png' })
-
-    // Desafios y rachas estan vacias a proposito y lo dicen. La prueba fija que
-    // NO vuelvan a pintar datos de ejemplo: eso hacia creer que la funcion
-    // existe.
-    await lista.getByRole('tab', { name: /Desafíos/ }).click()
-    await page.waitForTimeout(400)
-    await expect(page.getByRole('heading', { name: 'Desafíos' })).toBeVisible()
-    await page.screenshot({ path: 'tests/visual/salida/proximamente-desktop.png' })
-
-    await lista.getByRole('tab', { name: /Rachas/ }).click()
-    await page.waitForTimeout(400)
-    await expect(page.getByRole('heading', { name: 'Rachas' })).toBeVisible()
   })
 })
 
@@ -1687,10 +1680,26 @@ test.describe('borrado', () => {
     await expect(page.getByRole('tab', { name: /Rutinas/ })).toContainText('(2)')
   })
 
-  test('un plan siempre se puede borrar', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 812 })
+  test('un plan sin asignaciones se puede borrar', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
-    await page.goto('/trainings/plans/plan-1')
+
+    /*
+     * `plan-1` esta asignado a dos alumnos y asi no se borra. Se retiran las
+     * dos asignaciones POR LA INTERFAZ, sin `page.goto` entre medias: los
+     * almacenes viven en memoria y recargar resucitaria lo retirado.
+     */
+    await page.goto('/students/student-2')
+    await page.getByRole('button', { name: /Quitar la asignación de Base de fuerza/ }).click()
+    await expect(page.getByRole('link', { name: 'Base de fuerza · 4 semanas' })).toHaveCount(0)
+    await page.locator('a[href="/students"]').first().click()
+    await page.locator('a[href="/students/student-3"]').first().click()
+    await page.getByRole('button', { name: /Quitar la asignación de Base de fuerza/ }).click()
+    await expect(page.getByRole('link', { name: 'Base de fuerza · 4 semanas' })).toHaveCount(0)
+
+    await page.locator('a[href="/trainings"]').first().click()
+    await page.getByRole('tab', { name: /Planes/ }).click()
+    await page.getByRole('link', { name: 'Base de fuerza · 4 semanas' }).click()
 
     await page.getByRole('button', { name: 'Eliminar' }).click()
     await page.getByRole('dialog').getByRole('button', { name: 'Eliminar' }).click()
@@ -2110,9 +2119,9 @@ test.describe('asignaciones del alumno', () => {
     await dialogo.getByRole('button', { name: 'Asignar' }).click()
     await expect(page.getByRole('dialog')).toHaveCount(0)
 
-    // Aparece en «Asignado»...
+    // Aparece en «Asignado», y empieza hoy: la fecha viene puesta por defecto.
     await expect(page.getByRole('link', { name: 'Base de fuerza · 4 semanas' })).toBeVisible()
-    await expect(page.getByText('Asignado, sin fecha de inicio')).toBeVisible()
+    await expect(page.getByText(/^Empieza el /)).toBeVisible()
 
     /*
      * ...y la agenda NO ha cambiado. Es la decision de fondo: asignar y agendar
@@ -2648,7 +2657,8 @@ test.describe('sesion en vivo', () => {
      * dejaria de casar en cuanto la sesion cambia de estado, que es justo lo que
      * pasa a mitad de esta prueba.
      */
-    const primera = page.getByRole('button', { name: /minutos/ }).first()
+    // Una que se pueda empezar: las cerradas ya no se ejecutan otra vez.
+    const primera = page.getByRole('button', { name: /(Confirmada|Pendiente)\. .*minutos/ }).first()
 
     await primera.click()
     await page.getByRole('dialog').getByRole('button', { name: 'Iniciar sesión' }).click()
@@ -2670,8 +2680,32 @@ test.describe('sesion en vivo', () => {
     await page.goBack()
     await page.waitForURL(/\/calendar$/, { timeout: 20_000 })
 
-    // Se vuelve a entrar a la misma sesion, ya cerrada.
-    await primera.click()
+    /*
+     * LA SESION SIGUIENTE, de verdad: una cerrada no se vuelve a ejecutar
+     * -volver a cerrarla sobrescribiria el resultado-, asi que se agenda otra
+     * con la misma rutina para la misma alumna y se entra a esa. Por la
+     * interfaz, sin `goto`: recargar devolveria la semilla.
+     */
+    await page.locator('a[href="/trainings"]').first().click()
+    await page.getByRole('tab', { name: /Rutinas/ }).click()
+    await page.getByRole('link', { name: 'Empuje · Intermedio' }).click()
+    await page.getByRole('link', { name: 'Usar en una sesión' }).click()
+    const alta = page.getByRole('dialog')
+    await alta.getByText('Entrenamiento personal').click()
+    await elegirDelDesplegable(page, desplegables(page, 'Alumno'), 'María', false)
+    const hoy = new Date().toLocaleDateString('es-ES', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
+    await alta.getByRole('button', { name: hoy }).click()
+    await elegirDelDesplegable(page, desplegables(page, 'Hora'), '15:00')
+    await elegirDelDesplegable(page, desplegables(page, 'Ubicación'), 'Gimnasio Principal')
+    await alta.getByRole('button', { name: 'Programar sesión' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    await page.getByLabel(/Empuje · Intermedio/).first().click()
     await page.getByRole('dialog').getByRole('button', { name: 'Iniciar sesión' }).click()
     await page.waitForURL(/\/session\/[\w-]+/)
 
@@ -2746,13 +2780,17 @@ test.describe('sesion en vivo', () => {
     await expect(page.getByText(/^Prescrito:/)).toHaveCount(0)
   })
 
-  test('una sesion de cardio conserva su pantalla de carrera', async ({ page }) => {
+  test('una sesion de cardio es un cronometro, sin medidas inventadas', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await signIn(page)
     await page.goto('/session/session-4')
 
     await expect(page.getByRole('heading', { name: 'Carrera continua' })).toBeVisible()
-    await expect(page.getByText('GPS')).toBeVisible()
+    // Ni GPS ni kilometros: sin sensor solo hay tiempo, y arranca en cero.
+    await expect(page.getByText('GPS')).toHaveCount(0)
+    await expect(page.getByText('min/km')).toHaveCount(0)
+    await expect(page.getByText('00:00:0')).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Salir sin terminar' })).toBeVisible()
 
     // Y ningun circulo de repeticion: no ejecuta una rutina de sala.
     await expect(page.getByRole('button', { name: /^Repetición \d+/ })).toHaveCount(0)
@@ -2766,8 +2804,9 @@ test.describe('sesion en vivo', () => {
 
     await expect(contador(page, 'Completadas')).toContainText('0')
 
-    // Se entra a la sesion desde su detalle, que es el camino real.
-    await page.getByRole('button', { name: /minutos/ }).first().click()
+    // Se entra a la sesion desde su detalle, que es el camino real. Una que
+    // se pueda empezar: las cerradas ya no se ejecutan otra vez.
+    await page.getByRole('button', { name: /(Confirmada|Pendiente)\. .*minutos/ }).first().click()
     await page.getByRole('dialog').getByRole('button', { name: 'Iniciar sesión' }).click()
     await page.waitForURL(/\/session\/[\w-]+/)
 
@@ -4986,5 +5025,177 @@ test.describe('volcar un plan: lo que deja y lo que se hace con ello', () => {
     await expect(page.getByText(`${total} sesiones canceladas`)).toBeVisible()
     await expect(page.getByText(new RegExp(`${total} sesiones en la agenda, 0 por hacer`))).toBeVisible()
     await expect(page.getByRole('button', { name: 'Mover una semana' })).toHaveCount(0)
+  })
+})
+
+/**
+ * Fugas de secuencia: cada pantalla tiene salida, y cada puerta lleva a algo.
+ *
+ * Salen del analisis de flujos del 9 de septiembre: veintinueve sitios donde
+ * una persona se quedaba sin accion posible, veia una pantalla que no era suya
+ * o recibia un aviso de algo que no habia ocurrido.
+ */
+test.describe('fugas de secuencia', () => {
+  async function entrarComoNuevo(page: Page, correo: string): Promise<void> {
+    await page.goto('/authentication')
+    await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
+    await page.getByPlaceholder('tu@email.com').fill(correo)
+    await page.locator('input[type=password]').fill('desarrollo123')
+    await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click()
+  }
+
+  test('el registro cabe en un movil de 667 px: se desplaza, no se corta', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 })
+    await page.goto('/authentication')
+    await page.getByRole('tab', { name: 'Registrarme' }).click()
+    await page.getByRole('button', { name: 'Entreno a gente', exact: true }).click()
+
+    // La pestaña no se sale por arriba -antes quedaba a -150 px- ...
+    const tabs = await page.getByRole('tablist').boundingBox()
+    expect(tabs?.y ?? -1).toBeGreaterThanOrEqual(0)
+
+    // ... y el boton de crear se alcanza desplazando, con sus 44 px enteros.
+    const crear = page.getByRole('button', { name: 'Crear cuenta' })
+    await crear.scrollIntoViewIfNeeded()
+    const box = await crear.boundingBox()
+    expect(box).not.toBeNull()
+    expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual(667)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(375)
+  })
+
+  test('una direccion que no existe se dice, con la salida', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/esto-no-existe')
+
+    await expect(page.getByRole('heading', { name: 'Esta página no existe' })).toBeVisible()
+    await page.getByRole('link', { name: 'Ir al inicio' }).click()
+    await page.waitForURL(/\/dashboard/, { timeout: 15_000 })
+  })
+
+  test('el equipo esta en la barra, y en movil Reportes vive en el menu de usuario', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await expect(page.getByRole('link', { name: 'Equipo' }).first()).toBeVisible()
+
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.getByRole('button', { name: 'Menú de usuario' }).click()
+    await page.getByRole('menuitem', { name: 'Reportes' }).click()
+    await page.waitForURL(/\/reports/, { timeout: 15_000 })
+  })
+
+  test('las pantallas de gestion no se abren a quien no gestiona', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await entrarComoNuevo(page, 'sinllaves@correo.com')
+    await page.waitForURL(/\/progress/, { timeout: 20_000 })
+
+    for (const ruta of ['/students', '/trainings', '/dashboard', '/reports']) {
+      await page.goto(ruta)
+      await expect(page.getByRole('heading', { name: 'Esto no es para ti' })).toBeVisible()
+    }
+  })
+
+  test('una sesion cerrada o cancelada no se vuelve a ejecutar', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+
+    await page.goto('/session/session-history-1')
+    await expect(page.getByText('Esta sesión ya se cerró')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Pausar la sesión' })).toHaveCount(0)
+
+    await page.goto('/session/session-5')
+    await expect(page.getByText('Esta sesión se canceló')).toBeVisible()
+    await page.getByRole('link', { name: 'Volver' }).click()
+    await page.waitForURL(/\/calendar/, { timeout: 15_000 })
+  })
+
+  test('la sesion en vivo tiene salida sin terminar, y vuelve a donde se empezo', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/dashboard')
+    await page.waitForTimeout(1200)
+
+    // Desde el panel: la proxima sesion abre la pantalla en vivo.
+    await page.locator('a[href^="/session/"]').first().click()
+    await page.waitForURL(/\/session\//, { timeout: 15_000 })
+    await page.getByRole('link', { name: 'Salir sin terminar' }).click()
+    // Y salir devuelve al panel, no a la agenda.
+    await page.waitForURL(/\/dashboard/, { timeout: 15_000 })
+  })
+
+  test('quien espera aprobacion puede retirar la solicitud, o probar otro codigo', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await entrarComoNuevo(page, 'arrepentida@correo.com')
+    await page.waitForURL(/\/progress/, { timeout: 20_000 })
+
+    await page.goto('/crew/unirse?codigo=HIERRO24')
+    await expect(page.getByRole('heading', { name: 'Solicitud enviada' })).toBeVisible()
+    // «Entendido» devuelve al progreso. Sin `goto`: recargar devolveria la
+    // semilla y la solicitud desapareceria.
+    await page.getByRole('button', { name: 'Entendido' }).click()
+    await page.waitForURL(/\/progress/, { timeout: 20_000 })
+
+    await expect(page.getByRole('heading', { name: 'Esperando a Hierro y Asfalto' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Tengo otro código' })).toBeVisible()
+    await page.getByRole('button', { name: 'Retirar la solicitud' }).click()
+
+    // Retirada: vuelve la invitacion, no la espera.
+    await expect(page.getByRole('heading', { name: 'Únete a un equipo' })).toBeVisible()
+  })
+
+  test('un equipo pendiente puede pedir la activacion, y la peticion consta', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await entrarComoNuevo(page, 'fundadora@correo.com')
+
+    await page.goto('/crew/nuevo')
+    // Las salidas de la pantalla de crear: antes no habia ninguna.
+    await expect(page.getByRole('link', { name: 'Tengo un código' })).toBeVisible()
+
+    await page.getByLabel('Nombre').fill('Los del Sur')
+    await page.getByRole('button', { name: 'Crear equipo' }).click()
+    await page.waitForURL(/\/crew$/, { timeout: 20_000 })
+
+    await page.getByRole('button', { name: 'Solicitar la activación' }).click()
+    await expect(page.getByText(/Activación solicitada el/)).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Solicitar la activación' })).toHaveCount(0)
+  })
+
+  test('rotar el codigo pide una segunda pulsacion', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/crew')
+
+    await expect(page.getByText('HIER-RO24')).toBeVisible()
+    await page.getByRole('button', { name: 'Generar uno nuevo' }).click()
+    // Todavia no ha pasado nada: el codigo sigue, y se avisa de lo que va a pasar.
+    await expect(page.getByText('HIER-RO24')).toBeVisible()
+    await expect(page.getByText(/dejarán de funcionar al instante/)).toBeVisible()
+
+    await page.getByRole('button', { name: 'Sí, generar uno nuevo' }).click()
+    await expect(page.getByText('HIER-RO24')).toHaveCount(0)
+  })
+
+  test('un plan asignado no se borra: se explica a quien esta asignado', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/trainings/plans/plan-1')
+
+    await page.getByRole('button', { name: 'Eliminar' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Eliminar' }).click()
+    await expect(page.getByRole('dialog')).toContainText('Está asignado a 2 alumnos')
+    // Y sigue existiendo.
+    await page.getByRole('dialog').getByRole('button', { name: 'Entendido' }).click()
+    await expect(page.getByRole('heading', { name: 'Base de fuerza · 4 semanas' })).toBeVisible()
+  })
+
+  test('sin equipo, la configuracion y la barra ofrecen crear o unirse', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await entrarComoNuevo(page, 'perdida@correo.com')
+    await page.waitForURL(/\/progress/, { timeout: 20_000 })
+
+    await page.goto('/settings')
+    await expect(page.getByText('No estás en ningún equipo.')).toBeVisible()
+    await page.getByRole('main').getByRole('link', { name: 'Tengo un código' }).click()
+    await page.waitForURL(/\/crew\/unirse/, { timeout: 15_000 })
   })
 })

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/shared/ui/button'
 import {
   Dialog,
@@ -17,7 +17,18 @@ import {
 } from '@/shared/ui/select'
 import { Textarea } from '@/shared/ui/textarea'
 import { Label } from '@/shared/ui/label'
-import { ArrowUpRight, MapPin, MessageSquare, Pencil, Play, Trash2, User } from 'lucide-react'
+import { Alert, AlertDescription } from '@/shared/ui/alert'
+import { useViewerContext } from '@/app/ViewerContext'
+import { describeError } from '@/shared/i18n/errorMessages'
+import {
+  ArrowUpRight,
+  MapPin,
+  MessageSquare,
+  Pencil,
+  Play,
+  Trash2,
+  User,
+} from 'lucide-react'
 import { useSchedulableRoutines } from '../hooks/useSchedulableRoutines'
 import { useSchedulableStudents } from '../hooks/useSchedulableStudents'
 import { resolveSessionStudentName } from '../libs/sessionStudent'
@@ -39,11 +50,13 @@ interface SessionDetailsModalProps {
   session: Session
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Estado y notas, juntos: se guardan con un solo botón. */
-  onSave: (sessionId: string, changes: SessionDetailsChanges) => void
+  /** Estado y notas, juntos: se guardan con un solo botón. Resuelve al escribir. */
+  onSave: (sessionId: string, changes: SessionDetailsChanges) => Promise<void>
   /** Abre el formulario de la sesión para cambiar fecha, hora o el resto. */
   onEdit: (session: Session) => void
-  onDelete: (sessionId: string) => void
+  onDelete: (sessionId: string) => Promise<void>
+  /** Manda un aviso al alumno de la sesión. Resuelve cuando está en su bandeja. */
+  onSendReminder: (session: Session) => Promise<void>
 }
 
 /**
@@ -66,11 +79,23 @@ export function SessionDetailsModal({
   onSave,
   onEdit,
   onDelete,
+  onSendReminder,
 }: SessionDetailsModalProps) {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const location = useLocation()
+  const { can } = useViewerContext()
   const [newStatus, setNewStatus] = useState<SessionStatus>(session.status)
   const [sessionNotes, setSessionNotes] = useState(session.notes)
+  const [actionError, setActionError] = useState<string | null>(null)
+
+  /*
+   * LA FICHA ES DE LECTURA PARA EL ALUMNO. Abria la misma ficha que el
+   * entrenador -estado editable, notas, editar, eliminar- y cada control
+   * fallaba al tocarlo, porque la base no le deja escribir en la agenda. Lo
+   * que un alumno hace con su sesion es mirarla y empezarla.
+   */
+  const canManage = can('schedule.manage')
 
   /*
    * La rutina se resuelve por el puerto, igual que los alumnos. La sesion guarda
@@ -90,32 +115,51 @@ export function SessionDetailsModal({
     new Map(students.map((student) => [student.id, student])),
     t
   )
-  const routine = routines.find((candidate) => candidate.id === session.routineId)
+  const routine = routines.find(
+    (candidate) => candidate.id === session.routineId
+  )
 
   const status = SESSION_STATUS[session.status]
 
   /**
-   * Una sesión cancelada no se puede empezar. Se deshabilita en vez de
-   * ocultarse: que el botón desaparezca deja al usuario buscando qué ha pasado.
+   * Una sesión cancelada no se puede empezar, y una completada TAMPOCO: volver
+   * a cerrarla sobrescribiría el resultado y con él la progresión de cargas.
+   * Se deshabilita en vez de ocultarse: que el botón desaparezca deja al
+   * usuario buscando qué ha pasado.
    */
-  const canStart = session.status !== 'cancelled'
+  const canStart =
+    session.status !== 'cancelled' && session.status !== 'completed'
 
   const handleStart = () => {
     onOpenChange(false)
-    navigate(`/session/${session.id}`)
+    // El origen viaja con la sesion, para volver aqui al terminar.
+    navigate(`/session/${session.id}`, {
+      state: { from: `${location.pathname}${location.search}` },
+    })
   }
 
-  const hasChanges = newStatus !== session.status || sessionNotes !== session.notes
+  const hasChanges =
+    newStatus !== session.status || sessionNotes !== session.notes
 
   /**
    * Estado y notas se guardan JUNTOS y de verdad. Antes el estado se guardaba
    * y las notas se quedaban en memoria hasta cerrar, con un aviso que lo
    * confesaba; ahora las dos cosas van por el puerto en una sola escritura.
    */
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!hasChanges) return
 
-    onSave(session.id, { status: newStatus, notes: sessionNotes })
+    /*
+     * EL AVISO VA DESPUES DE ESCRIBIR. Antes se lanzaba antes de que el
+     * puerto respondiera, y un cambio rechazado por la base -sin red, sin
+     * permiso- se celebraba igual mientras la agenda seguia como estaba.
+     */
+    try {
+      await onSave(session.id, { status: newStatus, notes: sessionNotes })
+    } catch (caught) {
+      setActionError(describeError(caught, t, 'sessionDetails.error'))
+      return
+    }
     toast.success(
       newStatus !== session.status
         ? t('sessionDetails.markedAs', {
@@ -138,14 +182,29 @@ export function SessionDetailsModal({
     onEdit(session)
   }
 
-  const handleDelete = () => {
-    // Borra de verdad. Antes solo decia que lo habia hecho.
-    onDelete(session.id)
+  const handleDelete = async () => {
+    try {
+      await onDelete(session.id)
+    } catch (caught) {
+      setActionError(describeError(caught, t, 'sessionDetails.error'))
+      return
+    }
     toast.success(t('sessionDetails.deleted'))
     onOpenChange(false)
   }
 
-  const handleSendReminder = () => {
+  /*
+   * Manda un aviso DE VERDAD, a la bandeja del alumno. Antes solo decia que lo
+   * habia mandado: el boton existia, el aviso no. Sin alumno -una clase
+   * grupal- no hay a quien avisar y el boton no se ofrece.
+   */
+  const handleSendReminder = async () => {
+    try {
+      await onSendReminder(session)
+    } catch (caught) {
+      setActionError(describeError(caught, t, 'sessionDetails.error'))
+      return
+    }
     toast.success(t('sessionDetails.reminderSent', { student: studentName }))
   }
 
@@ -194,8 +253,10 @@ export function SessionDetailsModal({
           </Button>
 
           {!canStart && (
-            <p className="mt-2 text-center text-xs text-ink/45">
-              {t('sessionDetails.cannotStart')}
+            <p className="mt-2 text-center text-xs text-ink/55">
+              {session.status === 'completed'
+                ? t('sessionDetails.alreadyDone')
+                : t('sessionDetails.cannotStart')}
             </p>
           )}
         </div>
@@ -212,11 +273,14 @@ export function SessionDetailsModal({
               </span>
             </dd>
             <dd className="mt-0.5 text-xs text-ink/45">
-              {parseLocalDateKey(session.date).toLocaleDateString(activeLocale(), {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-              })}
+              {parseLocalDateKey(session.date).toLocaleDateString(
+                activeLocale(),
+                {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                }
+              )}
             </dd>
           </div>
 
@@ -235,92 +299,145 @@ export function SessionDetailsModal({
           </div>
         </dl>
 
-        <div className="space-y-5 px-5 pb-5">
-          <div className="space-y-2">
-            <Label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
-              {t('sessionDetails.status')}
-            </Label>
-            <Select
-              value={newStatus}
-              onValueChange={(value: SessionStatus) => setNewStatus(value)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {/* Las opciones salen de la tabla de estados: antes las
+        {!canManage && (
+          <div className="space-y-5 px-5 pb-5">
+            {session.notes !== '' && (
+              <div className="space-y-2">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
+                  {t('newSession.notes')}
+                </span>
+                <p className="whitespace-pre-line text-sm text-ink/70">
+                  {session.notes}
+                </p>
+              </div>
+            )}
+            {routine !== undefined && (
+              <div className="space-y-2">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
+                  {t('newSession.routine')}
+                </span>
+                <Link
+                  to={`/trainings/${routine.id}`}
+                  className="flex min-h-11 items-center justify-between gap-3 rounded-block border border-cobalt-tint-3 px-4 text-sm text-ink transition-colors hover:border-cobalt/40 hover:text-cobalt"
+                >
+                  {routine.title}
+                  <ArrowUpRight
+                    aria-hidden="true"
+                    className="size-4 shrink-0 text-ink/30"
+                  />
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+
+        {canManage && (
+          <div className="space-y-5 px-5 pb-5">
+            <div className="space-y-2">
+              <Label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
+                {t('sessionDetails.status')}
+              </Label>
+              <Select
+                value={newStatus}
+                onValueChange={(value: SessionStatus) => setNewStatus(value)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {/* Las opciones salen de la tabla de estados: antes las
                     etiquetas estaban escritas aquí y también en getStatusText,
                     y podían divergir. */}
-                {SESSION_STATUS_ENTRIES.map(([value, presentation]) => (
-                  <SelectItem key={value} value={value}>
-                    {t(presentation.labelKey)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {routine !== undefined && (
-            <div className="space-y-2">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
-                {t('newSession.routine')}
-              </span>
-              <Link
-                to={`/trainings/${routine.id}`}
-                className="flex min-h-11 items-center justify-between gap-3 rounded-block border border-cobalt-tint-3 px-4 text-sm text-ink transition-colors hover:border-cobalt/40 hover:text-cobalt"
-              >
-                {routine.title}
-                <ArrowUpRight aria-hidden="true" className="size-4 shrink-0 text-ink/30" />
-              </Link>
+                  {SESSION_STATUS_ENTRIES.map(([value, presentation]) => (
+                    <SelectItem key={value} value={value}>
+                      {t(presentation.labelKey)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          )}
 
-          <div className="space-y-2">
-            <Label
-              htmlFor="session-notes"
-              className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60"
-            >
-              {t('newSession.notes')}
-            </Label>
-            <Textarea
-              id="session-notes"
-              value={sessionNotes}
-              onChange={(event) => setSessionNotes(event.target.value)}
-              placeholder={t('sessionDetails.notesPlaceholder')}
-              rows={3}
-            />
-          </div>
+            {routine !== undefined && (
+              <div className="space-y-2">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
+                  {t('newSession.routine')}
+                </span>
+                <Link
+                  to={`/trainings/${routine.id}`}
+                  className="flex min-h-11 items-center justify-between gap-3 rounded-block border border-cobalt-tint-3 px-4 text-sm text-ink transition-colors hover:border-cobalt/40 hover:text-cobalt"
+                >
+                  {routine.title}
+                  <ArrowUpRight
+                    aria-hidden="true"
+                    className="size-4 shrink-0 text-ink/30"
+                  />
+                </Link>
+              </div>
+            )}
 
-          {/* Secundarias, y la destructiva separada por una regla: en la versión
+            <div className="space-y-2">
+              <Label
+                htmlFor="session-notes"
+                className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60"
+              >
+                {t('newSession.notes')}
+              </Label>
+              <Textarea
+                id="session-notes"
+                value={sessionNotes}
+                onChange={(event) => setSessionNotes(event.target.value)}
+                placeholder={t('sessionDetails.notesPlaceholder')}
+                rows={3}
+              />
+            </div>
+
+            {/* Secundarias, y la destructiva separada por una regla: en la versión
               anterior «Eliminar» tenía el mismo peso que «Editar». */}
-          {/* Un solo «Guardar cambios» para estado y notas, apagado mientras
+            {/* Un solo «Guardar cambios» para estado y notas, apagado mientras
               no haya nada que guardar: asi no hace falta decir que algo no se
               guardo, porque todo lo que se toca aqui se guarda. */}
-          <Button className="w-full" onClick={handleSave} disabled={!hasChanges}>
-            {t('sessionDetails.save')}
-          </Button>
+            {actionError !== null && (
+              <Alert variant="destructive">
+                <AlertDescription>{actionError}</AlertDescription>
+              </Alert>
+            )}
 
-          <div className="flex flex-wrap gap-2 border-t border-cobalt-tint-3 pt-4">
-            <Button variant="outline" onClick={handleSendReminder} className="gap-2">
-              <MessageSquare className="size-4" />
-              {t('sessionDetails.reminder')}
-            </Button>
-            {/* Fecha, hora, alumno o rutina se cambian en el formulario de la
-                sesion, el mismo del alta pero con esta ya puesta. */}
-            <Button variant="outline" onClick={handleEdit} className="gap-2">
-              <Pencil className="size-4" />
-              {t('common.edit')}
-            </Button>
             <Button
-              variant="ghost"
-              onClick={handleDelete}
-              className="ms-auto gap-2 text-danger hover:bg-danger-surface hover:text-danger"
+              className="w-full"
+              onClick={() => void handleSave()}
+              disabled={!hasChanges}
             >
-              <Trash2 className="size-4" />
-              {t('common.delete')}
+              {t('sessionDetails.save')}
             </Button>
+
+            <div className="flex flex-wrap gap-2 border-t border-cobalt-tint-3 pt-4">
+              {session.studentId !== null && (
+                <Button
+                  variant="outline"
+                  onClick={() => void handleSendReminder()}
+                  className="gap-2"
+                >
+                  <MessageSquare className="size-4" />
+                  {t('sessionDetails.reminder')}
+                </Button>
+              )}
+              {/* Fecha, hora, alumno o rutina se cambian en el formulario de la
+                sesion, el mismo del alta pero con esta ya puesta. */}
+              <Button variant="outline" onClick={handleEdit} className="gap-2">
+                <Pencil className="size-4" />
+                {t('common.edit')}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => void handleDelete()}
+                className="ms-auto gap-2 text-danger hover:bg-danger-surface hover:text-danger"
+              >
+                <Trash2 className="size-4" />
+                {t('common.delete')}
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </DialogContent>
     </Dialog>
   )

@@ -26,6 +26,13 @@ export class SupabaseAssignmentRepository implements AssignmentRepository {
     return ((data ?? []) as AssignmentRow[]).map(toAssignment)
   }
 
+  async findByPlan(planId: string): Promise<Assignment[]> {
+    const { data, error } = await supabase.from('assignments').select('*').eq('plan_id', planId)
+
+    if (error) throw mapDataError(error)
+    return ((data ?? []) as AssignmentRow[]).map(toAssignment)
+  }
+
   async create(data: NewAssignment): Promise<Assignment> {
     const crewId = this.scope.current()
     if (crewId === null) {

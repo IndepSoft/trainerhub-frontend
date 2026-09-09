@@ -24,8 +24,13 @@ import { adminClient, deleteAccounts, signedInAs, type TestAccount } from './sup
  */
 const ESPERA_MAXIMA_MS = 15_000
 
-/** Lo que tarda el servidor en empezar a repartir a una suscripcion recien acusada. */
-const MARGEN_DE_SUSCRIPCION_MS = 2_000
+/**
+ * Cuanto se espera a que un sondeo llegue antes de mandar otro, y cuantos se
+ * mandan antes de dar el canal por muerto. Veinte por segundo y medio: medio
+ * minuto, que es mas de lo que tarda el primer reparto en la CI.
+ */
+const ESPERA_DEL_SONDEO_MS = 1_500
+const SONDEOS_MAXIMOS = 20
 
 /** Lo que se espera cuando se afirma que algo NO llega. Ver `no se entera`. */
 const ESPERA_DEL_SILENCIO_MS = 4_000
@@ -45,36 +50,56 @@ interface Watcher {
  * vuelta por websocket, y escribir antes de que termine haria una prueba que
  * pasa o falla segun lo cargada que este la maquina.
  */
-function watch(client: SupabaseClient, tables: string | readonly string[]): Watcher {
-  let announceReady = (): void => undefined
-  const ready = new Promise<void>((resolve) => {
-    announceReady = resolve
-  })
-
+function watch(
+  client: SupabaseClient,
+  tables: string | readonly string[],
+  subscriberProfileId: string
+): Watcher {
   let received = 0
   let waiting: (() => void) | null = null
+  let probeArrived: (() => void) | null = null
 
-  // Varias tablas en un canal, como hace `subscribeToTables`: es lo que la
-  // aplicacion abre, y lo que aqui se afirma que emite.
-  const watched = typeof tables === 'string' ? [tables] : tables
+  /*
+   * Varias tablas en un canal, como hace `subscribeToTables`: es lo que la
+   * aplicacion abre, y lo que aqui se afirma que emite. `profiles` va siempre,
+   * porque es donde se escribe el sondeo de abajo.
+   */
+  const requested = typeof tables === 'string' ? [tables] : tables
+  const watched = [...new Set([...requested, 'profiles'])]
   const channel = client.channel(`contrato:${watched.join('+')}:${Math.random()}`)
   for (const table of watched) {
-    channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => {
+    channel.on('postgres_changes', { event: '*', schema: 'public', table }, (payload) => {
+      if (isProbe(payload, subscriberProfileId)) {
+        probeArrived?.()
+        return
+      }
       received += 1
       waiting?.()
     })
   }
+
   /*
    * `SUBSCRIBED` NO significa que el servidor ya reparta a este suscriptor.
    * El canal esta unido, pero el proceso que lee el WAL recoge las
    * suscripciones nuevas por sondeo, y una escritura hecha justo despues del
    * acuse se procesa antes de que ese proceso sepa que este cliente existe.
-   * Se vio en la CI: fundar un equipo nada mas suscribirse no llegaba, mientras
-   * que borrar una ficha unos segundos despues de suscribirse si. Contra la
-   * nube, con segundo y medio de margen, llegaba todo.
+   *
+   * Un margen fijo no vale: con dos segundos, la PRIMERA suscripcion del
+   * proceso de la CI seguia sin recibir el alta del equipo -y fallaba en
+   * `develop` una vez de cada dos- mientras las siguientes llegaban. Asi que
+   * el canal se da por listo cuando SE VE llegar algo: se toca el perfil del
+   * propio suscriptor, que es una fila que puede leer, hasta que el cambio
+   * aparece por el canal. Esos sondeos no cuentan como eventos.
    */
-  channel.subscribe((status) => {
-    if (status === 'SUBSCRIBED') setTimeout(announceReady, MARGEN_DE_SUSCRIPCION_MS)
+  const ready = new Promise<void>((resolve, reject) => {
+    let confirming = false
+    channel.subscribe((status) => {
+      if (status !== 'SUBSCRIBED' || confirming) return
+      confirming = true
+      confirmDelivery(subscriberProfileId, (listener) => {
+        probeArrived = listener
+      }).then(resolve, reject)
+    })
   })
 
   return {
@@ -100,6 +125,58 @@ function watch(client: SupabaseClient, tables: string | readonly string[]): Watc
       await client.removeChannel(channel)
     },
   }
+}
+
+/**
+ * Escribe el perfil del suscriptor hasta que el cambio vuelve por el canal.
+ *
+ * Con el rol de servicio, para no depender de la politica de escritura: lo
+ * que se comprueba es el REPARTO, y para eso basta con que el suscriptor pueda
+ * leer su propia fila. Un UPDATE que no cambia nada escribe igual en el WAL:
+ * Postgres crea una version nueva de la fila aunque los valores coincidan.
+ */
+async function confirmDelivery(
+  profileId: string,
+  onProbe: (listener: () => void) => void
+): Promise<void> {
+  // Se reescribe el apellido con su propio valor: `profiles` no lleva marca de
+  // tiempo de edicion, y el sondeo no debe cambiar nada que otra prueba lea.
+  const { data: profile, error: readError } = await adminClient()
+    .from('profiles')
+    .select('last_name')
+    .eq('id', profileId)
+    .single()
+  if (readError !== null) throw new Error(`sondeo del canal: ${readError.message}`)
+  const lastName: unknown = profile?.last_name
+  if (typeof lastName !== 'string') throw new Error('sondeo del canal: el perfil no tiene apellido')
+
+  for (let attempt = 0; attempt < SONDEOS_MAXIMOS; attempt += 1) {
+    const arrived = new Promise<boolean>((resolve) => {
+      const timer = setTimeout(() => resolve(false), ESPERA_DEL_SONDEO_MS)
+      onProbe(() => {
+        clearTimeout(timer)
+        resolve(true)
+      })
+    })
+
+    const { error } = await adminClient()
+      .from('profiles')
+      .update({ last_name: lastName })
+      .eq('id', profileId)
+    if (error !== null) throw new Error(`sondeo del canal: ${error.message}`)
+
+    if (await arrived) return
+  }
+
+  throw new Error('el canal nunca empezo a repartir: ningun sondeo volvio')
+}
+
+/** Si un evento es uno de los sondeos de `confirmDelivery`, y no un cambio real. */
+function isProbe(payload: { table: string; eventType: string; new: unknown }, profileId: string): boolean {
+  if (payload.table !== 'profiles' || payload.eventType !== 'UPDATE') return false
+  const record: unknown = payload.new
+  if (typeof record !== 'object' || record === null || !('id' in record)) return false
+  return record.id === profileId
 }
 
 interface CrewRow {
@@ -149,7 +226,7 @@ describe('tiempo real: lo publicado emite y RLS decide a quien', () => {
      * de ellas, y es eso lo que se afirma. Que tabla emite primero depende de
      * la version de Realtime, y la de la CI no es la de la nube.
      */
-    const watcher = watch(founder.client, ['crews', 'crew_staff', 'students', 'profiles'])
+    const watcher = watch(founder.client, ['crews', 'crew_staff', 'students', 'profiles'], founder.id)
     await watcher.ready
 
     await createActiveCrewAs(founder, 'Equipo en directo')
@@ -190,7 +267,7 @@ describe('tiempo real: lo publicado emite y RLS decide a quien', () => {
      * evaluar la politica sobre una fila sin columnas, y cualquier filtro por
      * `crew_id` la descartaba. Dar de baja a un alumno no refrescaba a nadie.
      */
-    const watcher = watch(trainer.client, 'students')
+    const watcher = watch(trainer.client, 'students', trainer.id)
     await watcher.ready
 
     await trainer.client.from('students').delete().eq('id', ficha?.id)
@@ -228,7 +305,7 @@ describe('tiempo real: lo publicado emite y RLS decide a quien', () => {
      * extraño reciba estas filas no es el cliente conteniendose, es que el
      * servidor no se las manda.
      */
-    const intruder = watch(stranger.client, 'students')
+    const intruder = watch(stranger.client, 'students', stranger.id)
     await intruder.ready
 
     await trainer.client.from('students').insert({

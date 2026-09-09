@@ -192,6 +192,18 @@ export class SupabaseStudentRepository implements StudentRepository {
     if (error) throw mapDataError(error)
   }
 
+  /*
+   * La misma escritura que `remove`: quien decide si procede es la politica
+   * «una solicitud pendiente la retira quien la hizo». Un borrado que no
+   * alcanza ninguna fila no es error para PostgREST, asi que una ficha ya
+   * aprobada se queda donde esta y la pantalla lo ve al releer.
+   */
+  async withdrawRequest(studentId: string): Promise<void> {
+    const { error } = await supabase.from('students').delete().eq('id', studentId)
+
+    if (error) throw mapDataError(error)
+  }
+
   /**
    * SIN ACOTAR AL EQUIPO ACTIVO, y es lo que hace que unirse a un equipo se
    * vea. La ficha nace en el crew al que se solicita entrar, que por definicion

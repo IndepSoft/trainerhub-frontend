@@ -26,6 +26,12 @@ export class FakeAssignmentRepository implements AssignmentRepository {
     return this.inScope().filter((assignment) => assignment.studentId === studentId)
   }
 
+  async findByPlan(planId: string): Promise<Assignment[]> {
+    return this.inScope().filter(
+      (assignment) => assignment.kind === 'plan' && assignment.planId === planId
+    )
+  }
+
   async create(data: NewAssignment): Promise<Assignment> {
     const crewId = this.scope.current()
     if (crewId === null) {

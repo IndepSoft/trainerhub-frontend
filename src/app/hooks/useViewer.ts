@@ -314,7 +314,10 @@ export function useViewer(): UseViewerResult {
     role: active?.role ?? null,
     can: (capability: Capability) =>
       active !== null && can(active.role, capability, active.extraCapabilities),
-    hasOwnProgress: active === null || active.student !== null,
+    // Sin equipo, progreso propio solo si no se es entrenador: un entrenador
+    // que se queda sin equipo no tiene racha que mirar, y ofrecersela le
+    // devolvia al progreso al cerrar una sesion.
+    hasOwnProgress: active === null ? trainer === null : active.student !== null,
     isPlatformAdmin,
     loading,
     selectCrew,

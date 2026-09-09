@@ -88,11 +88,17 @@ export default function RootLayout() {
    * `replace` a proposito: sin el, el boton de atras devolveria al onboarding
    * ya completado.
    */
+  /*
+   * Por PREFIJO, como `hideNavRoutes`: `/authentication/nueva-contrasena` llega
+   * del correo de recuperacion CON sesion, y compararla por igualdad la
+   * mandaba al onboarding, que al terminar iba a la raiz. La persona nunca
+   * cambiaba la contraseña y el enlace, de un solo uso, se gastaba.
+   */
   const rutasSinGuardiaDeOnboarding = ['/authentication', '/onboarding']
-  const necesitaOnboarding =
-    user !== null &&
-    !rutasSinGuardiaDeOnboarding.includes(location.pathname) &&
-    onboardingSeen === false
+  const exentaDeOnboarding = rutasSinGuardiaDeOnboarding.some(
+    (route) => location.pathname === route || location.pathname.startsWith(`${route}/`)
+  )
+  const necesitaOnboarding = user !== null && !exentaDeOnboarding && onboardingSeen === false
 
   if (necesitaOnboarding) {
     return <Navigate to="/onboarding" replace />

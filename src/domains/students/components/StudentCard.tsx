@@ -145,25 +145,25 @@ export function StudentCard({ student, progress, onEdit }: StudentCardProps) {
         </Link>
       </h3>
 
-      <p className="mt-1.5 truncate px-5 text-xs text-ink/45">{student.email}</p>
+      <p className="mt-1.5 truncate px-5 text-xs text-ink/60">{student.email}</p>
 
       <dl className="mt-5 grid grid-cols-2 divide-x divide-cobalt-tint-3 border-y border-cobalt-tint-3">
         <div className="px-5 py-3">
-          <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">
+          <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/60">
             {t('studentCard.age')}
           </dt>
           <dd className="metric-figures font-display text-xl font-bold text-ink">
             {student.age}
-            <span className="ml-1 text-xs font-semibold text-ink/40">{t('studentCard.years')}</span>
+            <span className="ml-1 text-xs font-semibold text-ink/55">{t('studentCard.years')}</span>
           </dd>
         </div>
         <div className="px-5 py-3">
-          <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">
+          <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/60">
             {t('studentCard.bodyFat')}
           </dt>
           <dd className="metric-figures font-display text-xl font-bold text-ink">
             {student.bodyFatPercentage}
-            <span className="ml-1 text-xs font-semibold text-ink/40">%</span>
+            <span className="ml-1 text-xs font-semibold text-ink/55">%</span>
           </dd>
         </div>
       </dl>
@@ -183,7 +183,7 @@ export function StudentCard({ student, progress, onEdit }: StudentCardProps) {
         {student.goals.map((goal) => (
           <span
             key={goal}
-            className="rounded-action border border-cobalt-tint-3 px-2.5 py-0.5 text-[10px] uppercase tracking-wider text-ink/50"
+            className="rounded-action border border-cobalt-tint-3 px-2.5 py-0.5 text-[11px] uppercase tracking-wider text-ink/65"
           >
             {goalLabel(goal, t)}
           </span>
