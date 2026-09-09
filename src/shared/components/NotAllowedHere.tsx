@@ -5,6 +5,8 @@ import { useTranslation } from '@/shared/i18n/LanguageContext'
 interface NotAllowedHereProps {
   /** Qué hace falta para estar aquí, en una frase. */
   description: string
+  /** A dónde se vuelve. La raíz decide por papel; el equipo, para sus páginas. */
+  backTo?: string
 }
 
 /**
@@ -16,7 +18,10 @@ interface NotAllowedHereProps {
  * llega por un enlace viejo, o de un entrenador al que le acaban de retirar una
  * llave y no entiende por qué.
  */
-export function NotAllowedHere({ description }: NotAllowedHereProps) {
+export function NotAllowedHere({
+  description,
+  backTo = '/',
+}: NotAllowedHereProps) {
   const { t } = useTranslation()
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-bone px-6 text-center">
@@ -25,7 +30,9 @@ export function NotAllowedHere({ description }: NotAllowedHereProps) {
       </h1>
       <p className="max-w-sm text-sm text-ink/55">{description}</p>
       <Button asChild variant="outline">
-        <Link to="/crew">{t('crew.backToCrew')}</Link>
+        <Link to={backTo}>
+          {backTo === '/crew' ? t('crew.backToCrew') : t('notFound.home')}
+        </Link>
       </Button>
     </div>
   )

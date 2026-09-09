@@ -4,6 +4,7 @@ import { usePlans } from './usePlans'
 import { describeNames, findPlansUsingRoutine } from '../libs/usage'
 import type { DeletionResult } from '@/shared/domain/deletion'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { describeError } from '@/shared/i18n/errorMessages'
 
 interface UseTrainingDeletionResult {
   /**
@@ -21,10 +22,11 @@ interface UseTrainingDeletionResult {
 /**
  * Bajas de rutinas y planes, con sus reglas de integridad.
  *
- * LA ASIMETRÍA ES INTENCIONADA. Una rutina programada en algún día de un plan no
- * se puede borrar: el plan guarda `routineId`, y borrarla dejaría un mesociclo
- * apuntando al vacío. Un plan, en cambio, siempre se puede borrar, porque nada
- * apunta a un plan.
+ * Una rutina programada en algún día de un plan no se puede borrar: el plan
+ * guarda `routineId`, y borrarla dejaría un mesociclo apuntando al vacío. Un
+ * plan ASIGNADO a un alumno tampoco: la asignación guarda `planId`, la base lo
+ * impide con `on delete restrict`, y antes de esta regla la ficha del alumno se
+ * quedaba con un enlace a «Ya no disponible».
  *
  * Es la misma regla que gobierna el catálogo, y la misma que explica por qué los
  * bloques guardados no necesitan protección: se copian al insertarlos, así que
@@ -34,9 +36,8 @@ interface UseTrainingDeletionResult {
  * colecciones y ningún componente debería tener que saberlo.
  */
 export function useTrainingDeletion(): UseTrainingDeletionResult {
-  const { plural } = useTranslation()
+  const { t, plural } = useTranslation()
   const { plans } = usePlans()
-
 
   const routineDeletionBlocker = useCallback(
     (routineId: string): string | undefined => {
@@ -67,10 +68,25 @@ export function useTrainingDeletion(): UseTrainingDeletionResult {
 
   const deletePlan = useCallback(
     async (planId: string): Promise<DeletionResult> => {
-      await container.plans.remove(planId)
+      const assigned = await container.assignments.findByPlan(planId)
+      if (assigned.length > 0) {
+        return {
+          deleted: false,
+          reason: plural('deletion.assignedToStudent', 'deletion.assignedToStudents', assigned.length, {
+            count: assigned.length,
+          }),
+        }
+      }
+
+      // La base lo vuelve a comprobar: entre mirar y borrar cabe una asignacion.
+      try {
+        await container.plans.remove(planId)
+      } catch (caught) {
+        return { deleted: false, reason: describeError(caught, t, 'deletion.failed') }
+      }
       return { deleted: true }
     },
-    []
+    [plural, t]
   )
 
   return { routineDeletionBlocker, deleteRoutine, deletePlan }

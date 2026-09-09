@@ -197,6 +197,6 @@ export class SupabaseSessionRepository implements SessionRepository {
    * cliente tambien llega por el canal, asi que no hacen falta oyentes locales.
    */
   onChange(listener: () => void): () => void {
-    return subscribeToTable('sessions', this.scope.current(), listener)
+    return subscribeToTable('sessions', listener)
   }
 }

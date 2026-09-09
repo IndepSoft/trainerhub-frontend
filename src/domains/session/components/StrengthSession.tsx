@@ -6,6 +6,7 @@ import { SessionDuration } from './SessionDuration'
 import { SessionPlanList } from './SessionPlanList'
 import { SetTracker } from './SetTracker'
 import { SlideToAction } from './SlideToAction'
+import { LeaveSessionLink } from './LeaveSessionLink'
 import { formatDuration } from '../libs/session.utils'
 import type { Routine } from '@/shared/domain/entities/routine'
 import type { Session, SessionResult } from '@/shared/domain/entities/session'
@@ -17,6 +18,8 @@ interface StrengthSessionProps {
   routine: Routine | null
   studentName: string
   onFinish: (result: SessionResult) => void
+  /** A donde se vuelve si se sale sin terminar. */
+  exitTo: string
 }
 
 /**
@@ -42,6 +45,7 @@ export function StrengthSession({
   routine,
   studentName,
   onFinish,
+  exitTo,
 }: StrengthSessionProps) {
   const { t } = useTranslation()
   const exercisesById = useSessionExercises()
@@ -105,22 +109,25 @@ export function StrengthSession({
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
       <header className="shrink-0 px-5 pt-5 pb-3">
-        <div className="flex items-baseline justify-between gap-3">
+        <div className="flex items-center justify-between gap-3">
           <p className="min-w-0 truncate text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/45">
             {studentName}
           </p>
+          <LeaveSessionLink to={exitTo} />
           {/* El reloj de la SESIÓN, en pequeño: el grande es el de la serie,
               que es lo que se mira entre repetición y repetición. Sin rutina no
               hay serie, y entonces éste vuelve a ser el protagonista. */}
+        </div>
+        <div className="flex items-baseline justify-between gap-3">
+          <h1 className="min-w-0 truncate font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
+            {routine?.title ?? session.title}
+          </h1>
           {hasPlan && (
             <p className="metric-figures shrink-0 text-xs font-semibold text-ink/40">
               {formatDuration(elapsedSeconds)}
             </p>
           )}
         </div>
-        <h1 className="truncate font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
-          {routine?.title ?? session.title}
-        </h1>
       </header>
 
       {hasPlan ? (

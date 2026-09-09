@@ -43,6 +43,7 @@ export function UpcomingSessions({ sessions }: UpcomingSessionsProps) {
               {index === 0 ? (
                 <Link
                   to={`/session/${session.id}`}
+                  state={{ from: '/dashboard' }}
                   className="block rounded-sm outline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cobalt-lift"
                 >
                   <SessionItem session={session} studentName={studentName} />

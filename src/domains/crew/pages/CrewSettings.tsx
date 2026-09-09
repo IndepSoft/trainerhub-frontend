@@ -8,7 +8,7 @@ import { PageHeader } from '@/shared/components/PageHeader'
 import { cn } from '@/shared/lib/utils'
 import { useViewerContext } from '@/app/ViewerContext'
 import { useCrewEditor } from '../hooks/useCrewEditor'
-import { NotAllowedHere } from '../components/NotAllowedHere'
+import { NotAllowedHere } from '@/shared/components/NotAllowedHere'
 import { CREW_DENOMINATIONS, type CrewDenomination } from '@/shared/domain/entities/crew'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 
@@ -44,7 +44,7 @@ export default function CrewSettings() {
   if (loadingViewer) return null
   if (crew === null || !can('crew.settings')) {
     return (
-      <NotAllowedHere description={t('crew.settingsNotAllowed')} />
+      <NotAllowedHere backTo="/crew" description={t('crew.settingsNotAllowed')} />
     )
   }
 

@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import { LoadingFallback } from '@/shared/components/LoadingFallback'
 import { dashboardRoutes } from '@/domains/dashboard/infrastructure/routes'
@@ -62,8 +62,17 @@ export const router = createBrowserRouter([
       },
       ...domainRoutes,
       {
+        /*
+         * Una direccion que no existe SE DICE. Era un `Navigate` a la raiz, y
+         * un enlace roto dejaba a la persona en su inicio creyendo que habia
+         * llegado. La pagina ofrece la raiz como salida, que decide por papel.
+         */
         path: '*',
-        element: <Navigate to="/" replace />,
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <NotFound />
+          </Suspense>
+        ),
       },
     ],
   },

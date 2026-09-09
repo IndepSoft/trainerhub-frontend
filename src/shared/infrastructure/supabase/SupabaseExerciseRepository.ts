@@ -5,6 +5,7 @@ import { AppError, AppErrorCode } from '@/shared/domain/errors'
 import { supabase } from './client'
 import { mapDataError } from './errorMapper'
 import { toExercise, toExerciseRow, type ExerciseRow } from './mappers'
+import { subscribeToTable } from './realtime'
 
 /**
  * Implementacion de ExerciseRepository sobre PostgREST.
@@ -66,8 +67,11 @@ export class SupabaseExerciseRepository implements ExerciseRepository {
     if (error) throw mapDataError(error)
   }
 
-  /** TODO: sin suscripcion todavia. Ver el plan, §1.3. */
-  onChange(): () => void {
-    return () => undefined
+  /**
+   * Un ejercicio que alguien añade al catalogo del equipo tiene que aparecer
+   * mientras otro esta montando una rutina, que es cuando hace falta.
+   */
+  onChange(listener: () => void): () => void {
+    return subscribeToTable('exercises', listener)
   }
 }

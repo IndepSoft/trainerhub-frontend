@@ -316,11 +316,30 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   que se escribieron. Está dicho en el propio selector. Toda cadena nueva se
   añade a los TRES diccionarios: `Dictionary` es `Record<TranslationKey, string>`
   y una clave que falte no compila.
-- El acceso con GOOGLE está DESHABILITADO: el proveedor no está habilitado en el
-  proyecto y el botón echaba al usuario de la aplicación, a un JSON de error de
-  Supabase. No se puede traducir desde el cliente —la navegación ya ocurrió—, así
-  que el botón va apagado. Encenderlo es quitar un `disabled`, después de dar de
-  alta un cliente OAuth de Google.
+- El acceso con GOOGLE NO EXISTE: el proveedor no está habilitado en el
+  proyecto, y un botón apagado en la pantalla de entrada era una puerta pintada
+  en la pared. Se quitó entero —botón, hook y método del puerto—. Ofrecerlo el
+  día que haya un cliente OAuth es añadir `signInWithGoogle` a `AuthPort` y
+  a sus dos adaptadores, y el botón; el historial de git tiene la versión.
+- Las RUTAS DE GESTIÓN se cierran con la misma regla que las esconde:
+  `withRouteAccess` aplica `viewerMayVisit` —la función que filtra la barra—
+  sobre `/students`, `/trainings`, `/dashboard` y `/reports`. No es la
+  seguridad, que sigue siendo RLS: es no abrir una pantalla vacía con controles
+  que fallan uno a uno.
+- NINGÚN AVISO ANTES DE ESCRIBIR. El `toast` de éxito va después de que el
+  puerto resuelva, y el fallo se dice donde se hizo la acción. Antes la agenda
+  celebraba cambios que la base había rechazado.
+- La SESIÓN EN VIVO tiene salida sin terminar y vuelve a donde se empezó:
+  el origen viaja en `location.state.from` —como el destino pretendido del
+  acceso— y de ahí a la celebración. Una sesión completada o cancelada no se
+  ejecuta: volver a cerrarla sobrescribía el resultado.
+- CARDIO ES UN CRONÓMETRO. La distancia, el ritmo, las calorías y el trazado
+  GPS eran una semilla con un contador; sin sensor, lo único real es el tiempo.
+  Cuando haya GPS entra por un puerto.
+- Un alumno RETIRA su solicitud pendiente —política de borrado sobre su
+  propia fila, sólo `pending`— y un equipo PIDE la activación
+  —`crews.activation_requested_at`, la escribe `crew.settings`—. Las dos
+  tienen prueba de contrato.
 - El correo transaccional de Supabase está LIMITADO POR HORAS y no es para
   producción: sin un SMTP propio, en producción no llegan las confirmaciones.
 - La LISTA BLANCA DE REDIRECCIONES hay que mirarla en el panel: Supabase sólo
@@ -339,11 +358,25 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
 - El muro cuenta lo no leído sobre la insignia del equipo —`countUnread` y
   `markAllRead` en el puerto, `crew_wall_reads` detrás— y abrir el muro lo da
   por leído. Las notificaciones push son otro trabajo.
-- TIEMPO REAL sólo donde el plan lo pidió: avisos, muro y agenda, por
-  `postgres_changes` con `subscribeToTable`. RLS decide qué filas llegan por
-  el canal. Rutinas, planes y catálogo no lo tienen: los edita una persona y
-  los lee ella misma. Una tabla nueva con tiempo real se añade a la
-  publicación en su migración.
+- TIEMPO REAL en **todo lo que la aplicación escucha**, por `postgres_changes`
+  con `subscribeToTable` / `subscribeToTables`. Quince tablas publicadas: las
+  de pertenencia e identidad —`crews`, `crew_staff`, `students`, `profiles`—
+  y las de datos del equipo. Fuera quedan, a propósito, la auditoría, las
+  marcas de lectura, la contabilidad interna y el catálogo de sistema.
+
+  **Sin filtro por equipo en el canal.** RLS decide quién recibe cada fila, y
+  el ámbito lo aplica la relectura del repositorio. Un `filter=crew_id` se
+  quedaba viejo al cambiar de equipo, descartaba los borrados y no sabía
+  expresar «un equipo en el que todavía no estoy», que es justo el aviso que
+  `useViewer` necesita para ver un equipo recién fundado.
+
+  **Todo lo publicado lleva `replica identity full`**, y no es afinado: sin
+  ella el registro de un DELETE sólo lleva la clave primaria, así que RLS no
+  se puede evaluar sobre él y el evento se reparte a todo el mundo.
+
+  Una tabla nueva con tiempo real se añade a la publicación **y** se le pone
+  la identidad completa, en su migración, con su prueba en
+  `tests/contract/realtime.contract.test.ts`.
 - El onboarding se ve una vez POR CUENTA —`profiles.onboarded_at`, puerto
   `OnboardingRepository`—; la simulación sigue con la clave del dispositivo,
   que es la que escribe la suite. La guardia del layout espera la respuesta y

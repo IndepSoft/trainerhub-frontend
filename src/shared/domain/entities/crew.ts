@@ -63,6 +63,14 @@ export interface Crew {
    * activarse la suscripción a sí mismo con la pantalla de ajustes.
    */
   subscriptionStatus: SubscriptionStatus
+  /**
+   * Cuándo pidió el equipo que se le active la suscripción, o `null`.
+   *
+   * Es la única cosa que el equipo puede decir sobre su suscripción: pedirla.
+   * Quien administra la plataforma lo ve en su cola y decide; sin esto, el
+   * entrenador leía «hace falta activar» sin ningún sitio al que ir a pedirlo.
+   */
+  activationRequestedAt: string | null
   photoUrl?: string
 }
 

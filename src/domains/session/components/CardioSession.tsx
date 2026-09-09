@@ -1,9 +1,7 @@
-import { Satellite } from 'lucide-react'
 import { useLiveSession } from '../hooks/useLiveSession'
 import { SessionDuration } from './SessionDuration'
-import { SessionMetrics } from './SessionMetrics'
-import { SessionRouteMap } from './SessionRouteMap'
 import { SlideToAction } from './SlideToAction'
+import { LeaveSessionLink } from './LeaveSessionLink'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { toLocalDateKey } from '@/shared/lib/dateKey'
 import type { Session, SessionResult } from '@/shared/domain/entities/session'
@@ -12,23 +10,27 @@ interface CardioSessionProps {
   session: Session
   studentName: string
   onFinish: (result: SessionResult) => void
+  /** A donde se vuelve si se sale sin terminar. */
+  exitTo: string
 }
 
 /**
- * Sesión de cardio en marcha: cronómetro, distancia, ritmo y trazado.
+ * Sesión de cardio en marcha: un cronómetro.
  *
- * Es la pantalla en vivo que había, conservada entera. Lo que cambió es que ya
- * no es LA pantalla: era la única, así que una sesión de fuerza —bloques, series
- * y RIR— acababa mostrando un mapa de GPS. Ahora sólo la usan las sesiones cuya
- * modalidad es cardio.
- *
- * El trazado y las métricas siguen simulados: no hay GPS detrás. Lo real es de
- * qué sesión se trata y de quién es.
+ * Tenía distancia, ritmo, calorías y un trazado GPS, y todo era una semilla
+ * con un contador: entraba en siete minutos y 1,19 km que nadie había
+ * corrido. Fuera. Sin sensor, lo único que esta pantalla sabe de verdad es
+ * cuánto tiempo lleva, y es lo que anota al cerrar. Cuando haya GPS entrará
+ * por un puerto y volverá a haber qué pintar.
  */
-export function CardioSession({ session, studentName, onFinish }: CardioSessionProps) {
+export function CardioSession({
+  session,
+  studentName,
+  onFinish,
+  exitTo,
+}: CardioSessionProps) {
   const { t } = useTranslation()
-  const { session: simulated, metrics, state, paceSeconds, routeProgress, pause, resume, finish } =
-    useLiveSession()
+  const { elapsedSeconds, state, pause, resume, finish } = useLiveSession()
 
   const isRunning = state === 'running'
 
@@ -45,14 +47,14 @@ export function CardioSession({ session, studentName, onFinish }: CardioSessionP
       // correcto. Lo que mide una sesion de cardio es el tiempo.
       completedSets: 0,
       totalSets: 0,
-      elapsedSeconds: metrics.elapsedSeconds,
+      elapsedSeconds,
       completedAt: toLocalDateKey(new Date()),
     })
   }
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
-      <header className="flex shrink-0 items-center justify-between px-5 pt-5 pb-3">
+      <header className="flex shrink-0 items-center justify-between gap-3 px-5 pt-5 pb-3">
         <div className="min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/45">
             {studentName}
@@ -62,36 +64,23 @@ export function CardioSession({ session, studentName, onFinish }: CardioSessionP
           </h1>
         </div>
 
-        <span className="flex shrink-0 items-center gap-1.5 text-cobalt">
-          <Satellite className="size-4" strokeWidth={2.25} />
-          <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">GPS</span>
-        </span>
+        <LeaveSessionLink to={exitTo} />
       </header>
 
-      {/*
-        En movil todo va apilado y la pagina se desplaza. Desde `lg` pasa a dos
-        columnas: estirar la duracion y el mapa a lo ancho de una pantalla de
-        escritorio dejaba las metricas flotando en 1150 px y el mapa cortado
-        por la franja inferior. La sesion en vivo es una experiencia de
-        telefono; en ancho se reparte, no se estira.
-      */}
-      <div className="flex-1 overflow-auto lg:grid lg:grid-cols-2 lg:items-stretch lg:overflow-hidden">
-        <div className="flex flex-col lg:justify-center lg:border-r lg:border-cobalt-tint-3">
-          <SessionDuration elapsedSeconds={metrics.elapsedSeconds} state={state} />
-          <SessionMetrics metrics={metrics} paceSeconds={paceSeconds} />
-        </div>
-
-        <div className="flex items-center justify-center border-t border-cobalt-tint-3 bg-cobalt-tint p-6 lg:border-t-0 lg:min-h-0">
-          <div className="aspect-square w-full max-w-sm lg:max-h-full lg:w-auto lg:h-full">
-            <SessionRouteMap route={simulated.route} progress={routeProgress} />
-          </div>
-        </div>
+      <div className="flex flex-1 flex-col justify-center overflow-auto">
+        <SessionDuration elapsedSeconds={elapsedSeconds} state={state} />
+        <p className="px-5 pb-8 text-center text-sm text-ink/40">
+          {t('liveSession.cardioHint')}
+        </p>
       </div>
 
       {/* El margen de zona segura va aqui y no en cada franja: con dos
           apiladas, aplicarlo a ambas dejaria un hueco entre ellas. En una
           PWA instalada esto es lo que evita chocar con la barra de gestos. */}
-      <div className="shrink-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      <div
+        className="shrink-0"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
         {!isRunning && (
           <SlideToAction
             variant="finish"
@@ -102,8 +91,14 @@ export function CardioSession({ session, studentName, onFinish }: CardioSessionP
         )}
 
         <SlideToAction
-          label={isRunning ? t('liveSession.slideToPause') : t('liveSession.slideToResume')}
-          accessibleLabel={isRunning ? t('liveSession.pause') : t('liveSession.resume')}
+          label={
+            isRunning
+              ? t('liveSession.slideToPause')
+              : t('liveSession.slideToResume')
+          }
+          accessibleLabel={
+            isRunning ? t('liveSession.pause') : t('liveSession.resume')
+          }
           onConfirm={isRunning ? pause : resume}
         />
       </div>

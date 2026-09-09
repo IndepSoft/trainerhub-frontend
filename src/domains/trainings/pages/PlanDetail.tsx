@@ -15,7 +15,10 @@ import { PlanSummary } from '../components/PlanSummary'
 import { ConfirmDeleteDialog } from '@/shared/components/ConfirmDeleteDialog'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
-import { catalogLabel, STUDENT_LEVEL_LABEL_KEY } from '@/shared/i18n/domainLabels'
+import {
+  catalogLabel,
+  STUDENT_LEVEL_LABEL_KEY,
+} from '@/shared/i18n/domainLabels'
 
 /**
  * Ficha de un plan. Sólo composición.
@@ -32,7 +35,8 @@ export default function PlanDetail() {
   const catalogEntry = (
     entry: { id: string; name: string } | undefined,
     emptyKey: TranslationKey
-  ) => (entry === undefined ? t(emptyKey) : catalogLabel(entry.id, entry.name, t))
+  ) =>
+    entry === undefined ? t(emptyKey) : catalogLabel(entry.id, entry.name, t)
   const navigate = useNavigate()
   const { planId } = useParams<{ planId: string }>()
   const { plan, loading } = usePlan(planId)
@@ -41,6 +45,9 @@ export default function PlanDetail() {
   const { deletePlan } = useTrainingDeletion()
 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [blockedReason, setBlockedReason] = useState<string | undefined>(
+    undefined
+  )
 
   const routinesById = useMemo(
     () => new Map(routines.map((routine) => [routine.id, routine])),
@@ -56,9 +63,7 @@ export default function PlanDetail() {
         <p className="font-display text-2xl font-extrabold uppercase text-ink">
           {t('plan.notFound')}
         </p>
-        <p className="text-sm text-ink/50">
-          {t('plan.notFoundHint')}
-        </p>
+        <p className="text-sm text-ink/50">{t('plan.notFoundHint')}</p>
         <Button asChild variant="outline">
           <Link to="/trainings?tab=planes">{t('plan.back')}</Link>
         </Button>
@@ -80,7 +85,9 @@ export default function PlanDetail() {
         <PageHeader.Content>
           <div className="min-w-0">
             <PageHeader.Eyebrow>{plan.description}</PageHeader.Eyebrow>
-            <PageHeader.Title className="text-3xl">{plan.title}</PageHeader.Title>
+            <PageHeader.Title className="text-3xl">
+              {plan.title}
+            </PageHeader.Title>
           </div>
 
           <PageHeader.Actions>
@@ -106,13 +113,29 @@ export default function PlanDetail() {
       <div className="flex-1 overflow-auto">
         <PlanSummary plan={plan} />
 
+        {/* La puerta a asignarlo. Se asigna desde la ficha del alumno -es a
+            una persona a quien se asigna-, y desde aqui no habia forma de
+            llegar: el plan se veia y no se sabia que hacer con el. */}
+        <p className="border-b border-cobalt-tint-3 px-5 py-3 text-sm text-ink/60">
+          {t('plan.assignHint')}{' '}
+          <Link
+            to="/students"
+            className="inline-flex min-h-11 items-center font-semibold text-cobalt underline-offset-4 hover:underline"
+          >
+            {t('plan.goToStudents')}
+          </Link>
+        </p>
+
         <dl className="grid grid-cols-1 gap-x-6 gap-y-3 px-5 py-6 sm:grid-cols-3">
           <div>
             <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
               {t('plan.objective')}
             </dt>
             <dd className="mt-1 text-sm text-ink">
-              {catalogEntry(objectivesById.get(plan.objectiveId), 'plan.noObjective')}
+              {catalogEntry(
+                objectivesById.get(plan.objectiveId),
+                'plan.noObjective'
+              )}
             </dd>
           </div>
           <div>
@@ -178,7 +201,9 @@ export default function PlanDetail() {
                 <ul className="mt-2 sm:ps-9">
                   {week.days.map((day) => {
                     const routine =
-                      day.routineId === null ? undefined : routinesById.get(day.routineId)
+                      day.routineId === null
+                        ? undefined
+                        : routinesById.get(day.routineId)
 
                     return (
                       <li
@@ -190,7 +215,9 @@ export default function PlanDetail() {
                         </span>
 
                         {routine === undefined ? (
-                          <span className="min-w-0 flex-1 text-ink/30">{t('plan.rest')}</span>
+                          <span className="min-w-0 flex-1 text-ink/30">
+                            {t('plan.rest')}
+                          </span>
                         ) : (
                           <>
                             {/* Mide 44 px por si mismo ADEMAS de estirarse: un
@@ -223,9 +250,13 @@ export default function PlanDetail() {
         open={isDeleteOpen}
         name={plan.title}
         kind="el plan"
+        blockedReason={blockedReason}
         onOpenChange={setIsDeleteOpen}
         onConfirm={() => {
-          void deletePlan(plan.id).then(() => navigate('/trainings?tab=planes'))
+          void deletePlan(plan.id).then((result) => {
+            if (result.deleted) navigate('/trainings?tab=planes')
+            else setBlockedReason(result.reason)
+          })
         }}
       />
     </div>

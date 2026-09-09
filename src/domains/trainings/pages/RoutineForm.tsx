@@ -55,9 +55,7 @@ export default function RoutineForm() {
         <p className="font-display text-2xl font-extrabold uppercase text-ink">
           {t('routine.notFound')}
         </p>
-        <p className="text-sm text-ink/50">
-          {t('routine.notFoundHint')}
-        </p>
+        <p className="text-sm text-ink/50">{t('routine.notFoundHint')}</p>
         <Button asChild variant="outline">
           <Link to="/trainings">{t('routine.back')}</Link>
         </Button>
@@ -115,7 +113,10 @@ function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
   // Alfabético y con la intercalación del castellano, que es la que coloca la
   // eñe donde un hispanohablante la busca.
   const catalog = useMemo(
-    () => [...exercises].sort((left, right) => left.name.localeCompare(right.name, activeLocale())),
+    () =>
+      [...exercises].sort((left, right) =>
+        left.name.localeCompare(right.name, activeLocale())
+      ),
     [exercises]
   )
 
@@ -148,7 +149,10 @@ function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden bg-bone">
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-1 flex-col overflow-hidden bg-bone"
+    >
       <PageHeader>
         <Link
           to={isEditing ? `/trainings/${routineId}` : '/trainings'}
@@ -170,7 +174,9 @@ function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate(isEditing ? `/trainings/${routineId}` : '/trainings')}
+              onClick={() =>
+                navigate(isEditing ? `/trainings/${routineId}` : '/trainings')
+              }
             >
               {t('common.cancel')}
             </Button>
@@ -215,6 +221,20 @@ function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
               {t('routine.blocks')}
             </h2>
 
+            {/* Sin ejercicios en el catalogo, los desplegables de cada bloque
+                salen vacios y nada dice por que. Se dice, con la puerta. */}
+            {catalog.length === 0 && (
+              <p className="mb-4 rounded-block border border-cobalt-tint-3 bg-surface px-4 py-3 text-sm text-ink/60">
+                {t('routine.emptyCatalogHint')}{' '}
+                <Link
+                  to="/trainings/catalog"
+                  className="inline-flex min-h-11 items-center font-semibold text-cobalt underline-offset-4 hover:underline"
+                >
+                  {t('routine.goToCatalog')}
+                </Link>
+              </p>
+            )}
+
             <ul className="space-y-4">
               {draft.blocks.map((block, index) => (
                 <li key={block.id}>
@@ -228,7 +248,9 @@ function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
                     onRemove={() => removeBlock(block.id)}
                     onSaveToLibrary={() => handleSaveToLibrary(block)}
                     onAddExercise={() => addExercise(block.id)}
-                    onRemoveExercise={(exerciseId) => removeExercise(block.id, exerciseId)}
+                    onRemoveExercise={(exerciseId) =>
+                      removeExercise(block.id, exerciseId)
+                    }
                     onChangeExercise={(exerciseId, changes) =>
                       updateExercise(block.id, exerciseId, changes)
                     }
@@ -240,11 +262,17 @@ function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
             {/* `aria-live` y no `role="alert"`: es una confirmacion de algo que
                 el usuario acaba de pedir, no un aviso que interrumpa. */}
             <p aria-live="polite" className="mt-3 min-h-5 text-sm text-cobalt">
-              {lastSavedName !== null && `«${lastSavedName}» guardado en la biblioteca.`}
+              {lastSavedName !== null &&
+                `«${lastSavedName}» guardado en la biblioteca.`}
             </p>
 
             <div className="mt-1 flex flex-col gap-2 sm:flex-row">
-              <Button type="button" variant="outline" className="flex-1 gap-2" onClick={addBlock}>
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1 gap-2"
+                onClick={addBlock}
+              >
                 <Plus className="size-4" />
                 {t('routine.addBlock')}
               </Button>

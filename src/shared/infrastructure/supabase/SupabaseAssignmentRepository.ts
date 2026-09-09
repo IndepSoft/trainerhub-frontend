@@ -5,6 +5,7 @@ import { AppError, AppErrorCode } from '@/shared/domain/errors'
 import { supabase } from './client'
 import { mapDataError } from './errorMapper'
 import { toAssignment, toAssignmentRow, type AssignmentRow } from './mappers'
+import { subscribeToTable } from './realtime'
 
 /** Implementacion de AssignmentRepository sobre PostgREST. */
 export class SupabaseAssignmentRepository implements AssignmentRepository {
@@ -20,6 +21,13 @@ export class SupabaseAssignmentRepository implements AssignmentRepository {
       .select('*')
       .eq('student_id', studentId)
       .order('assigned_on', { ascending: false })
+
+    if (error) throw mapDataError(error)
+    return ((data ?? []) as AssignmentRow[]).map(toAssignment)
+  }
+
+  async findByPlan(planId: string): Promise<Assignment[]> {
+    const { data, error } = await supabase.from('assignments').select('*').eq('plan_id', planId)
 
     if (error) throw mapDataError(error)
     return ((data ?? []) as AssignmentRow[]).map(toAssignment)
@@ -47,8 +55,11 @@ export class SupabaseAssignmentRepository implements AssignmentRepository {
     if (error) throw mapDataError(error)
   }
 
-  /** TODO: sin suscripcion todavia. Ver el plan, §1.3. */
-  onChange(): () => void {
-    return () => undefined
+  /**
+   * Una asignacion nueva o retirada cambia lo que el alumno tiene por delante,
+   * y quien la escribe no suele ser quien la mira.
+   */
+  onChange(listener: () => void): () => void {
+    return subscribeToTable('assignments', listener)
   }
 }

@@ -4,6 +4,7 @@ import { AppError, AppErrorCode } from '@/shared/domain/errors'
 import { supabase } from './client'
 import { mapDataError } from './errorMapper'
 import { toCrew, toCrewSettingsRow, type CrewRow } from './mappers'
+import { subscribeToTable } from './realtime'
 
 /**
  * Implementacion de CrewRepository sobre PostgREST.
@@ -59,6 +60,19 @@ export class SupabaseCrewRepository implements CrewRepository {
     if (error) throw mapDataError(error)
   }
 
+  async requestActivation(crewId: string): Promise<void> {
+    // La fecha la pone el cliente y no `now()` del servidor: la columna es
+    // una peticion, no una auditoria, y abrir una funcion para un sello de
+    // tiempo seria mas superficie que valor. La politica de `crews` ya exige
+    // `crew.settings` para escribir, y el grant abre solo esta columna.
+    const { error } = await supabase
+      .from('crews')
+      .update({ activation_requested_at: new Date().toISOString() })
+      .eq('id', crewId)
+
+    if (error) throw mapDataError(error)
+  }
+
   async rotateJoinToken(crewId: string): Promise<string> {
     const { data, error } = await supabase.rpc('rotate_join_token', { crew: crewId })
 
@@ -71,12 +85,17 @@ export class SupabaseCrewRepository implements CrewRepository {
   }
 
   /**
-   * TODO: sin suscripcion todavia. Ver el plan, §1.3: el tiempo real llega por
-   * tabla y los equipos no estan entre las primeras. No avisar es una
-   * implementacion valida del contrato.
+   * EL CASO QUE DESTAPO QUE ESTO FALTABA. Un entrenador creaba su equipo y su
+   * propia barra lateral seguia diciendo «Sin equipo» hasta que recargaba:
+   * `useViewer` estaba suscrito aqui desde el principio y no llegaba nada,
+   * porque `crews` no estaba publicada.
+   *
+   * Se escucha la tabla entera y no un equipo concreto porque el aviso que
+   * importa es el del equipo que aun no se tiene. Quien recibe cada fila lo
+   * decide la politica de lectura: los miembros del equipo, y la plataforma.
    */
-  onChange(): () => void {
-    return () => undefined
+  onChange(listener: () => void): () => void {
+    return subscribeToTable('crews', listener)
   }
 }
 

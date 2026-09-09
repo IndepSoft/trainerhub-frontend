@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
@@ -9,10 +9,14 @@ import { cn } from '@/shared/lib/utils'
 import { useAuthStore } from '@/app/stores/authStore'
 import { useViewerContext } from '@/app/ViewerContext'
 import { useCrewEditor } from '../hooks/useCrewEditor'
-import { CREW_DENOMINATIONS, type CrewDenomination } from '@/shared/domain/entities/crew'
+import {
+  CREW_DENOMINATIONS,
+  type CrewDenomination,
+} from '@/shared/domain/entities/crew'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 
-const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
+const FIELD_LABEL =
+  'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
 
 /**
  * Crear un equipo.
@@ -30,7 +34,7 @@ export default function NewCrew() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
-  const { selectCrew, trainer } = useViewerContext()
+  const { selectCrew, trainer, active } = useViewerContext()
   const { createCrew, saving, error } = useCrewEditor()
 
   const [name, setName] = useState('')
@@ -53,7 +57,9 @@ export default function NewCrew() {
       // De la ficha de entrenador si la hay, y si no del correo: el puesto se
       // pinta en una lista de personas y «undefined undefined» no es un nombre.
       ownerName:
-        trainer === null ? user.email : `${trainer.firstName} ${trainer.lastName}`,
+        trainer === null
+          ? user.email
+          : `${trainer.firstName} ${trainer.lastName}`,
       ownerEmail: user.email,
     })
 
@@ -70,13 +76,35 @@ export default function NewCrew() {
       <PageHeader className="pb-4">
         <PageHeader.Eyebrow>{t('crew.eyebrow')}</PageHeader.Eyebrow>
         <PageHeader.Title>{t('crew.createTitle')}</PageHeader.Title>
+        {/* Las salidas. Se llega aqui desde la raiz sin equipo, y sin esto no
+            habia como irse sin crear uno: ni para unirse con un codigo ni para
+            volver al equipo que ya se tiene. */}
+        <PageHeader.Description>
+          <Link
+            to="/crew/unirse"
+            className="inline-flex min-h-11 items-center font-semibold text-cobalt underline-offset-4 hover:underline"
+          >
+            {t('joinCrew.haveCode')}
+          </Link>
+          {active !== null && (
+            <>
+              {' · '}
+              <Link
+                to="/crew"
+                className="inline-flex min-h-11 items-center font-semibold text-cobalt underline-offset-4 hover:underline"
+              >
+                {t('crew.backToCrew')}
+              </Link>
+            </>
+          )}
+        </PageHeader.Description>
       </PageHeader>
 
       <div className="flex-1 overflow-auto">
         <div className="mx-auto max-w-md space-y-6 px-5 py-6">
           <p className="text-sm text-ink/60">
-            Tus alumnos, tus rutinas y tu agenda pertenecen a un equipo. Nadie de
-            fuera los ve.
+            Tus alumnos, tus rutinas y tu agenda pertenecen a un equipo. Nadie
+            de fuera los ve.
           </p>
 
           {error !== null && (
@@ -110,7 +138,9 @@ export default function NewCrew() {
             </div>
 
             <div role="group" aria-label={t('crew.denomination')}>
-              <span className={cn('block', FIELD_LABEL)}>{t('crew.denomination')}</span>
+              <span className={cn('block', FIELD_LABEL)}>
+                {t('crew.denomination')}
+              </span>
               <p className="mt-1 text-xs text-ink/45">
                 {t('crew.denominationHint')}
               </p>

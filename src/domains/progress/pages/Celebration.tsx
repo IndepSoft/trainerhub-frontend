@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AchievementCelebration } from '../components/AchievementCelebration'
 import { useLatestAchievement } from '../hooks/useLatestAchievement'
@@ -37,7 +38,21 @@ export default function Celebration() {
    * donde salió la sesión y donde está la siguiente. Es el bucle que cierra el
    * trabajo del entrenador.
    */
-  const exit = hasOwnProgress ? '/progress' : '/calendar'
+  const defaultExit = hasOwnProgress ? '/progress' : '/calendar'
+  // A donde se vuelve: al origen de la sesion si vino con el -la ficha del
+  // alumno, el panel-, y si no al destino por papel. Solo rutas propias.
+  const from = searchParams.get('from')
+  const exit = from !== null && from.startsWith('/') && !from.startsWith('//') ? from : defaultExit
+
+  /*
+   * La salida sin logro va en un EFECTO, no en el render: navegar mientras se
+   * pinta es lo que react-router señala como uso incorrecto, y aqui ademas
+   * ocurria en cada render mientras cargaba.
+   */
+  const shouldLeave = !loading && !loadingViewer && !achievement
+  useEffect(() => {
+    if (shouldLeave) navigate(exit, { replace: true })
+  }, [shouldLeave, exit, navigate])
 
   // Mientras carga no se decide nada: `achievement === null` todavía no
   // significa «no hay logro», y salir aquí devolvería siempre. Se espera también
@@ -46,10 +61,7 @@ export default function Celebration() {
 
   // Sin logro desbloqueado no hay nada que celebrar: se sale en vez de pintar
   // una pantalla de celebración vacía.
-  if (!achievement) {
-    navigate(exit, { replace: true })
-    return null
-  }
+  if (!achievement) return null
 
   return (
     <AchievementCelebration

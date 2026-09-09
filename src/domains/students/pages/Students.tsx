@@ -97,7 +97,11 @@ export default function Students() {
       */}
       {can('crew.invite') && !canEnroll && active !== null && (
         <p className="ps-4 pe-4 pt-3 text-sm text-ink/55">
-          {t('students.needsSubscription', { crew: active.crew.name })}
+          {/* Pendiente y suspendida no se explican igual: a una le falta la
+              activacion, a la otra se le retiro. */}
+          {active.crew.subscriptionStatus === 'suspended'
+            ? t('students.suspendedSubscription', { crew: active.crew.name })
+            : t('students.needsSubscription', { crew: active.crew.name })}
         </p>
       )}
 

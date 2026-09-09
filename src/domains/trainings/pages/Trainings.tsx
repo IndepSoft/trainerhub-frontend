@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Flame, Library, Plus, Target } from 'lucide-react'
+import { Library, Plus } from 'lucide-react'
 import {
   EMPTY_ROUTINE_FILTERS,
   filterRoutines,
@@ -13,7 +13,6 @@ import { useSwipe } from '@/shared/hooks/useSwipe'
 import { RoutineCard } from '../components/RoutineCard'
 import { PlanCard } from '../components/PlanCard'
 import { TrainingFilters } from '../components/TrainingFilters'
-import { ComingSoon } from '@/shared/components/ComingSoon'
 import { useRoutines } from '../hooks/useRoutines'
 import { usePlans } from '../hooks/usePlans'
 import type { Routine } from '../types/training.types'
@@ -32,7 +31,7 @@ import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
  * con ninguna rutina asignada a ningún estudiante, todas eran igualmente
  * plantillas: la pestaña separaba una colección de sí misma.
  */
-const TAB_ORDER = ['rutinas', 'planes', 'desafios', 'rachas'] as const
+const TAB_ORDER = ['rutinas', 'planes'] as const
 type TabValue = (typeof TAB_ORDER)[number]
 
 /**
@@ -55,16 +54,10 @@ interface PrimaryAction {
  * La acción primaria sigue a la pestaña: en Planes crea un plan, y en el resto
  * crea una rutina.
  *
- * Desafíos y rachas se quedan con la de rutina en vez de desaparecer. Ofrecer
- * «Nuevo desafío» sería mentir —esa función no existe todavía— y quitar el botón
- * haría saltar la cabecera al cambiar de pestaña, que se nota más que la
- * incoherencia de tener a mano la acción principal de la sección.
  */
 const PRIMARY_ACTION: Record<TabValue, PrimaryAction> = {
   rutinas: { labelKey: 'trainings.newRoutine', to: '/trainings/new' },
   planes: { labelKey: 'trainings.newPlan', to: '/trainings/plans/new' },
-  desafios: { labelKey: 'trainings.newRoutine', to: '/trainings/new' },
-  rachas: { labelKey: 'trainings.newRoutine', to: '/trainings/new' },
 }
 
 /**
@@ -138,7 +131,7 @@ export default function Trainings() {
           {...swipeHandlers}
         >
           <div className="px-4 pt-1">
-            <TabsList className="w-full md:grid md:grid-cols-4">
+            <TabsList className="w-full md:grid md:grid-cols-2">
               {/* Los contadores salen del dato: antes estaban escritos a mano y
                   mentian. */}
               <TabsTrigger value="rutinas">
@@ -147,8 +140,6 @@ export default function Trainings() {
               <TabsTrigger value="planes">
                 {t('trainings.tab.plans', { count: plans.length })}
               </TabsTrigger>
-              <TabsTrigger value="desafios">{t('trainings.challenges')}</TabsTrigger>
-              <TabsTrigger value="rachas">{t('trainings.streaks')}</TabsTrigger>
             </TabsList>
           </div>
 
@@ -180,26 +171,11 @@ export default function Trainings() {
           </TabsContent>
 
           {/*
-            Desafios y rachas se vaciaron a proposito: lo que habia eran ~2000
-            lineas sobre datos simulados globales, sin ligar a ningun estudiante
-            y sin forma de asignarlos. Mostrar eso hacia creer que la funcion
-            existe. Se rehacen cuando exista el flujo de asignacion.
+            Desafios y rachas YA NO TIENEN PESTAÑA. La tuvieron con un cartel de
+            «proximamente» y era una puerta pintada en la pared: dos de las
+            cuatro pestañas de la seccion no llevaban a nada. Volveran cuando
+            exista el flujo de asignacion, con contenido y no con un cartel.
           */}
-          <TabsContent value="desafios" className="mt-4">
-            <ComingSoon
-              icon={Target}
-              title={t('trainings.challenges')}
-              description={t('trainings.challengesHint')}
-            />
-          </TabsContent>
-
-          <TabsContent value="rachas" className="mt-4">
-            <ComingSoon
-              icon={Flame}
-              title={t('trainings.streaks')}
-              description={t('trainings.streaksHint')}
-            />
-          </TabsContent>
         </Tabs>
       </div>
     </div>

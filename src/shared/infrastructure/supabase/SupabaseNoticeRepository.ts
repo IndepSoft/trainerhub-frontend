@@ -63,6 +63,6 @@ export class SupabaseNoticeRepository implements NoticeRepository {
    * solo se acota por crew para no escuchar lo de todos los equipos.
    */
   onChange(listener: () => void): () => void {
-    return subscribeToTable('notices', this.scope.current(), listener)
+    return subscribeToTable('notices', listener)
   }
 }

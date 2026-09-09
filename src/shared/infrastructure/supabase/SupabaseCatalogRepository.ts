@@ -4,6 +4,7 @@ import type { Equipment, TrainingCatalog } from '@/shared/domain/entities/catalo
 import { AppError, AppErrorCode } from '@/shared/domain/errors'
 import { supabase } from './client'
 import { mapDataError } from './errorMapper'
+import { subscribeToTable } from './realtime'
 import {
   toEquipment,
   toEquipmentRow,
@@ -95,8 +96,13 @@ export class SupabaseCatalogRepository implements CatalogRepository {
     if (error) throw mapDataError(error)
   }
 
-  /** TODO: sin suscripcion todavia. Ver el plan, §1.3. */
-  onChange(): () => void {
-    return () => undefined
+  /**
+   * Solo el MATERIAL, que es la unica parte del catalogo que se edita en
+   * caliente. Los grupos musculares, los patrones, los objetivos y los repartos
+   * son catalogo de sistema: se siembran y no cambian, asi que suscribirse a
+   * ellos seria mantener abierto un canal por algo que no ocurre nunca.
+   */
+  onChange(listener: () => void): () => void {
+    return subscribeToTable('equipment', listener)
   }
 }

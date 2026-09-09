@@ -2785,3 +2785,192 @@ seguridad, el cliente OAuth de Google, la lista blanca de redirecciones, los
 iconos de la PWA y un capturador de errores del cliente. El GPS de la sesión
 en vivo de cardio sigue simulado: es la otra pantalla que el plan no cableó
 porque no hay dato que guardar hasta que exista el recorrido real.
+
+---
+
+## 28. Tiempo real: la mitad que faltaba (9 sep 2026)
+
+Rama `fix/deploy-01`. La petición fue directa: «cada que se cree algo o haya un
+cambio de estado el sistema lo escuche y se actualice, sin la recarga de toda la
+página».
+
+### 28.1 El diagnóstico: la aplicación ya escuchaba
+
+Lo primero que apareció al medir es que **el trabajo de aplicación estaba
+hecho**. Treinta hooks con treinta y siete puntos de suscripción —`useStudents`,
+`useCalendar`, `useCrewWall`, `usePlatformUsers`, la campana de avisos, todos—
+llamando a `container.<lo que sea>.onChange(...)` y dándose de baja al
+desmontar. La arquitectura estaba entera.
+
+Lo que faltaba era la otra mitad, y en dos capas a la vez:
+
+- **En la base**, sólo cuatro tablas estaban en la publicación
+  `supabase_realtime`. Una tabla sin publicar no emite nada.
+- **En los adaptadores**, trece de dieciséis devolvían `() => undefined` bajo un
+  `TODO`.
+
+### 28.2 Por qué no lo detectó nada
+
+Es el punto que merece quedar escrito, porque la misma forma de fallo puede
+repetirse con cualquier otro puerto.
+
+**No avisar es una implementación sintácticamente válida del contrato.** El
+puerto promete «avísame si cambia»; un adaptador que no avisa nunca cumple la
+firma, compila y pasa el lint. La suite de interfaz tampoco lo veía: corre
+contra los adaptadores simulados, donde el aviso es una llamada en memoria que
+funciona perfectamente. Y las pruebas de contrato de entonces ejercitaban
+lecturas y políticas, no canales.
+
+Resultado: un defecto que sólo se manifestaba abriendo la aplicación y pulsando
+F5. El caso que lo destapó fue el más básico —un entrenador crea su equipo y su
+propia barra lateral sigue diciendo «Sin equipo»—: `useViewer` llevaba desde
+siempre suscrito a `crews`, `crew_staff`, `students` y `profiles`, y ninguna de
+las cuatro estaba publicada.
+
+### 28.3 Fuera el filtro por equipo
+
+El canal filtraba con `filter: crew_id=eq.<crew activo>`. Se ha quitado, y no
+por simplificar: filtraba mal de tres maneras independientes.
+
+1. **Se tragaba los borrados.** El registro de un DELETE llevaba sólo la clave
+   primaria, así que no había `crew_id` que comparar y el evento se descartaba
+   en silencio.
+2. **Se quedaba viejo.** El ámbito se leía UNA VEZ, al suscribirse, y los hooks
+   montan su efecto con dependencias vacías. Cambiar de equipo en el conmutador
+   dejaba el canal escuchando al anterior.
+3. **No sabía expresar lo que más falta.** El aviso que `useViewer` necesita es
+   el de un equipo en el que TODAVÍA NO SE ESTÁ: el recién fundado, o aquel cuya
+   solicitud acaban de aceptar. Un filtro por el equipo activo es justo el que no
+   puede verlo, y sin equipo activo la función ni siquiera se suscribía.
+
+Lo que ocupa su lugar ya estaba y es más fuerte: **RLS decide quién recibe cada
+fila**, evaluada por suscriptor, y **el ámbito lo aplica la relectura**, que lee
+el crew activo en ese momento. Un aviso de otro equipo propio cuesta una consulta
+de más; el filtro costaba pantallas que no se actualizaban.
+
+### 28.4 `replica identity full`, que corrige una fuga
+
+Las cuatro tablas ya publicadas tenían la identidad por defecto, y de ahí salían
+dos consecuencias:
+
+- **De corrección:** el filtro por columna descartaba los DELETE, como arriba.
+- **De privacidad:** Realtime no puede evaluar RLS sobre una fila que sólo lleva
+  su identificador, así que **el evento de borrado se reparte a todos los
+  suscriptores de la tabla**. Se filtraba el identificador de una fila que el
+  receptor no tenía derecho a leer.
+
+Con la fila vieja entera, RLS se evalúa igual que en un alta. El coste es más
+volumen en el registro de escritura, irrelevante a esta escala frente a las dos
+cosas que corrige.
+
+### 28.5 Qué se publica y qué no
+
+Quince tablas. Las de **pertenencia e identidad** —`crews`, `crew_staff`,
+`students`, `profiles`—, de las que sale quién eres y dónde estás, y las de
+**datos del equipo** —`assignments`, `plans`, `routines`, `exercises`,
+`equipment`, `saved_blocks`, `student_subscriptions`, más las cuatro que ya
+estaban—.
+
+Se cae el argumento con el que la migración anterior las dejó fuera —«los edita
+una persona y los lee ella misma»—: describe al autor, no al público. Una rutina
+la escribe el entrenador y la esperan sus alumnos; una cuota la marca quien lleva
+las altas mientras el alumno mira su ficha.
+
+Fuera quedan, y está escrito en la migración para que no se confunda con un
+olvido: la auditoría —es registro, no pantalla—, las marcas de lectura del muro
+—el aviso llegaría a quien acaba de provocarlo—, la contabilidad del límite de
+tokens, la lista de administradores, las capacidades por rol, y el catálogo de
+sistema —grupos, patrones, objetivos, divisiones—, que se siembra y no cambia en
+caliente.
+
+`CrewProgressRepository` sigue sin canal, pero ahora por una razón y no por un
+pendiente: **el ranking no tiene tabla**. Sale de `crew_ranking`, que agrega
+sesiones al vuelo, así que lo que lo mueve es lo que mueve a `sessions`. Sus dos
+consumidores ya escuchan `sessions`; abrirle canal propio les haría recargar dos
+veces por cada serie anotada.
+
+### 28.6 La prueba que faltaba
+
+`tests/contract/realtime.contract.test.ts`, contra la base y con canales de
+verdad, porque lo que hay que afirmar es **que el servidor emite**, no que el
+cliente llame bien: fundar un equipo avisa a quien lo funda —que no es evidente,
+porque en el instante del INSERT quien funda todavía no es miembro y la política
+exige serlo; llega porque `create_crew` escribe equipo y puesto en la misma
+transacción—, borrar también avisa, y un extraño no recibe las fichas de un
+equipo ajeno.
+
+## 29. Fugas de secuencia (9 sep 2026)
+
+Un informe de UX medido en tres móviles —375 × 667, 390 × 844, 412 × 915—
+encontró el registro cortado, y a partir de él se recorrieron **todos** los
+flujos de la aplicación con una sola pregunta: ¿hay algún sitio donde una
+persona se queda sin acción posible, ve una pantalla que no es suya o recibe un
+aviso de algo que no ocurrió? Salieron veintinueve. Todos están cerrados en la
+rama `fix/fugas-de-secuencia`, y éstos son los que cambian una decisión.
+
+### 29.1 El registro se desplaza
+
+`Authentication` centraba la tarjeta con `items-center` en un contenedor sin
+scroll. Con la pestaña de registro abierta, la tarjeta mide más que un móvil de
+667 px y flexbox la centraba **fuera** por arriba y por abajo: la pestaña quedaba
+a −150 px y el botón de crear a 726 px, inalcanzables los dos. Ahora el
+contenedor desplaza y la tarjeta se centra con márgenes automáticos, que ceden
+cuando no hay sitio en vez de recortar.
+
+### 29.2 Una ruta se cierra con la regla que la esconde
+
+`matchesViewer` filtraba la barra lateral: un alumno no veía Estudiantes. Pero
+`/students` tecleada a mano se abría, con sus controles, y cada consulta fallaba
+por RLS una a una. Se exportó como `viewerMayVisit`, se declaró `AccessRule`
+—las cinco condiciones de un destino— y `withRouteAccess` la aplica a las
+rutas de gestión. La alternativa era una segunda tabla de permisos por ruta, y
+dos tablas que dicen lo mismo se separan al primer cambio.
+
+### 29.3 Nada se celebra antes de escribir
+
+La ficha de la sesión lanzaba «Sesión guardada» y cerraba **antes** de que el
+puerto respondiera; el alta de sesión, igual; las acciones del volcado, igual.
+Con la base rechazando —sin red, sin permiso—, la agenda celebraba lo que no
+había pasado. Ahora todos esperan, el éxito se avisa después y el fallo se dice
+en el sitio. Cerrar la sesión en vivo, además, **espera** antes de ir a la
+celebración: sin esperar, la celebración releía antes de que la escritura
+llegara y no encontraba logro nuevo.
+
+### 29.4 Cardio deja de inventar
+
+`liveSession.mock.ts` entraba en la pantalla con siete minutos, 1,19 km, 80
+kcal y un trazado GPS por Lima; un contador los hacía crecer. Con aspecto de
+medida y un letrero «GPS», un entrenador que abría una sesión de cardio veía
+datos que nadie había tomado. Se quitó todo —mock, métricas, mapa, ritmo—: sin
+sensor, la pantalla es un cronómetro que arranca en cero, y el tiempo sí es lo
+que se anota al cerrar. La distancia volverá por un puerto cuando haya de dónde
+sacarla.
+
+### 29.5 Dos salidas que el servidor no admitía
+
+Quien esperaba aprobación leía «tu entrenador tiene que aceptarte» y nada más;
+un entrenador con el equipo pendiente leía «hace falta activar la suscripción»
+y tampoco. Las dos salidas necesitaban la base: una política que deja a un
+alumno borrar **su** ficha mientras esté `pending` —la activa tiene historial,
+y darse de baja es otra decisión—, y una columna `activation_requested_at` que
+escribe `crew.settings` y ordena la cola del panel de plataforma. Pedir no es
+activar: la suscripción sigue `pending` hasta que alguien decida.
+
+### 29.6 Lo que se quitó
+
+El botón de Google, apagado desde §18, era una puerta pintada: se fue con su
+hook y su método del puerto. Las pestañas Desafíos y Rachas con un cartel de
+«próximamente» eran dos de cuatro pestañas que no llevaban a nada: se fueron
+con `ComingSoon`. Y el «Nombre de equipo vacío» del informe no se reprodujo:
+`NewCrew` marca el campo y no envía; se deja anotado por si el informe lo vio
+en otra versión. Tampoco se tocó la raíz de quien administra la plataforma: el
+análisis proponía mandarle a su panel de equipo cuando lo tiene, pero la
+decisión escrita —y probada— es que entra a mirar equipos ajenos, no a
+entrenar, y su propio equipo lo alcanza por el conmutador.
+
+### 29.7 Contraste
+
+La rampa `--scale-*` de las insignias de nivel daba 1,96:1, 2,88:1 y 2,92:1
+sobre Bone, en texto de 10 px. Se oscureció hasta pasar de 4,5:1 y se añadió
+`--scale-*-lift` para las mismas insignias sobre Ink, donde el tono oscuro
+desaparece. Los grises de la tarjeta de alumno subieron de `ink/45` a `ink/60`.
