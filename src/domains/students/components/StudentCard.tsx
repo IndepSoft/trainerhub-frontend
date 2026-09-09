@@ -84,8 +84,9 @@ export function StudentCard({ student, progress, onEdit }: StudentCardProps) {
         </Avatar>
 
         {/* `relative z-10` para quedar por encima del enlace estirado. Sin esto
-            el enlace cubre el boton y abrir el menu es imposible.
-            TODO: ninguna de las cinco acciones esta conectada. */}
+            el enlace cubre el boton y abrir el menu es imposible. Las cuatro
+            acciones estan conectadas: ficha, agendar -abre el dialogo de la
+            ficha con `?agendar`-, editar y eliminar. */}
         <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
           <DropdownMenuTrigger asChild>
             <button

@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { container } from '@/app/container'
-import { AppError } from '@/shared/domain/errors'
 import { lastAdminBlocker } from '@/shared/domain/permissions'
 import type { Capability } from '@/shared/domain/permissions'
 import type { CrewRole, CrewStaff } from '@/shared/domain/entities/crew'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { describeError } from '@/shared/i18n/errorMessages'
+import { ERROR_REASON_KEY } from '@/shared/i18n/errorMessages'
 
 interface UseCrewStaffResult {
   staff: CrewStaff[]
@@ -41,7 +42,7 @@ export function useCrewStaff(): UseCrewStaffResult {
     try {
       setStaff(await container.crewStaff.findAll())
     } catch (caught) {
-      setError(AppError.is(caught) ? caught.message : t('crew.staffError'))
+      setError(describeError(caught, t, 'crew.staffError'))
     } finally {
       setLoading(false)
     }
@@ -55,8 +56,11 @@ export function useCrewStaff(): UseCrewStaffResult {
   }, [load])
 
   const blockerFor = useCallback(
-    (staffId: string, nextRole: CrewRole | null) => lastAdminBlocker(staff, staffId, nextRole),
-    [staff]
+    (staffId: string, nextRole: CrewRole | null): string | undefined => {
+      const reason = lastAdminBlocker(staff, staffId, nextRole)
+      return reason === undefined ? undefined : t(ERROR_REASON_KEY[reason])
+    },
+    [staff, t]
   )
 
   const run = useCallback(async (operation: () => Promise<void>): Promise<void> => {
@@ -64,7 +68,7 @@ export function useCrewStaff(): UseCrewStaffResult {
       await operation()
       setError(null)
     } catch (caught) {
-      setError(AppError.is(caught) ? caught.message : t('crew.staffSaveError'))
+      setError(describeError(caught, t, 'crew.staffSaveError'))
     }
   }, [t])
 

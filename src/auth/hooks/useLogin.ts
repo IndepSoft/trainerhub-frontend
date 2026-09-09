@@ -2,18 +2,10 @@ import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/app/stores/authStore'
 import { container } from '@/app/container'
-import { AppError } from '@/shared/domain/errors'
 import { readIntendedPath } from '../libs/intendedPath'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type { LoginCredentials } from '@/shared/domain/entities/auth'
-
-/*
- * El mensaje de reserva llega de fuera porque este modulo no puede traducir:
- * `messageFor` es una funcion suelta, sin hook al que agarrarse. Lo traduce
- * quien la llama, que si esta dentro de un componente.
- */
-const messageFor = (err: unknown, fallback: string) =>
-  AppError.is(err) ? err.message : fallback
+import { describeError } from '@/shared/i18n/errorMessages'
 
 export const useLogin = () => {
   const { t } = useTranslation()
@@ -37,7 +29,7 @@ export const useLogin = () => {
        */
       navigate(readIntendedPath(location.state) ?? '/', { replace: true })
     } catch (err) {
-      setError(messageFor(err, t('auth.signInError')))
+      setError(describeError(err, t, 'auth.signInError'))
     } finally {
       setLoading(false)
     }
@@ -51,7 +43,7 @@ export const useLogin = () => {
       await container.auth.signInWithGoogle()
       // La navegacion la resuelve el redirect de OAuth al volver.
     } catch (err) {
-      setError(messageFor(err, t('auth.signInError')))
+      setError(describeError(err, t, 'auth.signInError'))
       setLoading(false)
     }
   }

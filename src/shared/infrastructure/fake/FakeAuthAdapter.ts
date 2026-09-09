@@ -3,6 +3,7 @@ import type {
   AuthUser,
   LoginCredentials,
   SignUpCredentials,
+  SignUpProfile,
 } from '@/shared/domain/entities/auth'
 import { AppError, AppErrorCode } from '@/shared/domain/errors'
 import { profileIdFromEmail } from './devIdentity'
@@ -39,11 +40,29 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 type AuthStateListener = (user: AuthUser | null) => void
 
+/**
+ * Lo que en Supabase hace un disparador de Postgres: dejar constancia de quien
+ * es la cuenta que acaba de nacer.
+ *
+ * Se inyecta desde la raiz de composicion en vez de hacerlo aqui dentro, y por
+ * un motivo concreto: este adaptador no debe saber que existen entrenadores ni
+ * alumnos. Sabe que una cuenta nace con un perfil y se lo pasa a quien si sabe
+ * que hacer con el, que es exactamente el reparto que hay del otro lado.
+ */
+export type ProfileRecorder = (user: AuthUser, profile: SignUpProfile) => Promise<void>
+
 export class FakeAuthAdapter implements AuthPort {
   private currentUser: AuthUser | null
   private readonly listeners: Set<AuthStateListener>
+  /*
+   * Campo declarado y asignado a mano, no una propiedad de parametro: el
+   * `tsconfig` lleva `erasableSyntaxOnly`, que prohibe la forma corta porque no
+   * se puede borrar sin dejar comportamiento detras.
+   */
+  private readonly recordProfile: ProfileRecorder
 
-  constructor() {
+  constructor(recordProfile: ProfileRecorder) {
+    this.recordProfile = recordProfile
     this.listeners = new Set<AuthStateListener>()
     this.currentUser = this.readPersistedSession()
 
@@ -58,18 +77,17 @@ export class FakeAuthAdapter implements AuthPort {
     // Se validan las credenciales, aunque sean simuladas, para que el
     // formulario ejercite sus caminos de error igual que contra el proveedor.
     if (!EMAIL_PATTERN.test(credentials.email)) {
-      throw new AppError(AppErrorCode.VALIDATION, 'El email no tiene un formato válido')
+      throw new AppError(AppErrorCode.VALIDATION, 'invalidEmailFormat')
     }
 
     if (credentials.password.length < MINIMUM_PASSWORD_LENGTH) {
-      throw new AppError(
-        AppErrorCode.VALIDATION,
-        `La contraseña debe tener al menos ${MINIMUM_PASSWORD_LENGTH} caracteres`
-      )
+      throw new AppError(AppErrorCode.VALIDATION, 'passwordTooShort', undefined, {
+        min: MINIMUM_PASSWORD_LENGTH,
+      })
     }
 
     if (credentials.email === FAILING_EMAIL_ADDRESS) {
-      throw new AppError(AppErrorCode.UNAUTHORIZED, 'Email o contraseña incorrectos')
+      throw new AppError(AppErrorCode.UNAUTHORIZED, 'invalidCredentials')
     }
 
     const user: AuthUser = {
@@ -88,18 +106,17 @@ export class FakeAuthAdapter implements AuthPort {
     // formulario recorra sus caminos de error contra el adaptador falso
     // exactamente igual que contra el proveedor.
     if (!EMAIL_PATTERN.test(credentials.email)) {
-      throw new AppError(AppErrorCode.VALIDATION, 'El email no tiene un formato válido')
+      throw new AppError(AppErrorCode.VALIDATION, 'invalidEmailFormat')
     }
 
     if (credentials.password.length < MINIMUM_PASSWORD_LENGTH) {
-      throw new AppError(
-        AppErrorCode.VALIDATION,
-        `La contraseña debe tener al menos ${MINIMUM_PASSWORD_LENGTH} caracteres`
-      )
+      throw new AppError(AppErrorCode.VALIDATION, 'passwordTooShort', undefined, {
+        min: MINIMUM_PASSWORD_LENGTH,
+      })
     }
 
     if (credentials.email === FAILING_EMAIL_ADDRESS) {
-      throw new AppError(AppErrorCode.VALIDATION, 'Ya existe una cuenta con ese correo')
+      throw new AppError(AppErrorCode.VALIDATION, 'emailTaken')
     }
 
     const user: AuthUser = {
@@ -107,10 +124,28 @@ export class FakeAuthAdapter implements AuthPort {
       email: credentials.email,
     }
 
-    // Deja la sesion abierta, que es el comportamiento de Supabase cuando la
-    // confirmacion por correo esta desactivada. Con ella activada habria que
-    // enviar a una pantalla de «revisa tu correo»; el dia que se active, el
-    // cambio esta en el adaptador real, no aqui.
+    /*
+     * El perfil ANTES de abrir la sesion, no despues.
+     *
+     * Abrir la sesion avisa a los oyentes, y de ahi arranca `useViewer`, que
+     * pregunta quien ha entrado. Al reves, la primera respuesta seria «nadie
+     * con ficha» y el recien registrado aterrizaria en la pantalla del alumno.
+     * Del otro lado no hace falta pensarlo: el disparador corre dentro de la
+     * misma transaccion que la cuenta.
+     */
+    await this.recordProfile(user, credentials.profile)
+
+    /*
+     * Deja la sesion abierta, que es el comportamiento de Supabase cuando la
+     * confirmacion por correo esta DESACTIVADA.
+     *
+     * En el proyecto real esta activada, asi que alli el alta no abre sesion y
+     * el registro manda a «revisa tu correo». Aqui se conserva la sesion abierta
+     * a proposito: la simulacion existe para trabajar sin salir del navegador, y
+     * un correo de confirmacion que nadie envia dejaria el desarrollo sin forma
+     * de pasar del alta. Quien registra distingue los dos casos preguntando por
+     * `getCurrentUser`, que es lo que dice el contrato del puerto.
+     */
     this.persistSession(user)
     this.setCurrentUser(user)
 
@@ -128,6 +163,53 @@ export class FakeAuthAdapter implements AuthPort {
   }
 
   async signOut(): Promise<void> {
+    this.clearPersistedSession()
+    this.setCurrentUser(null)
+  }
+
+  /*
+   * Las tres operaciones de correo y contraseña no tienen nada que hacer en
+   * memoria -no hay buzon ni contraseña guardada-, pero validan lo mismo que el
+   * proveedor para que las pantallas recorran sus caminos de error.
+   */
+  async requestPasswordReset(email: string): Promise<void> {
+    if (!EMAIL_PATTERN.test(email)) {
+      throw new AppError(AppErrorCode.VALIDATION, 'invalidEmailFormat')
+    }
+    if (email === FAILING_EMAIL_ADDRESS) {
+      throw new AppError(AppErrorCode.UNAUTHORIZED, 'tooManyAttempts')
+    }
+  }
+
+  async updatePassword(newPassword: string): Promise<void> {
+    if (this.currentUser === null) {
+      throw new AppError(AppErrorCode.UNAUTHORIZED, 'sessionExpired')
+    }
+    if (newPassword.length < MINIMUM_PASSWORD_LENGTH) {
+      throw new AppError(AppErrorCode.VALIDATION, 'passwordTooShort', undefined, {
+        min: MINIMUM_PASSWORD_LENGTH,
+      })
+    }
+  }
+
+  async resendConfirmation(email: string): Promise<void> {
+    if (!EMAIL_PATTERN.test(email)) {
+      throw new AppError(AppErrorCode.VALIDATION, 'invalidEmailFormat')
+    }
+    if (email === FAILING_EMAIL_ADDRESS) {
+      throw new AppError(AppErrorCode.UNAUTHORIZED, 'tooManyAttempts')
+    }
+  }
+
+  /*
+   * En memoria no hay nada que borrar: las semillas no son de nadie y vuelven
+   * al recargar. Lo que si se puede reproducir es la salida, que es lo que la
+   * pantalla comprueba.
+   */
+  async deleteAccount(): Promise<void> {
+    if (this.currentUser === null) {
+      throw new AppError(AppErrorCode.UNAUTHORIZED, 'sessionExpired')
+    }
     this.clearPersistedSession()
     this.setCurrentUser(null)
   }

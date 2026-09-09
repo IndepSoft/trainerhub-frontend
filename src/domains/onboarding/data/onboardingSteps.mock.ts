@@ -62,6 +62,3 @@ export const onboardingSteps: OnboardingStep[] = [
     icon: Flame,
   },
 ]
-
-/** Clave de la preferencia local que recuerda que ya se vio. */
-export const ONBOARDING_SEEN_KEY = 'trainerhub.onboarding.visto'

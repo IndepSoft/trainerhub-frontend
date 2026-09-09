@@ -7,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
-import { ArrowUpRight, Copy, Dumbbell, MoreVertical, Play } from 'lucide-react'
+import { ArrowUpRight, Copy, Dumbbell, MoreVertical } from 'lucide-react'
 import { useLongPress } from '@/shared/hooks/useLongPress'
 import { cn } from '@/shared/lib/utils'
 import { LEVEL_BADGE } from '../libs/levelBadge'
@@ -99,8 +99,7 @@ export function RoutineCard({ routine }: RoutineCardProps) {
           {t('routine.title')}
         </span>
 
-        {/* `relative z-10` para quedar por encima del enlace estirado.
-            TODO: «Vista previa» sigue sin conectar. */}
+        {/* `relative z-10` para quedar por encima del enlace estirado. */}
         <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
           <DropdownMenuTrigger asChild>
             <button
@@ -122,10 +121,13 @@ export function RoutineCard({ routine }: RoutineCardProps) {
               <Copy className="me-2 size-4" />
               {t('routine.useInSession')}
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Play className="me-2 size-4" />
-              {t('routine.preview')}
-            </DropdownMenuItem>
+            {/*
+              «Vista previa» se quita en vez de conectarse: la ficha de la
+              rutina -«Ver»- ya enseña sus bloques y ejercicios enteros, que es
+              todo lo que una vista previa podria enseñar. Era una entrada que
+              no hacia nada, y dos entradas para el mismo destino confunden mas
+              que ayudan.
+            */}
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => navigate(`/trainings/${routine.id}/edit`)}>
               {t('common.edit')}

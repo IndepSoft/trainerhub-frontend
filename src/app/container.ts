@@ -2,6 +2,25 @@ import type { AuthPort } from '@/shared/domain/ports/AuthPort'
 import type { TrainerRepository } from '@/shared/domain/ports/TrainerRepository'
 import { SupabaseAuthAdapter } from '@/shared/infrastructure/supabase/SupabaseAuthAdapter'
 import { SupabaseTrainerRepository } from '@/shared/infrastructure/supabase/SupabaseTrainerRepository'
+import { SupabaseCrewRepository } from '@/shared/infrastructure/supabase/SupabaseCrewRepository'
+import { SupabaseCrewStaffRepository } from '@/shared/infrastructure/supabase/SupabaseCrewStaffRepository'
+import { SupabaseStudentRepository } from '@/shared/infrastructure/supabase/SupabaseStudentRepository'
+import { SupabaseSubscriptionRepository } from '@/shared/infrastructure/supabase/SupabaseSubscriptionRepository'
+import { SupabaseNoticeRepository } from '@/shared/infrastructure/supabase/SupabaseNoticeRepository'
+import { SupabasePlatformRepository } from '@/shared/infrastructure/supabase/SupabasePlatformRepository'
+import { SupabaseRoutineRepository } from '@/shared/infrastructure/supabase/SupabaseRoutineRepository'
+import { SupabasePlanRepository } from '@/shared/infrastructure/supabase/SupabasePlanRepository'
+import { SupabaseAssignmentRepository } from '@/shared/infrastructure/supabase/SupabaseAssignmentRepository'
+import { SupabaseExerciseRepository } from '@/shared/infrastructure/supabase/SupabaseExerciseRepository'
+import { SupabaseCatalogRepository } from '@/shared/infrastructure/supabase/SupabaseCatalogRepository'
+import { SupabaseBlockLibraryRepository } from '@/shared/infrastructure/supabase/SupabaseBlockLibraryRepository'
+import { SupabaseSessionRepository } from '@/shared/infrastructure/supabase/SupabaseSessionRepository'
+import { SupabaseCrewPostRepository } from '@/shared/infrastructure/supabase/SupabaseCrewPostRepository'
+import { SupabaseCrewProgressRepository } from '@/shared/infrastructure/supabase/SupabaseCrewProgressRepository'
+import type { CatalogRepository } from '@/shared/domain/ports/CatalogRepository'
+import { FakeCatalogRepository } from '@/shared/infrastructure/fake/FakeCatalogRepository'
+import type { BlockLibraryRepository } from '@/shared/domain/ports/BlockLibraryRepository'
+import { FakeBlockLibraryRepository } from '@/shared/infrastructure/fake/FakeBlockLibraryRepository'
 import { FakeAuthAdapter } from '@/shared/infrastructure/fake/FakeAuthAdapter'
 import { FakeTrainerRepository } from '@/shared/infrastructure/fake/FakeTrainerRepository'
 import type { StudentRepository } from '@/shared/domain/ports/StudentRepository'
@@ -30,6 +49,12 @@ import type { SubscriptionRepository } from '@/shared/domain/ports/SubscriptionR
 import { FakeSubscriptionRepository } from '@/shared/infrastructure/fake/FakeSubscriptionRepository'
 import type { NoticeRepository } from '@/shared/domain/ports/NoticeRepository'
 import { FakeNoticeRepository } from '@/shared/infrastructure/fake/FakeNoticeRepository'
+import type { OnboardingRepository } from '@/shared/domain/ports/OnboardingRepository'
+import { FakeOnboardingRepository } from '@/shared/infrastructure/fake/FakeOnboardingRepository'
+import { SupabaseOnboardingRepository } from '@/shared/infrastructure/supabase/SupabaseOnboardingRepository'
+import type { PhotoStorage } from '@/shared/domain/ports/PhotoStorage'
+import { FakePhotoStorage } from '@/shared/infrastructure/fake/FakePhotoStorage'
+import { SupabasePhotoStorage } from '@/shared/infrastructure/supabase/SupabasePhotoStorage'
 import { crewScope } from './crewScope'
 
 /**
@@ -58,6 +83,17 @@ export interface Container {
   plans: PlanRepository
   assignments: AssignmentRepository
   exercises: ExerciseRepository
+  /**
+   * Los dos puertos que no existian. El catalogo y la biblioteca vivian en
+   * almacenes de `zustand` sin adaptador, y lo que el entrenador anadia se
+   * perdia al recargar. Plan, §5.
+   */
+  catalog: CatalogRepository
+  blockLibrary: BlockLibraryRepository
+  /** Si quien ha entrado ya vio la bienvenida. De la cuenta, no del dispositivo. */
+  onboarding: OnboardingRepository
+  /** Las fotos. Primer puerto que guarda ficheros. */
+  photos: PhotoStorage
 }
 
 /**
@@ -71,13 +107,6 @@ export interface Container {
 const shouldUseFakeAuthentication =
   import.meta.env.DEV && import.meta.env.VITE_USE_FAKE_AUTH === 'true'
 
-function createAuthenticationAdapter(): AuthPort {
-  if (shouldUseFakeAuthentication) {
-    return new FakeAuthAdapter()
-  }
-  return new SupabaseAuthAdapter()
-}
-
 /**
  * Los entrenadores van con la autenticación, no aparte.
  *
@@ -85,12 +114,41 @@ function createAuthenticationAdapter(): AuthPort {
  * identificador de perfil que inventa la autenticación simulada no existe en
  * ninguna tabla real, así que un entrenador de Supabase sobre una sesión falsa
  * no encuentra nunca su ficha.
+ *
+ * Se guarda la CLASE CONCRETA y no sólo el puerto porque la simulación necesita
+ * algo que el puerto ya no ofrece: crear la ficha. Ver justo debajo.
  */
-function createTrainerRepository(): TrainerRepository {
-  if (shouldUseFakeAuthentication) {
-    return new FakeTrainerRepository()
-  }
-  return new SupabaseTrainerRepository()
+const fakeTrainers = shouldUseFakeAuthentication ? new FakeTrainerRepository() : null
+
+/**
+ * La cuenta y su ficha nacen juntas, también en la simulación.
+ *
+ * En Supabase lo hace un disparador sobre `auth.users`, dentro de la misma
+ * transacción; aquí lo hace esta función, que es lo más parecido que hay. Y va
+ * en la raíz de composición porque es el único sitio que puede saber a la vez
+ * que existe una autenticación simulada y que existen fichas de entrenador: el
+ * adaptador de autenticación no debe saberlo, y el de fichas no sabe de altas.
+ *
+ * SÓLO PARA QUIEN VIENE A ENTRENAR A OTROS. Un alumno no tiene ficha de
+ * entrenador, y dársela le mandaría a fundar un equipo que no ha pedido.
+ */
+function createAuthenticationAdapter(): AuthPort {
+  if (fakeTrainers === null) return new SupabaseAuthAdapter()
+
+  return new FakeAuthAdapter(async (user, profile) => {
+    if (profile.intent !== 'trainer') return
+
+    await fakeTrainers.create({
+      profileId: user.id,
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+      email: user.email,
+      // La experiencia llega como rango -«1-3 años»- y se guarda como número:
+      // en blanco se queda sin poner, no en cero, que afirmaría algo que nadie
+      // ha dicho.
+      yearsExperience: Number.parseInt(profile.yearsOfExperience ?? '', 10) || undefined,
+    })
+  })
 }
 
 /*
@@ -99,26 +157,74 @@ function createTrainerRepository(): TrainerRepository {
  * a proposito. Juntarlas es exactamente el trabajo de la raiz de composicion, y
  * el unico sitio donde puede ocurrir sin que nadie mas se entere.
  */
-const fakeCrews = new FakeCrewRepository()
+const fakeCrewStaff = new FakeCrewStaffRepository(crewScope)
+/*
+ * El equipo simulado sienta a su fundador al nacer, como hace `create_crew`.
+ * La raiz de composicion es quien conoce a la vez los dos almacenes; el de
+ * equipos solo recibe «que hacer con el fundador».
+ */
+const fakeCrews = new FakeCrewRepository(async (crewId, founder) => {
+  await fakeCrewStaff.addToCrew(crewId, {
+    profileId: founder.profileId,
+    role: 'admin',
+    extraCapabilities: [],
+    displayName: founder.displayName,
+    email: founder.email,
+  })
+})
 const fakeStudents = new FakeStudentRepository(crewScope)
 const fakeSessions = new FakeSessionRepository(crewScope)
-const fakeCrewStaff = new FakeCrewStaffRepository(crewScope)
-const trainers = createTrainerRepository()
+const trainers: TrainerRepository = fakeTrainers ?? new SupabaseTrainerRepository()
+
+/*
+ * FASE 1 DEL PLAN: equipos y puestos van contra Supabase con la misma condicion
+ * que la autenticacion. Los fakes se quedan instanciados porque la plataforma y
+ * el ranking -todavia simulados- se componen sobre sus clases concretas; hasta
+ * la fase 2, el panel de plataforma sigue mirando equipos simulados aunque el
+ * resto de la aplicacion vea los reales. Esta escrito en el plan, §4.
+ */
+const crews: CrewRepository = shouldUseFakeAuthentication ? fakeCrews : new SupabaseCrewRepository()
+const crewStaff: CrewStaffRepository = shouldUseFakeAuthentication
+  ? fakeCrewStaff
+  : new SupabaseCrewStaffRepository(crewScope)
+
+/*
+ * FASE 2: alumnos, cuotas, avisos y plataforma. Con la misma condicion. El
+ * ranking (`crewProgress`) sigue simulado hasta la fase 5 y se compone sobre
+ * los fakes de sesiones y alumnos, que por eso siguen instanciados.
+ */
+const students: StudentRepository = shouldUseFakeAuthentication
+  ? fakeStudents
+  : new SupabaseStudentRepository(crewScope)
+const subscriptions: SubscriptionRepository = shouldUseFakeAuthentication
+  ? new FakeSubscriptionRepository(crewScope)
+  : new SupabaseSubscriptionRepository(crewScope)
+const notices: NoticeRepository = shouldUseFakeAuthentication
+  ? new FakeNoticeRepository(crewScope)
+  : new SupabaseNoticeRepository(crewScope)
+const platform: PlatformRepository = shouldUseFakeAuthentication
+  ? new FakePlatformRepository(fakeCrews, fakeStudents, fakeCrewStaff, trainers)
+  : new SupabasePlatformRepository()
 
 export const container: Container = {
   auth: createAuthenticationAdapter(),
-  crews: fakeCrews,
-  crewStaff: fakeCrewStaff,
-  crewPosts: new FakeCrewPostRepository(crewScope),
-  subscriptions: new FakeSubscriptionRepository(crewScope),
-  notices: new FakeNoticeRepository(crewScope),
+  crews,
+  crewStaff,
   /*
-   * El ranking recibe las clases concretas: necesita las sesiones de TODO el
-   * equipo, y el ambito de un alumno le deja ver solo las suyas. Lo que sale de
-   * aqui es un agregado, no las sesiones de nadie.
+   * FASE 5: muro y ranking. El ranking simulado recibe las clases concretas
+   * porque necesita las sesiones de TODO el equipo y el ambito de un alumno le
+   * deja ver solo las suyas; el real es una funcion del servidor que devuelve
+   * agregados, por el mismo motivo pero al otro lado de RLS.
    */
-  crewProgress: new FakeCrewProgressRepository(fakeSessions, fakeStudents, crewScope),
-  platform: new FakePlatformRepository(fakeCrews, fakeStudents, fakeCrewStaff, trainers),
+  crewPosts: shouldUseFakeAuthentication
+    ? new FakeCrewPostRepository(crewScope)
+    : new SupabaseCrewPostRepository(crewScope),
+  subscriptions,
+  notices,
+  crewProgress: shouldUseFakeAuthentication
+    ? new FakeCrewProgressRepository(fakeSessions, fakeStudents, crewScope)
+    : new SupabaseCrewProgressRepository(crewScope),
+  platform,
   trainers,
   /*
    * TODO: sustituir por los repositorios reales cuando existan las tablas. Son
@@ -132,10 +238,37 @@ export const container: Container = {
    * Con un backend real esto desaparece: el crew activo viaja en la sesion y
    * filtra Postgres con RLS, no el cliente.
    */
-  students: fakeStudents,
-  routines: new FakeRoutineRepository(crewScope),
-  sessions: fakeSessions,
-  plans: new FakePlanRepository(crewScope),
-  assignments: new FakeAssignmentRepository(crewScope),
-  exercises: new FakeExerciseRepository(),
+  students,
+  /*
+   * FASE 3: entrenamiento. Rutinas, planes, asignaciones, ejercicios, catalogo
+   * y biblioteca, con la misma condicion que la autenticacion. Las sesiones
+   * siguen simuladas hasta la fase 4.
+   */
+  routines: shouldUseFakeAuthentication
+    ? new FakeRoutineRepository(crewScope)
+    : new SupabaseRoutineRepository(crewScope),
+  /*
+   * FASE 4: la agenda. `fakeSessions` sigue instanciado porque el ranking
+   * simulado se compone sobre el hasta la fase 5.
+   */
+  sessions: shouldUseFakeAuthentication ? fakeSessions : new SupabaseSessionRepository(crewScope),
+  plans: shouldUseFakeAuthentication
+    ? new FakePlanRepository(crewScope)
+    : new SupabasePlanRepository(crewScope),
+  assignments: shouldUseFakeAuthentication
+    ? new FakeAssignmentRepository(crewScope)
+    : new SupabaseAssignmentRepository(crewScope),
+  exercises: shouldUseFakeAuthentication
+    ? new FakeExerciseRepository()
+    : new SupabaseExerciseRepository(crewScope),
+  catalog: shouldUseFakeAuthentication
+    ? new FakeCatalogRepository()
+    : new SupabaseCatalogRepository(crewScope),
+  blockLibrary: shouldUseFakeAuthentication
+    ? new FakeBlockLibraryRepository()
+    : new SupabaseBlockLibraryRepository(crewScope),
+  onboarding: shouldUseFakeAuthentication
+    ? new FakeOnboardingRepository()
+    : new SupabaseOnboardingRepository(),
+  photos: shouldUseFakeAuthentication ? new FakePhotoStorage() : new SupabasePhotoStorage(),
 }

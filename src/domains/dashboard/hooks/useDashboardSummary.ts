@@ -7,6 +7,7 @@ import { useTranslation, type Translate } from '@/shared/i18n/LanguageContext'
 import type { DashboardSummary, RecentActivityEntry, UpcomingSession } from '../types/dashboard.types'
 import type { Session } from '@/shared/domain/entities/session'
 import type { Student } from '@/shared/domain/entities/student'
+import { describeError } from '@/shared/i18n/errorMessages'
 
 interface UseDashboardSummaryResult {
   summary: DashboardSummary
@@ -61,7 +62,7 @@ export function useDashboardSummary(): UseDashboardSummaryResult {
       setSummary(buildSummary(sessions, students, routines.length, t))
       setError(null)
     } catch (cause: unknown) {
-      setError(cause instanceof Error ? cause.message : t('dashboard.error'))
+      setError(describeError(cause, t, 'dashboard.error'))
     } finally {
       setLoading(false)
     }

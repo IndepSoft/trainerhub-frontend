@@ -17,7 +17,7 @@ import {
 } from '@/shared/ui/select'
 import { Textarea } from '@/shared/ui/textarea'
 import { Label } from '@/shared/ui/label'
-import { ArrowUpRight, Clock, MapPin, MessageSquare, Pencil, Play, Trash2, User } from 'lucide-react'
+import { ArrowUpRight, MapPin, MessageSquare, Pencil, Play, Trash2, User } from 'lucide-react'
 import { useSchedulableRoutines } from '../hooks/useSchedulableRoutines'
 import { useSchedulableStudents } from '../hooks/useSchedulableStudents'
 import { resolveSessionStudentName } from '../libs/sessionStudent'
@@ -29,11 +29,20 @@ import { getStudentInitials, parseLocalDateKey } from '../libs/calendar.utils'
 import type { Session, SessionStatus } from '../types/calendar.types'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 
+/** Lo que esta ficha puede cambiar sin abrir el formulario entero. */
+export interface SessionDetailsChanges {
+  status: SessionStatus
+  notes: string
+}
+
 interface SessionDetailsModalProps {
   session: Session
   open: boolean
   onOpenChange: (open: boolean) => void
-  onStatusChange: (sessionId: string, newStatus: SessionStatus) => void
+  /** Estado y notas, juntos: se guardan con un solo botón. */
+  onSave: (sessionId: string, changes: SessionDetailsChanges) => void
+  /** Abre el formulario de la sesión para cambiar fecha, hora o el resto. */
+  onEdit: (session: Session) => void
   onDelete: (sessionId: string) => void
 }
 
@@ -54,7 +63,8 @@ export function SessionDetailsModal({
   session,
   open,
   onOpenChange,
-  onStatusChange,
+  onSave,
+  onEdit,
   onDelete,
 }: SessionDetailsModalProps) {
   const { t } = useTranslation()
@@ -95,14 +105,23 @@ export function SessionDetailsModal({
     navigate(`/session/${session.id}`)
   }
 
-  const handleStatusUpdate = () => {
-    if (newStatus === session.status) return
+  const hasChanges = newStatus !== session.status || sessionNotes !== session.notes
 
-    onStatusChange(session.id, newStatus)
+  /**
+   * Estado y notas se guardan JUNTOS y de verdad. Antes el estado se guardaba
+   * y las notas se quedaban en memoria hasta cerrar, con un aviso que lo
+   * confesaba; ahora las dos cosas van por el puerto en una sola escritura.
+   */
+  const handleSave = () => {
+    if (!hasChanges) return
+
+    onSave(session.id, { status: newStatus, notes: sessionNotes })
     toast.success(
-      t('sessionDetails.markedAs', {
-        status: t(SESSION_STATUS[newStatus].labelKey).toLowerCase(),
-      })
+      newStatus !== session.status
+        ? t('sessionDetails.markedAs', {
+            status: t(SESSION_STATUS[newStatus].labelKey).toLowerCase(),
+          })
+        : t('sessionDetails.saved')
     )
 
     /*
@@ -112,6 +131,11 @@ export function SessionDetailsModal({
      * sesion que ya esta completada.
      */
     onOpenChange(false)
+  }
+
+  const handleEdit = () => {
+    onOpenChange(false)
+    onEdit(session)
   }
 
   const handleDelete = () => {
@@ -216,33 +240,24 @@ export function SessionDetailsModal({
             <Label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
               {t('sessionDetails.status')}
             </Label>
-            <div className="flex gap-2">
-              <Select
-                value={newStatus}
-                onValueChange={(value: SessionStatus) => setNewStatus(value)}
-              >
-                <SelectTrigger className="flex-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {/* Las opciones salen de la tabla de estados: antes las
-                      etiquetas estaban escritas aquí y también en getStatusText,
-                      y podían divergir. */}
-                  {SESSION_STATUS_ENTRIES.map(([value, presentation]) => (
-                    <SelectItem key={value} value={value}>
-                      {t(presentation.labelKey)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                variant="outline"
-                onClick={handleStatusUpdate}
-                disabled={newStatus === session.status}
-              >
-                {t('common.save')}
-              </Button>
-            </div>
+            <Select
+              value={newStatus}
+              onValueChange={(value: SessionStatus) => setNewStatus(value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {/* Las opciones salen de la tabla de estados: antes las
+                    etiquetas estaban escritas aquí y también en getStatusText,
+                    y podían divergir. */}
+                {SESSION_STATUS_ENTRIES.map(([value, presentation]) => (
+                  <SelectItem key={value} value={value}>
+                    {t(presentation.labelKey)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {routine !== undefined && (
@@ -278,12 +293,21 @@ export function SessionDetailsModal({
 
           {/* Secundarias, y la destructiva separada por una regla: en la versión
               anterior «Eliminar» tenía el mismo peso que «Editar». */}
+          {/* Un solo «Guardar cambios» para estado y notas, apagado mientras
+              no haya nada que guardar: asi no hace falta decir que algo no se
+              guardo, porque todo lo que se toca aqui se guarda. */}
+          <Button className="w-full" onClick={handleSave} disabled={!hasChanges}>
+            {t('sessionDetails.save')}
+          </Button>
+
           <div className="flex flex-wrap gap-2 border-t border-cobalt-tint-3 pt-4">
             <Button variant="outline" onClick={handleSendReminder} className="gap-2">
               <MessageSquare className="size-4" />
               {t('sessionDetails.reminder')}
             </Button>
-            <Button variant="outline" className="gap-2">
+            {/* Fecha, hora, alumno o rutina se cambian en el formulario de la
+                sesion, el mismo del alta pero con esta ya puesta. */}
+            <Button variant="outline" onClick={handleEdit} className="gap-2">
               <Pencil className="size-4" />
               {t('common.edit')}
             </Button>
@@ -296,13 +320,6 @@ export function SessionDetailsModal({
               {t('common.delete')}
             </Button>
           </div>
-
-          <p className="flex items-center gap-1.5 text-[11px] text-ink/35">
-            <Clock className="size-3" />
-            {/* TODO: ni el estado ni las notas se persisten: el cambio vive sólo
-                en memoria hasta que exista el repositorio. */}
-            {t('sessionDetails.notSaved')}
-          </p>
         </div>
       </DialogContent>
     </Dialog>

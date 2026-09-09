@@ -25,8 +25,11 @@ export default function Onboarding() {
     complete,
   } = useOnboarding()
 
-  const finish = () => {
-    complete()
+  const finish = async () => {
+    // Se espera a que quede guardado: si no, la guardia del layout puede
+    // preguntar antes de que este escrito y devolver aqui a quien acaba de
+    // terminar.
+    await complete()
     /*
      * A la raiz, no a `/dashboard`: es `HomeRedirect` quien sabe con que
      * papel se ha entrado. Mandar aqui al panel llevaba a un alumno a la
@@ -37,7 +40,7 @@ export default function Onboarding() {
 
   const advance = () => {
     if (isLastStep) {
-      finish()
+      void finish()
       return
     }
     // El resultado se ignora: en iOS no hay Vibration API y el avance debe
@@ -63,7 +66,7 @@ export default function Onboarding() {
         {!isLastStep && (
           <button
             type="button"
-            onClick={finish}
+            onClick={() => void finish()}
             className="-mr-2 flex h-11 items-center px-2 text-sm font-semibold uppercase tracking-wider text-white/50"
           >
             {t('onboarding.skip')}

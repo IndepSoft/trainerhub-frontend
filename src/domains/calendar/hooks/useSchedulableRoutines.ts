@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { container } from '@/app/container'
 import type { Routine } from '@/shared/domain/entities/routine'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { describeError } from '@/shared/i18n/errorMessages'
 
 interface UseSchedulableRoutinesResult {
   routines: Routine[]
@@ -36,7 +37,7 @@ export function useSchedulableRoutines(): UseSchedulableRoutinesResult {
           if (active) setRoutines(result)
         })
         .catch((cause: unknown) => {
-          if (active) setError(cause instanceof Error ? cause.message : t('calendar.routinesError'))
+          if (active) setError(describeError(cause, t, 'calendar.routinesError'))
         })
         .finally(() => {
           if (active) setLoading(false)

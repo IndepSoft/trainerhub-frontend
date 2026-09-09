@@ -25,18 +25,16 @@ export interface CrewPost {
    */
   createdAt: string
   /**
-   * Los perfiles a los que les gusta.
+   * Cuántos «me gusta» tiene, y si uno de ellos es de quien mira.
    *
-   * COMO LISTA Y NO COMO CONTADOR porque hacen falta las dos cosas: cuántos son,
-   * y si estoy yo —sin lo segundo el botón no puede saber si ya lo pulsé—. Un
-   * contador suelto obligaría a una segunda consulta para averiguarlo.
-   *
-   * TODO: no escala. Con un backend real esto es una tabla aparte y lo que viaja
-   * al cliente son dos campos calculados —cuántos, y si el que mira está—, no la
-   * lista entera de gente. Con equipos de decenas de personas da igual; con
-   * miles, no.
+   * ERA LA LISTA ENTERA de perfiles, y estaba anotado que no escalaba: con
+   * equipos de miles, cada anuncio viajaría con miles de identificadores. Hacen
+   * falta exactamente dos cosas —cuántos, y si estoy yo— y son las dos que
+   * viajan. En el servidor los «me gusta» son una tabla aparte y estos dos
+   * campos se calculan al servir, para quien pregunta.
    */
-  likedBy: string[]
+  likeCount: number
+  likedByMe: boolean
 }
 
 /** Lo máximo que cabe en un anuncio. */

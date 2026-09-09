@@ -38,10 +38,7 @@ export class FakeCrewStaffRepository implements CrewStaffRepository {
   async add(data: NewCrewStaff): Promise<CrewStaff> {
     const crewId = this.scope.current()
     if (crewId === null) {
-      throw new AppError(
-        AppErrorCode.VALIDATION,
-        'No hay ningún crew activo: un puesto pertenece a un equipo.'
-      )
+      throw new AppError(AppErrorCode.VALIDATION, 'noActiveCrew')
     }
 
     return this.addToCrew(crewId, data)

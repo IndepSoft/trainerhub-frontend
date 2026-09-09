@@ -48,7 +48,8 @@ export class FakeCrewPostRepository implements CrewPostRepository {
       ...data,
       createdAt: new Date().toISOString(),
       // Nace sin «me gusta»: nadie ha reaccionado a algo que acaba de aparecer.
-      likedBy: [],
+      likeCount: 0,
+      likedByMe: false,
     }
 
     this.posts = [post, ...this.posts]
@@ -56,16 +57,19 @@ export class FakeCrewPostRepository implements CrewPostRepository {
     return post
   }
 
-  async toggleLike(postId: string, profileId: string): Promise<void> {
+  /*
+   * La simulacion tiene UN solo espectador -quien ha entrado-, asi que «si me
+   * gusta a mi» y el contador se mueven juntos. En Supabase los «me gusta» son
+   * una tabla y los dos campos se calculan para quien pregunta.
+   */
+  async toggleLike(postId: string): Promise<void> {
     this.posts = this.posts.map((post) => {
       if (post.id !== postId) return post
 
-      const liked = post.likedBy.includes(profileId)
       return {
         ...post,
-        likedBy: liked
-          ? post.likedBy.filter((entry) => entry !== profileId)
-          : [...post.likedBy, profileId],
+        likedByMe: !post.likedByMe,
+        likeCount: post.likedByMe ? post.likeCount - 1 : post.likeCount + 1,
       }
     })
     this.notify()
@@ -73,6 +77,29 @@ export class FakeCrewPostRepository implements CrewPostRepository {
 
   async remove(postId: string): Promise<void> {
     this.posts = this.posts.filter((post) => post.id !== postId)
+    this.notify()
+  }
+
+  /*
+   * La marca de «hasta donde lei», por crew. Sin marca, todo el muro esta sin
+   * leer: es lo que le pasa a quien acaba de entrar en un equipo, y lo que
+   * hace que el contador se vea nada mas arrancar la simulacion.
+   */
+  private readAt = new Map<string, string>()
+
+  async countUnread(): Promise<number> {
+    const crewId = this.scope.current()
+    if (crewId === null) return 0
+
+    const since = this.readAt.get(crewId) ?? ''
+    return this.posts.filter((post) => post.crewId === crewId && post.createdAt > since).length
+  }
+
+  async markAllRead(): Promise<void> {
+    const crewId = this.scope.current()
+    if (crewId === null) return
+
+    this.readAt.set(crewId, new Date().toISOString())
     this.notify()
   }
 

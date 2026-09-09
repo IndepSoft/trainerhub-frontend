@@ -182,16 +182,26 @@ export default function RoutineDetail() {
 
                 <ul className="mt-3 space-y-2 ps-9">
                   {block.exercises.map((item) => (
-                    <li
-                      key={item.id}
-                      className="flex items-baseline justify-between gap-4 text-sm"
-                    >
-                      <span className="min-w-0 flex-1 truncate text-ink">
-                        {exercisesById.get(item.exerciseId)?.name ?? t('exercise.fallback')}
-                      </span>
-                      <span className="metric-figures shrink-0 font-semibold text-ink/55">
-                        {formatPrescription(item)}
-                      </span>
+                    <li key={item.id} className="text-sm">
+                      <div className="flex items-baseline justify-between gap-4">
+                        <span className="min-w-0 flex-1 truncate text-ink">
+                          {exercisesById.get(item.exerciseId)?.name ?? t('exercise.fallback')}
+                        </span>
+                        <span className="metric-figures shrink-0 font-semibold text-ink/55">
+                          {formatPrescription(item)}
+                        </span>
+                      </div>
+                      {/* Tempo e indicaciones, si los hay: se editan desde
+                          que tienen campo, y lo que se escribe se tiene que
+                          poder leer donde se prescribe. */}
+                      {(item.tempo !== undefined || item.notes !== undefined) && (
+                        <p className="mt-0.5 text-xs text-ink/45">
+                          {item.tempo !== undefined && (
+                            <span className="metric-figures me-2">{item.tempo}</span>
+                          )}
+                          {item.notes}
+                        </p>
+                      )}
                     </li>
                   ))}
                 </ul>

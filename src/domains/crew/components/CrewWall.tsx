@@ -130,7 +130,7 @@ function PostCard({
   onDelete,
 }: PostCardProps) {
   const { t } = useTranslation()
-  const likeCount = post.likedBy.length
+  const likeCount = post.likeCount
 
   return (
     <li className="rounded-block border border-cobalt-tint-3 bg-surface p-4">

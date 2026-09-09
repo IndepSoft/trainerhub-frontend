@@ -11,10 +11,11 @@ import type { Capability } from '../permissions'
  * la lista de puertos, en lugar de esconderse dentro de uno que promete lo
  * contrario.
  *
- * TODO: con backend, cada método de aquí exige rol de plataforma EN EL SERVIDOR.
- * Un cliente modificado puede llamar a `setSubscription` igual que puede llamar
- * a cualquier otra cosa: lo que impide que funcione no es que la pantalla esté
- * escondida, es la política del servidor.
+ * Cada método de aquí exige rol de plataforma EN EL SERVIDOR: con Supabase
+ * son funciones `security definer` que empiezan por `assert_platform_admin`.
+ * Un cliente modificado puede llamar a `setSubscription` igual que a cualquier
+ * otra cosa, y recibe `forbidden`: lo que impide que funcione no es que la
+ * pantalla esté escondida.
  */
 export interface PlatformRepository {
   /**

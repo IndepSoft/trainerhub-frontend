@@ -29,6 +29,8 @@ import { toLocalDateKey } from '@/shared/lib/dateKey'
 import { activeLocale } from '@/shared/i18n/activeLocale'
 import { ScheduleConflictNotice } from '@/shared/components/ScheduleConflictNotice'
 import { SessionModalityPicker } from '@/shared/components/SessionModalityPicker'
+import { parseLocalDateKey } from '../libs/calendar.utils'
+import type { Translate } from '@/shared/i18n/LanguageContext'
 import { describeOverlap, findOverlappingSessions } from '@/shared/domain/sessionScheduling'
 import type { Session, SessionModality } from '@/shared/domain/entities/session'
 import { SESSION_LOCATIONS, TIME_SLOTS } from '../data/calendarOptions'
@@ -47,6 +49,20 @@ const SESSION_TYPES = [
 }>
 
 const DURATIONS = ['30', '45', '60', '90'] as const
+
+/**
+ * El tipo con el que se creó una sesión, recuperado para editarla.
+ *
+ * La sesión no guarda el tipo sino su ETIQUETA traducida como categoría, así
+ * que se busca por etiqueta. Una grupal se reconoce por `kind`, que sí se
+ * guarda; una etiqueta que no case —otro idioma, otra versión— cae en
+ * «personal», que es lo que era casi siempre.
+ */
+function sessionTypeOf(session: Session, t: Translate): string {
+  if (session.kind === 'group') return 'group'
+  const match = SESSION_TYPES.find((type) => t(type.labelKey) === session.category)
+  return match?.value ?? 'personal'
+}
 
 /** Campos que la validación puede marcar. */
 type FieldName = 'sessionType' | 'student' | 'date' | 'time' | 'location'
@@ -82,6 +98,16 @@ interface CreateSessionModalProps {
    * la agenda con su identificador, y el alta arranca con esa rutina puesta.
    */
   preselectedRoutineId?: string
+  /**
+   * La sesión que se edita. Con ella, el formulario arranca relleno, no
+   * pinta su propio disparador y al enviar ACTUALIZA en vez de crear.
+   *
+   * Es el mismo formulario porque es la misma decisión —tipo, quién, cuándo,
+   * dónde— y dos copias habrían divergido en la primera corrección. Editar es
+   * lo que hace posible mover una sesión porque el alumno no puede ese martes,
+   * que era el motivo de materializar las sesiones de un plan.
+   */
+  editing?: Session
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }
@@ -94,6 +120,7 @@ interface CreateSessionModalProps {
  */
 export function CreateSessionModal({
   preselectedRoutineId,
+  editing,
   open,
   onOpenChange,
 }: CreateSessionModalProps = {}) {
@@ -111,16 +138,27 @@ export function CreateSessionModal({
   /*
    * Si se llega con una rutina preseleccionada -desde «Usar en una sesion»-, la
    * modalidad es fuerza sin preguntar: se viene de una rutina de sala.
+   *
+   * Al editar, todo arranca de la sesion. El tipo se recupera por su etiqueta
+   * porque la sesion guarda la categoria como TEXTO -en el idioma en que se
+   * creo-; si no casa con ninguna, queda «personal», que es lo que era casi
+   * siempre.
    */
-  const [modality, setModality] = useState<SessionModality>('strength')
-  const [routineId, setRoutineId] = useState(preselectedRoutineId ?? NO_ROUTINE)
-  const [sessionType, setSessionType] = useState('')
-  const [studentId, setStudentId] = useState('')
-  const [date, setDate] = useState<Date>()
-  const [time, setTime] = useState('')
-  const [duration, setDuration] = useState('60')
-  const [location, setLocation] = useState('')
-  const [notes, setNotes] = useState('')
+  const [modality, setModality] = useState<SessionModality>(editing?.modality ?? 'strength')
+  const [routineId, setRoutineId] = useState(
+    editing?.routineId ?? preselectedRoutineId ?? NO_ROUTINE
+  )
+  const [sessionType, setSessionType] = useState(
+    editing === undefined ? '' : sessionTypeOf(editing, t)
+  )
+  const [studentId, setStudentId] = useState(editing?.studentId ?? '')
+  const [date, setDate] = useState<Date | undefined>(
+    editing === undefined ? undefined : parseLocalDateKey(editing.date)
+  )
+  const [time, setTime] = useState(editing?.time ?? '')
+  const [duration, setDuration] = useState(String(editing?.durationMinutes ?? 60))
+  const [location, setLocation] = useState(editing?.location ?? '')
+  const [notes, setNotes] = useState(editing?.notes ?? '')
   const [missing, setMissing] = useState<FieldName[]>([])
   /** Con qué choca, o `null` si no choca o ya se decidió agendar igual. */
   const [conflict, setConflict] = useState<string | null>(null)
@@ -188,7 +226,9 @@ export function CreateSessionModal({
      * entonces. Esta es la comprobacion que vale.
      */
     void container.sessions.findByDate(toLocalDateKey(date!)).then((sameDay) => {
-      const choques = findOverlappingSessions(sameDay, {
+      // Al editar, la sesion no choca consigo misma.
+      const others = sameDay.filter((candidate) => candidate.id !== editing?.id)
+      const choques = findOverlappingSessions(others, {
         date: toLocalDateKey(date!),
         time,
         durationMinutes: Number(duration),
@@ -222,7 +262,7 @@ export function CreateSessionModal({
       SESSION_TYPES.find((candidate) => candidate.value === sessionType)?.labelKey ??
       'sessionType.fallback'
 
-    void container.sessions.create({
+    const data = {
       // El titulo lo pone la rutina cuando la hay: es lo que se lee en la
       // agenda, y «Full body · Principiante» dice mas que «Entrenamiento
       // personal». NO lleva el nombre del alumno dentro: eso se resuelve desde
@@ -236,12 +276,32 @@ export function CreateSessionModal({
       time,
       durationMinutes: Number(duration),
       location,
-      // Recien creada esta pendiente, no confirmada: confirmarla es un acto
-      // aparte y fingirlo aqui vaciaria de sentido el estado.
-      status: 'pending',
       notes,
       // Una sesion de cardio no ejecuta una rutina de sala.
       routineId: modality === 'cardio' || routineId === NO_ROUTINE ? null : routineId,
+    } as const
+
+    if (editing !== undefined) {
+      /*
+       * Estado y resultado se CONSERVAN: editar mueve la sesion, no la
+       * reinicia. Una completada con su resultado sigue completada aunque se
+       * le corrija el lugar.
+       */
+      void container.sessions.update(editing.id, {
+        ...data,
+        status: editing.status,
+        result: editing.result,
+      })
+      toast.success(t('newSession.updated'))
+      setIsOpen(false)
+      return
+    }
+
+    void container.sessions.create({
+      ...data,
+      // Recien creada esta pendiente, no confirmada: confirmarla es un acto
+      // aparte y fingirlo aqui vaciaria de sentido el estado.
+      status: 'pending',
       // Nace sin resultado: no ha ocurrido todavia.
       result: null,
     })
@@ -272,20 +332,24 @@ export function CreateSessionModal({
         if (!open) setMissing([])
       }}
     >
-      <DialogTrigger asChild>
-        <Button className="h-11 gap-2 sm:h-9">
-          <Plus className="size-4" />
-          {t('newSession.open')}
-        </Button>
-      </DialogTrigger>
+      {/* Sin disparador al editar: se abre desde la ficha de la sesion, y un
+          segundo boton «Nueva sesion» en la cabecera seria mentira. */}
+      {editing === undefined && (
+        <DialogTrigger asChild>
+          <Button className="h-11 gap-2 sm:h-9">
+            <Plus className="size-4" />
+            {t('newSession.open')}
+          </Button>
+        </DialogTrigger>
+      )}
 
       <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto p-0">
         <DialogHeader className="px-5 pt-5 text-left">
           <DialogTitle className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
-            {t('newSession.title')}
+            {editing === undefined ? t('newSession.title') : t('newSession.editTitle')}
           </DialogTitle>
           <DialogDescription className="text-sm text-ink/50">
-            {t('newSession.hint')}
+            {editing === undefined ? t('newSession.hint') : t('newSession.editHint')}
           </DialogDescription>
         </DialogHeader>
 
@@ -562,7 +626,7 @@ export function CreateSessionModal({
             className="h-14 w-full gap-2 font-display text-base font-extrabold uppercase tracking-[0.14em]"
           >
             <CalendarCheck className="size-5" />
-            {t('newSession.submit')}
+            {editing === undefined ? t('newSession.submit') : t('newSession.saveChanges')}
           </Button>
         </div>
       </DialogContent>

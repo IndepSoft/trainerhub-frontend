@@ -1,3 +1,5 @@
+import type { SignUpIntent } from '@/shared/domain/entities/auth'
+
 /**
  * Con qué intención se registra alguien.
  *
@@ -8,8 +10,13 @@
  * entrenador sin serlo da un equipo vacío en el que no se puede meter a nadie.
  *
  * El rol de verdad se sigue deduciendo de quién te conoce, nunca de esto.
+ *
+ * ES UN ALIAS, no una segunda definición: el tipo vive en `shared/domain` desde
+ * que la intención viaja al proveedor dentro del alta. Aquí se conserva el
+ * nombre con el que lo llama el formulario, y con él este comentario, que es
+ * donde tiene sentido leerlo.
  */
-export type RegisterIntent = 'trainer' | 'student'
+export type RegisterIntent = SignUpIntent
 
 /**
  * Datos del formulario de registro.

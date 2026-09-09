@@ -29,7 +29,8 @@ export const crewPostsSeed: CrewPost[] = [
     authorProfileId: DEV_TRAINER_PROFILE_ID,
     body: 'El sábado hacemos la salida larga por el cerro. Salimos a las 8:00 del gimnasio, llevad agua para hora y media.',
     createdAt: hoursAgo(5),
-    likedBy: [],
+    likeCount: 0,
+    likedByMe: false,
   },
   {
     id: 'post-2',
@@ -37,6 +38,7 @@ export const crewPostsSeed: CrewPost[] = [
     authorProfileId: DEV_TRAINER_PROFILE_ID,
     body: 'Recordad que esta semana toca descarga: bajad la carga un 40 % y centraos en la técnica. Descansar también es entrenar.',
     createdAt: hoursAgo(52),
-    likedBy: [],
+    likeCount: 0,
+    likedByMe: false,
   },
 ]

@@ -206,8 +206,10 @@ Creado en la organización **IndepSoft**:
 Se usa la clave **publicable** (`sb_publishable_...`), recomendada sobre la anon
 heredada por permitir rotación independiente.
 
-**La base de datos está vacía**: `list_tables` devuelve cero tablas. El único
-acceso a datos del código apunta a `trainers`, que todavía no existe.
+**Ya no está vacía.** Tiene `profiles` —uno a uno con `auth.users`, creada por
+un disparador en el alta— y `platform_admin_emails`. Lo que no tiene ni va a
+tener es `trainers`: el código apuntaba ahí y se ha reapuntado a `profiles`. Ver
+§25.
 
 Nota operativa: el plan gratuito limita a **dos proyectos activos por usuario**,
 contando todas las organizaciones que administra — no por organización.
@@ -2194,3 +2196,592 @@ descartar—.
 - **La gráfica no compara ejercicios entre sí.** Cada una escala a su propio
   rango, así que dos pendientes iguales no significan lo mismo. Un eje común
   aplastaría las progresiones pequeñas, que son las más.
+
+---
+
+## 25. Cablear el alta y el inicio de sesión contra Supabase (5 sep 2026)
+
+Rama `feature/supabese-conection`, salida de `develop`.
+
+### 25.1 Tres cosas no encajaban, y ninguna se veía compilando
+
+El código y la base llevaban tiempo describiendo aplicaciones distintas. Lo que
+apareció al mirarlas juntas:
+
+**1. El código pedía una tabla que no existe.** `SupabaseTrainerRepository`
+consultaba `trainers`; en esta base lo que hay es `profiles`, uno a uno con
+`auth.users`. Cada carga del panel pedía `/rest/v1/trainers` y recibía un 404.
+Estaba anotado en el traspaso como «esperado», y lo era mientras la base estuvo
+vacía; dejó de serlo cuando `profiles` se creó y nadie apuntó el código hacia
+ella.
+
+**2. El alta no mandaba nada de quién se registraba.** `signUp` viajaba sin
+`user_metadata`, con este motivo escrito al lado: «el rol NO se guarda ahí, que
+lo puede editar el propio cliente». El motivo es bueno. El efecto no: el
+disparador `handle_new_user` lee justamente de ahí el nombre y los apellidos, así
+que toda cuenta nacía con el perfil en blanco.
+
+**3. El registro daba por identificado a quien no lo estaba.** Llamaba a
+`setUser` y navegaba al panel en cuanto la cuenta existía. **La confirmación por
+correo está activada en este proyecto** —comprobado contra el endpoint de alta:
+la respuesta trae `confirmation_sent_at` y ningún `access_token`—, así que la
+cuenta se crea y la sesión no. La aplicación parecía tener a alguien dentro y a
+la primera recarga `getCurrentUser` devolvía null y le echaba sin explicar nada.
+
+### 25.2 La confirmación por correo decide el diseño, no la preferencia
+
+Sin sesión después del alta no hay `auth.uid()`, y sin `auth.uid()` las
+políticas de fila rechazan cualquier escritura. Dicho de otro modo: **después
+del alta ya no hay ningún momento en que el cliente pueda escribir quién es.**
+
+De ahí sale todo lo demás, y conviene leerlo como una consecuencia y no como una
+elección de gusto:
+
+- **`SignUpCredentials` lleva el perfil.** Revierte la decisión anterior —«sólo
+  la cuenta»—. No cabía otra: o viaja con la cuenta, o no llega nunca.
+- **El puerto sigue sin conocer a los dos perfiles del dominio.** Recibe UNA
+  forma, `SignUpProfile`, con la intención declarada dentro. Quién decide qué
+  significa esa intención está del otro lado.
+- **La cuenta y su ficha nacen juntas**, en la misma transacción, dentro del
+  disparador. Como efecto secundario desaparece el hueco que el propio registro
+  tenía anotado con un `TODO`: si la cuenta se creaba y la ficha fallaba,
+  quedaba una cuenta sin ficha y el siguiente intento chocaba con «ya existe ese
+  correo».
+- **`TrainerRepository.create` desaparece del puerto.** Nadie puede llamarlo: no
+  hay sesión con la que hacerlo. Se queda como método concreto de
+  `FakeTrainerRepository`, porque la raíz de composición lo usa para que la
+  simulación haga lo mismo que el disparador.
+
+### 25.3 «La ficha del entrenador» es la fila de `profiles`
+
+`SupabaseTrainerRepository` va ahora contra `profiles`, y de ahí salen dos
+detalles que quedan escritos en los mappers:
+
+- **`Trainer.id` y `Trainer.profileId` son el mismo valor**, porque la clave de
+  `profiles` ES el identificador de la cuenta. La entidad conserva los dos
+  campos: el dominio distingue la ficha de la cuenta y puede volver a
+  distinguirlas; que hoy coincidan es un detalle de este esquema y muere en el
+  mapper.
+- **Un alumno tiene perfil y no tiene ficha de entrenador.** `findByProfileId`
+  devuelve `null` cuando el rol no entrena. Importa más de lo que parece:
+  `HomeRedirect` manda a fundar un equipo a quien tiene ficha y no pertenece a
+  ninguno, así que devolver la fila de cualquiera pondría a los alumnos recién
+  registrados a montar un equipo que no han pedido.
+
+`verified`, `averageRating` y `totalReviews` no tienen columna y se responden
+con lo que es cierto: nadie está verificado y no hay reseñas, porque no existe
+todavía un sistema de reseñas que las produzca.
+
+### 25.4 El esquema pasa a vivir en el repositorio
+
+`supabase/migrations/` no existía: las dos migraciones aplicadas estaban sólo en
+la nube, así que el esquema no se podía revisar en un PR ni reproducir en otro
+proyecto. La nueva va como fichero,
+`20260905090000_perfil_editable_y_rol_declarado.sql`, y hace dos cosas:
+
+- **Añade `photo_url` y `bio`** a `profiles`, con permiso de actualización por
+  columna. Configuración ya guardaba foto y biografía contra `updateProfile` y
+  no había dónde escribirlas.
+- **El rol se declara al registrarse.** Antes toda cuenta nacía `trainer`, así
+  que quien decía «sólo entreno» quedaba marcado como entrenador y aterrizaba en
+  la pantalla de gestión de otra persona. Ahora sale de la intención declarada.
+
+**Que la intención venga del cliente no la hace insegura**, y conviene dejarlo
+dicho porque parece lo contrario: ni `trainer` ni `student` autorizan nada por sí
+mismos —lo que se puede hacer en un equipo sale del puesto que se tenga en él— y
+`admin` lo decide el disparador contra `platform_admin_emails`, sin mirar los
+metadatos. Un cliente modificado puede mentir sobre a qué viene, no sobre lo que
+puede.
+
+El permiso de escritura de `authenticated` sobre `profiles` **va por columna** —
+lo dejó así la migración anterior— y `role` no está en la lista. Eso es lo que
+impide que alguien se ascienda a administrador con un `update` sobre su propia
+fila. La columna nueva se añade a esa lista; `role` sigue fuera.
+
+### 25.5 Lo comprobado, y contra qué
+
+Con `VITE_USE_FAKE_AUTH` apagado, contra el proyecto real:
+
+- **El alta de entrenador llega a Supabase.** La fila aparece en `profiles` con
+  el nombre, los apellidos y la especialidad que se escribieron en el
+  formulario —«Pérdida de peso»—, puestos por el disparador desde los metadatos.
+- **Y no deja entrar a nadie.** La pantalla dice «Revisa tu correo», con la
+  dirección a la vista, en vez de navegar al panel con una sesión que no existe.
+- **Las credenciales llegan de verdad al proveedor.** Intentar entrar con una
+  cuenta sin confirmar devuelve «Por favor confirma tu email», que es el texto
+  del traductor de errores del adaptador y no el original en inglés: prueba a la
+  vez que la llamada sale y que la frontera traduce lo que vuelve.
+- **Y el límite de envíos también se traduce.** Al gastar las altas de prueba,
+  Supabase empezó a devolver 429 y la pantalla dijo «Demasiados intentos,
+  intenta más tarde». No estaba buscado, y es la comprobación del tercer camino
+  de `mapAuthError`.
+- **El aviso de confirmar cumple las reglas de 375 px**: sin desbordamiento, sin
+  contenedores por debajo de 280 px y sin controles bajo 44. Comprobado
+  interceptando la llamada de alta —el límite de envíos impedía crear otra
+  cuenta— con la respuesta que da el proveedor de verdad: el usuario creado y
+  ninguna sesión.
+
+### 25.6 La migración, aplicada y comprobada
+
+Se aplicó al proyecto. Comprobado después:
+
+- `photo_url` y `bio` existen, y `authenticated` puede escribirlas.
+- El permiso de actualización de `authenticated` cubre siete columnas y **`role`
+  no está entre ellas**: nadie se asciende a administrador con un `update` sobre
+  su propia fila.
+- La decisión de rol da lo que debe en los cuatro casos, incluido el que
+  importa: un cliente que declara `intent: "admin"` sale **`student`**. La
+  intención sólo distingue entrenador de alumno; `admin` se decide contra
+  `platform_admin_emails` y nada más.
+
+Las cuentas de prueba se borraron: el proyecto queda con cero usuarios y cero
+perfiles.
+
+### 25.7 Lo que NO queda comprobado, y por qué
+
+- **El inicio de sesión completo de una cuenta ya confirmada.** Hace falta abrir
+  el enlace del correo, que no llega a esta sesión.
+- **El alta de alumno de punta a punta.** La lógica del rol está comprobada
+  sobre la base, pero no el recorrido entero por la pantalla: Supabase limita los
+  envíos de correo por hora y se agotaron verificando el resto. Es cuestión de
+  esperar y repetir el alta eligiendo «Entreno».
+
+### 25.8 Lo que sigue siendo simulado, y por qué importa saberlo
+
+Sólo la autenticación y la ficha de perfil hablan con Supabase. Equipos,
+alumnos, rutinas, sesiones, planes y suscripciones siguen en memoria, y sus
+datos de semilla están atados a los identificadores que inventa
+`FakeAuthAdapter` a partir del correo.
+
+**Consecuencia práctica: con la autenticación real activada, la aplicación se ve
+vacía después de entrar.** No es un fallo del cableado: es que el resto de los
+repositorios no conocen a un usuario de verdad. Por eso `.env` conserva
+`VITE_USE_FAKE_AUTH=true` —quitarlo deja la aplicación sin datos y tumba las 180
+pruebas, que se identifican contra el adaptador simulado— y por eso los dos
+adaptadores falsos se siguen eligiendo con la misma condición.
+
+El camino es repositorio a repositorio, y el orden natural lo marca quién ata a
+quién: equipos y puestos antes que alumnos, y alumnos antes que sesiones.
+
+### 25.9 Deuda que aparece de paso
+
+- **Los mensajes de error no están traducidos.** `errorMapper` devuelve castellano
+  a fuego —«Email o contraseña incorrectos»— y `AppError.message` va directo a la
+  pantalla. Con la aplicación en tres idiomas, quien la usa en inglés recibe el
+  error en castellano. Arreglarlo es que `AppError` lleve una clave en vez de un
+  mensaje, y eso toca todos los adaptadores.
+- **No se puede reenviar el correo de confirmación.** Si no llega, no hay salida
+  desde la aplicación. Exige una operación nueva en `AuthPort`.
+- **Las dos primeras migraciones siguen sólo en la nube.** Se recuperan con
+  `supabase db pull` y deberían acabar en `supabase/migrations/` con la tercera.
+
+### 25.10 Auditoria del alta y el acceso, antes de abrir el PR
+
+La pregunta era «¿esta cableado con todo lo necesario?». La respuesta corta es
+que no, y salieron cuatro cosas. Una estaba causada por este mismo cambio y va
+arreglada; las otras tres necesitan una decision o una llave que no esta aqui.
+
+**1. El enlace de confirmacion no tenia donde aterrizar. ARREGLADO.**
+`emailRedirectTo` devuelve a `/authentication`, y `supabase-js` recoge la sesion
+de la URL al cargar. Sin nada mas, el recien confirmado se quedaba mirando el
+formulario de acceso, dentro de la aplicacion y sin saberlo. `GuestRoute` llevaba
+escrito y sin cablear desde hace tiempo -estaba en la deuda-; ahora cuelga de la
+ruta con `withGuestRoute`, gemelo de `withProtectedRoute`.
+
+Y manda A LA RAIZ, no a `/dashboard` como decia. En la raiz decide
+`HomeRedirect` segun el papel; a `/dashboard` un alumno aterrizaba en la
+pantalla de gestion de otra persona, que es el defecto que `HomeRedirect` existe
+para evitar.
+
+**2. El acceso con Google echa al usuario de la aplicacion.** El proveedor NO
+esta habilitado en el proyecto -comprobado: `/auth/v1/settings` devuelve
+`external: ['email']`-, asi que pulsar «Continuar con Google» lleva el navegador
+a `/auth/v1/authorize?provider=google`, que responde:
+
+```json
+{"code":400,"error_code":"validation_failed","msg":"Unsupported provider: provider is not enabled"}
+```
+
+El usuario sale de la aplicacion y aterriza en un JSON. No es un error que se
+pueda traducir desde el cliente porque no vuelve al cliente: la navegacion ya ha
+ocurrido. Habilitarlo exige credenciales de un cliente OAuth de Google, que no
+estan aqui; esconder el boton exige decidir si se esconde siempre o segun lo que
+diga `/auth/v1/settings`.
+
+**3. La lista blanca de redirecciones no se puede ver desde aqui.** Supabase solo
+respeta el `emailRedirectTo` si la direccion esta en Authentication → URL
+Configuration; si no, ignora el parametro y usa la Site URL. Ese ajuste no lo
+expone ninguna API publica ni la herramienta de migraciones, asi que **hay que
+mirarlo en el panel**: el origen de desarrollo -`http://localhost:5178/**`- y el
+de produccion tienen que estar en la lista, o el correo de confirmacion devuelve
+a otro sitio y el alta no se termina nunca.
+
+**4. Con la confirmacion activada, tres pasos del alta ya no ocurren.** Y es la
+consecuencia mas importante, porque no se ve leyendo la pantalla:
+
+```
+if (session === null) { setAwaitingConfirmation(true); return }
+```
+
+Detras de ese `return` se quedan `claimByEmail` -enlazar la ficha que un
+entrenador ya habia creado con ese correo-, `joinWithCode` -el codigo de equipo
+que se escribe en el propio formulario- y `readIntendedPath` -volver a donde se
+queria ir, que es como regresa quien llega por el QR-.
+
+Antes corrian siempre porque el codigo daba por abierta una sesion que no lo
+estaba. Ahora no corren nunca contra el proveedor real. **Su sitio ya no es el
+alta: es el PRIMER ACCESO**, que es el primer momento en que hay sesion. El
+codigo de equipo, ademas, tiene que sobrevivir al viaje por el correo, asi que
+habria que guardarlo y consumirlo al entrar.
+
+No se ha movido todavia a proposito: los alumnos siguen siendo un repositorio
+simulado, y mover codigo falso de sitio es adivinar. Va con la migracion de
+alumnos, y lo natural es que acabe en el servidor -enlazar por correo es
+exactamente lo que sabe hacer un disparador-.
+
+**Lo que si esta completo del acceso:** correo y contraseña, la sesion que
+sobrevive a la recarga, cerrar sesion, las rutas protegidas y ahora la guardia de
+invitado. **Lo que no:** Google, recuperar la contraseña -el boton esta
+deshabilitado con su `TODO`, que al menos no miente- y reenviar el correo de
+confirmacion.
+
+### 25.11 El boton de Google, apagado
+
+Queda DESHABILITADO mientras el proveedor no exista en el proyecto. No es
+prudencia: comprobado, pulsarlo llevaba el navegador a
+`/auth/v1/authorize?provider=google`, que responde 400 con «Unsupported
+provider: provider is not enabled», y el usuario SALIA de la aplicacion para
+aterrizar en un JSON. Eso no se puede traducir ni recuperar desde el cliente,
+porque para cuando ocurre la navegacion ya ha pasado.
+
+Un boton apagado es peor experiencia que uno que funciona, y muchisimo mejor que
+uno que expulsa. Queda como el de recuperar contraseña, que lleva apagado desde
+antes por el mismo criterio: no ofrecer lo que no se puede cumplir.
+
+El manejador se queda puesto a proposito. Encenderlo el dia que el proveedor
+exista es quitar un `disabled`: hay que dar de alta un cliente OAuth de Google y
+pegar sus credenciales en Authentication → Providers.
+
+### 25.12 Que falta para produccion
+
+El acceso por correo y contraseña funciona contra el proyecto real, pero **la
+autenticacion no esta lista para produccion**, y lo que falta no es sobre todo
+codigo de esta capa:
+
+1. **El correo transaccional.** El emisor que trae Supabase esta limitado por
+   horas y no esta pensado para produccion —medido aqui: al tercer alta seguida
+   empezo a devolver «Demasiados intentos»—. Sin un SMTP propio configurado, en
+   produccion la gente no recibe el correo de confirmacion.
+2. **La lista blanca de redirecciones** tiene que incluir el dominio de
+   produccion. Si no, el enlace del correo devuelve a la Site URL y el alta no se
+   termina. Solo se ve y se cambia en el panel.
+3. **No se puede recuperar la contraseña.** Perderla es perder la cuenta. Exige
+   `resetPasswordForEmail` en `AuthPort` y una pantalla para la vuelta.
+4. **No se puede reenviar la confirmacion.** Si el correo no llega, no hay salida
+   desde la aplicacion.
+5. **El alta ya no enlaza fichas ni codigos** —ver §25.10 punto 4—, asi que el
+   camino «un entrenador invita por correo» y el del QR estan rotos de punta a
+   punta contra el proveedor real.
+6. **Los mensajes de error solo estan en castellano**, con la aplicacion en tres
+   idiomas.
+7. **Nunca se ha visto entrar a una cuenta confirmada.** Falta abrir el enlace de
+   un correo de verdad y comprobar que la sesion se abre y el perfil se lee.
+
+Y por encima de todo lo anterior: **detras del acceso no hay aplicacion.** Todo
+lo que no sea la cuenta y el perfil sigue en memoria, atado a los identificadores
+que inventa el adaptador simulado, asi que quien entre con una cuenta real
+encuentra la aplicacion vacia. Preguntarse si la autenticacion esta lista para
+produccion es prematuro mientras equipos y alumnos no lo esten.
+
+## 26. El cableado completo: fases 0 a 5 del plan (8 sep 2026)
+
+Rama `feature/supabase-connection`. Ejecuta [`PLAN-CABLEADO.md`](PLAN-CABLEADO.md)
+de la fase 0 a la 5 sin pausas. Lo que aquí se cuenta es lo que el plan no
+podía saber: lo que cambió al escribirlo, y por qué.
+
+### 26.1 Lo que se puede ejecutar ahora
+
+- `supabase start` levanta la base en local desde `supabase/config.toml`, con
+  las siete migraciones y `supabase/seed.sql`. `supabase db reset` la deja como
+  nueva. Las claves salen de `supabase status -o env`, no de `.env`: el `.env`
+  sigue apuntando a la nube y las pruebas no lo tocan.
+- `npm run test:contract` corre las pruebas de contrato con Vitest contra esa
+  base local. Son SEIS ficheros en `tests/contract/`: perfiles, equipos,
+  alumnos, entrenamiento, sesiones y muro. Cada uno ejercita políticas,
+  disparadores y funciones con TRES clientes —anónimo, servicio y una sesión
+  real— y borra sus cuentas al terminar.
+- `npm run test:e2e` es la suite de Playwright de siempre, contra los
+  adaptadores simulados. Siguen existiendo A PROPÓSITO: es la única forma de
+  probar pantallas sin una base detrás, y la CI la ejecuta en un job aparte.
+- La CI tiene tres trabajos: lint y build, interfaz, y contratos. El de
+  contratos levanta Supabase con `supabase/setup-cli` y aplica las migraciones.
+
+### 26.2 Fase 0: los errores viajan como claves
+
+`AppError` ya no lleva un mensaje: lleva un `reason` de un tipo cerrado,
+`AppErrorReason`, con veintiuna razones. `describeError(error, t, fallback)` en
+`shared/i18n/errorMessages.ts` lo convierte en texto en el idioma de la
+persona; `ERROR_REASON_KEY` es la tabla de razón a clave, y las tres
+traducciones llevan las veintiuna claves `error.*`. Veintiún hooks pasaron por
+ahí.
+
+Lo que el servidor rechaza también viaja así: una función o un disparador hace
+`raise exception 'lastAdmin'`, y `mapDataError` reconoce el mensaje en
+`SERVER_REASONS` antes de mirar el código SQL. Es la forma de que «no puedes
+dejar al equipo sin administrador» se lea igual venga del navegador o de
+Postgres, y de que añadir una regla en el servidor no exija tocar el cliente
+más que en la tabla y en los diccionarios.
+
+Las dos primeras migraciones, que sólo vivían en la nube, se RECONSTRUYERON a
+partir del esquema vivo —`supabase db pull` exige `supabase login` y esta
+máquina no lo tiene— y viven en `supabase/migrations/` con su fecha original.
+Aplicarlas en local produce la misma base que la de la nube, y es lo que
+comprueban las pruebas de contrato.
+
+### 26.3 Fase 1: equipos y puestos
+
+`crews` y `crew_staff`, con las capacidades del puesto en `role_capabilities` y
+las extra en la fila. `create_crew` es una función: crea el equipo y sienta al
+creador como administrador en la misma transacción, porque una política no
+puede permitir «insertar en un equipo del que todavía no eres nadie».
+
+`is_crew_member`, `has_capability`, `is_crew_staff` e `is_platform_admin` son
+las cuatro funciones `security definer` que sustituyen a `can`,
+`lastAdminBlocker` y `canEnrollMembers` como barrera. El cliente las sigue
+teniendo, para no ofrecer lo que va a fallar; la que decide es la base. El
+último administrador no se degrada ni se borra: lo corta un disparador con
+`lastAdmin`, la misma razón que el cliente ya conocía.
+
+`CrewStaff` deja de copiar nombre y correo: los trae por la relación con
+`profiles` —`STAFF_COLUMNS` en el adaptador— y el mapper los aplana. Era la
+excepción anotada en la deuda; se cerró cuando existió el perfil.
+
+### 26.4 Fase 2: alumnos, pertenencia, cuotas y avisos
+
+`students` es la ficha, y `profile_id` nulo significa «sin cuenta todavía».
+El ENLACE ocurre en el servidor y en dos momentos:
+
+- Al registrarse, `handle_new_user` —el disparador del alta— busca fichas con
+  ese correo, sin distinguir mayúsculas, y las enlaza. Si el alta trae
+  `join_code` en los metadatos, `claim_membership_as` lo aplica ahí mismo. Por
+  eso `SignUpProfile.joinCode` existe y `toSignUpMetadata` lo manda: el código
+  del QR sobrevive al viaje por el correo porque va DENTRO de la cuenta.
+- Al entrar ya con cuenta, `claim_membership` hace lo mismo con el código que
+  se teclea. Es la ruta del QR para quien ya tiene sesión.
+
+Un disparador limita lo que un alumno puede escribir en su propia ficha:
+nombre y foto. Nivel, estado de pertenencia y capacidades son del entrenador, y
+cambiarlos devuelve `forbidden`. Cuotas y avisos son tablas planas con sus
+políticas; la plataforma —`platform_admins`— es una tabla que sólo escribe el
+rol de servicio, ya no una constante.
+
+### 26.5 Fase 3: entrenamiento
+
+Dos puertos que no existían, `CatalogRepository` y `BlockLibraryRepository`,
+porque el catálogo vivía en un fichero de datos y la biblioteca de bloques en
+un almacén de `zustand`, y ninguno de los dos podía tener adaptador real.
+`catalog.mock.ts`, `catalogStore.ts` y `blockLibraryStore.ts` desaparecen; los
+tipos siguen exportándose desde `trainings/types` para que las importaciones
+antiguas no se enteren.
+
+`crew_id` NULO ES EL CATÁLOGO DE SISTEMA. Grupos musculares, patrones, material,
+objetivos y divisiones que trae la semilla no tienen equipo, y por eso no se
+pueden editar; el material que da de alta un entrenador lleva su `crew_id` y
+sólo lo ve su equipo. Una sola tabla por catálogo, sin duplicar el esquema.
+
+Rutinas y planes guardan su documento en JSONB —`blocks` y `weeks`—, con la
+misma forma que la entidad. La forma la comprueba la base: `is_valid_blocks`,
+`is_valid_weeks` e `is_valid_block` son restricciones CHECK, y una rutina con
+series a cero o un método desconocido devuelve `23514` antes de guardarse.
+Borrar una rutina asignada lo impide la clave foránea, que es exactamente lo que
+`deletion.ts` calculaba en el cliente.
+
+### 26.6 Fase 4: agenda y sesión
+
+`sessions` guarda fecha y hora como `date` y `time`, no como `timestamptz`:
+«el martes a las nueve» no cambia de día porque alguien viaje. El resultado es
+un documento validado por `is_valid_session_result`, y `complete_session` cierra
+estado y resultado en UNA escritura, porque entre las dos que hacía el cliente
+cabía una sesión completada sin resultado.
+
+Un alumno ve las suyas y las grupales de su equipo —la política es
+`crewScope.asStudent()` escrito en SQL— y sólo puede CERRAR la suya: mover la
+fecha o cambiar el título lo corta `guard_session_update` con `forbidden`.
+`create_sessions` vuelca un plan en bloque y cada sesión guarda
+`assignment_id`: es lo que faltaba para poder mover o cancelar un volcado
+entero, y lo que hace que volcar dos veces se pueda detectar.
+
+### 26.7 Fase 5: progreso, ranking y muro
+
+El progreso NO tiene tabla: experiencia, nivel y racha se siguen derivando de
+las sesiones en el cliente. Lo único que sube al servidor es el ranking, y sube
+por RLS, no por rendimiento: necesita las sesiones de todos y un alumno no puede
+leer las de los demás. `crew_ranking(crew, period)` es `security definer`,
+comprueba la pertenencia, respeta `ranking_enabled` y repite la fórmula de
+`experience.ts` —veinte por sesión, una por serie—. Es la segunda y última
+duplicación que el plan acepta, y su prueba de contrato comprueba que las dos
+dan lo mismo.
+
+`CrewPost.likedBy` desaparece: hay `crew_post_likes` como tabla, y
+`crew_posts_view` —con `security_invoker`— devuelve `likeCount` y `likedByMe`
+calculados para quien pregunta. `toggle_post_like` da o quita en una llamada,
+sin que el cliente tenga que saber si ya lo había dado. `crew_wall_reads`
+guarda cuándo miró cada uno el muro por última vez: es la marca para el contador
+de no leídos que la deuda pedía, aunque el contador todavía no se pinta.
+
+### 26.8 La raíz de composición
+
+`container.ts` elige TODOS los repositorios con la misma condición que ya
+elegía la autenticación: `import.meta.env.DEV && VITE_USE_FAKE_AUTH === 'true'`.
+No hay medias tintas —medio simulado, medio real— porque las semillas falsas
+cuelgan de identificadores inventados y una mezcla se ve vacía. `.env` conserva
+`VITE_USE_FAKE_AUTH=true` mientras la suite de interfaz dependa de las semillas;
+quitarlo es la forma de ver la aplicación contra la base.
+
+### 26.9 Fase 6: la cuenta completa
+
+`AuthPort` gana cuatro operaciones y ninguna conoce al proveedor:
+`requestPasswordReset`, `updatePassword`, `resendConfirmation` y
+`deleteAccount`.
+
+**Recuperar la contraseña** es un desvío DENTRO de la pestaña de acceso —un
+paso y se vuelve— y el correo lleva a `/authentication/nueva-contrasena`, que
+no es ruta de invitado ni protegida, y no por descuido: el enlace llega CON
+sesión, así que la guardia de invitado la echaría a la raíz antes de poder
+cambiar nada; y quien llega con el enlace caducado no tiene sesión y merece
+saber por qué. El formulario de la nueva contraseña es el MISMO que el de
+Configuración —`PasswordFields`, sobre `useUpdatePassword`—; lo único que
+cambia es a dónde se va después.
+
+**Reenviar la confirmación** se permite UNA vez por pantalla: el proveedor
+limita los envíos por hora y el segundo reenvío seguido sólo gasta el cupo.
+
+**Darse de baja** es `delete_account()`, en el servidor, porque `auth.users`
+no se toca desde la API y porque hay que decidir qué pasa con lo que la
+persona deja: un equipo donde es la única con cuenta se va con ella; uno donde
+gobierna a otros la retiene con `lastAdmin` hasta que nombre a alguien; en los
+demás su puesto y su ficha caen en cascada. `crews.created_by` pasa a otro
+administrador, y `guard_last_admin` deja pasar la cascada de un equipo que se
+borra entero. El cliente cierra sólo la sesión LOCAL después: la cuenta ya no
+existe y pedirle al servidor que la cierre devolvería un error.
+
+Lo que la fase 6 deja PENDIENTE, a propósito: las fotos siguen siendo
+direcciones tecleadas —Storage es la primera vez que la aplicación guardaría
+ficheros y es una decisión—, el onboarding sigue siendo «visto en este
+dispositivo», y Google sigue apagado.
+
+### 26.10 Fase 7: lo que ya se puede hacer sin decidir nada
+
+`audit_log`, escrito por `record_audit` —un disparador genérico— en equipos,
+puestos, fichas y cuotas. Quién, qué, cuándo, y la fila antes y después. Lo lee
+quien tiene `crew.settings`; nadie lo escribe desde un cliente. No tiene
+pantalla todavía.
+
+Lo demás de la fase 7 no es código de este repositorio: dos proyectos de
+Supabase, SMTP propio, la lista blanca de redirecciones con
+`/authentication/nueva-contrasena`, las copias de seguridad, y aplicar las seis
+migraciones nuevas en la nube con copia previa.
+
+## 27. Lo que faltaba del plan, hecho (9 sep 2026)
+
+Rama `feature/supabase-connection`. Cierra los huecos de §10 del plan, el
+tiempo real de §1.3, lo que quedaba de la fase 6 y la parte de la fase 7 que
+es código. Lo que sigue fuera está al final, y es corto.
+
+### 27.1 Controles que no hacían nada
+
+- **Los filtros filtran**, en alumnos y en rutinas: texto sin tildes ni
+  mayúsculas —`normalizeForSearch`— y nivel. EN MEMORIA y no en el puerto: son
+  decenas de fichas ya cargadas, y buscar por nombre es escribir y ver. El
+  botón «Filtros» se sustituyó por el único filtro que existe, el nivel: un
+  botón que abre un panel para elegir una cosa es un paso de más.
+- **Tempo e indicaciones** de un ejercicio tienen campo en el editor y se
+  leen en la ficha de la rutina. Se conservaban sin poder escribirse.
+- **La ficha de una sesión guarda estado y notas** con un solo botón, y
+  «Editar» abre el formulario del alta con la sesión puesta. Es el mismo
+  formulario porque es la misma decisión, y con `editing` cambia sólo lo que
+  pasa al enviar: `update` en vez de `create`, conservando estado y
+  resultado. Mover una sesión era el motivo de materializar las de un plan.
+- **«Vista previa»** se quitó del menú de rutina: la ficha ya lo es.
+- **El muro cuenta lo no leído** sobre la insignia del equipo, que es su
+  entrada. `countUnread` y `markAllRead` en el puerto; detrás,
+  `crew_wall_reads`. Abrir el muro lo da por leído una vez por visita, al
+  montar, y no en cada recarga de la lista: un anuncio que llegue mientras se
+  mira no puede quedar leído sin haberse visto.
+
+### 27.2 Lo que un volcado deja, y lo que se hace con ello
+
+`Session.assignmentId` existía en la base y no en la entidad: el volcado
+creaba las sesiones una a una con `create` y ninguna sabía de dónde salía.
+Ahora `createMany` manda el lote a `create_sessions` —todas o ninguna— y cada
+sesión guarda su asignación. Con eso:
+
+- **Volcar dos veces avisa**: el diálogo cuenta las que ya salieron de esa
+  asignación y el botón dice «Volcar otra vez». No lo impide, porque un ciclo
+  nuevo del mismo plan es legítimo; lo que no puede ser es que duplique en
+  silencio.
+- **Mover una semana y cancelar las pendientes**, en bloque, desde la lista de
+  asignaciones. `shift_sessions` es una función porque sumar días a una fecha
+  es aritmética de Postgres; cancelar es un `update` con filtro. Sólo lo que
+  está por ocurrir: una completada ya ocurrió y una cancelada ya se decidió.
+  Cancelar pide una segunda pulsación en el sitio, no un diálogo: es
+  reversible.
+
+### 27.3 Tiempo real, en el orden del plan
+
+`notices`, `crew_posts`, `crew_post_likes` y `sessions` entran en la
+publicación de `supabase_realtime`, y los tres adaptadores se suscriben con
+`subscribeToTable`, uno por tabla y acotado por crew. RLS decide qué filas
+llegan por el canal: un alumno no recibe las sesiones de sus compañeros
+aunque escuche la tabla entera. El aviso no lleva la fila —el contrato del
+puerto es «algo cambió»— y quien escucha vuelve a leer por el camino de
+siempre. El muro combina los oyentes locales con el canal: lo que escribe este
+cliente se ve al instante, lo que escriben otros llega por tiempo real.
+
+### 27.4 Fase 6, lo que quedaba
+
+- **Onboarding por cuenta**: `profiles.onboarded_at` detrás de un puerto
+  propio, `OnboardingRepository`. Propio y pequeño porque es un dato de la
+  CUENTA —lo vio esta persona, en el dispositivo que fuera— y no de la ficha
+  de entrenador ni de la de alumno. La guardia del layout espera la respuesta:
+  con `null` no manda a nadie a ningún sitio, porque decidir «no lo vio» antes
+  de saberlo devolvía al recorrido a quien ya lo terminó. La simulación sigue
+  usando la clave del dispositivo, que es lo que la suite de interfaz escribe.
+- **Fotos por Storage**: `PhotoStorage`, el primer puerto que guarda
+  ficheros. Recibe el fichero y devuelve la dirección con la que `photoUrl` ya
+  trabajaba; ni cubos ni rutas cruzan el puerto. Cubo `photos`, público en
+  lectura, y cada cuenta escribe sólo en su carpeta —la política compara el
+  primer tramo de la ruta con `auth.uid()`—. En Configuración, «Subir foto»
+  rellena el campo de la dirección y guardar sigue siendo el botón de abajo.
+- **Google, si se enciende**: el disparador del alta lee `full_name` y
+  `avatar_url` además de nombre y apellidos separados, y `profiles` gana
+  `photo_url`. El botón sigue apagado hasta que exista el cliente OAuth.
+
+### 27.5 Fase 7, lo que es código
+
+- **El token no se adivina a fuerza bruta**: `find_crew_by_join_token` anota
+  cada consulta por cuenta en `join_token_lookups` y a la vigésima en una hora
+  responde `tooManyAttempts`. Por cuenta y no por IP, porque Postgres no ve la
+  IP y la función ya no respondía sin sesión.
+- **Un fallo real de camino**: crear un equipo escribía el puesto del fundador
+  como segunda operación desde el hook, y `create_crew` ya lo sienta en la
+  misma transacción. Contra Supabase, la segunda escritura duplicaba el alta y
+  fallaba. `create` sienta al fundador en los dos adaptadores y el hook ya no
+  escribe nada después.
+
+### 27.6 La suite de interfaz, en su propio servidor
+
+Levanta el 5179 con `VITE_USE_FAKE_AUTH=true` por variable de entorno. Antes
+reutilizaba el 5178 y heredaba el `.env` de quien trabaja: con ese servidor
+contra Supabase, las ciento ochenta pruebas fallaban en el login por un motivo
+que no era el suyo.
+
+### 27.7 Lo que sigue fuera, y por qué
+
+Decisiones de producto que el plan dejó fuera y que nadie ha tomado: eventos
+del equipo, importes en las cuotas, libras, asistencia a sesiones grupales. Y
+lo que no es código de este repositorio: SMTP, dos proyectos, copias de
+seguridad, el cliente OAuth de Google, la lista blanca de redirecciones, los
+iconos de la PWA y un capturador de errores del cliente. El GPS de la sesión
+en vivo de cardio sigue simulado: es la otra pantalla que el plan no cableó
+porque no hay dato que guardar hasta que exista el recorrido real.

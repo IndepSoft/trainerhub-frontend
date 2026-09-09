@@ -48,6 +48,11 @@ function weekdayName(dayOfWeek: number): string {
 interface PlanToAgendaDialogProps {
   student: Student
   plan: TrainingPlan
+  /**
+   * La asignación que se vuelca. Las sesiones la guardan, y es lo que permite
+   * moverlas o cancelarlas en bloque y avisar de que ya se volcó.
+   */
+  assignmentId: string
   /** Desde cuándo cuenta la semana 1. */
   startDate: string
   open: boolean
@@ -74,6 +79,7 @@ interface PlanToAgendaDialogProps {
 export function PlanToAgendaDialog({
   student,
   plan,
+  assignmentId,
   startDate,
   open,
   onOpenChange,
@@ -81,6 +87,23 @@ export function PlanToAgendaDialog({
   const { t, plural } = useTranslation()
   const fieldId = useId()
   const { routines } = useAssignableRoutines()
+
+  /*
+   * Cuantas sesiones salieron ya de esta asignacion. Volcar dos veces
+   * duplicaba en silencio; ahora se dice, y quien lo hace a proposito -un
+   * ciclo nuevo- sigue pudiendo, con el boton diciendo lo que va a pasar.
+   */
+  const [alreadyDumped, setAlreadyDumped] = useState(0)
+  useEffect(() => {
+    if (!open) return
+    let active = true
+    container.sessions.findByAssignment(assignmentId).then((existing) => {
+      if (active) setAlreadyDumped(existing.length)
+    })
+    return () => {
+      active = false
+    }
+  }, [open, assignmentId])
 
   const weekdays = useMemo(() => weekdaysUsedBy(plan), [plan])
   const routinesById = useMemo(
@@ -140,13 +163,18 @@ export function PlanToAgendaDialog({
 
   const handleConfirm = async () => {
     setIsSaving(true)
-    // En serie y no en paralelo: el adaptador reemplaza su lista entera en cada
-    // alta, así que doce promesas a la vez se pisarían y sólo quedaría una.
-    for (const entry of planned) {
-      await container.sessions.create(entry.session)
+    try {
+      // Todas o ninguna, y cada una con la asignacion de la que salio. Eran
+      // doce altas sueltas en serie, y una red que se cae a mitad dejaba
+      // medio plan en la agenda.
+      await container.sessions.createMany(
+        planned.map((entry) => entry.session),
+        assignmentId
+      )
+      onOpenChange(false)
+    } finally {
+      setIsSaving(false)
     }
-    setIsSaving(false)
-    onOpenChange(false)
   }
 
   return (
@@ -246,6 +274,13 @@ export function PlanToAgendaDialog({
             </p>
           )}
 
+          {alreadyDumped > 0 && (
+            <p className="flex items-start gap-2 rounded-block border border-warning/40 bg-warning/5 px-3 py-2 text-xs text-ink/70">
+              <AlertTriangle aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 text-warning" />
+              <span>{t('planDump.alreadyDumped', { count: alreadyDumped })}</span>
+            </p>
+          )}
+
           {planned.length === 0 ? (
             <p className="rounded-block border border-cobalt-tint-3 px-4 py-6 text-center text-sm text-ink/45">
               {t('planDump.pickAtLeastOne')}
@@ -299,7 +334,9 @@ export function PlanToAgendaDialog({
             <CalendarCheck className="size-5" />
             {planned.length === 0
               ? t('planDump.confirm')
-              : t('planDump.confirmCount', { count: planned.length })}
+              : alreadyDumped > 0
+                ? t('planDump.confirmAgain')
+                : t('planDump.confirmCount', { count: planned.length })}
           </Button>
         </div>
       </DialogContent>

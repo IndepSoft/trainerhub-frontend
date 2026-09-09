@@ -40,6 +40,25 @@ export interface SessionRepository {
    */
   findBetween(from: string, to: string): Promise<Session[]>
   create(data: NewSession): Promise<Session>
+  /**
+   * El volcado de un plan: todas las sesiones o ninguna, y cada una sabe de
+   * qué asignación salió.
+   *
+   * Operación propia y no un bucle de `create`: doce altas sueltas pueden
+   * quedarse en siete si la red se cae a mitad, y una agenda con medio plan
+   * volcado es peor que una sin volcar. Con un backend real es una transacción.
+   */
+  createMany(sessions: NewSession[], assignmentId: string): Promise<Session[]>
+  /** Las que salieron de un volcado, para saber si ya se hizo y qué queda de él. */
+  findByAssignment(assignmentId: string): Promise<Session[]>
+  /**
+   * Mueve las sesiones pendientes o confirmadas de un volcado un número de
+   * días. Devuelve cuántas movió. Las completadas y las canceladas no se
+   * tocan: ya ocurrieron o ya se decidió que no.
+   */
+  shiftByAssignment(assignmentId: string, days: number): Promise<number>
+  /** Cancela las pendientes o confirmadas de un volcado. Devuelve cuántas. */
+  cancelByAssignment(assignmentId: string): Promise<number>
   update(sessionId: string, data: NewSession): Promise<void>
   /** Cambia sólo el estado. Es la operación que más se hace sobre una sesión. */
   updateStatus(sessionId: string, status: SessionStatus): Promise<void>

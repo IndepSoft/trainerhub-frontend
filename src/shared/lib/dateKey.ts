@@ -34,6 +34,19 @@ export function todayKey(): string {
   return toLocalDateKey(new Date())
 }
 
+/**
+ * Suma días a una clave de fecha. Negativo resta.
+ *
+ * Se construye la fecha por partes y se deja que `Date` desborde el mes: nada de
+ * `toISOString`, que convierte a UTC y desplaza al día anterior en husos
+ * negativos. Vivía dentro del volcado de planes; sube aquí al necesitarla
+ * también mover un volcado entero.
+ */
+export function shiftDateKey(dateKey: string, days: number): string {
+  const [year, month, day] = dateKey.split('-').map(Number)
+  return toLocalDateKey(new Date(year, month - 1, day + days))
+}
+
 /** Un tramo de fechas, ambos extremos incluidos, en claves locales. */
 export interface DateRange {
   from: string

@@ -4,6 +4,7 @@ import type { Session } from './entities/session'
 import type { TrainingPlan } from './entities/plan'
 import { estimateRoutineMinutes } from './routineMetrics'
 import { findOverlappingSessions } from './sessionScheduling'
+import { shiftDateKey } from '@/shared/lib/dateKey'
 
 /**
  * Volcar un plan a la agenda: convertir un patrón semanal en sesiones con fecha.
@@ -73,21 +74,9 @@ function isoWeekday(dateKey: string): number {
   return ((new Date(year, month - 1, day).getDay() + 6) % 7) + 1
 }
 
-/**
- * Suma días a una clave de fecha.
- *
- * Se construye la fecha por partes y se deja que `Date` desborde el mes: nada de
- * `toISOString`, que convierte a UTC y desplaza al día anterior en husos
- * negativos.
- */
+/** Suma días a una clave de fecha. La implementación es la compartida de `dateKey`. */
 function addDays(dateKey: string, days: number): string {
-  const [year, month, day] = dateKey.split('-').map(Number)
-  const result = new Date(year, month - 1, day + days)
-
-  const resultYear = result.getFullYear()
-  const resultMonth = String(result.getMonth() + 1).padStart(2, '0')
-  const resultDay = String(result.getDate()).padStart(2, '0')
-  return `${resultYear}-${resultMonth}-${resultDay}`
+  return shiftDateKey(dateKey, days)
 }
 
 /**

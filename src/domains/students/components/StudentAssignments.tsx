@@ -8,6 +8,7 @@ import { useAssignablePlans } from '../hooks/useAssignablePlans'
 import { formatDateKey } from '../libs/dateKey'
 import { AssignDialog } from './AssignDialog'
 import { PlanToAgendaDialog } from './PlanToAgendaDialog'
+import { DumpActions } from './DumpActions'
 import type { Assignment, PlanAssignment } from '@/shared/domain/entities/assignment'
 import type { Student } from '@/shared/domain/entities/student'
 import { useTranslation, type Translate } from '@/shared/i18n/LanguageContext'
@@ -105,6 +106,10 @@ export function StudentAssignments({ student }: StudentAssignmentsProps) {
                 {assignment.notes !== '' && (
                   <p className="mt-1 text-xs text-ink/40">{assignment.notes}</p>
                 )}
+
+                {/* Lo que el volcado dejo en la agenda, con sus acciones en
+                    bloque. Solo en planes: una rutina suelta no se vuelca. */}
+                {assignment.kind === 'plan' && <DumpActions assignmentId={assignment.id} />}
               </div>
 
               <div className="flex shrink-0 items-center">
@@ -154,6 +159,7 @@ export function StudentAssignments({ student }: StudentAssignmentsProps) {
         <PlanToAgendaDialog
           student={student}
           plan={planBeingDumped}
+          assignmentId={dumping.id}
           startDate={dumping.startDate ?? ''}
           open
           onOpenChange={(next) => {

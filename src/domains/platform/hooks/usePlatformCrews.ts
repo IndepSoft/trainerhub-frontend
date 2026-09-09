@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { container } from '@/app/container'
-import { AppError } from '@/shared/domain/errors'
 import type { CrewOverview } from '@/shared/domain/ports/PlatformRepository'
 import type { SubscriptionStatus } from '@/shared/domain/entities/crew'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { describeError } from '@/shared/i18n/errorMessages'
 
 interface UsePlatformCrewsResult {
   crews: CrewOverview[]
@@ -33,7 +33,7 @@ export function usePlatformCrews(): UsePlatformCrewsResult {
     try {
       setCrews(await container.platform.listCrews())
     } catch (caught) {
-      setError(AppError.is(caught) ? caught.message : t('platform.crews.error'))
+      setError(describeError(caught, t, 'platform.crews.error'))
     } finally {
       setLoading(false)
     }

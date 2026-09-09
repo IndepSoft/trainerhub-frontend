@@ -1,9 +1,9 @@
 import { useCallback, useState } from 'react'
 import { container } from '@/app/container'
-import { AppError } from '@/shared/domain/errors'
 import { useViewerContext } from '@/app/ViewerContext'
 import { useAuthStore } from '@/app/stores/authStore'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { describeError } from '@/shared/i18n/errorMessages'
 
 /** Lo que se puede cambiar de uno mismo, sea cual sea la ficha. */
 export interface ProfileDraft {
@@ -57,9 +57,9 @@ interface UseProfileEditorResult {
  * enlaza una cuenta con la ficha que le esperaba— y cambiarlo desde aquí dejaría
  * a la persona fuera de su propio historial. Se enseña, no se edita.
  *
- * TODO: la contraseña tampoco se cambia. `AuthPort` no expone esa operación, y
- * añadirla a medias —un formulario que no llama a nada— sería peor que no
- * ofrecerla.
+ * La contraseña no pasa por aquí: es de la CUENTA, no de la ficha, y la cambia
+ * `useUpdatePassword` contra `AuthPort` desde el mismo formulario que usa la
+ * recuperación por correo.
  */
 export function useProfileEditor(): UseProfileEditorResult {
   const { trainer, active } = useViewerContext()
@@ -120,7 +120,7 @@ export function useProfileEditor(): UseProfileEditorResult {
 
         return false
       } catch (caught) {
-        setError(AppError.is(caught) ? caught.message : t('settings.profile.error'))
+        setError(describeError(caught, t, 'settings.profile.error'))
         return false
       } finally {
         setSaving(false)

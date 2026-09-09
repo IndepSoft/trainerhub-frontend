@@ -9,7 +9,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { CreateSessionModal } from '../components/CreateSessionModal'
-import { SessionDetailsModal } from '../components/SessionDetailsModal'
+import { SessionDetailsModal, type SessionDetailsChanges } from '../components/SessionDetailsModal'
 import { CalendarNavigation } from '../components/CalendarNavigation'
 import { WeekView } from '../components/WeekView'
 import { DayView } from '../components/DayView'
@@ -18,7 +18,7 @@ import { useCalendar } from '../hooks/useCalendar'
 import { useSchedulableStudents } from '../hooks/useSchedulableStudents'
 import { container } from '@/app/container'
 import { useViewerContext } from '@/app/ViewerContext'
-import type { CalendarViewMode, SessionStatus } from '../types/calendar.types'
+import type { CalendarViewMode, Session } from '../types/calendar.types'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 export default function Calendar() {
@@ -84,13 +84,28 @@ export default function Calendar() {
    * podian reflejar la semilla y nada de lo que hacia el entrenador podia darse
    * por hecho.
    */
-  const handleStatusChange = (sessionId: string, newStatus: SessionStatus) => {
-    void container.sessions.updateStatus(sessionId, newStatus)
+  const handleSave = (sessionId: string, changes: SessionDetailsChanges) => {
+    if (selectedSession === null || selectedSession.id !== sessionId) return
+    /*
+     * Una sola escritura con la sesion entera y lo cambiado encima. `update`
+     * pide la sesion completa -es lo que el formulario de edicion manda-, y
+     * reutilizarlo evita un metodo del puerto solo para las notas.
+     */
+    const { id: _sessionId, crewId: _crewId, ...current } = selectedSession
+    void container.sessions.update(sessionId, { ...current, ...changes })
   }
 
   const handleDelete = (sessionId: string) => {
     void container.sessions.remove(sessionId)
   }
+
+  /*
+   * La sesion que se esta editando en el formulario. Es estado propio y no
+   * `selectedSession` porque la ficha se cierra al pulsar «Editar» -y con ella
+   * se vacia la seleccion- mientras el formulario tiene que seguir sabiendo
+   * cual era.
+   */
+  const [editingSession, setEditingSession] = useState<Session | null>(null)
 
   return (
     // Misma estructura de scroll que el resto de paginas: la cabecera queda
@@ -195,8 +210,21 @@ export default function Calendar() {
           session={selectedSession}
           open={!!selectedSession}
           onOpenChange={(open) => !open && selectSession(null)}
-          onStatusChange={handleStatusChange}
+          onSave={handleSave}
+          onEdit={setEditingSession}
           onDelete={handleDelete}
+        />
+      )}
+
+      {/* El formulario del alta, con la sesion ya puesta. `key` por lo mismo
+          que arriba: su estado inicial se toma una sola vez. Sin disparador
+          propio: se abre desde «Editar» de la ficha. */}
+      {editingSession !== null && (
+        <CreateSessionModal
+          key={editingSession.id}
+          editing={editingSession}
+          open
+          onOpenChange={(open) => !open && setEditingSession(null)}
         />
       )}
     </div>
