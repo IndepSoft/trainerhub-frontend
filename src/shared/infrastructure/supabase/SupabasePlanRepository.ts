@@ -5,6 +5,7 @@ import { AppError, AppErrorCode } from '@/shared/domain/errors'
 import { supabase } from './client'
 import { mapDataError } from './errorMapper'
 import { toPlan, toPlanRow, type PlanRow } from './mappers'
+import { subscribeToTable } from './realtime'
 
 /**
  * Implementacion de PlanRepository sobre PostgREST.
@@ -68,8 +69,11 @@ export class SupabasePlanRepository implements PlanRepository {
     if (error) throw mapDataError(error)
   }
 
-  /** TODO: sin suscripcion todavia. Ver el plan, §1.3. */
-  onChange(): () => void {
-    return () => undefined
+  /**
+   * Un plan lo escribe el entrenador y lo esperan sus alumnos: que «lo edita
+   * una persona» describe al autor, no al publico.
+   */
+  onChange(listener: () => void): () => void {
+    return subscribeToTable('plans', listener)
   }
 }

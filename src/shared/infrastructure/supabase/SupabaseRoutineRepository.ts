@@ -5,6 +5,7 @@ import { AppError, AppErrorCode } from '@/shared/domain/errors'
 import { supabase } from './client'
 import { mapDataError } from './errorMapper'
 import { toRoutine, toRoutineRow, type RoutineRow } from './mappers'
+import { subscribeToTable } from './realtime'
 
 /**
  * Implementacion de RoutineRepository sobre PostgREST.
@@ -75,8 +76,11 @@ export class SupabaseRoutineRepository implements RoutineRepository {
     if (error) throw mapDataError(error)
   }
 
-  /** TODO: sin suscripcion todavia. Ver el plan, §1.3. */
-  onChange(): () => void {
-    return () => undefined
+  /**
+   * Una rutina publicada aparece en la agenda y en las asignaciones de quien la
+   * va a hacer, que no es quien la escribio.
+   */
+  onChange(listener: () => void): () => void {
+    return subscribeToTable('routines', listener)
   }
 }

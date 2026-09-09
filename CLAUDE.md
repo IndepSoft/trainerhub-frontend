@@ -339,11 +339,25 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
 - El muro cuenta lo no leído sobre la insignia del equipo —`countUnread` y
   `markAllRead` en el puerto, `crew_wall_reads` detrás— y abrir el muro lo da
   por leído. Las notificaciones push son otro trabajo.
-- TIEMPO REAL sólo donde el plan lo pidió: avisos, muro y agenda, por
-  `postgres_changes` con `subscribeToTable`. RLS decide qué filas llegan por
-  el canal. Rutinas, planes y catálogo no lo tienen: los edita una persona y
-  los lee ella misma. Una tabla nueva con tiempo real se añade a la
-  publicación en su migración.
+- TIEMPO REAL en **todo lo que la aplicación escucha**, por `postgres_changes`
+  con `subscribeToTable` / `subscribeToTables`. Quince tablas publicadas: las
+  de pertenencia e identidad —`crews`, `crew_staff`, `students`, `profiles`—
+  y las de datos del equipo. Fuera quedan, a propósito, la auditoría, las
+  marcas de lectura, la contabilidad interna y el catálogo de sistema.
+
+  **Sin filtro por equipo en el canal.** RLS decide quién recibe cada fila, y
+  el ámbito lo aplica la relectura del repositorio. Un `filter=crew_id` se
+  quedaba viejo al cambiar de equipo, descartaba los borrados y no sabía
+  expresar «un equipo en el que todavía no estoy», que es justo el aviso que
+  `useViewer` necesita para ver un equipo recién fundado.
+
+  **Todo lo publicado lleva `replica identity full`**, y no es afinado: sin
+  ella el registro de un DELETE sólo lleva la clave primaria, así que RLS no
+  se puede evaluar sobre él y el evento se reparte a todo el mundo.
+
+  Una tabla nueva con tiempo real se añade a la publicación **y** se le pone
+  la identidad completa, en su migración, con su prueba en
+  `tests/contract/realtime.contract.test.ts`.
 - El onboarding se ve una vez POR CUENTA —`profiles.onboarded_at`, puerto
   `OnboardingRepository`—; la simulación sigue con la clave del dispositivo,
   que es la que escribe la suite. La guardia del layout espera la respuesta y
