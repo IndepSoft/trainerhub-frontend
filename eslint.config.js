@@ -57,6 +57,17 @@ export default tseslint.config([
     },
   },
   {
+    // Las pruebas de CONTRATO ejercitan los adaptadores contra Supabase local
+    // y necesitan el SDK para lo que ningun puerto ofrece a proposito: crear
+    // cuentas confirmadas con el rol de servicio y leer POR DEBAJO de RLS para
+    // comprobar que una politica no dejo pasar nada. Es la unica carpeta fuera
+    // de la infraestructura donde el proveedor puede aparecer, y solo ahi.
+    files: ['tests/contract/**'],
+    rules: {
+      'no-restricted-imports': 'off',
+    },
+  },
+  {
     // Componentes de shadcn/ui. El patron de la libreria es exportar el
     // componente junto a sus variantes de `cva` en el mismo fichero, lo que
     // choca de frente con react-refresh/only-export-components. No es un

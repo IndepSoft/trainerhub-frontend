@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { container } from '@/app/container'
 import { useAuthStore } from '@/app/stores/authStore'
-import { AppError } from '@/shared/domain/errors'
 import type { CrewPost } from '@/shared/domain/entities/crewPost'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { describeError } from '@/shared/i18n/errorMessages'
 
 interface UseCrewWallResult {
   posts: CrewPost[]
@@ -37,7 +37,7 @@ export function useCrewWall(): UseCrewWallResult {
     try {
       setPosts(await container.crewPosts.findAll())
     } catch (caught) {
-      setError(AppError.is(caught) ? caught.message : t('crew.wallError'))
+      setError(describeError(caught, t, 'crew.wallError'))
     } finally {
       setLoading(false)
     }
@@ -49,6 +49,16 @@ export function useCrewWall(): UseCrewWallResult {
       void load()
     })
   }, [load])
+
+  /*
+   * Abrir el muro es leerlo: la marca se pone una vez por visita, al montar,
+   * y no en cada recarga de la lista -si no, un anuncio que llegara mientras
+   * se mira quedaria leido sin haberse visto-. El fallo se ignora: no poder
+   * marcar como leido no es motivo para no enseñar el muro.
+   */
+  useEffect(() => {
+    void container.crewPosts.markAllRead().catch(() => undefined)
+  }, [])
 
   const publish = useCallback(
     async (body: string) => {
@@ -77,7 +87,7 @@ export function useCrewWall(): UseCrewWallResult {
   }, [])
 
   const isLikedByViewer = useCallback(
-    (post: CrewPost) => user !== null && post.likedBy.includes(user.id),
+    (post: CrewPost) => user !== null && post.likedByMe,
     [user]
   )
 

@@ -11,14 +11,14 @@ import type { Trainer } from '../entities/trainer'
 export interface TrainerRepository {
   findByProfileId(profileId: string): Promise<Trainer | null>
 
-  /**
-   * Crea la ficha del entrenador para una cuenta recien registrada.
-   *
-   * `profileId` viene en los datos y no como argumento aparte porque es lo que
-   * ata la ficha a la cuenta: sin el, el entrenador existe pero nunca vuelve a
-   * encontrarse al entrar.
+  /*
+   * `create` YA NO ESTA AQUI. La ficha nace en el mismo acto que la cuenta, no
+   * despues: con la confirmacion por correo activada el alta no abre sesion, y
+   * sin sesion el cliente no puede escribir su propia fila. Lo hace el
+   * proveedor -en Supabase, un disparador sobre `auth.users`- y en la
+   * simulacion lo hace la raiz de composicion, que es quien puede saber que
+   * «crear la cuenta» implica «crear la ficha». Ver `SignUpCredentials`.
    */
-  create(data: NewTrainer): Promise<Trainer>
 
   /**
    * Cambia lo que un entrenador dice de sí mismo.
@@ -46,6 +46,10 @@ export interface TrainerRepository {
  *
  * `verified` y `totalReviews` no estan: los pone el sistema -nadie se registra
  * verificado ni con reseñas-, y dejarlos en el alta seria invitar a mentir.
+ *
+ * SIGUE AQUI aunque el puerto ya no tenga `create`: lo usa la raiz de
+ * composicion para que la autenticacion simulada haga lo mismo que el
+ * disparador de Postgres. Es un tipo del dominio, no un detalle del adaptador.
  */
 /** Lo que uno dice de sí mismo, y puede cambiar. */
 export interface TrainerProfile {

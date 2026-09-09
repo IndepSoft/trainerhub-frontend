@@ -7,11 +7,14 @@ import { useAuth } from '@/auth/hooks/useAuth'
 import { useViewer } from '@/app/hooks/useViewer'
 import { ViewerContext } from '@/app/ViewerContext'
 import type { NavigationViewer } from '@/app/config/navigation.config'
-import { hasSeenOnboarding } from '@/domains/onboarding/hooks/useOnboarding'
+import { useOnboardingSeen } from '@/domains/onboarding/hooks/useOnboarding'
 
 export default function RootLayout() {
   const location = useLocation()
   const { user } = useAuth()
+  // `null` mientras se pregunta: sin respuesta no se manda a nadie a ningun
+  // sitio. La ruta como clave: al volver del recorrido se vuelve a preguntar.
+  const onboardingSeen = useOnboardingSeen(user?.id, location.pathname)
 
   /*
    * Quien ha entrado se resuelve aqui y una sola vez. Antes lo pedian por su
@@ -89,7 +92,7 @@ export default function RootLayout() {
   const necesitaOnboarding =
     user !== null &&
     !rutasSinGuardiaDeOnboarding.includes(location.pathname) &&
-    !hasSeenOnboarding()
+    onboardingSeen === false
 
   if (necesitaOnboarding) {
     return <Navigate to="/onboarding" replace />

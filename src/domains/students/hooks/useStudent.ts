@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { container } from '@/app/container'
 import type { Student } from '@/shared/domain/entities/student'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { describeError } from '@/shared/i18n/errorMessages'
 
 interface UseStudentResult {
   student: Student | null
@@ -38,7 +39,7 @@ export function useStudent(studentId: string | undefined): UseStudentResult {
         if (active) setStudent(result)
       })
       .catch((cause: unknown) => {
-        if (active) setError(cause instanceof Error ? cause.message : t('students.loadOneError'))
+        if (active) setError(describeError(cause, t, 'students.loadOneError'))
       })
       .finally(() => {
         if (active) setLoading(false)

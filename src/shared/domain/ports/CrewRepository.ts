@@ -23,6 +23,14 @@ export interface CrewRepository {
    */
   findByJoinToken(joinToken: string): Promise<Crew | null>
 
+  /**
+   * Crea el equipo Y sienta a quien lo funda como administrador, en un acto.
+   *
+   * Eran dos escrituras desde el hook, y la segunda podía fallar dejando un
+   * equipo sin nadie que pudiera entrar. Con Supabase es `create_crew`, una
+   * transacción; la simulación hace lo mismo en memoria. Quien llama no
+   * escribe ningún puesto después.
+   */
   create(data: NewCrew): Promise<Crew>
   update(crewId: string, data: CrewSettings): Promise<void>
 
@@ -44,6 +52,13 @@ export interface NewCrew {
   name: string
   denomination: CrewDenomination
   ownerId: string
+  /**
+   * Nombre y correo de quien funda, para sentarle como administrador en el
+   * mismo acto. Con Supabase los ignora `create_crew`, que los saca de la
+   * cuenta que llama; la simulación no tiene de dónde sacarlos.
+   */
+  ownerName: string
+  ownerEmail: string
 }
 
 /** Los ajustes que el dueño puede cambiar después. */

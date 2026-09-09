@@ -10,6 +10,7 @@ import {
 import { cn } from '@/shared/lib/utils'
 import { ROLE_LABEL_KEY } from '@/shared/i18n/domainLabels'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { useWallUnread } from '@/shared/hooks/useWallUnread'
 import type { Membership } from '@/shared/domain/entities/crew'
 
 interface CrewSwitcherProps {
@@ -35,6 +36,8 @@ interface CrewSwitcherProps {
 export function CrewSwitcher({ memberships, active, loading, onSelect }: CrewSwitcherProps) {
   const navigate = useNavigate()
   const { t } = useTranslation()
+  // Antes de los retornos tempranos: los hooks se llaman siempre en el mismo orden.
+  const unread = useWallUnread(active?.crew.id ?? null)
 
   if (loading) return <CrewSwitcherSkeleton />
 
@@ -60,7 +63,19 @@ export function CrewSwitcher({ memberships, active, loading, onSelect }: CrewSwi
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="flex min-h-11 w-full items-center gap-3 rounded-action text-start transition-colors hover:text-cobalt">
-        <CrewBadge name={crew.name} photoUrl={crew.photoUrl} />
+        <span className="relative shrink-0">
+          <CrewBadge name={crew.name} photoUrl={crew.photoUrl} />
+          {/* Anuncios sin leer, sobre la insignia del equipo: es la entrada
+              al muro, y el sitio que la deuda pedia para el contador. */}
+          {unread > 0 && (
+            <span
+              aria-label={t('crewSwitcher.unread', { count: unread })}
+              className="metric-figures absolute -end-1.5 -top-1.5 flex min-w-5 items-center justify-center rounded-full bg-ember px-1 text-[10px] font-bold leading-5 text-white"
+            >
+              {unread > 9 ? '9+' : unread}
+            </span>
+          )}
+        </span>
 
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-semibold text-ink">{crew.name}</span>

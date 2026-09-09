@@ -90,9 +90,9 @@ export type SubscriptionStatus = 'pending' | 'active' | 'suspended'
  * entrada. Una regla repetida en tres pantallas es una regla que acabará
  * aplicándose en dos.
  *
- * TODO: hoy la comprueba el cliente. Con backend es una política del servidor:
- * un cliente modificado puede saltarse esto, y por eso la comprobación tiene que
- * existir también donde se escribe.
+ * El cliente la comprueba para no ofrecer lo que va a fallar; la que decide es
+ * la base: `claim_membership_as` levanta `enrollmentClosed` con la misma regla,
+ * y un cliente modificado se la encuentra igual.
  */
 export function canEnrollMembers(crew: Crew): boolean {
   return crew.subscriptionStatus === 'active'

@@ -7,6 +7,11 @@ import { StudentFormDialog } from '../components/StudentFormDialog'
 import { useStudents } from '../hooks/useStudents'
 import { useStudentEditor } from '../hooks/useStudentEditor'
 import { useStudentsProgress } from '../hooks/useStudentsProgress'
+import {
+  EMPTY_STUDENT_FILTERS,
+  filterStudents,
+  type StudentFilterState,
+} from '../libs/filterStudents'
 import { Button } from '@/shared/ui/button'
 import type { NewStudent } from '@/shared/domain/ports/StudentRepository'
 import { canEnrollMembers } from '@/shared/domain/entities/crew'
@@ -17,6 +22,10 @@ import { useTranslation } from '@/shared/i18n/LanguageContext'
 export default function Students() {
   const { t } = useTranslation()
   const { students, loading } = useStudents()
+  const [filters, setFilters] = useState<StudentFilterState>(EMPTY_STUDENT_FILTERS)
+  // En memoria: son decenas de fichas ya cargadas. Ver `filterStudents`.
+  const visibleStudents = filterStudents(students, filters)
+  const isFiltering = filters.query.trim() !== '' || filters.level !== 'all'
   const { createStudent, updateStudent } = useStudentEditor()
   const { progressById, loading: loadingProgress } = useStudentsProgress()
   const { active, can } = useViewerContext()
@@ -93,7 +102,7 @@ export default function Students() {
       )}
 
       <section className="pt-4 ps-4 pe-4 mb-6 space-y-6">
-        <StudentFilters />
+        <StudentFilters filters={filters} onChange={setFilters} />
       </section>
 
       {/* Contenedor de scroll de la pagina. Es un div y no un <main> a
@@ -105,7 +114,7 @@ export default function Students() {
         <div className="ps-4 pe-4 pb-4 max-w-8xl mx-auto">
           <div className="space-y-6">
             <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
-              {students.map((student) => (
+              {visibleStudents.map((student) => (
                 <StudentCard
                   key={student.id}
                   student={student}
@@ -118,11 +127,14 @@ export default function Students() {
               ))}
             </div>
 
+            {/* Dos vacíos distintos: no tener alumnos y no encontrar ninguno
+                con estos filtros. Decir lo primero cuando pasa lo segundo
+                manda a dar de alta a alguien que ya existe. */}
             {!loading && students.length === 0 ? (
-              <p className="py-12 text-center text-sm text-ink/45">
-                Aún no tienes alumnos. Añade el primero para poder asignarle rutinas y agendarle
-                sesiones.
-              </p>
+              <p className="py-12 text-center text-sm text-ink/45">{t('students.empty')}</p>
+            ) : null}
+            {!loading && students.length > 0 && visibleStudents.length === 0 && isFiltering ? (
+              <p className="py-12 text-center text-sm text-ink/45">{t('students.noMatches')}</p>
             ) : null}
           </div>
         </div>

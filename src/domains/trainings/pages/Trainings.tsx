@@ -1,5 +1,11 @@
+import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Flame, Library, Plus, Target } from 'lucide-react'
+import {
+  EMPTY_ROUTINE_FILTERS,
+  filterRoutines,
+  type RoutineFilterState,
+} from '../libs/filterRoutines'
 import { Button } from '@/shared/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { PageHeader } from '@/shared/components/PageHeader'
@@ -213,6 +219,10 @@ interface RoutineListProps {
  * algo.
  */
 function RoutineList({ routines, emptyLabel }: RoutineListProps) {
+  const { t } = useTranslation()
+  const [filters, setFilters] = useState<RoutineFilterState>(EMPTY_ROUTINE_FILTERS)
+  const visibleRoutines = filterRoutines(routines, filters)
+
   if (routines.length === 0) {
     return <p className="px-4 py-10 text-center text-sm text-ink/40">{emptyLabel}</p>
   }
@@ -220,15 +230,18 @@ function RoutineList({ routines, emptyLabel }: RoutineListProps) {
   return (
     <>
       <div className="px-4 pb-4">
-        <TrainingFilters />
+        <TrainingFilters filters={filters} onChange={setFilters} />
       </div>
       {/* Rejilla y no <ul>: `RoutineCard` es un <article>, y `<ul><article>` es
           HTML invalido -los hijos de una lista tienen que ser <li>-. */}
       <div className="grid grid-cols-1 gap-4 px-4 pb-4 lg:grid-cols-2 xl:grid-cols-3">
-        {routines.map((routine) => (
+        {visibleRoutines.map((routine) => (
           <RoutineCard key={routine.id} routine={routine} />
         ))}
       </div>
+      {visibleRoutines.length === 0 && (
+        <p className="px-4 py-10 text-center text-sm text-ink/40">{t('trainings.noMatches')}</p>
+      )}
     </>
   )
 }

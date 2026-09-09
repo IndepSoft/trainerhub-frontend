@@ -27,9 +27,28 @@ const TOKEN_LENGTH = 8
  * aleatoriedad de la que fiarse. Aquí se genera con `crypto.getRandomValues`,
  * que es lo correcto en el navegador y sigue siendo un sustituto.
  */
+/**
+ * Lo que la simulacion hace con quien funda un equipo: sentarle. Se inyecta
+ * desde la raiz de composicion, que es quien sabe que existe un almacen de
+ * puestos; este adaptador solo sabe que un equipo nace con su fundador dentro.
+ */
+export type FounderSeater = (crewId: string, founder: Founder) => Promise<void>
+
+export interface Founder {
+  profileId: string
+  displayName: string
+  email: string
+}
+
 export class FakeCrewRepository implements CrewRepository {
   private crews: Crew[] = crewsSeed
   private readonly listeners = new Set<() => void>()
+  // Campo declarado y asignado, no propiedad de parametro: `erasableSyntaxOnly`.
+  private readonly seatFounder: FounderSeater
+
+  constructor(seatFounder: FounderSeater) {
+    this.seatFounder = seatFounder
+  }
 
   async findById(crewId: string): Promise<Crew | null> {
     return this.crews.find((crew) => crew.id === crewId) ?? null
@@ -61,6 +80,12 @@ export class FakeCrewRepository implements CrewRepository {
     }
 
     this.crews = [...this.crews, crew]
+    // El fundador nace dentro, como hace `create_crew` en una transaccion.
+    await this.seatFounder(crew.id, {
+      profileId: data.ownerId,
+      displayName: data.ownerName,
+      email: data.ownerEmail,
+    })
     this.notify()
     return crew
   }

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { container } from '@/app/container'
 import type { Routine } from '@/shared/domain/entities/routine'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { describeError } from '@/shared/i18n/errorMessages'
 
 interface UseRoutinesResult {
   routines: Routine[]
@@ -41,7 +42,7 @@ export function useRoutines(): UseRoutinesResult {
           if (active) setRoutines(result)
         })
         .catch((cause: unknown) => {
-          if (active) setError(cause instanceof Error ? cause.message : t('routine.loadError'))
+          if (active) setError(describeError(cause, t, 'routine.loadError'))
         })
         .finally(() => {
           if (active) setLoading(false)
@@ -96,7 +97,7 @@ export function useRoutine(routineId: string | undefined): UseRoutineResult {
         if (active) setRoutine(result)
       })
       .catch((cause: unknown) => {
-        if (active) setError(cause instanceof Error ? cause.message : t('routine.loadOneError'))
+        if (active) setError(describeError(cause, t, 'routine.loadOneError'))
       })
       .finally(() => {
         if (active) setLoading(false)

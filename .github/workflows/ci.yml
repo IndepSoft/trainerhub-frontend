@@ -61,3 +61,71 @@ jobs:
           name: dist-${{ github.sha }}
           path: dist/
           retention-days: 7
+
+  # La suite de interfaz, contra los adaptadores simulados. Es la que dice que
+  # las pantallas hacen lo que dicen; no toca ninguna base.
+  interface:
+    name: Pruebas de interfaz
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - run: npm ci
+      - name: Navegador de Playwright
+        run: npx playwright install --with-deps chromium
+      - name: Playwright
+        env:
+          # La suite entra por el adaptador simulado. Las claves son de forma:
+          # `client.ts` exige que existan, y nada las usa con el fake activo.
+          VITE_SUPABASE_URL: http://localhost:54321
+          VITE_SUPABASE_ANON_KEY: ci-no-se-usa
+          VITE_USE_FAKE_AUTH: 'true'
+        run: npm run test:e2e
+      - name: Guardar los informes si algo falla
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-${{ github.sha }}
+          path: test-results/
+          retention-days: 7
+
+  # Las pruebas de CONTRATO: cada adaptador contra una base de verdad, con sus
+  # politicas RLS. Levanta Supabase local en el runner -Docker viene de serie-,
+  # aplica las migraciones del repositorio y la semilla, y ejecuta Vitest.
+  #
+  # Es el unico sitio donde una politica que deja ver de mas se detecta antes
+  # de produccion.
+  contracts:
+    name: Pruebas de contrato
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - run: npm ci
+      # Version FIJA, la misma que la CLI de las maquinas del equipo. Con
+      # `latest` la accion pregunta a la API de GitHub cual es, y esa llamada
+      # comparte el cupo anonimo del runner y se agota -medido aqui: «Failed to
+      # resolve latest Supabase CLI release: rate limit exceeded»-. Una version
+      # fija se resuelve contra npm y no pasa por ahi. La accion no admite token.
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.75.0
+      # Sin el estudio ni los servicios que no hacen falta para probar la API:
+      # arranca antes y consume menos.
+      - name: Supabase local
+        run: supabase start -x studio,imgproxy,inbucket,logflare,vector,edge-runtime
+      - name: Contratos
+        run: npm run test:contract
+      - name: Parar Supabase
+        if: always()
+        run: supabase stop --no-backup

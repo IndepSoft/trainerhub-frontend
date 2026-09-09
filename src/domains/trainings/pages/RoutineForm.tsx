@@ -124,8 +124,11 @@ function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
    * lo lee del resultado en vez de componerlo por su cuenta: dos sitios
    * generando el mismo nombre se separan al primer cambio de formato.
    */
-  const handleSaveToLibrary = (block: BlockDraft) => {
-    setLastSavedName(saveFromDraft(block).name)
+  const handleSaveToLibrary = async (block: BlockDraft) => {
+    // Se espera al guardado: el nombre sale del bloque ya guardado, y contra
+    // Supabase eso es un viaje de red.
+    const saved = await saveFromDraft(block)
+    setLastSavedName(saved.name)
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {

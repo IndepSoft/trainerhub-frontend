@@ -30,6 +30,15 @@ export interface CrewPostRepository {
 
   remove(postId: string): Promise<void>
 
+  /**
+   * Cuántos anuncios del crew activo hay desde la última vez que quien mira
+   * abrió el muro. Es lo que enseña la entrada de navegación del equipo.
+   */
+  countUnread(): Promise<number>
+
+  /** Quien mira acaba de abrir el muro: desde ahora, nada está sin leer. */
+  markAllRead(): Promise<void>
+
   /** Avisa de que la colección ha cambiado. Devuelve la función de baja. */
   onChange(listener: () => void): () => void
 }

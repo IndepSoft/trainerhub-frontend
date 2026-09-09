@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { container } from '@/app/container'
 import type { Session } from '@/shared/domain/entities/session'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { describeError } from '@/shared/i18n/errorMessages'
 
 interface UseStudentSessionsResult {
   sessions: Session[]
@@ -42,7 +43,7 @@ export function useStudentSessions(studentId: string | undefined): UseStudentSes
           if (active) setSessions(result)
         })
         .catch((cause: unknown) => {
-          if (active) setError(cause instanceof Error ? cause.message : t('students.sessionsError'))
+          if (active) setError(describeError(cause, t, 'students.sessionsError'))
         })
         .finally(() => {
           if (active) setLoading(false)

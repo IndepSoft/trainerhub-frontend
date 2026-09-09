@@ -60,6 +60,8 @@ export function PrescribedExerciseFields({
   const repetitionsInReserveFieldId = `${fieldId}-rir`
   const weightFieldId = `${fieldId}-weight`
   const restFieldId = `${fieldId}-rest`
+  const tempoFieldId = `${fieldId}-tempo`
+  const notesFieldId = `${fieldId}-notes`
 
   return (
     /*
@@ -208,6 +210,42 @@ export function PrescribedExerciseFields({
             className="mt-1.5"
             value={exercise.restSeconds}
             onChange={(event) => onChange({ restSeconds: event.target.value })}
+          />
+        </div>
+      </div>
+
+      {/*
+        Tempo y notas, en su propia fila y OPCIONALES. Se conservaban sin poder
+        editarse -una rutina de la semilla los traia y editarla no podia
+        perderlos-; ahora se escriben. Van aparte de las cifras porque no son
+        cifras: el tempo es una cadencia -«3-1-1-0»- y las notas, texto libre
+        para el alumno -«sin rebote abajo»-. La sesion en vivo pinta los dos.
+      */}
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,10rem)_1fr]">
+        <div>
+          <Label htmlFor={tempoFieldId} className={FIELD_LABEL}>
+            {t('prescription.tempo')}
+          </Label>
+          <Input
+            id={tempoFieldId}
+            type="text"
+            className="mt-1.5"
+            placeholder={t('prescription.tempoPlaceholder')}
+            value={exercise.tempo}
+            onChange={(event) => onChange({ tempo: event.target.value })}
+          />
+        </div>
+        <div>
+          <Label htmlFor={notesFieldId} className={FIELD_LABEL}>
+            {t('prescription.notes')}
+          </Label>
+          <Input
+            id={notesFieldId}
+            type="text"
+            className="mt-1.5"
+            placeholder={t('prescription.notesPlaceholder')}
+            value={exercise.notes}
+            onChange={(event) => onChange({ notes: event.target.value })}
           />
         </div>
       </div>

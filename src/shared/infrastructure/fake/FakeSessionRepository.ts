@@ -2,6 +2,7 @@ import type { CrewScope } from '@/shared/domain/ports/CrewScope'
 import type { NewSession, SessionRepository } from '@/shared/domain/ports/SessionRepository'
 import type { Session, SessionResult, SessionStatus } from '@/shared/domain/entities/session'
 import { sessionsSeed } from './sessionsSeed'
+import { shiftDateKey } from '@/shared/lib/dateKey'
 
 /**
  * Sesiones simuladas mientras no hay backend.
@@ -64,6 +65,52 @@ export class FakeSessionRepository implements SessionRepository {
     this.sessions = [...this.sessions, session]
     this.notify()
     return session
+  }
+
+  async createMany(sessions: NewSession[], assignmentId: string): Promise<Session[]> {
+    const crewId = this.scope.current()
+    if (crewId === null) {
+      throw new Error('No hay ningun crew activo.')
+    }
+
+    const created: Session[] = sessions.map((data) => ({
+      id: crypto.randomUUID(),
+      crewId,
+      ...data,
+      assignmentId,
+    }))
+    // Una sola sustitucion de la lista: es lo que hace «todas o ninguna» en memoria.
+    this.sessions = [...this.sessions, ...created]
+    this.notify()
+    return created
+  }
+
+  async findByAssignment(assignmentId: string): Promise<Session[]> {
+    return this.inScope()
+      .filter((session) => session.assignmentId === assignmentId)
+      .sort(compareByStartInstant)
+  }
+
+  async shiftByAssignment(assignmentId: string, days: number): Promise<number> {
+    let moved = 0
+    this.sessions = this.sessions.map((session) => {
+      if (session.assignmentId !== assignmentId || !isOpen(session)) return session
+      moved += 1
+      return { ...session, date: addDaysToKey(session.date, days) }
+    })
+    this.notify()
+    return moved
+  }
+
+  async cancelByAssignment(assignmentId: string): Promise<number> {
+    let cancelled = 0
+    this.sessions = this.sessions.map((session) => {
+      if (session.assignmentId !== assignmentId || !isOpen(session)) return session
+      cancelled += 1
+      return { ...session, status: 'cancelled' }
+    })
+    this.notify()
+    return cancelled
   }
 
   async update(sessionId: string, data: NewSession): Promise<void> {
@@ -156,4 +203,13 @@ export class FakeSessionRepository implements SessionRepository {
  */
 function compareByStartInstant(left: Session, right: Session): number {
   return `${left.date} ${left.time}`.localeCompare(`${right.date} ${right.time}`)
+}
+
+/** Todavia por ocurrir: es lo que un volcado puede mover o cancelar. */
+function isOpen(session: Session): boolean {
+  return session.status === 'pending' || session.status === 'confirmed'
+}
+
+function addDaysToKey(dateKey: string, days: number): string {
+  return shiftDateKey(dateKey, days)
 }

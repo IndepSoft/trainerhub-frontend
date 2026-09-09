@@ -7,6 +7,7 @@ import { FormInput } from './FormInput'
 import { SelectField } from './SelectField'
 import { RegisterFields } from './RegisterFields'
 import { useRegisterForm } from '../hooks/useRegisterForm'
+import { ConfirmEmailNotice } from './ConfirmEmailNotice'
 import { EXPERIENCE_RANGE_KEYS, TRAINER_SPECIALTY_KEYS } from '../data/registerOptions'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 
@@ -27,7 +28,7 @@ interface TrainerRegisterFormProps {
  */
 export function TrainerRegisterForm({ onBack }: TrainerRegisterFormProps) {
   const { t } = useTranslation()
-  const { formData, isValid, loading, error, isRequired, setField, submit } =
+  const { formData, isValid, loading, error, awaitingConfirmation, isRequired, setField, submit } =
     useRegisterForm('trainer')
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -35,6 +36,14 @@ export function TrainerRegisterForm({ onBack }: TrainerRegisterFormProps) {
     event.preventDefault()
     void submit()
   }
+
+  /*
+    La cuenta ya existe y falta confirmar el correo. Se SUSTITUYE el formulario
+    en vez de añadir un aviso encima: dejarlo a la vista invita a volver a
+    enviarlo, y el segundo intento choca con «ya existe una cuenta con ese
+    correo», que se lee como un fallo cuando en realidad ya salió bien.
+  */
+  if (awaitingConfirmation) return <ConfirmEmailNotice email={formData.email.trim()} />
 
   return (
     <>

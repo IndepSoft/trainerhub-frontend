@@ -2310,9 +2310,13 @@ test.describe('volcar un plan a la agenda', () => {
 
     await page.goto('/students/student-2')
 
+    // Por el texto con el que EMPIEZA la seccion -su encabezado-: desde que la
+    // lista de asignaciones dice «11 sesiones en la agenda», un `hasText`
+    // suelto la contaba tambien. No por rol, porque con el dialogo abierto el
+    // resto de la pagina queda oculto para la accesibilidad.
     const filasDeSesion = page
       .locator('section')
-      .filter({ hasText: 'Sesiones' })
+      .filter({ hasText: /^\s*Sesiones/ })
       .locator('ul > li')
 
     const dialogo = await abrirVolcado(page)
@@ -2347,21 +2351,24 @@ test.describe('volcar un plan a la agenda', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0)
 
     /*
-     * El segundo choca con el primero ENTERO. Es el caso que hoy no esta
-     * resuelto -nada impide repetir el volcado, y saldrian once sesiones mas-,
-     * asi que al menos se ve venir: la previa lo dice antes de crear nada.
+     * El segundo choca con el primero ENTERO, y ademas se sabe que ya se
+     * volco: las sesiones guardan de que asignacion salieron. Avisa por los
+     * dos lados -«ya esta en la agenda» y «11 en conflicto»- y no lo impide,
+     * porque un ciclo nuevo del mismo plan es legitimo; el boton dice lo que
+     * va a pasar.
      *
      * Se provoca asi, y no agendando a mano en la fecha de inicio, porque eso
      * obligaba a navegar el calendario por meses y la prueba caducaba al cambiar
      * de mes.
      */
     const segundo = await abrirVolcado(page)
+    await expect(segundo).toContainText(/ya está en la agenda: 11 sesiones/)
     await ponerHoras(page, '08:00')
 
     await expect(segundo).toContainText('11 en conflicto')
     await expect(segundo.getByText(/· ocupado/).first()).toBeVisible()
-    // Avisa, no bloquea: el boton sigue disponible.
-    await expect(segundo.getByRole('button', { name: 'Agendar 11 sesiones' })).toBeEnabled()
+    // Avisa, no bloquea: el boton sigue disponible, y dice que es otra vez.
+    await expect(segundo.getByRole('button', { name: 'Volcar otra vez' })).toBeEnabled()
   })
 
   test('un plan sin fecha de inicio no ofrece volcarse', async ({ page }) => {
@@ -4443,6 +4450,34 @@ test.describe('grafica de cargas', () => {
 })
 
 /**
+ * La pantalla de acceso, cuando ya se tiene sesion.
+ *
+ * PASO A HACER FALTA CON LA CONFIRMACION POR CORREO: el enlace del mensaje
+ * devuelve a `/authentication` y `supabase-js` recoge la sesion de la URL al
+ * cargar, asi que el recien confirmado llegaba a mirar el formulario de acceso
+ * ya estando dentro. `GuestRoute` llevaba escrito desde hace tiempo y sin
+ * cablear; ahora cuelga de la ruta.
+ */
+test.describe('acceso con sesion abierta', () => {
+  test('quien ya entro no se queda mirando el formulario de acceso', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+
+    // Se vuelve a la pantalla de acceso a proposito, que es lo que hace el
+    // enlace del correo de confirmacion.
+    await page.goto('/authentication')
+
+    /*
+     * A LA RAIZ, no al panel: alli decide `HomeRedirect` segun el papel. El
+     * entrenador de desarrollo acaba en el suyo, y lo que se comprueba es que
+     * NO se queda en `/authentication`.
+     */
+    await expect(page).not.toHaveURL(/\/authentication/, { timeout: 15_000 })
+    await expect(page.getByRole('button', { name: 'Iniciar sesión', exact: true })).toHaveCount(0)
+  })
+})
+
+/**
  * Reportes: tres pestañas, y cada una responde a una pregunta de negocio.
  *
  * Estaba enteramente inventado -24 alumnos, 4.800 de ingresos, 87 % de
@@ -4523,9 +4558,11 @@ test.describe('configuracion', () => {
      */
     await page.getByLabel('Nombre').fill('Marcos')
     await page.getByLabel('Apellidos').fill('Salas Ruiz')
-    await page.getByRole('button', { name: 'Guardar' }).click()
+    // Exacto: desde que la cuenta tiene contraseña, en esta pantalla hay
+    // tambien un «Guardar la contraseña» y el nombre a secas casaba con los dos.
+    await page.getByRole('button', { name: 'Guardar', exact: true }).click()
 
-    await expect(page.getByRole('button', { name: 'Guardar' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Guardar', exact: true })).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Perfil guardado' })).toBeVisible()
 
     /*
@@ -4682,5 +4719,272 @@ test.describe('configuracion', () => {
       'content',
       '#0b4bcc'
     )
+  })
+})
+
+/**
+ * La cuenta completa: recuperar la contraseña, cambiarla, y darse de baja.
+ *
+ * Contra el adaptador simulado no hay buzon: lo que se comprueba es que cada
+ * pantalla existe, valida lo suyo y lleva a donde dice. El correo de verdad y
+ * el enlace con sesion se prueban contra el proveedor, a mano.
+ */
+test.describe('cuenta', () => {
+  test('olvide la contraseña: pide el correo y no dice si existe', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.goto('/authentication')
+    await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
+
+    // El correo tecleado viaja al desvio para no pedirlo dos veces.
+    await page.getByPlaceholder('tu@email.com').fill('olvidadiza@correo.com')
+    await page.getByRole('button', { name: '¿Olvidaste tu contraseña?' }).click()
+
+    // Los titulos de las tarjetas de acceso no son encabezados: se buscan por texto.
+    await expect(page.getByText('Recuperar la contraseña')).toBeVisible()
+    await expect(page.getByLabel('Email')).toHaveValue('olvidadiza@correo.com')
+
+    await page.getByRole('button', { name: 'Enviar el enlace' }).click()
+
+    // La misma respuesta exista o no la cuenta, y con la direccion a la vista.
+    await expect(page.getByText(/Si hay una cuenta con olvidadiza@correo\.com/)).toBeVisible()
+
+    await page.getByRole('button', { name: 'Volver a iniciar sesión' }).click()
+    await expect(page.getByText('Bienvenido de vuelta')).toBeVisible()
+  })
+
+  test('cambiar la contraseña desde Configuracion exige que coincidan', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/settings')
+
+    await page.getByLabel('Contraseña nueva').fill('nueva-123')
+    await page.getByLabel('Repite la contraseña').fill('otra-123')
+    await page.getByRole('button', { name: 'Guardar la contraseña' }).click()
+    await expect(page.getByText('Las dos contraseñas no coinciden')).toBeVisible()
+
+    await page.getByLabel('Repite la contraseña').fill('nueva-123')
+    await page.getByRole('button', { name: 'Guardar la contraseña' }).click()
+    await expect(page.getByRole('button', { name: 'Contraseña cambiada' })).toBeVisible()
+
+    // Sin desbordamiento a 375 px: el formulario nuevo cabe.
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth
+    )
+    expect(overflow).toBe(0)
+  })
+
+  test('la vuelta del enlace sin sesion lo dice; con sesion cambia y entra', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.goto('/authentication/nueva-contrasena')
+
+    // El enlace caducado llega sin sesion: se explica, no se finge un formulario.
+    await expect(page.getByText(/Este enlace ya no vale/)).toBeVisible()
+    await expect(page.getByLabel('Contraseña nueva')).toHaveCount(0)
+
+    await signIn(page)
+    await page.goto('/authentication/nueva-contrasena')
+    await page.getByLabel('Contraseña nueva').fill('recuperada-123')
+    await page.getByLabel('Repite la contraseña').fill('recuperada-123')
+    await page.getByRole('button', { name: 'Guardar la contraseña' }).click()
+
+    // La sesion ya estaba abierta: se entra sin volver a teclearla.
+    await page.waitForURL((url) => !url.pathname.includes('nueva-contrasena'))
+    await expect(page.getByText('Nueva contraseña', { exact: true })).toHaveCount(0)
+  })
+
+  test('eliminar la cuenta pide confirmacion y echa fuera', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/settings')
+
+    await page.getByRole('button', { name: 'Eliminar la cuenta' }).click()
+    const dialog = page.getByRole('dialog')
+    await expect(dialog.getByRole('heading', { name: '¿Eliminar tu cuenta?' })).toBeVisible()
+
+    // Cancelar no hace nada.
+    await dialog.getByRole('button', { name: 'Cancelar' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(page).toHaveURL(/\/settings/)
+
+    await page.getByRole('button', { name: 'Eliminar la cuenta' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Sí, eliminar mi cuenta' }).click()
+
+    await page.waitForURL(/\/authentication/)
+    await expect(page.getByText('Bienvenido de vuelta')).toBeVisible()
+  })
+})
+
+/**
+ * Los huecos de §10 del plan que eran controles sin nada detras: los filtros,
+ * el tempo y las notas de un ejercicio, y las notas y la edicion de una sesion.
+ */
+test.describe('huecos cerrados', () => {
+  test('los filtros de alumnos filtran por texto y por nivel', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/students')
+    await page.waitForTimeout(1200)
+
+    const tarjetas = page.locator('article')
+    const antes = await tarjetas.count()
+    expect(antes).toBeGreaterThan(1)
+
+    // Sin tilde a proposito: la busqueda no distingue acentos ni mayusculas.
+    await page.getByLabel('Buscar estudiante...').fill('ana')
+    await expect(tarjetas).not.toHaveCount(antes)
+    await expect(tarjetas.first()).toContainText(/ana/i)
+
+    await page.getByLabel('Buscar estudiante...').fill('nadie-con-este-nombre')
+    await expect(page.getByText('Ningún alumno coincide con la búsqueda.')).toBeVisible()
+    await page.getByLabel('Buscar estudiante...').fill('')
+
+    await elegirDelDesplegable(page, page.getByRole('combobox', { name: 'Filtros' }), 'Avanzado')
+    const avanzados = await tarjetas.count()
+    expect(avanzados).toBeGreaterThan(0)
+    expect(avanzados).toBeLessThan(antes)
+    for (const tarjeta of await tarjetas.all()) {
+      await expect(tarjeta).toContainText('Avanzado')
+    }
+  })
+
+  test('los filtros de rutinas filtran, y sin resultados lo dicen', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/trainings?tab=rutinas')
+    await page.waitForTimeout(1200)
+
+    const tarjetas = page.locator('article')
+    const antes = await tarjetas.count()
+    expect(antes).toBeGreaterThan(1)
+
+    await page.getByLabel('Buscar rutinas...').fill('full body')
+    await expect(tarjetas).toHaveCount(1)
+    await expect(tarjetas.first()).toContainText('Full body')
+
+    await page.getByLabel('Buscar rutinas...').fill('zzz')
+    await expect(page.getByText('Ninguna rutina coincide con la búsqueda.')).toBeVisible()
+  })
+
+  test('el tempo y las notas de un ejercicio se editan y sobreviven al guardar', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/trainings?tab=rutinas')
+    await page.waitForTimeout(1200)
+
+    // La primera rutina de la lista, a su edicion por la interfaz.
+    await page.locator('article').first().getByRole('button', { name: /Acciones para/ }).click()
+    await page.getByRole('menuitem', { name: 'Editar' }).click()
+    await page.waitForURL(/\/trainings\/[\w-]+\/edit/)
+
+    await page.getByLabel('Tempo').first().fill('3-1-1-0')
+    await page.getByLabel('Indicaciones').first().fill('Sin rebote abajo')
+    // Al editar, el boton dice «Guardar cambios»; «Guardar rutina» es el del alta.
+    await page.getByRole('button', { name: 'Guardar cambios' }).click()
+    await page.waitForURL(/\/trainings\/(?!.*edit)[\w-]+$/)
+
+    // La ficha pinta el tempo y las notas: son datos de la rutina, no del formulario.
+    await expect(page.getByText('3-1-1-0').first()).toBeVisible()
+    await expect(page.getByText('Sin rebote abajo').first()).toBeVisible()
+  })
+
+  test('las notas de una sesion se guardan, y editarla la mueve', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/calendar')
+    await page.waitForTimeout(1500)
+
+    await sesionSinCompletar(page).first().click()
+    const dialogo = page.getByRole('dialog')
+    await expect(dialogo).toBeVisible()
+
+    // Sin cambios no hay nada que guardar: el boton lo dice apagado.
+    await expect(dialogo.getByRole('button', { name: 'Guardar cambios' })).toBeDisabled()
+    await dialogo.getByLabel('Notas').fill('Llevar la cuerda')
+    await dialogo.getByRole('button', { name: 'Guardar cambios' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    // Persistio: al reabrir, las notas siguen.
+    await sesionSinCompletar(page).first().click()
+    await expect(page.getByRole('dialog').getByLabel('Notas')).toHaveValue('Llevar la cuerda')
+
+    // Editar abre el formulario de la sesion, ya relleno, y cambia el lugar.
+    await page.getByRole('dialog').getByRole('button', { name: 'Editar' }).click()
+    const formulario = page.getByRole('dialog')
+    await expect(formulario.getByText('Editar sesión')).toBeVisible()
+    await expect(formulario.getByLabel('Notas')).toHaveValue('Llevar la cuerda')
+    await elegirDelDesplegable(page, desplegables(page, 'Ubicación'), 'Exterior')
+    await formulario.getByRole('button', { name: 'Guardar cambios' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    await sesionSinCompletar(page).first().click()
+    await expect(page.getByRole('dialog')).toContainText('Exterior')
+  })
+})
+
+test.describe('muro: el contador de no leidos', () => {
+  test('la entrada del equipo cuenta los anuncios, y abrir el muro los da por leidos', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+
+    // La semilla trae anuncios y ninguna marca: todos sin leer. `first` porque
+    // el conmutador de equipo se pinta dos veces: barra lateral y cabecera movil.
+    const contador = page.getByLabel(/anuncios sin leer en el muro/).first()
+    await expect(contador).toBeVisible()
+    const antes = Number((await contador.textContent())?.replace('+', ''))
+    expect(antes).toBeGreaterThan(0)
+
+    // Por la interfaz, no con `goto`: la marca vive en memoria en la simulacion.
+    await page.getByRole('button', { name: /Hierro y Asfalto/ }).click()
+    await page.getByRole('menuitem', { name: 'Ver el equipo' }).click()
+    await page.waitForURL(/\/crew/)
+    // El muro es una seccion de la pagina del equipo: abrirla es leerlo.
+    await expect(page.locator('section').filter({ hasText: 'Muro' }).first()).toBeVisible()
+
+    await expect(page.getByLabel(/anuncios sin leer en el muro/)).toHaveCount(0)
+  })
+})
+
+test.describe('volcar un plan: lo que deja y lo que se hace con ello', () => {
+  test('el volcado se cuenta, se mueve una semana y se cancela en bloque', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students/student-2')
+
+    // Un plan sin volcar no tiene acciones en bloque.
+    await expect(page.getByRole('button', { name: 'Mover una semana' })).toHaveCount(0)
+
+    await page.getByRole('button', { name: /Volcar a la agenda/ }).click()
+    const dialogo = page.getByRole('dialog')
+    for (const dia of ['lunes', 'miércoles', 'jueves', 'viernes']) {
+      await elegirDelDesplegable(page, desplegables(page, dia), '08:00')
+    }
+    await dialogo.getByRole('button', { name: /Agendar \d+ sesiones/ }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    // Lo que dejo: N en la agenda, N por hacer.
+    const resumen = page.getByText(/sesiones en la agenda, \d+ por hacer/)
+    await expect(resumen).toBeVisible()
+    const cifras = (await resumen.textContent())?.match(/(\d+) sesiones en la agenda, (\d+) por hacer/)
+    expect(cifras).not.toBeNull()
+    const total = Number(cifras?.[1])
+    expect(total).toBeGreaterThan(0)
+    expect(Number(cifras?.[2])).toBe(total)
+
+    // Volcar otra vez avisa de que ya esta.
+    await page.getByRole('button', { name: /Volcar a la agenda/ }).click()
+    await expect(page.getByRole('dialog')).toContainText(/ya está en la agenda/)
+    await page.keyboard.press('Escape')
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    // Mover una semana mueve las que quedan por hacer.
+    await page.getByRole('button', { name: 'Mover una semana' }).click()
+    await expect(page.getByText(`${total} sesiones movidas una semana`)).toBeVisible()
+
+    // Cancelar pide una segunda pulsacion y deja cero por hacer.
+    await page.getByRole('button', { name: 'Cancelar las pendientes' }).click()
+    await page.getByRole('button', { name: `Sí, cancelar ${total}` }).click()
+    await expect(page.getByText(`${total} sesiones canceladas`)).toBeVisible()
+    await expect(page.getByText(new RegExp(`${total} sesiones en la agenda, 0 por hacer`))).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Mover una semana' })).toHaveCount(0)
   })
 })

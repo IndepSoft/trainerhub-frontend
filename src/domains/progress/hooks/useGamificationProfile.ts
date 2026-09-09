@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
 import { container } from '@/app/container'
-import { AppError } from '@/shared/domain/errors'
 import { calculateLevelCompletion, experienceRemaining } from '../libs/gamification.utils'
 import {
   completedSessions,
@@ -14,6 +13,7 @@ import type { Achievement } from '../types/achievement.types'
 import type { Session } from '@/shared/domain/entities/session'
 import type { GamificationProfile } from '../types/gamification.types'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { describeError } from '@/shared/i18n/errorMessages'
 
 /**
  * El perfil de quien no ha entrenado nunca.
@@ -93,7 +93,7 @@ export function useGamificationProfile(studentId?: string): UseGamificationProfi
       setAchievements(evaluateAchievements(sessions))
       setCompletedCount(completedSessions(sessions).length)
     } catch (caught) {
-      setError(AppError.is(caught) ? caught.message : t('progress.error'))
+      setError(describeError(caught, t, 'progress.error'))
     } finally {
       setLoading(false)
     }
