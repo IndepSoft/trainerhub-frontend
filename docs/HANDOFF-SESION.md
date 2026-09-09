@@ -18,14 +18,17 @@ si fuera cierto.**
 
 ## 🔴 Lo primero: lo que está a medias ahora mismo
 
-La rama **`fix/deploy-01`** está subida a origin (`97ae656`) con el tiempo real
-cableado. Su migración **NO está aplicada en la nube**, así que hasta que se
-aplique el código está suscrito a tablas que no emiten y no se nota ningún
-cambio en la aplicación desplegada.
+Nada a medias. `fix/deploy-01` tiene PR abierto hacia `develop` (#12), su
+migración **está aplicada en la nube** —comprobado con la consulta del runbook:
+quince tablas publicadas y quince con identidad completa— y los contratos corren
+en la CI del PR, que es donde se pasaron por primera vez.
 
-Los contratos tampoco se pasaron: la sesión que escribió esto corrió en una
-máquina **sin Docker y sin la CLI de Supabase**. La máquina del usuario sí los
-tiene. El runbook completo está abajo, en «Cerrar `fix/deploy-01`».
+Lo que la primera ejecución enseñó: el Realtime del runner reparte más tarde
+que el de la nube el primer evento de una suscripción recién abierta. Contra la
+nube, fundar un equipo llega al fundador por `crews` en menos de dos segundos;
+en la CI no llegaba en diez. La prueba escucha ahora las cuatro tablas que
+escucha `useViewer` y espera quince. El runbook de abajo queda como referencia
+para quien tenga Docker y quiera repetirlo en local.
 
 ---
 

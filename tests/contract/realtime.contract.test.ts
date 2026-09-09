@@ -24,6 +24,9 @@ import { adminClient, deleteAccounts, signedInAs, type TestAccount } from './sup
  */
 const ESPERA_MAXIMA_MS = 15_000
 
+/** Lo que tarda el servidor en empezar a repartir a una suscripcion recien acusada. */
+const MARGEN_DE_SUSCRIPCION_MS = 2_000
+
 /** Lo que se espera cuando se afirma que algo NO llega. Ver `no se entera`. */
 const ESPERA_DEL_SILENCIO_MS = 4_000
 
@@ -61,8 +64,17 @@ function watch(client: SupabaseClient, tables: string | readonly string[]): Watc
       waiting?.()
     })
   }
+  /*
+   * `SUBSCRIBED` NO significa que el servidor ya reparta a este suscriptor.
+   * El canal esta unido, pero el proceso que lee el WAL recoge las
+   * suscripciones nuevas por sondeo, y una escritura hecha justo despues del
+   * acuse se procesa antes de que ese proceso sepa que este cliente existe.
+   * Se vio en la CI: fundar un equipo nada mas suscribirse no llegaba, mientras
+   * que borrar una ficha unos segundos despues de suscribirse si. Contra la
+   * nube, con segundo y medio de margen, llegaba todo.
+   */
   channel.subscribe((status) => {
-    if (status === 'SUBSCRIBED') announceReady()
+    if (status === 'SUBSCRIBED') setTimeout(announceReady, MARGEN_DE_SUSCRIPCION_MS)
   })
 
   return {
