@@ -2898,3 +2898,79 @@ porque en el instante del INSERT quien funda todavía no es miembro y la políti
 exige serlo; llega porque `create_crew` escribe equipo y puesto en la misma
 transacción—, borrar también avisa, y un extraño no recibe las fichas de un
 equipo ajeno.
+
+## 29. Fugas de secuencia (9 sep 2026)
+
+Un informe de UX medido en tres móviles —375 × 667, 390 × 844, 412 × 915—
+encontró el registro cortado, y a partir de él se recorrieron **todos** los
+flujos de la aplicación con una sola pregunta: ¿hay algún sitio donde una
+persona se queda sin acción posible, ve una pantalla que no es suya o recibe un
+aviso de algo que no ocurrió? Salieron veintinueve. Todos están cerrados en la
+rama `fix/fugas-de-secuencia`, y éstos son los que cambian una decisión.
+
+### 29.1 El registro se desplaza
+
+`Authentication` centraba la tarjeta con `items-center` en un contenedor sin
+scroll. Con la pestaña de registro abierta, la tarjeta mide más que un móvil de
+667 px y flexbox la centraba **fuera** por arriba y por abajo: la pestaña quedaba
+a −150 px y el botón de crear a 726 px, inalcanzables los dos. Ahora el
+contenedor desplaza y la tarjeta se centra con márgenes automáticos, que ceden
+cuando no hay sitio en vez de recortar.
+
+### 29.2 Una ruta se cierra con la regla que la esconde
+
+`matchesViewer` filtraba la barra lateral: un alumno no veía Estudiantes. Pero
+`/students` tecleada a mano se abría, con sus controles, y cada consulta fallaba
+por RLS una a una. Se exportó como `viewerMayVisit`, se declaró `AccessRule`
+—las cinco condiciones de un destino— y `withRouteAccess` la aplica a las
+rutas de gestión. La alternativa era una segunda tabla de permisos por ruta, y
+dos tablas que dicen lo mismo se separan al primer cambio.
+
+### 29.3 Nada se celebra antes de escribir
+
+La ficha de la sesión lanzaba «Sesión guardada» y cerraba **antes** de que el
+puerto respondiera; el alta de sesión, igual; las acciones del volcado, igual.
+Con la base rechazando —sin red, sin permiso—, la agenda celebraba lo que no
+había pasado. Ahora todos esperan, el éxito se avisa después y el fallo se dice
+en el sitio. Cerrar la sesión en vivo, además, **espera** antes de ir a la
+celebración: sin esperar, la celebración releía antes de que la escritura
+llegara y no encontraba logro nuevo.
+
+### 29.4 Cardio deja de inventar
+
+`liveSession.mock.ts` entraba en la pantalla con siete minutos, 1,19 km, 80
+kcal y un trazado GPS por Lima; un contador los hacía crecer. Con aspecto de
+medida y un letrero «GPS», un entrenador que abría una sesión de cardio veía
+datos que nadie había tomado. Se quitó todo —mock, métricas, mapa, ritmo—: sin
+sensor, la pantalla es un cronómetro que arranca en cero, y el tiempo sí es lo
+que se anota al cerrar. La distancia volverá por un puerto cuando haya de dónde
+sacarla.
+
+### 29.5 Dos salidas que el servidor no admitía
+
+Quien esperaba aprobación leía «tu entrenador tiene que aceptarte» y nada más;
+un entrenador con el equipo pendiente leía «hace falta activar la suscripción»
+y tampoco. Las dos salidas necesitaban la base: una política que deja a un
+alumno borrar **su** ficha mientras esté `pending` —la activa tiene historial,
+y darse de baja es otra decisión—, y una columna `activation_requested_at` que
+escribe `crew.settings` y ordena la cola del panel de plataforma. Pedir no es
+activar: la suscripción sigue `pending` hasta que alguien decida.
+
+### 29.6 Lo que se quitó
+
+El botón de Google, apagado desde §18, era una puerta pintada: se fue con su
+hook y su método del puerto. Las pestañas Desafíos y Rachas con un cartel de
+«próximamente» eran dos de cuatro pestañas que no llevaban a nada: se fueron
+con `ComingSoon`. Y el «Nombre de equipo vacío» del informe no se reprodujo:
+`NewCrew` marca el campo y no envía; se deja anotado por si el informe lo vio
+en otra versión. Tampoco se tocó la raíz de quien administra la plataforma: el
+análisis proponía mandarle a su panel de equipo cuando lo tiene, pero la
+decisión escrita —y probada— es que entra a mirar equipos ajenos, no a
+entrenar, y su propio equipo lo alcanza por el conmutador.
+
+### 29.7 Contraste
+
+La rampa `--scale-*` de las insignias de nivel daba 1,96:1, 2,88:1 y 2,92:1
+sobre Bone, en texto de 10 px. Se oscureció hasta pasar de 4,5:1 y se añadió
+`--scale-*-lift` para las mismas insignias sobre Ink, donde el tono oscuro
+desaparece. Los grises de la tarjeta de alumno subieron de `ink/45` a `ink/60`.

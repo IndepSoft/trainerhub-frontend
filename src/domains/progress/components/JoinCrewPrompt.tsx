@@ -3,6 +3,7 @@ import { Clock, QrCode } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { useViewerContext } from '@/app/ViewerContext'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { useWithdrawRequest } from '../hooks/useWithdrawRequest'
 
 /**
  * La invitación a unirse a un equipo, sobre el progreso vacío.
@@ -18,6 +19,7 @@ import { useTranslation } from '@/shared/i18n/LanguageContext'
 export function JoinCrewPrompt() {
   const { t } = useTranslation()
   const { pending } = useViewerContext()
+  const { withdraw, withdrawing, error } = useWithdrawRequest()
 
   /*
    * Con una solicitud en marcha se dice ESO, no «únete».
@@ -39,9 +41,31 @@ export function JoinCrewPrompt() {
           <h2 className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
             {t('joinCrew.waitingFor', { crew: waiting.crew.name })}
           </h2>
-          <p className="text-sm text-ink/60">
-            {t('joinCrew.waitingHint')}
-          </p>
+          <p className="text-sm text-ink/60">{t('joinCrew.waitingHint')}</p>
+
+          {/*
+            Dos salidas, porque esperar no puede ser la unica opcion: quien se
+            equivoco de codigo retira la solicitud, y quien tiene otro codigo
+            lo escribe. Sin ellas, la pantalla decia «espera» y nada mas.
+          */}
+          <div className="mt-1 flex flex-wrap gap-2">
+            <Button asChild variant="outline" className="gap-2">
+              <Link to="/crew/unirse">
+                <QrCode className="size-4" />
+                {t('joinCrew.anotherCode')}
+              </Link>
+            </Button>
+            {waiting.student !== null && (
+              <Button
+                variant="ghost"
+                disabled={withdrawing}
+                onClick={() => void withdraw(waiting.student?.id ?? '')}
+              >
+                {t('joinCrew.withdraw')}
+              </Button>
+            )}
+          </div>
+          {error !== null && <p className="text-sm text-danger">{error}</p>}
         </div>
       </section>
     )
@@ -56,9 +80,7 @@ export function JoinCrewPrompt() {
         <h2 className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
           {t('joinCrew.title')}
         </h2>
-        <p className="text-sm text-ink/60">
-          {t('joinCrew.hint')}
-        </p>
+        <p className="text-sm text-ink/60">{t('joinCrew.hint')}</p>
 
         <Button asChild className="mt-1 gap-2">
           <Link to="/crew/unirse">

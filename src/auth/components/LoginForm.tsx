@@ -2,7 +2,6 @@ import { useState } from 'react'
 import {
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/shared/ui/card'
@@ -10,7 +9,6 @@ import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Button } from '@/shared/ui/button'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
-import { Chrome } from 'lucide-react'
 import { useLogin } from '../hooks/useLogin'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { ForgotPasswordForm } from './ForgotPasswordForm'
@@ -20,7 +18,7 @@ export function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [recovering, setRecovering] = useState(false)
-  const { loginWithEmail, loginWithGoogle, error, loading } = useLogin()
+  const { loginWithEmail, error, loading } = useLogin()
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -99,47 +97,6 @@ export function LoginForm() {
           </Button>
         </form>
       </CardContent>
-
-      <CardFooter className="flex flex-col gap-4">
-        <div className="relative w-full">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
-              {t('auth.orContinueWith')}
-            </span>
-          </div>
-        </div>
-
-        {/*
-          TODO: el proveedor de Google NO esta habilitado en el proyecto de
-          Supabase. Mientras lo este, el boton va DESHABILITADO.
-
-          No es prudencia: comprobado, pulsarlo llevaba el navegador a
-          `/auth/v1/authorize?provider=google`, que responde 400 con
-          «Unsupported provider: provider is not enabled». El usuario SALIA de la
-          aplicacion y aterrizaba en un JSON, y eso no se puede ni traducir ni
-          recuperar desde aqui, porque para cuando ocurre la navegacion ya ha
-          pasado. Un boton apagado es peor experiencia que uno que funciona, y
-          muchisimo mejor que uno que expulsa.
-
-          El manejador se queda puesto a proposito: habilitarlo el dia que el
-          proveedor exista es quitar este `disabled`, nada mas. Requiere dar de
-          alta un cliente OAuth de Google y pegar sus credenciales en
-          Authentication → Providers.
-        */}
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          onClick={loginWithGoogle}
-          disabled
-        >
-          <Chrome className="mr-2 h-4 w-4" />
-          {t('auth.continueWithGoogle')}
-        </Button>
-      </CardFooter>
     </>
   )
 }

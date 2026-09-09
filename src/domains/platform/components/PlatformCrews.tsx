@@ -37,8 +37,22 @@ export function PlatformCrews() {
   const { t } = useTranslation()
   const { crews, loading, setSubscription } = usePlatformCrews()
 
-  const waiting = crews.filter((entry) => entry.crew.subscriptionStatus === 'pending')
-  const rest = crews.filter((entry) => entry.crew.subscriptionStatus !== 'pending')
+  /*
+   * Entre los que esperan, quien PIDIO la activacion va primero y por orden
+   * de peticion: es la cola real. Un equipo creado para mirar y nunca pedido
+   * no deberia tapar al que lleva dias esperando.
+   */
+  const waiting = crews
+    .filter((entry) => entry.crew.subscriptionStatus === 'pending')
+    .sort((left, right) =>
+      compareByRequest(
+        left.crew.activationRequestedAt,
+        right.crew.activationRequestedAt
+      )
+    )
+  const rest = crews.filter(
+    (entry) => entry.crew.subscriptionStatus !== 'pending'
+  )
 
   return (
     <div className="space-y-8">
@@ -65,14 +79,29 @@ export function PlatformCrews() {
   )
 }
 
+function compareByRequest(left: string | null, right: string | null): number {
+  if (left === right) return 0
+  if (left === null) return 1
+  if (right === null) return -1
+  return left.localeCompare(right)
+}
+
 interface CrewSectionProps {
   title: string
   crews: CrewOverview[]
   emptyMessage: string
-  onSetSubscription: (crewId: string, status: SubscriptionStatus) => Promise<void>
+  onSetSubscription: (
+    crewId: string,
+    status: SubscriptionStatus
+  ) => Promise<void>
 }
 
-function CrewSection({ title, crews, emptyMessage, onSetSubscription }: CrewSectionProps) {
+function CrewSection({
+  title,
+  crews,
+  emptyMessage,
+  onSetSubscription,
+}: CrewSectionProps) {
   const { t, plural } = useTranslation()
 
   return (
@@ -96,7 +125,9 @@ function CrewSection({ title, crews, emptyMessage, onSetSubscription }: CrewSect
               className="flex flex-col gap-2 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3"
             >
               <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold text-ink">{entry.crew.name}</p>
+                <p className="truncate font-semibold text-ink">
+                  {entry.crew.name}
+                </p>
                 <p className="truncate text-xs text-ink/45">
                   {/* Sin dueño identificable se dice, en vez de dejar el hueco:
                       un equipo cuyo entrenador ya no tiene ficha es raro y
@@ -120,19 +151,29 @@ function CrewSection({ title, crews, emptyMessage, onSetSubscription }: CrewSect
                 >
                   {t(STATUS_LABEL_KEY[entry.crew.subscriptionStatus])}
                 </span>
+                {entry.crew.subscriptionStatus === 'pending' &&
+                  entry.crew.activationRequestedAt !== null && (
+                    <span className="shrink-0 rounded-action border border-cobalt/40 bg-cobalt-tint-1 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-cobalt">
+                      {t('platform.crews.requested')}
+                    </span>
+                  )}
 
                 {entry.crew.subscriptionStatus === 'active' ? (
                   <Button
                     variant="outline"
                     className="ms-auto shrink-0 sm:ms-0"
-                    onClick={() => void onSetSubscription(entry.crew.id, 'suspended')}
+                    onClick={() =>
+                      void onSetSubscription(entry.crew.id, 'suspended')
+                    }
                   >
                     {t('platform.crews.suspend')}
                   </Button>
                 ) : (
                   <Button
                     className="ms-auto shrink-0 sm:ms-0"
-                    onClick={() => void onSetSubscription(entry.crew.id, 'active')}
+                    onClick={() =>
+                      void onSetSubscription(entry.crew.id, 'active')
+                    }
                   >
                     {t('platform.crews.activate')}
                   </Button>

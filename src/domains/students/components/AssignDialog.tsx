@@ -1,4 +1,5 @@
 import { useId, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { CalendarRange, Dumbbell, type LucideIcon } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import {
@@ -22,12 +23,16 @@ import { cn } from '@/shared/lib/utils'
 import { useAssignableRoutines } from '../hooks/useAssignableRoutines'
 import { useAssignablePlans } from '../hooks/useAssignablePlans'
 import { toDateKey } from '../libs/dateKey'
-import type { NewAssignment, AssignmentKind } from '@/shared/domain/entities/assignment'
+import type {
+  NewAssignment,
+  AssignmentKind,
+} from '@/shared/domain/entities/assignment'
 import type { Student } from '@/shared/domain/entities/student'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /** Registro de etiqueta del formulario, igual que en el resto de la aplicación. */
-const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
+const FIELD_LABEL =
+  'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
 
 interface AssignDialogProps {
   student: Student
@@ -44,7 +49,12 @@ interface AssignDialogProps {
  * asignado. Mezclarlas obligaría a fijar horarios para poder asignar, y hay
  * quien asigna un plan para que el alumno lo siga por su cuenta.
  */
-export function AssignDialog({ student, open, onOpenChange, onAssign }: AssignDialogProps) {
+export function AssignDialog({
+  student,
+  open,
+  onOpenChange,
+  onAssign,
+}: AssignDialogProps) {
   const { t } = useTranslation()
   const fieldId = useId()
   const { routines } = useAssignableRoutines()
@@ -52,7 +62,9 @@ export function AssignDialog({ student, open, onOpenChange, onAssign }: AssignDi
 
   const [kind, setKind] = useState<AssignmentKind>('plan')
   const [targetId, setTargetId] = useState('')
-  const [startDate, setStartDate] = useState<Date>()
+  // Hoy por defecto: un plan sin fecha quedaba «asignado sin empezar» y sin
+  // forma de volcarlo a la agenda, y casi nadie lo cambiaba a proposito.
+  const [startDate, setStartDate] = useState<Date | undefined>(() => new Date())
   const [notes, setNotes] = useState('')
   const [missingTarget, setMissingTarget] = useState(false)
 
@@ -123,7 +135,9 @@ export function AssignDialog({ student, open, onOpenChange, onAssign }: AssignDi
             {t('assign.title')}
           </DialogTitle>
           <DialogDescription className="text-sm text-ink/50">
-            {t('assign.hint', { name: `${student.firstName} ${student.lastName}` })}
+            {t('assign.hint', {
+              name: `${student.firstName} ${student.lastName}`,
+            })}
           </DialogDescription>
         </DialogHeader>
 
@@ -157,7 +171,9 @@ export function AssignDialog({ student, open, onOpenChange, onAssign }: AssignDi
                 {isPlan ? t('assign.plan') : t('assign.routine')}
               </Label>
               {missingTarget && (
-                <span className="text-[11px] font-semibold text-danger">{t('common.missingField')}</span>
+                <span className="text-[11px] font-semibold text-danger">
+                  {t('common.missingField')}
+                </span>
               )}
             </div>
             <Select
@@ -171,7 +187,11 @@ export function AssignDialog({ student, open, onOpenChange, onAssign }: AssignDi
                 id={`${fieldId}-target`}
                 className={cn('w-full', missingTarget && 'border-danger')}
               >
-                <SelectValue placeholder={isPlan ? t('assign.pickPlan') : t('assign.pickRoutine')} />
+                <SelectValue
+                  placeholder={
+                    isPlan ? t('assign.pickPlan') : t('assign.pickRoutine')
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
                 {isPlan
@@ -187,6 +207,19 @@ export function AssignDialog({ student, open, onOpenChange, onAssign }: AssignDi
                     ))}
               </SelectContent>
             </Select>
+            {/* Sin nada que elegir se dice, con la puerta a crearlo: el
+                desplegable vacio no explicaba por que no habia opciones. */}
+            {(isPlan ? plans : routines).length === 0 && (
+              <p className="text-xs text-ink/60">
+                {isPlan ? t('assign.noPlans') : t('assign.noRoutines')}{' '}
+                <Link
+                  to={isPlan ? '/trainings/plans/new' : '/trainings/new'}
+                  className="inline-flex min-h-11 items-center font-semibold text-cobalt underline-offset-4 hover:underline"
+                >
+                  {isPlan ? t('trainings.newPlan') : t('trainings.newRoutine')}
+                </Link>
+              </p>
+            )}
           </div>
 
           {/*
@@ -196,10 +229,10 @@ export function AssignDialog({ student, open, onOpenChange, onAssign }: AssignDi
           */}
           {isPlan && (
             <div className="space-y-2">
-              <span className={cn('block', FIELD_LABEL)}>{t('assign.startDate')}</span>
-              <p className="text-xs text-ink/40">
-                {t('assign.startDateHint')}
-              </p>
+              <span className={cn('block', FIELD_LABEL)}>
+                {t('assign.startDate')}
+              </span>
+              <p className="text-xs text-ink/55">{t('assign.startDateHint')}</p>
               <div className="rounded-block border border-cobalt-tint-3 p-2">
                 <Calendar
                   mode="single"
@@ -243,7 +276,12 @@ interface KindOptionProps {
   onSelect: () => void
 }
 
-function KindOption({ icon: Icon, label, isSelected, onSelect }: KindOptionProps) {
+function KindOption({
+  icon: Icon,
+  label,
+  isSelected,
+  onSelect,
+}: KindOptionProps) {
   return (
     <button
       type="button"

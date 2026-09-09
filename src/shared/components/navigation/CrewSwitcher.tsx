@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
+import { useViewerContext } from '@/app/ViewerContext'
 import { Check, ChevronsUpDown, Plus, Users } from 'lucide-react'
 import {
   DropdownMenu,
@@ -36,15 +37,22 @@ interface CrewSwitcherProps {
 export function CrewSwitcher({ memberships, active, loading, onSelect }: CrewSwitcherProps) {
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const { trainer } = useViewerContext()
   // Antes de los retornos tempranos: los hooks se llaman siempre en el mismo orden.
   const unread = useWallUnread(active?.crew.id ?? null)
 
   if (loading) return <CrewSwitcherSkeleton />
 
   if (active === null) {
+    /*
+     * Sin equipo, la puerta depende de quien mira: quien tiene ficha de
+     * entrenador crea el suyo; quien no, se une con un codigo. Antes solo
+     * habia «unete», y un entrenador recien registrado no encontraba como
+     * fundar su equipo desde la barra.
+     */
     return (
       <Link
-        to="/crew/unirse"
+        to={trainer !== null ? '/crew/nuevo' : '/crew/unirse'}
         className="flex min-h-11 items-center gap-3 rounded-action text-start transition-colors hover:text-cobalt"
       >
         <span className="flex size-9 shrink-0 items-center justify-center rounded-action border border-dashed border-cobalt-tint-3 text-ink/30">
@@ -52,7 +60,9 @@ export function CrewSwitcher({ memberships, active, loading, onSelect }: CrewSwi
         </span>
         <span className="min-w-0">
           <span className="block text-sm font-semibold text-ink">{t('crewSwitcher.noCrew')}</span>
-          <span className="block text-xs text-ink/45">{t('crewSwitcher.joinToStart')}</span>
+          <span className="block text-xs text-ink/45">
+            {trainer !== null ? t('crewSwitcher.createToStart') : t('crewSwitcher.joinToStart')}
+          </span>
         </span>
       </Link>
     )

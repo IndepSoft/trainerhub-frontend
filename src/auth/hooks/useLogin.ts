@@ -35,20 +35,7 @@ export const useLogin = () => {
     }
   }
 
-  const loginWithGoogle = async () => {
-    setError(null)
-    setLoading(true)
-
-    try {
-      await container.auth.signInWithGoogle()
-      // La navegacion la resuelve el redirect de OAuth al volver.
-    } catch (err) {
-      setError(describeError(err, t, 'auth.signInError'))
-      setLoading(false)
-    }
-  }
-
   const clearError = () => setError(null)
 
-  return { loginWithEmail, loginWithGoogle, error, loading, clearError }
+  return { loginWithEmail, error, loading, clearError }
 }

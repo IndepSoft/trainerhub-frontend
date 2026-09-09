@@ -316,11 +316,30 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   que se escribieron. Está dicho en el propio selector. Toda cadena nueva se
   añade a los TRES diccionarios: `Dictionary` es `Record<TranslationKey, string>`
   y una clave que falte no compila.
-- El acceso con GOOGLE está DESHABILITADO: el proveedor no está habilitado en el
-  proyecto y el botón echaba al usuario de la aplicación, a un JSON de error de
-  Supabase. No se puede traducir desde el cliente —la navegación ya ocurrió—, así
-  que el botón va apagado. Encenderlo es quitar un `disabled`, después de dar de
-  alta un cliente OAuth de Google.
+- El acceso con GOOGLE NO EXISTE: el proveedor no está habilitado en el
+  proyecto, y un botón apagado en la pantalla de entrada era una puerta pintada
+  en la pared. Se quitó entero —botón, hook y método del puerto—. Ofrecerlo el
+  día que haya un cliente OAuth es añadir `signInWithGoogle` a `AuthPort` y
+  a sus dos adaptadores, y el botón; el historial de git tiene la versión.
+- Las RUTAS DE GESTIÓN se cierran con la misma regla que las esconde:
+  `withRouteAccess` aplica `viewerMayVisit` —la función que filtra la barra—
+  sobre `/students`, `/trainings`, `/dashboard` y `/reports`. No es la
+  seguridad, que sigue siendo RLS: es no abrir una pantalla vacía con controles
+  que fallan uno a uno.
+- NINGÚN AVISO ANTES DE ESCRIBIR. El `toast` de éxito va después de que el
+  puerto resuelva, y el fallo se dice donde se hizo la acción. Antes la agenda
+  celebraba cambios que la base había rechazado.
+- La SESIÓN EN VIVO tiene salida sin terminar y vuelve a donde se empezó:
+  el origen viaja en `location.state.from` —como el destino pretendido del
+  acceso— y de ahí a la celebración. Una sesión completada o cancelada no se
+  ejecuta: volver a cerrarla sobrescribía el resultado.
+- CARDIO ES UN CRONÓMETRO. La distancia, el ritmo, las calorías y el trazado
+  GPS eran una semilla con un contador; sin sensor, lo único real es el tiempo.
+  Cuando haya GPS entra por un puerto.
+- Un alumno RETIRA su solicitud pendiente —política de borrado sobre su
+  propia fila, sólo `pending`— y un equipo PIDE la activación
+  —`crews.activation_requested_at`, la escribe `crew.settings`—. Las dos
+  tienen prueba de contrato.
 - El correo transaccional de Supabase está LIMITADO POR HORAS y no es para
   producción: sin un SMTP propio, en producción no llegan las confirmaciones.
 - La LISTA BLANCA DE REDIRECCIONES hay que mirarla en el panel: Supabase sólo

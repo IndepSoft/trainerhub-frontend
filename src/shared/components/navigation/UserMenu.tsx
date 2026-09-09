@@ -12,6 +12,8 @@ import { LogOut, User } from 'lucide-react'
 import { getInitials, getShortName } from '@/shared/lib/personName'
 import { useLogout } from '@/auth/hooks/useLogout'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { useViewerContext } from '@/app/ViewerContext'
+import { getSidebarRoutes } from '@/app/config/navigation.config'
 
 interface UserMenuProps {
   /**
@@ -29,7 +31,22 @@ export function UserMenu({ person, loading }: UserMenuProps) {
   const navigate = useNavigate()
   const { handleLogout } = useLogout()
   const { t } = useTranslation()
-  
+  const { role, hasOwnProgress, active, isPlatformAdmin } = useViewerContext()
+  const navigationViewer = {
+    role,
+    hasOwnProgress,
+    extraCapabilities: active?.extraCapabilities ?? [],
+    isPlatformAdmin,
+  }
+  /*
+   * Los destinos que caben en la barra lateral y no en la inferior. Con el
+   * telefono, un entrenador no tenia ninguna forma de llegar a Informes salvo
+   * teclear la direccion. Configuracion ya tiene su entrada arriba.
+   */
+  const overflow = getSidebarRoutes(navigationViewer).filter(
+    (item) => !item.showInMobile && item.id !== 'settings'
+  )
+
   const displayName = getShortName(person.firstName, person.lastName)
   const initials = getInitials(person.firstName, person.lastName)
   const avatarUrl = person.photoUrl
@@ -65,6 +82,19 @@ export function UserMenu({ person, loading }: UserMenuProps) {
           <User className="mr-2 h-4 w-4" />
           <span>{t('userMenu.profile')}</span>
         </DropdownMenuItem>
+        {/* Lo que la barra lateral ofrece y la inferior no tiene sitio para
+            ofrecer: en movil, esta es la unica puerta a Informes. Sale del
+            mismo filtro que la barra, asi que lo ve exactamente quien lo ve
+            alli. */}
+        {overflow.map((item) => {
+          const Icon = item.icon
+          return (
+            <DropdownMenuItem key={item.id} onSelect={() => navigate(item.href)}>
+              {Icon !== undefined && <Icon className="mr-2 h-4 w-4" />}
+              <span>{t(item.labelKey)}</span>
+            </DropdownMenuItem>
+          )
+        })}
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
           <span>{t('userMenu.logout')}</span>

@@ -123,6 +123,16 @@ export interface StudentRepository {
   claimMembership(input: ClaimMembershipInput): Promise<Student>
 
   remove(studentId: string): Promise<void>
+
+  /**
+   * Retira una solicitud de entrada que uno mismo hizo y sigue pendiente.
+   *
+   * Aparte de `remove` porque quien la llama no gestiona alumnos: es el propio
+   * solicitante, y la base sólo le deja borrar SU ficha mientras esté
+   * pendiente. Una ficha activa tiene historial detrás y darse de baja es otra
+   * decisión.
+   */
+  withdrawRequest(studentId: string): Promise<void>
   onChange(listener: () => void): () => void
 }
 

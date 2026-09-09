@@ -34,6 +34,7 @@ export const crewsSeed: Crew[] = [
     // pendiente obligaria a entrar como administrador antes de poder hacer
     // nada. Los que se crean desde la aplicacion SI nacen pendientes.
     subscriptionStatus: 'active',
+    activationRequestedAt: null,
   },
   {
     /*
@@ -52,5 +53,6 @@ export const crewsSeed: Crew[] = [
     requiresApproval: true,
     rankingEnabled: true,
     subscriptionStatus: 'active',
+    activationRequestedAt: null,
   },
 ]

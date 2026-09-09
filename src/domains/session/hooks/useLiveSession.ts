@@ -1,24 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import {
-  liveSessionMock,
-  SIMULATED_CALORIES_PER_SECOND,
-  SIMULATED_METERS_PER_SECOND,
-} from '../data/liveSession.mock'
-import { calculatePaceSeconds } from '../libs/session.utils'
-import type {
-  LiveSession,
-  LiveSessionMetrics,
-  LiveSessionState,
-} from '../types/session.types'
+import type { LiveSessionState } from '../types/session.types'
 
 interface UseLiveSessionResult {
-  session: LiveSession
-  metrics: LiveSessionMetrics
+  elapsedSeconds: number
   state: LiveSessionState
-  /** Segundos por kilómetro, o `null` mientras no haya distancia. */
-  paceSeconds: number | null
-  /** Fracción del trazado ya recorrida, de 0 a 1. */
-  routeProgress: number
   pause: () => void
   resume: () => void
   finish: () => void
@@ -28,19 +13,21 @@ interface UseLiveSessionResult {
 const TICK_MILLISECONDS = 1000
 
 /**
- * Estado de la sesión en vivo.
+ * El reloj de una sesión de cardio.
  *
- * Es la costura donde entrará el repositorio: hoy el avance lo produce un
- * temporizador sobre datos simulados, y mañana vendrá del GPS y de la
- * persistencia. La página y los componentes reciben las mismas métricas en
- * ambos casos, así que sólo cambia este fichero.
+ * MIDE SOLO TIEMPO, y arranca en cero. Antes arrancaba en siete minutos con
+ * distancia, calorías, ritmo y un trazado GPS que no venían de ningún sitio:
+ * eran una semilla y un contador que la hacía crecer. Un entrenador que abría
+ * una sesión de cardio veía cifras inventadas con aspecto de medidas, y en un
+ * teléfono el letrero «GPS» prometía algo que no existe. Sin sensor no hay
+ * distancia; el tiempo sí es real, y es lo que se anota al cerrar.
  *
- * El cálculo del ritmo NO vive aquí: se delega en `session.utils`, que es puro.
- * Este hook orquesta estado; no hace aritmética de dominio.
+ * Cuando haya GPS, la distancia entra por un puerto y este hook la recibe; la
+ * pantalla la pinta si viene y no la finge si no.
  */
 export function useLiveSession(): UseLiveSessionResult {
   const [state, setState] = useState<LiveSessionState>('running')
-  const [metrics, setMetrics] = useState<LiveSessionMetrics>(liveSessionMock.metrics)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
 
   // El identificador del intervalo se guarda en una referencia y no en estado:
   // cambiarlo no debe provocar un renderizado.
@@ -50,11 +37,7 @@ export function useLiveSession(): UseLiveSessionResult {
     if (state !== 'running') return
 
     intervalRef.current = window.setInterval(() => {
-      setMetrics((previous) => ({
-        elapsedSeconds: previous.elapsedSeconds + 1,
-        distanceMeters: previous.distanceMeters + SIMULATED_METERS_PER_SECOND,
-        calories: previous.calories + SIMULATED_CALORIES_PER_SECOND,
-      }))
+      setElapsedSeconds((previous) => previous + 1)
     }, TICK_MILLISECONDS)
 
     return () => {
@@ -69,24 +52,5 @@ export function useLiveSession(): UseLiveSessionResult {
   const resume = useCallback(() => setState('running'), [])
   const finish = useCallback(() => setState('finished'), [])
 
-  const paceSeconds = calculatePaceSeconds(metrics)
-
-  /*
-   * El trazado se recorre en proporción al tiempo transcurrido sobre una vuelta
-   * completa simulada de doce minutos. Es una decisión del simulador: con GPS
-   * real, el avance vendrá de emparejar la posición con el trazado planificado.
-   */
-  const SIMULATED_LAP_SECONDS = 720
-  const routeProgress = Math.min(metrics.elapsedSeconds / SIMULATED_LAP_SECONDS, 1)
-
-  return {
-    session: liveSessionMock,
-    metrics,
-    state,
-    paceSeconds,
-    routeProgress,
-    pause,
-    resume,
-    finish,
-  }
+  return { elapsedSeconds, state, pause, resume, finish }
 }

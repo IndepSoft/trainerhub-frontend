@@ -8,6 +8,7 @@ import { useViewerContext } from '@/app/ViewerContext'
 import { useCrewEditor } from '../hooks/useCrewEditor'
 import { useCrewMembers } from '../hooks/useCrewMembers'
 import { CrewInviteCard } from '../components/CrewInviteCard'
+import { CopyInviteButton } from '../components/CopyInviteButton'
 import { SubscriptionNotice } from '../components/SubscriptionNotice'
 import { CrewWall } from '../components/CrewWall'
 import { CrewRanking } from '../components/CrewRanking'
@@ -39,7 +40,7 @@ export default function CrewPage() {
   const { t } = useTranslation()
   const { active, trainer, can, loading: loadingViewer } = useViewerContext()
   const { members, pending, loading, approve, reject } = useCrewMembers()
-  const { rotateJoinToken, saving } = useCrewEditor()
+  const { rotateJoinToken, requestActivation, saving, error: editorError } = useCrewEditor()
 
   if (loadingViewer) return null
 
@@ -202,9 +203,12 @@ export default function CrewPage() {
                       salia vacia al lado.
                     */}
                     {student.profileId === null && (
-                      <span className="shrink-0 rounded-action border border-cobalt-tint-3 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-ink/40">
+                      <span className="shrink-0 rounded-action border border-cobalt-tint-3 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-ink/55">
                         {t('crew.noAccount')}
                       </span>
+                    )}
+                    {student.profileId === null && can('crew.invite') && canEnrollMembers(crew) && (
+                      <CopyInviteButton joinToken={crew.joinToken} />
                     )}
                   </li>
                 ))}
@@ -227,7 +231,12 @@ export default function CrewPage() {
                 }}
               />
             ) : (
-              <SubscriptionNotice status={crew.subscriptionStatus} />
+              <SubscriptionNotice
+                crew={crew}
+                requesting={saving}
+                error={editorError}
+                onRequestActivation={() => requestActivation(crew.id)}
+              />
             ))}
         </div>
       </div>

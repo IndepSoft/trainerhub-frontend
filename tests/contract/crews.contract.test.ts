@@ -103,6 +103,41 @@ describe('crews: crear, gobernar y buscar', () => {
     expect(token.error?.code).toBe('42501')
   })
 
+  it('pedir la activacion deja fecha, y solo la pide quien gobierna', async () => {
+    const founder = await signedInAs('activar', { intent: 'trainer', first_name: 'A', last_name: 'C' })
+    const trainer = await signedInAs('ayudante', { intent: 'trainer', first_name: 'A', last_name: 'Y' })
+    created.push(founder, trainer)
+
+    const crew = await createCrewAs(founder, 'Esperando')
+    await founder.client.from('crew_staff').insert({ crew_id: crew.id, profile_id: trainer.id, role: 'trainer' })
+
+    // El entrenador no gobierna: no alcanza la fila.
+    await trainer.client
+      .from('crews')
+      .update({ activation_requested_at: new Date().toISOString() })
+      .eq('id', crew.id)
+    const { data: untouched } = await adminClient()
+      .from('crews')
+      .select('activation_requested_at')
+      .eq('id', crew.id)
+      .single()
+    expect(untouched?.activation_requested_at).toBeNull()
+
+    // Quien gobierna, si; y la suscripcion sigue sin activarse: pedirla no es activarla.
+    const requested = await founder.client
+      .from('crews')
+      .update({ activation_requested_at: new Date().toISOString() })
+      .eq('id', crew.id)
+    expect(requested.error).toBeNull()
+    const { data: after } = await adminClient()
+      .from('crews')
+      .select('activation_requested_at, subscription_status')
+      .eq('id', crew.id)
+      .single()
+    expect(after?.activation_requested_at).not.toBeNull()
+    expect(after?.subscription_status).toBe('pending')
+  })
+
   it('el ultimo administrador no se va: ni se degrada ni se borra', async () => {
     const founder = await signedInAs('ultimo', { intent: 'trainer', first_name: 'U', last_name: 'L' })
     created.push(founder)

@@ -94,12 +94,20 @@ export function StudentAssignments({ student }: StudentAssignmentsProps) {
                   {assignment.kind === 'plan' ? t('assign.plan') : t('assign.routine')}
                 </span>
 
-                <Link
-                  to={destinationOf(assignment)}
-                  className="mt-1 flex min-h-11 items-center font-semibold text-ink underline-offset-4 hover:text-cobalt hover:underline"
-                >
-                  {titlesById.get(targetOf(assignment)) ?? t('assignments.gone')}
-                </Link>
+                {/* Sin titulo no hay destino: el plan o la rutina ya no
+                    existen y un enlace llevaria a una pagina vacia. */}
+                {titlesById.has(targetOf(assignment)) ? (
+                  <Link
+                    to={destinationOf(assignment)}
+                    className="mt-1 flex min-h-11 items-center font-semibold text-ink underline-offset-4 hover:text-cobalt hover:underline"
+                  >
+                    {titlesById.get(targetOf(assignment))}
+                  </Link>
+                ) : (
+                  <p className="mt-1 flex min-h-11 items-center font-semibold text-ink/45">
+                    {t('assignments.gone')}
+                  </p>
+                )}
 
                 <p className="text-xs text-ink/45">{describeWhen(assignment, t)}</p>
 

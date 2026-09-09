@@ -1,5 +1,7 @@
 import { useId, useState, type FormEvent } from 'react'
-import { Check, LogOut, Upload } from 'lucide-react'
+import { Check, LogOut, Upload, Users } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { useViewerContext } from '@/app/ViewerContext'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Button } from '@/shared/ui/button'
@@ -18,7 +20,8 @@ import { LanguageSelector } from '../components/LanguageSelector'
 import { SoundToggle } from '../components/SoundToggle'
 import { DeleteAccountSection } from '../components/DeleteAccountSection'
 
-const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
+const FIELD_LABEL =
+  'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
 const SECTION_TITLE =
   'border-b border-cobalt-tint-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60'
 
@@ -53,8 +56,10 @@ const SECTION_TITLE =
  */
 export default function Settings() {
   const { t } = useTranslation()
-  const { owner, profileId, initial, email, saving, error, save } = useProfileEditor()
+  const { owner, profileId, initial, email, saving, error, save } =
+    useProfileEditor()
   const { handleLogout } = useLogout()
+  const { active, trainer, can } = useViewerContext()
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
@@ -105,14 +110,18 @@ export default function Settings() {
             </h2>
 
             <div>
-              <span className={cn('block', FIELD_LABEL)}>{t('settings.theme')}</span>
+              <span className={cn('block', FIELD_LABEL)}>
+                {t('settings.theme')}
+              </span>
               <div className="mt-2">
                 <ThemeSelector />
               </div>
             </div>
 
             <div>
-              <span className={cn('block', FIELD_LABEL)}>{t('settings.language')}</span>
+              <span className={cn('block', FIELD_LABEL)}>
+                {t('settings.language')}
+              </span>
               <div className="mt-2">
                 <LanguageSelector />
               </div>
@@ -128,11 +137,57 @@ export default function Settings() {
             </h2>
 
             <div>
-              <span className={cn('block', FIELD_LABEL)}>{t('settings.sound')}</span>
+              <span className={cn('block', FIELD_LABEL)}>
+                {t('settings.sound')}
+              </span>
               <div className="mt-2">
                 <SoundToggle />
               </div>
             </div>
+          </section>
+
+          {/*
+            La puerta al equipo desde la configuracion. Los ajustes del equipo
+            viven en `/crew/ajustes` -son de la casa, no de la persona-, pero
+            quien buscaba aqui «mi equipo» no encontraba ni el enlace, y quien
+            no tiene equipo no encontraba como tenerlo.
+          */}
+          <section aria-labelledby="equipo-titulo" className="space-y-4">
+            <h2 id="equipo-titulo" className={SECTION_TITLE}>
+              {t('settings.crew')}
+            </h2>
+            {active === null ? (
+              <>
+                <p className="text-sm text-ink/60">{t('settings.crewNone')}</p>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  {trainer !== null && (
+                    <Button asChild className="gap-2">
+                      <Link to="/crew/nuevo">
+                        <Users className="size-4" />
+                        {t('crew.create')}
+                      </Link>
+                    </Button>
+                  )}
+                  <Button asChild variant="outline">
+                    <Link to="/crew/unirse">{t('joinCrew.haveCode')}</Link>
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button asChild variant="outline" className="gap-2">
+                  <Link to="/crew">
+                    <Users className="size-4" />
+                    {t('crewSwitcher.viewCrew')}
+                  </Link>
+                </Button>
+                {can('crew.settings') && (
+                  <Button asChild variant="outline">
+                    <Link to="/crew/ajustes">{t('settings.crewSettings')}</Link>
+                  </Button>
+                )}
+              </div>
+            )}
           </section>
 
           <section aria-labelledby="cuenta-titulo" className="space-y-4">
@@ -141,8 +196,12 @@ export default function Settings() {
             </h2>
 
             <div>
-              <span className={cn('block', FIELD_LABEL)}>{t('settings.account.email')}</span>
-              <p className="mt-1 text-sm text-ink/70">{email === '' ? '—' : email}</p>
+              <span className={cn('block', FIELD_LABEL)}>
+                {t('settings.account.email')}
+              </span>
+              <p className="mt-1 text-sm text-ink/70">
+                {email === '' ? '—' : email}
+              </p>
               <p className="mt-1 text-xs text-ink/45">
                 {/* El porqué, donde se ve que no se puede cambiar. Un campo
                     apagado sin explicación se lee como un fallo. */}
@@ -151,14 +210,22 @@ export default function Settings() {
             </div>
 
             <div>
-              <span className={cn('block', FIELD_LABEL)}>{t('settings.password')}</span>
-              <p className="mb-3 mt-1 text-xs text-ink/45">{t('settings.password.hint')}</p>
+              <span className={cn('block', FIELD_LABEL)}>
+                {t('settings.password')}
+              </span>
+              <p className="mb-3 mt-1 text-xs text-ink/45">
+                {t('settings.password.hint')}
+              </p>
               {/* Quedarse aquí al guardar: no hay a dónde ir, y el acuse lo
                   pone el propio botón. */}
               <PasswordFields idPrefix="ajustes" onSaved={() => undefined} />
             </div>
 
-            <Button variant="outline" className="w-full gap-2" onClick={handleLogout}>
+            <Button
+              variant="outline"
+              className="w-full gap-2"
+              onClick={handleLogout}
+            >
               <LogOut className="size-4" />
               {t('userMenu.logout')}
             </Button>
@@ -225,7 +292,10 @@ function ProfileFields({ initial, saving, onSave }: ProfileFieldsProps) {
         {/* La foto se ve mientras se escribe la dirección: pegar un enlace y no
             saber si vale hasta guardar es el fallo clásico de estos campos. */}
         <Avatar className="size-16 shrink-0">
-          <AvatarImage src={draft.photoUrl === '' ? undefined : draft.photoUrl} alt="" />
+          <AvatarImage
+            src={draft.photoUrl === '' ? undefined : draft.photoUrl}
+            alt=""
+          />
           <AvatarFallback className="bg-cobalt-tint-2 text-cobalt">
             {getInitials(draft.firstName, draft.lastName)}
           </AvatarFallback>
@@ -249,16 +319,28 @@ function ProfileFields({ initial, saving, onSave }: ProfileFieldsProps) {
             type="file"
             accept="image/*"
             className="sr-only"
-            onChange={(event) => void handlePhotoChosen(event.target.files?.[0])}
+            onChange={(event) =>
+              void handlePhotoChosen(event.target.files?.[0])
+            }
           />
-          <Button asChild type="button" variant="outline" size="sm" className="mt-2 gap-1.5">
+          <Button
+            asChild
+            type="button"
+            variant="outline"
+            size="sm"
+            className="mt-2 gap-1.5"
+          >
             <label htmlFor={photoInputId}>
               <Upload className="size-3.5" />
-              {uploading ? t('settings.profile.uploading') : t('settings.profile.upload')}
+              {uploading
+                ? t('settings.profile.uploading')
+                : t('settings.profile.upload')}
             </label>
           </Button>
           {uploadError !== null && (
-            <p className="mt-1 text-[11px] font-semibold text-danger">{uploadError}</p>
+            <p className="mt-1 text-[11px] font-semibold text-danger">
+              {uploadError}
+            </p>
           )}
         </div>
       </div>
@@ -279,7 +361,10 @@ function ProfileFields({ initial, saving, onSave }: ProfileFieldsProps) {
             id="perfil-nombre"
             value={draft.firstName}
             onChange={(event) => setField('firstName', event.target.value)}
-            className={cn('mt-1.5', missingName && draft.firstName.trim() === '' && 'border-danger')}
+            className={cn(
+              'mt-1.5',
+              missingName && draft.firstName.trim() === '' && 'border-danger'
+            )}
           />
         </div>
 
@@ -291,7 +376,10 @@ function ProfileFields({ initial, saving, onSave }: ProfileFieldsProps) {
             id="perfil-apellidos"
             value={draft.lastName}
             onChange={(event) => setField('lastName', event.target.value)}
-            className={cn('mt-1.5', missingName && draft.lastName.trim() === '' && 'border-danger')}
+            className={cn(
+              'mt-1.5',
+              missingName && draft.lastName.trim() === '' && 'border-danger'
+            )}
           />
         </div>
       </div>

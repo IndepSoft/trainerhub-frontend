@@ -68,15 +68,6 @@ export class SupabaseAuthAdapter implements AuthPort {
     return toAuthUser(data.user)
   }
 
-  async signInWithGoogle(): Promise<void> {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/dashboard` },
-    })
-
-    if (error) throw mapAuthError(error)
-  }
-
   async signOut(): Promise<void> {
     const { error } = await supabase.auth.signOut()
     if (error) {

@@ -195,6 +195,14 @@ export class FakeStudentRepository implements StudentRepository {
     return student
   }
 
+  async withdrawRequest(studentId: string): Promise<void> {
+    // La regla del servidor -solo la pendiente-, en memoria.
+    this.students = this.students.filter(
+      (student) => !(student.id === studentId && student.membershipStatus === 'pending')
+    )
+    this.notify()
+  }
+
   async remove(studentId: string): Promise<void> {
     this.students = this.students.filter((student) => student.id !== studentId)
     this.notify()

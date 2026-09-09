@@ -20,13 +20,12 @@ export const LEVEL_BADGE: Record<StudentLevel, string> = {
 /**
  * El mismo nivel, sobre el bloque de Ink de la tarjeta editorial.
  *
- * Los tonos de `--scale-*` estan calibrados contra el fondo Bone; sobre Ink
- * pierden contraste. Se sube la opacidad del canto y el texto pasa a un tono mas
- * claro de la misma rampa en vez de cambiar de color, que rompería la
- * asociación nivel-color entre la ficha y la tarjeta.
+ * Los tonos de `--scale-*` estan calibrados contra el fondo Bone y sobre Ink
+ * desaparecen. `-lift` es la misma rampa en claro: cambia el tono, no el
+ * color, para no romper la asociación nivel-color entre la ficha y la tarjeta.
  */
 export const LEVEL_BADGE_ON_INK: Record<StudentLevel, string> = {
-  Principiante: 'border-scale-1/60 text-scale-1',
-  Intermedio: 'border-scale-2/60 text-scale-2',
-  Avanzado: 'border-scale-3/60 text-scale-3',
+  Principiante: 'border-scale-1-lift/60 text-scale-1-lift',
+  Intermedio: 'border-scale-2-lift/60 text-scale-2-lift',
+  Avanzado: 'border-scale-3-lift/60 text-scale-3-lift',
 }

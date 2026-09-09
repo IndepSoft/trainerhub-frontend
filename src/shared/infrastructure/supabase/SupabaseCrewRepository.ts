@@ -60,6 +60,19 @@ export class SupabaseCrewRepository implements CrewRepository {
     if (error) throw mapDataError(error)
   }
 
+  async requestActivation(crewId: string): Promise<void> {
+    // La fecha la pone el cliente y no `now()` del servidor: la columna es
+    // una peticion, no una auditoria, y abrir una funcion para un sello de
+    // tiempo seria mas superficie que valor. La politica de `crews` ya exige
+    // `crew.settings` para escribir, y el grant abre solo esta columna.
+    const { error } = await supabase
+      .from('crews')
+      .update({ activation_requested_at: new Date().toISOString() })
+      .eq('id', crewId)
+
+    if (error) throw mapDataError(error)
+  }
+
   async rotateJoinToken(crewId: string): Promise<string> {
     const { data, error } = await supabase.rpc('rotate_join_token', { crew: crewId })
 
