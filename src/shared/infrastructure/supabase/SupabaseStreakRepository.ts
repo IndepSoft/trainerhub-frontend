@@ -34,8 +34,8 @@ export class SupabaseStreakRepository implements StreakRepository {
   async pause(input: StreakPauseInput): Promise<void> {
     const { error } = await supabase.rpc('pause_streak', {
       student: input.studentId,
-      from_day: input.fromDay,
-      to_day: input.toDay,
+      pause_from: input.fromDay,
+      pause_to: input.toDay,
       pause_reason: input.reason,
     })
     if (error) throw mapDataError(error)

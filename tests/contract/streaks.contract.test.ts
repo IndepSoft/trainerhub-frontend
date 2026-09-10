@@ -58,11 +58,11 @@ describe('rachas: pausas y comodines', () => {
 
     // El alumno no pausa; quien gestiona, si.
     const denied = await person.client.rpc('pause_streak', {
-      student: studentId, from_day: '2026-08-10', to_day: '2026-08-14', pause_reason: 'injury',
+      student: studentId, pause_from: '2026-08-10', pause_to: '2026-08-14', pause_reason: 'injury',
     })
     expect(denied.error?.message).toBe('forbidden')
     const paused = await trainer.client.rpc('pause_streak', {
-      student: studentId, from_day: '2026-08-10', to_day: '2026-08-14', pause_reason: 'injury',
+      student: studentId, pause_from: '2026-08-10', pause_to: '2026-08-14', pause_reason: 'injury',
     })
     expect(paused.error).toBeNull()
 
@@ -111,7 +111,7 @@ describe('rachas: pausas y comodines', () => {
 
     // Cinco dias, dos de lesion, dos dias: siete de racha protegida.
     await trainer.client.rpc('pause_streak', {
-      student: studentId, from_day: '2026-08-06', to_day: '2026-08-07', pause_reason: 'injury',
+      student: studentId, pause_from: '2026-08-06', pause_to: '2026-08-07', pause_reason: 'injury',
     })
     for (const day of ['2026-08-01', '2026-08-02', '2026-08-03', '2026-08-04', '2026-08-05', '2026-08-08']) {
       expect((await trainer.client.from('sessions').insert(completedOn(crew.id, studentId, day))).error).toBeNull()
@@ -144,7 +144,7 @@ describe('cohortes: el ranking compara entre iguales', () => {
     const { data: youthCohort } = await young.client.rpc('cohort_of', { student: youngId })
     expect(youthCohort).toBe('youth')
 
-    const { data: onlyYouth } = await young.client.rpc('crew_ranking', { crew: crew.id, period: 'all', cohort: 'youth' })
+    const { data: onlyYouth } = await young.client.rpc('crew_ranking', { crew: crew.id, period: 'all', cohort_filter: 'youth' })
     expect((onlyYouth as { student_id: string }[]).map((row) => row.student_id)).toEqual([youngId])
 
     const { data: everyone } = await trainer.client.rpc('crew_ranking', { crew: crew.id, period: 'all' })

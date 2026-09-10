@@ -75,7 +75,9 @@ as $function$
   );
 $function$;
 
-create or replace function public.pause_streak(student uuid, from_day date, to_day date, pause_reason text)
+-- `pause_from` y `pause_to`, no `from_day` y `to_day`: con el nombre de la
+-- columna, el `on conflict` no sabe a cual se refiere.
+create or replace function public.pause_streak(student uuid, pause_from date, pause_to date, pause_reason text)
 returns void
 language plpgsql
 security definer
@@ -96,7 +98,7 @@ begin
   end if;
 
   insert into public.streak_pauses (student_id, from_day, to_day, reason, created_by)
-  values (student, from_day, to_day, pause_reason, (select auth.uid()))
+  values (student, pause_from, pause_to, pause_reason, (select auth.uid()))
   on conflict (student_id, from_day) do update set
     to_day = excluded.to_day,
     reason = excluded.reason,
@@ -394,7 +396,8 @@ grant execute on function public.cohort_of(uuid) to authenticated;
 
 drop function if exists public.crew_ranking(uuid, text);
 
-create or replace function public.crew_ranking(crew uuid, period text, cohort text default null)
+-- `cohort_filter` y no `cohort`: `session_scores.cohort` es una columna del join.
+create or replace function public.crew_ranking(crew uuid, period text, cohort_filter text default null)
 returns table (
   student_id uuid,
   first_name text,
@@ -438,7 +441,7 @@ begin
    and (since is null or sc.completed_on >= since)
   where t.crew_id = crew
     and t.membership_status in ('active', 'invited')
-    and (cohort is null or public.cohort_of(t.id) = cohort)
+    and (cohort_filter is null or public.cohort_of(t.id) = cohort_filter)
   group by t.id, t.first_name, t.last_name, t.photo_url
   order by experience desc, t.first_name, t.last_name;
 end;

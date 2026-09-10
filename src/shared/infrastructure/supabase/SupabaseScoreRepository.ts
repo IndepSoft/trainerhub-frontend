@@ -56,7 +56,7 @@ export class SupabaseScoreRepository implements ScoreRepository {
     const crewId = this.scope.current()
     if (crewId === null) return []
 
-    const { data, error } = await supabase.rpc('crew_ranking', { crew: crewId, period, cohort })
+    const { data, error } = await supabase.rpc('crew_ranking', { crew: crewId, period, cohort_filter: cohort })
 
     if (error) throw mapDataError(error)
     return ((data ?? []) as CrewProgressRow[]).map(toCrewMemberProgress)
