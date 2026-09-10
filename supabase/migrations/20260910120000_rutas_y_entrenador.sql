@@ -48,8 +48,13 @@ cross join (values
 
 -- Que ruta activa cada objetivo del catalogo. Un plan de hipertrofia mete al
 -- alumno en Titan sin que nadie elija nada; el entrenador puede cambiarlo.
+--
+-- SIN clave foranea a `training_objectives`: ese catalogo lo siembra
+-- `seed.sql`, que corre DESPUES de las migraciones, y en un Supabase recien
+-- levantado la referencia no existiria todavia. Un objetivo que no este en el
+-- mapa cae en Hybrid; el mapa no necesita que la base lo vigile.
 create table public.route_objectives (
-  objective_id text primary key references public.training_objectives (id),
+  objective_id text primary key,
   route_code text not null references public.progress_routes (code)
 );
 
