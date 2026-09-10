@@ -1,3 +1,5 @@
+import { ageOf } from './student'
+
 /**
  * Lo que el servidor escribe al cerrar una sesión: su puntuación y las
  * insignias que desbloqueó.
@@ -135,3 +137,42 @@ export interface RouteProgress {
   /** Nodos que el entrenador ya validó. */
   validatedPositions: number[]
 }
+
+/**
+ * La cohorte, con nombre y sin edad: es lo único que sale al ranking.
+ *
+ *   youth < 18 · adult 18–45 · senior > 45 · null sin fecha
+ *
+ * Espejo de `cohort_of` en SQL. La fecha de nacimiento sólo la leen el
+ * propio alumno y el equipo técnico; el nombre de la cohorte lo ve el ranking
+ * para comparar entre iguales.
+ */
+export type Cohort = 'youth' | 'adult' | 'senior'
+
+export function cohortOf(birthDate: string | null, today: Date = new Date()): Cohort | null {
+  const age = ageOf(birthDate, today)
+  if (age === null) return null
+  if (age < 18) return 'youth'
+  if (age > 45) return 'senior'
+  return 'adult'
+}
+
+/**
+ * Una pausa de la racha: los días entre `fromDay` y `toDay`, ambos incluidos,
+ * no la rompen. Lesión y viaje las escribe quien gestiona; el comodín, el
+ * propio alumno, y cubre un solo día.
+ */
+export type StreakPauseReason = 'injury' | 'travel' | 'wildcard'
+
+export interface StreakPause {
+  studentId: string
+  fromDay: string
+  toDay: string
+  reason: StreakPauseReason
+}
+
+/** Un comodín por cada ocho semanas seguidas entrenando, hasta dos acumulados. */
+export const WILDCARD_WEEKS = 8
+export const WILDCARD_CAP = 2
+/** Los comodines gastados en las últimas dieciséis semanas se descuentan. */
+export const WILDCARD_WINDOW_DAYS = 112

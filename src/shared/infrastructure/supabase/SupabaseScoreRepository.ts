@@ -3,7 +3,7 @@ import type {
   ProgressPeriod,
   ScoreRepository,
 } from '@/shared/domain/ports/ScoreRepository'
-import type { SessionScore } from '@/shared/domain/entities/progress'
+import type { Cohort, SessionScore } from '@/shared/domain/entities/progress'
 import type { CrewScope } from '@/shared/domain/ports/CrewScope'
 import { supabase } from './client'
 import { mapDataError } from './errorMapper'
@@ -52,11 +52,11 @@ export class SupabaseScoreRepository implements ScoreRepository {
     return data === null ? null : toSessionScore(data as SessionScoreRow)
   }
 
-  async ofCrew(period: ProgressPeriod): Promise<CrewMemberProgress[]> {
+  async ofCrew(period: ProgressPeriod, cohort: Cohort | null = null): Promise<CrewMemberProgress[]> {
     const crewId = this.scope.current()
     if (crewId === null) return []
 
-    const { data, error } = await supabase.rpc('crew_ranking', { crew: crewId, period })
+    const { data, error } = await supabase.rpc('crew_ranking', { crew: crewId, period, cohort })
 
     if (error) throw mapDataError(error)
     return ((data ?? []) as CrewProgressRow[]).map(toCrewMemberProgress)

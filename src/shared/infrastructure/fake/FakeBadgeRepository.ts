@@ -2,6 +2,7 @@ import type { BadgeRepository } from '@/shared/domain/ports/BadgeRepository'
 import { BADGES_REQUIRING_VALIDATION, type StudentBadge } from '@/shared/domain/entities/progress'
 import type { CrewScope } from '@/shared/domain/ports/CrewScope'
 import type { FakeSessionRepository } from './FakeSessionRepository'
+import type { FakeStreakRepository } from './FakeStreakRepository'
 import type { FakeStudentRepository } from './FakeStudentRepository'
 import { unlockBadges } from './badgeRules'
 
@@ -13,20 +14,27 @@ import { unlockBadges } from './badgeRules'
 export class FakeBadgeRepository implements BadgeRepository {
   private readonly sessions: FakeSessionRepository
   private readonly students: FakeStudentRepository
+  private readonly streaks: FakeStreakRepository
   private readonly scope: CrewScope
   private readonly validated = new Map<string, string>()
   private readonly granted = new Map<string, StudentBadge>()
   private readonly listeners = new Set<() => void>()
 
-  constructor(sessions: FakeSessionRepository, students: FakeStudentRepository, scope: CrewScope) {
+  constructor(
+    sessions: FakeSessionRepository,
+    students: FakeStudentRepository,
+    streaks: FakeStreakRepository,
+    scope: CrewScope
+  ) {
     this.sessions = sessions
     this.students = students
+    this.streaks = streaks
     this.scope = scope
   }
 
   private badgesOf(studentId: string): StudentBadge[] {
     const history = this.sessions.listAll().filter((session) => session.studentId === studentId)
-    const derived = unlockBadges(studentId, history)
+    const derived = unlockBadges(studentId, history, this.streaks.pausesOfSync(studentId))
     const extra = [...this.granted.values()].filter((badge) => badge.studentId === studentId)
     return [...derived, ...extra].map((badge) => ({
       ...badge,
@@ -75,9 +83,11 @@ export class FakeBadgeRepository implements BadgeRepository {
   onChange(listener: () => void): () => void {
     this.listeners.add(listener)
     const unsubscribeSessions = this.sessions.onChange(listener)
+    const unsubscribeStreaks = this.streaks.onChange(listener)
     return () => {
       this.listeners.delete(listener)
       unsubscribeSessions()
+      unsubscribeStreaks()
     }
   }
 

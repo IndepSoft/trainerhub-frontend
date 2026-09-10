@@ -1,6 +1,7 @@
 import type { Session } from '@/shared/domain/entities/session'
-import type { StudentBadge } from '@/shared/domain/entities/progress'
+import type { StreakPause, StudentBadge } from '@/shared/domain/entities/progress'
 import { shiftDateKey } from '@/shared/lib/dateKey'
+import { protectedStreak } from './streakRules'
 
 /**
  * Las reglas de las veinte insignias, EN MEMORIA, para la simulacion.
@@ -17,6 +18,7 @@ interface Snapshot {
   completed: Session[]
   settled: Session[]
   sessionId: string
+  pauses: StreakPause[]
 }
 
 function mondayOf(dayKey: string): string {
@@ -24,16 +26,6 @@ function mondayOf(dayKey: string): string {
   const date = new Date(year, month - 1, day)
   const isoWeekday = (date.getDay() + 6) % 7
   return shiftDateKey(dayKey, -isoWeekday)
-}
-
-function streakEndingAt(days: Set<string>, asof: string): number {
-  let run = 0
-  let cursor = asof
-  while (days.has(cursor)) {
-    run += 1
-    cursor = shiftDateKey(cursor, -1)
-  }
-  return run
 }
 
 function mondaysEndingAt(days: Set<string>, asof: string): number {
@@ -119,7 +111,7 @@ function fullPlan(all: Session[], sessionId: string): boolean {
 
 /** Los codigos que se cumplen en una instantanea. */
 function metCodes(snapshot: Snapshot, all: Session[]): string[] {
-  const { asof, trainedDays, completed, settled, sessionId } = snapshot
+  const { asof, trainedDays, completed, settled, sessionId, pauses } = snapshot
   const totalSets = completed.reduce((total, session) => total + (session.result?.completedSets ?? 0), 0)
   const totalHours = completed.reduce((total, session) => total + (session.result?.elapsedSeconds ?? 0), 0) / 3600
   const cardioMinutes = completed
@@ -136,7 +128,8 @@ function metCodes(snapshot: Snapshot, all: Session[]): string[] {
   const inLast30 = completed.filter((session) => (session.result?.completedAt ?? '') >= shiftDateKey(asof, -29)).length
   const early = completed.filter((session) => session.time === '08:00').length
   const settledCompleted = settled.filter((session) => session.status === 'completed').length
-  const streak = streakEndingAt(trainedDays, asof)
+  // LA RACHA PROTEGIDA: pausas y descansos programados no la rompen.
+  const streak = protectedStreak(all, pauses, asof)
   const mondays = mondaysEndingAt(trainedDays, asof)
   const weeks = weeksEndingAt(trainedDays, asof)
 
@@ -171,7 +164,7 @@ function metCodes(snapshot: Snapshot, all: Session[]): string[] {
  * `all` son TODAS sus sesiones -cerradas o no- porque «voluntad de hierro»
  * mira las canceladas y «plan entero» las pendientes del mismo volcado.
  */
-export function unlockBadges(studentId: string, all: Session[]): StudentBadge[] {
+export function unlockBadges(studentId: string, all: Session[], pauses: StreakPause[] = []): StudentBadge[] {
   const completed = all
     .filter((session) => session.status === 'completed' && session.result !== null)
     .sort((left, right) => (left.result?.completedAt ?? '').localeCompare(right.result?.completedAt ?? ''))
@@ -185,6 +178,7 @@ export function unlockBadges(studentId: string, all: Session[]): StudentBadge[] 
       sessionId: session.id,
       completed: upTo,
       trainedDays: new Set(upTo.map((candidate) => candidate.result?.completedAt ?? '')),
+      pauses,
       settled: all.filter(
         (candidate) =>
           (candidate.status === 'completed' || candidate.status === 'cancelled') && candidate.date <= asof

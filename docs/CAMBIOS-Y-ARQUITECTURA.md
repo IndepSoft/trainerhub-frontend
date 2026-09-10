@@ -3075,3 +3075,28 @@ nace de una sesión.
 **Sin avisos al entrenador todavía.** Los avisos son una bandeja del alumno;
 lo que espera confirmación se ve en la ficha del alumno, sección «Ruta de
 desarrollo», que sólo pinta quien tiene `students.manage`.
+
+### 30.4 Fase 3: la racha se protege, y el ranking compara entre iguales
+
+**Tres reglas y ninguna castiga.** Un día sin entrenar no rompe la racha si
+está cubierto por una pausa —lesión o viaje, que escribe quien gestiona—, si
+lo cubre un comodín que el propio alumno gasta, o si es descanso programado:
+no hay sesión ese día y hay sesiones del mismo volcado de plan antes y
+después. Ese día no suma; se salta. `protected_streak` es la racha que miran
+las insignias y la misma que pinta el alumno: `streakFrom` recibe las pausas.
+
+**El comodín se cuenta, no se guarda.** Uno por cada ocho semanas seguidas
+entrenando, hasta dos, menos los gastados en las últimas dieciséis semanas.
+`wildcards_available` lo calcula cada vez; no hay contador que envejezca. Sólo
+cubre un día ya pasado —cubrir el futuro sería pausar— y sólo se ofrece cuando
+ayer se perdió la racha: cubrir un día de hace un mes no salva nada.
+
+**Cohortes con nombre.** `cohort_of` devuelve youth, adult o senior, nunca la
+edad. El ranking acepta cohorte y por defecto compara entre iguales; quien no
+tiene cohorte —el entrenador, quien no dijo su fecha— ve a todos. La
+diferencia entre lo que ve el senior y lo que ve el juvenil es la copia y con
+quién se compara, no otra interfaz.
+
+**Lo que queda fuera.** Ligas, eventos e insignias míticas: dependen de
+eventos del equipo y de cobro, y ninguno de los dos existe. Es la fase 4 del
+plan, sin fecha.

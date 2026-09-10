@@ -47,6 +47,9 @@ import type { BadgeRepository } from '@/shared/domain/ports/BadgeRepository'
 import { FakeScoreRepository } from '@/shared/infrastructure/fake/FakeScoreRepository'
 import { FakeBadgeRepository } from '@/shared/infrastructure/fake/FakeBadgeRepository'
 import { FakeRouteRepository } from '@/shared/infrastructure/fake/FakeRouteRepository'
+import { FakeStreakRepository } from '@/shared/infrastructure/fake/FakeStreakRepository'
+import type { StreakRepository } from '@/shared/domain/ports/StreakRepository'
+import { SupabaseStreakRepository } from '@/shared/infrastructure/supabase/SupabaseStreakRepository'
 import type { RouteRepository } from '@/shared/domain/ports/RouteRepository'
 import { SupabaseRouteRepository } from '@/shared/infrastructure/supabase/SupabaseRouteRepository'
 import type { CrewStaffRepository } from '@/shared/domain/ports/CrewStaffRepository'
@@ -86,6 +89,8 @@ export interface Container {
   badges: BadgeRepository
   /** Las rutas de desarrollo: donde esta cada alumno, y la mano del entrenador. */
   routes: RouteRepository
+  /** Las pausas de racha y los comodines. */
+  streaks: StreakRepository
   platform: PlatformRepository
   trainers: TrainerRepository
   students: StudentRepository
@@ -190,7 +195,8 @@ const fakeAssignments = new FakeAssignmentRepository(crewScope)
 // La puntuacion, las insignias y las rutas simuladas se cruzan entre si como
 // en la base lo hacen las funciones: se instancian una vez y se comparten.
 const fakeScores = new FakeScoreRepository(fakeSessions, fakeStudents, crewScope)
-const fakeBadges = new FakeBadgeRepository(fakeSessions, fakeStudents, crewScope)
+const fakeStreaks = new FakeStreakRepository(fakeSessions)
+const fakeBadges = new FakeBadgeRepository(fakeSessions, fakeStudents, fakeStreaks, crewScope)
 const trainers: TrainerRepository = fakeTrainers ?? new SupabaseTrainerRepository()
 
 /*
@@ -243,6 +249,7 @@ export const container: Container = {
   routes: shouldUseFakeAuthentication
     ? new FakeRouteRepository(fakeSessions, fakeAssignments, fakePlans, fakeScores, fakeBadges)
     : new SupabaseRouteRepository(),
+  streaks: shouldUseFakeAuthentication ? fakeStreaks : new SupabaseStreakRepository(),
   platform,
   trainers,
   /*

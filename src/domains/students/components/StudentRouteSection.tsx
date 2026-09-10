@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ShieldCheck } from 'lucide-react'
+import { PauseCircle, ShieldCheck } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import {
@@ -22,6 +22,12 @@ import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 
 interface StudentRouteSectionProps {
   studentId: string
+}
+
+const PAUSE_REASON_KEY: Record<'injury' | 'travel' | 'wildcard', TranslationKey> = {
+  injury: 'studentRoute.reason.injury',
+  travel: 'studentRoute.reason.travel',
+  wildcard: 'studentRoute.reason.wildcard',
 }
 
 const NODE_TITLE_KEY: Record<number, TranslationKey> = {
@@ -55,8 +61,13 @@ export function StudentRouteSection({ studentId }: StudentRouteSectionProps) {
     validateMilestone,
     validateBadge,
     acceptLoadJump,
+    pauses,
+    pauseStreak,
   } = useStudentRoute(studentId)
   const [notes, setNotes] = useState('')
+  const [pauseFrom, setPauseFrom] = useState('')
+  const [pauseTo, setPauseTo] = useState('')
+  const [pauseReason, setPauseReason] = useState<'injury' | 'travel'>('injury')
 
   if (loading || progress === null) return null
 
@@ -186,6 +197,77 @@ export function StudentRouteSection({ studentId }: StudentRouteSectionProps) {
           </ul>
         </div>
       )}
+
+      {/*
+        Modo lesion: los dias del tramo no rompen la racha ni suman. Lo escribe
+        quien gestiona porque es quien sabe que paso; el alumno tiene su comodin
+        para un dia suelto.
+      */}
+      <div className="mt-6 rounded-block border border-cobalt-tint-3 bg-surface p-4">
+        <p className="flex items-center gap-2 text-sm font-semibold text-ink">
+          <PauseCircle className="size-4" />
+          {t('studentRoute.pauseTitle')}
+        </p>
+        <p className="mt-1 text-xs text-ink/55">{t('studentRoute.pauseHint')}</p>
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/55">
+            {t('studentRoute.pauseFrom')}
+            <input
+              type="date"
+              value={pauseFrom}
+              onChange={(event) => setPauseFrom(event.target.value)}
+              className="mt-1.5 block h-11 w-full rounded-action border border-cobalt-tint-3 bg-surface px-3 text-sm font-normal normal-case tracking-normal text-ink"
+            />
+          </label>
+          <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/55">
+            {t('studentRoute.pauseTo')}
+            <input
+              type="date"
+              value={pauseTo}
+              onChange={(event) => setPauseTo(event.target.value)}
+              className="mt-1.5 block h-11 w-full rounded-action border border-cobalt-tint-3 bg-surface px-3 text-sm font-normal normal-case tracking-normal text-ink"
+            />
+          </label>
+          <div>
+            <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/55">
+              {t('studentRoute.pauseReason')}
+            </span>
+            <Select value={pauseReason} onValueChange={(value) => setPauseReason(value === 'travel' ? 'travel' : 'injury')}>
+              <SelectTrigger className="mt-1.5 w-full" aria-label={t('studentRoute.pauseReason')}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="injury">{t('studentRoute.reason.injury')}</SelectItem>
+                <SelectItem value="travel">{t('studentRoute.reason.travel')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <Button
+          variant="outline"
+          className="mt-3 gap-2"
+          disabled={saving || pauseFrom === '' || pauseTo === '' || pauseTo < pauseFrom}
+          onClick={() => void pauseStreak(pauseFrom, pauseTo, pauseReason)}
+        >
+          <PauseCircle className="size-4" />
+          {t('studentRoute.pause')}
+        </Button>
+        {pauses.length > 0 && (
+          <ul className="mt-3 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3">
+            {pauses.map((pause) => (
+              <li key={pause.fromDay} className="metric-figures flex items-center justify-between gap-3 py-2 text-sm text-ink">
+                <span>
+                  {pause.fromDay}
+                  {pause.toDay !== pause.fromDay && ` – ${pause.toDay}`}
+                </span>
+                <span className="text-xs uppercase tracking-wider text-ink/55">
+                  {t(PAUSE_REASON_KEY[pause.reason])}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       {flagged.length > 0 && (
         <div className="mt-6">

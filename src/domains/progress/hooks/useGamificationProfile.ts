@@ -4,7 +4,8 @@ import { calculateLevelCompletion, experienceRemaining } from '../libs/gamificat
 import { completedSessions, levelFromExperience, streakFrom } from '../libs/progressRules'
 import { achievementsFrom } from '../data/badgeCatalog'
 import { emptyRoutePath, routePathFrom } from '../libs/routePath'
-import type { ProgressRouteCode } from '@/shared/domain/entities/progress'
+import { cohortOf, type Cohort, type ProgressRouteCode, type StreakPause } from '@/shared/domain/entities/progress'
+import { shiftDateKey, toLocalDateKey } from '@/shared/lib/dateKey'
 import type { Achievement } from '../types/achievement.types'
 import type { Session } from '@/shared/domain/entities/session'
 import type { GamificationProfile, PathNode } from '../types/gamification.types'
@@ -35,6 +36,11 @@ interface UseGamificationProfileResult {
   /** La ruta de desarrollo y su sendero. Hybrid a cero sin equipo. */
   route: ProgressRouteCode
   path: PathNode[]
+  /** Comodines de racha disponibles, y si ayer se perdió y se puede cubrir. */
+  wildcards: number
+  canCoverYesterday: boolean
+  coverYesterday: () => Promise<void>
+  cohort: Cohort | null
   achievements: Achievement[]
   /** Sesiones cerradas. */
   completedCount: number
@@ -60,12 +66,14 @@ interface UseGamificationProfileResult {
  * SE SUSCRIBE A LOS TRES: terminar una sesión mueve la racha, los puntos y
  * las insignias sin recargar.
  */
-export function useGamificationProfile(studentId?: string): UseGamificationProfileResult {
+export function useGamificationProfile(studentId?: string, birthDate: string | null = null): UseGamificationProfileResult {
   const { t } = useTranslation()
   const [profile, setProfile] = useState<GamificationProfile>(EMPTY_PROFILE)
   const [achievements, setAchievements] = useState<Achievement[]>(EMPTY_ACHIEVEMENTS)
   const [route, setRoute] = useState<ProgressRouteCode>('hybrid')
   const [path, setPath] = useState<PathNode[]>(EMPTY_PATH)
+  const [wildcards, setWildcards] = useState(0)
+  const [canCoverYesterday, setCanCoverYesterday] = useState(false)
   const [completedCount, setCompletedCount] = useState(0)
   const [totalPoints, setTotalPoints] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -77,6 +85,8 @@ export function useGamificationProfile(studentId?: string): UseGamificationProfi
       setAchievements(EMPTY_ACHIEVEMENTS)
       setRoute('hybrid')
       setPath(EMPTY_PATH)
+      setWildcards(0)
+      setCanCoverYesterday(false)
       setCompletedCount(0)
       setTotalPoints(0)
       setLoading(false)
@@ -87,18 +97,23 @@ export function useGamificationProfile(studentId?: string): UseGamificationProfi
     setError(null)
 
     try {
-      const [sessions, scores, badges, routeProgress] = await Promise.all([
+      const [sessions, scores, badges, routeProgress, pauses, available] = await Promise.all([
         container.sessions.findByStudent(studentId),
         container.scores.ofStudent(studentId),
         container.badges.unlockedOf(studentId),
         container.routes.progressOf(studentId),
+        container.streaks.pausesOf(studentId),
+        container.streaks.wildcardsAvailable(studentId),
       ])
       const points = scores.reduce((total, score) => total + score.points, 0)
+      const streak = streakFrom(sessions, new Date(), pauses)
 
       setProfile({
-        streak: streakFrom(sessions),
+        streak,
         level: levelFromExperience(points),
       })
+      setWildcards(available)
+      setCanCoverYesterday(available > 0 && yesterdayBrokeTheStreak(sessions, pauses))
       setAchievements(achievementsFrom(badges))
       setRoute(routeProgress.routeCode)
       setPath(routePathFrom(routeProgress))
@@ -118,16 +133,31 @@ export function useGamificationProfile(studentId?: string): UseGamificationProfi
       container.scores.onChange(() => void load()),
       container.badges.onChange(() => void load()),
       container.routes.onChange(() => void load()),
+      container.streaks.onChange(() => void load()),
     ]
     return () => {
       for (const unsubscribe of unsubscribes) unsubscribe()
     }
   }, [load])
 
+  const coverYesterday = useCallback(async () => {
+    if (studentId === undefined) return
+    try {
+      await container.streaks.useWildcard(studentId, shiftDateKey(toLocalDateKey(new Date()), -1))
+      await load()
+    } catch (caught) {
+      setError(describeError(caught, t, 'progress.error'))
+    }
+  }, [studentId, load, t])
+
   return {
     profile,
     route,
     path,
+    wildcards,
+    canCoverYesterday,
+    coverYesterday,
+    cohort: cohortOf(birthDate),
     achievements,
     completedCount,
     totalPoints,
@@ -136,4 +166,21 @@ export function useGamificationProfile(studentId?: string): UseGamificationProfi
     loading,
     error,
   }
+}
+
+/**
+ * Si ayer se perdio la racha: no se entreno, no esta cubierto, y la racha
+ * hasta anteayer valia algo. Es el unico caso en que se ofrece el comodin:
+ * cubrir un dia de hace un mes no salva nada.
+ */
+function yesterdayBrokeTheStreak(sessions: Session[], pauses: StreakPause[]): boolean {
+  const yesterday = shiftDateKey(toLocalDateKey(new Date()), -1)
+  const trainedYesterday = sessions.some(
+    (session) => session.status === 'completed' && session.result?.completedAt === yesterday
+  )
+  if (trainedYesterday) return false
+  if (pauses.some((pause) => yesterday >= pause.fromDay && yesterday <= pause.toDay)) return false
+  const dayBefore = new Date()
+  dayBefore.setDate(dayBefore.getDate() - 2)
+  return streakFrom(sessions, dayBefore, pauses).currentDays > 0
 }

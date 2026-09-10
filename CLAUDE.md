@@ -431,6 +431,15 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   cuatro semanas) marca la sesión con `flagged_reason` y progreso 1,00 hasta
   que `accept_load_jump` la repuntúe. Cinco validaciones dan «Sello del
   Entrenador». Todo con espejo simulado (`fake/routeRules.ts`) y contrato.
+  Fase 3: la RACHA SE PROTEGE. `streak_pauses` —lesión y viaje las escribe
+  `students.manage` con `pause_streak`; el comodín lo usa el propio alumno
+  con `use_streak_wildcard`, uno por cada ocho semanas seguidas hasta dos, y
+  la base los cuenta cada vez—; un día sin sesión que es descanso de un plan
+  volcado tampoco rompe. `protected_streak` es la racha que miran las
+  insignias y la que pinta el alumno (`streakFrom` recibe las pausas). El
+  ranking acepta cohorte —`cohort_of`: youth/adult/senior— y por defecto
+  compara entre iguales; el entrenador ve a todos. La razón `noWildcards`
+  viaja como las demás.
 - El aviso de fin de descanso son TRES señales y ninguna llega sola: color,
   vibración y sonido. El color no sirve con el teléfono en el bolsillo; la
   vibración no existe en iOS —Apple nunca implementó la Vibration API—; el sonido

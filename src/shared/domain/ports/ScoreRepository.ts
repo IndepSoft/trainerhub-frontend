@@ -1,4 +1,4 @@
-import type { SessionScore } from '../entities/progress'
+import type { Cohort, SessionScore } from '../entities/progress'
 
 /**
  * Puerto de la puntuación: lo que cada sesión cerrada valió, y el agregado
@@ -21,8 +21,13 @@ export interface ScoreRepository {
   /** La de una sesión concreta, o `null` si no puntuó: no cerrada, o grupal. */
   ofSession(sessionId: string): Promise<SessionScore | null>
 
-  /** El esfuerzo de cada miembro del crew activo, de más a menos puntos. */
-  ofCrew(period: ProgressPeriod): Promise<CrewMemberProgress[]>
+  /**
+   * El esfuerzo de cada miembro del crew activo, de más a menos puntos.
+   *
+   * Con cohorte, sólo los de esa cohorte: un juvenil no compite con un senior.
+   * Sin ella, todo el equipo, que es lo que mira quien entrena.
+   */
+  ofCrew(period: ProgressPeriod, cohort?: Cohort | null): Promise<CrewMemberProgress[]>
 
   /** Las de un alumno marcadas por salto de carga y sin revisar. */
   flaggedOf(studentId: string): Promise<SessionScore[]>

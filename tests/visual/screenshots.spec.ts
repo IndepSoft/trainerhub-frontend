@@ -5286,3 +5286,25 @@ test.describe('rutas de desarrollo', () => {
     await expect(ruta.getByRole('combobox', { name: 'Ruta' })).toContainText('Apex')
   })
 })
+
+/**
+ * Fase 3 de los motores de progreso: la racha se protege.
+ */
+test.describe('rachas protegidas', () => {
+  test('el entrenador pausa la racha desde la ficha, y la pausa queda escrita', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students/student-1')
+
+    const ruta = page.locator('section').filter({ hasText: 'Ruta de desarrollo' })
+    await ruta.getByLabel('Desde').fill('2026-09-01')
+    await ruta.getByLabel('Hasta').fill('2026-09-03')
+    await elegirDelDesplegable(page, ruta.getByRole('combobox', { name: 'Motivo' }), 'Viaje')
+    await ruta.getByRole('button', { name: 'Pausar' }).click()
+
+    // En la LISTA de pausas: el desplegable sigue diciendo «Viaje» y no vale.
+    const pausa = ruta.getByRole('listitem').filter({ hasText: '2026-09-01 – 2026-09-03' })
+    await expect(pausa).toBeVisible()
+    await expect(pausa).toContainText('Viaje')
+  })
+})

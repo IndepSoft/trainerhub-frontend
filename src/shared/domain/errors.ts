@@ -36,6 +36,8 @@ export type AppErrorReason =
   | 'emailNotConfirmed'
   | 'userNotFound'
   | 'tooManyAttempts'
+  /** No quedan comodines de racha: se ganan con semanas seguidas. */
+  | 'noWildcards'
   | 'signInFailed'
   | 'signOutFailed'
   | 'userDataUnavailable'

@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { container } from '@/app/container'
-import type { ProgressRouteCode, RouteProgress, SessionScore, StudentBadge } from '@/shared/domain/entities/progress'
+import type {
+  ProgressRouteCode,
+  RouteProgress,
+  SessionScore,
+  StreakPause,
+  StudentBadge,
+} from '@/shared/domain/entities/progress'
 import { BADGES_REQUIRING_VALIDATION } from '@/shared/domain/entities/progress'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { describeError } from '@/shared/i18n/errorMessages'
@@ -11,6 +17,8 @@ interface UseStudentRouteResult {
   pendingBadges: StudentBadge[]
   /** Sesiones marcadas por salto de carga y sin revisar. */
   flagged: SessionScore[]
+  /** Pausas de racha, de la más reciente a la más antigua. */
+  pauses: StreakPause[]
   loading: boolean
   saving: boolean
   error: string | null
@@ -18,6 +26,8 @@ interface UseStudentRouteResult {
   validateMilestone: (position: number, notes: string) => Promise<void>
   validateBadge: (code: string) => Promise<void>
   acceptLoadJump: (sessionId: string) => Promise<void>
+  /** Pausa la racha por lesión o viaje: los días del tramo no la rompen. */
+  pauseStreak: (fromDay: string, toDay: string, reason: 'injury' | 'travel') => Promise<void>
 }
 
 /**
@@ -33,6 +43,7 @@ export function useStudentRoute(studentId: string | undefined): UseStudentRouteR
   const [progress, setProgress] = useState<RouteProgress | null>(null)
   const [pendingBadges, setPendingBadges] = useState<StudentBadge[]>([])
   const [flagged, setFlagged] = useState<SessionScore[]>([])
+  const [pauses, setPauses] = useState<StreakPause[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -43,12 +54,14 @@ export function useStudentRoute(studentId: string | undefined): UseStudentRouteR
       return
     }
     try {
-      const [routeProgress, badges, scores] = await Promise.all([
+      const [routeProgress, badges, scores, streakPauses] = await Promise.all([
         container.routes.progressOf(studentId),
         container.badges.unlockedOf(studentId),
         container.scores.flaggedOf(studentId),
+        container.streaks.pausesOf(studentId),
       ])
       setProgress(routeProgress)
+      setPauses(streakPauses)
       setPendingBadges(
         badges.filter(
           (badge) => BADGES_REQUIRING_VALIDATION.includes(badge.code) && badge.validatedAt === null
@@ -68,6 +81,7 @@ export function useStudentRoute(studentId: string | undefined): UseStudentRouteR
       container.routes.onChange(() => void load()),
       container.badges.onChange(() => void load()),
       container.scores.onChange(() => void load()),
+      container.streaks.onChange(() => void load()),
     ]
     return () => {
       for (const unsubscribe of unsubscribes) unsubscribe()
@@ -120,10 +134,19 @@ export function useStudentRoute(studentId: string | undefined): UseStudentRouteR
     [run]
   )
 
+  const pauseStreak = useCallback(
+    (fromDay: string, toDay: string, reason: 'injury' | 'travel') =>
+      run(async () => {
+        if (studentId !== undefined) await container.streaks.pause({ studentId, fromDay, toDay, reason })
+      }),
+    [run, studentId]
+  )
+
   return {
     progress,
     pendingBadges,
     flagged,
+    pauses,
     loading,
     saving,
     error,
@@ -131,5 +154,6 @@ export function useStudentRoute(studentId: string | undefined): UseStudentRouteR
     validateMilestone,
     validateBadge,
     acceptLoadJump,
+    pauseStreak,
   }
 }

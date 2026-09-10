@@ -4,6 +4,7 @@ import { toLocalDateKey } from '@/shared/lib/dateKey'
 // cliente: la aplica el servidor al cerrar cada sesion.
 import { completedSessions } from '@/shared/domain/experience'
 import type { Session } from '@/shared/domain/entities/session'
+import type { StreakPause } from '@/shared/domain/entities/progress'
 import type { LevelProgress, StreakStatus } from '../types/gamification.types'
 
 /**
@@ -75,27 +76,48 @@ export function levelFromExperience(experience: number): LevelProgress {
  *
  * `completedToday` va aparte para poder avisar de que está en riesgo.
  */
-export function streakFrom(sessions: Session[], today: Date = new Date()): StreakStatus {
+export function streakFrom(
+  sessions: Session[],
+  today: Date = new Date(),
+  pauses: StreakPause[] = []
+): StreakStatus {
   const trainedDays = trainedDayKeys(sessions)
   const todayKey = toLocalDateKey(today)
-  const yesterdayKey = toLocalDateKey(
-    new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1)
-  )
-
   const completedToday = trainedDays.has(todayKey)
 
+  /*
+   * LA RACHA PROTEGIDA. Un dia sin entrenar no la rompe si esta cubierto por
+   * una pausa -lesion, viaje, comodin- o si es descanso programado: no hay
+   * sesion ese dia y hay sesiones del mismo volcado de plan antes y despues.
+   * Ese dia no suma. Hoy, sin entrenar todavia, tampoco rompe: el dia no ha
+   * terminado.
+   */
   let currentDays = 0
-  if (completedToday || trainedDays.has(yesterdayKey)) {
-    const cursor = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-    if (!completedToday) cursor.setDate(cursor.getDate() - 1)
-
-    while (trainedDays.has(toLocalDateKey(cursor))) {
-      currentDays += 1
-      cursor.setDate(cursor.getDate() - 1)
-    }
+  let cursor = completedToday ? todayKey : previousDayKey(todayKey)
+  for (let looked = 0; looked < 400; looked += 1) {
+    if (trainedDays.has(cursor)) currentDays += 1
+    else if (!isCovered(cursor, pauses) && !isPlannedRest(cursor, sessions)) break
+    cursor = previousDayKey(cursor)
   }
 
   return { currentDays, bestDays: longestRun(trainedDays), completedToday }
+}
+
+function isCovered(day: string, pauses: StreakPause[]): boolean {
+  return pauses.some((pause) => day >= pause.fromDay && day <= pause.toDay)
+}
+
+function isPlannedRest(day: string, sessions: Session[]): boolean {
+  if (sessions.some((session) => session.date === day)) return false
+  const dumpsBefore = new Set(
+    sessions
+      .filter((session) => session.assignmentId !== undefined && session.date < day)
+      .map((session) => session.assignmentId)
+  )
+  return sessions.some(
+    (session) =>
+      session.assignmentId !== undefined && dumpsBefore.has(session.assignmentId) && session.date > day
+  )
 }
 
 /**

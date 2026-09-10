@@ -39,6 +39,8 @@ import {
   isProgressRouteCode,
   type RouteProgress,
   type SessionScore,
+  type StreakPause,
+  type StreakPauseReason,
   type StudentBadge,
 } from '@/shared/domain/entities/progress'
 
@@ -897,5 +899,26 @@ export function toRouteProgress(studentId: string, row: RouteProgressRow): Route
     points: Number(row.points),
     adherentWeeks: Number(row.adherent_weeks),
     validatedPositions: (row.validated_positions ?? []).map(Number),
+  }
+}
+
+/** Fila cruda de `streak_pauses`. */
+export interface StreakPauseRow {
+  student_id: string
+  from_day: string
+  to_day: string
+  reason: string
+}
+
+function isStreakPauseReason(value: string): value is StreakPauseReason {
+  return value === 'injury' || value === 'travel' || value === 'wildcard'
+}
+
+export function toStreakPause(row: StreakPauseRow): StreakPause {
+  return {
+    studentId: row.student_id,
+    fromDay: row.from_day,
+    toDay: row.to_day,
+    reason: isStreakPauseReason(row.reason) ? row.reason : 'injury',
   }
 }

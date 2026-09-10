@@ -3,7 +3,7 @@ import type {
   ProgressPeriod,
   ScoreRepository,
 } from '@/shared/domain/ports/ScoreRepository'
-import type { SessionScore } from '@/shared/domain/entities/progress'
+import { cohortOf, type Cohort, type SessionScore } from '@/shared/domain/entities/progress'
 import type { CrewScope } from '@/shared/domain/ports/CrewScope'
 import { monthBounds, weekBounds } from '@/shared/lib/dateKey'
 import type { FakeSessionRepository } from './FakeSessionRepository'
@@ -52,12 +52,15 @@ export class FakeScoreRepository implements ScoreRepository {
     return this.scoresOf(session.studentId).find((score) => score.sessionId === sessionId) ?? null
   }
 
-  async ofCrew(period: ProgressPeriod): Promise<CrewMemberProgress[]> {
+  async ofCrew(period: ProgressPeriod, cohort: Cohort | null = null): Promise<CrewMemberProgress[]> {
     const crewId = this.scope.current()
     if (crewId === null) return []
 
     const range = boundsFor(period)
-    const entries = this.students.membersOf(crewId).map((student): CrewMemberProgress => {
+    const members = this.students
+      .membersOf(crewId)
+      .filter((student) => cohort === null || cohortOf(student.birthDate) === cohort)
+    const entries = members.map((student): CrewMemberProgress => {
       const counted = this.scoresOf(student.id).filter(
         (score) => range === null || (score.completedOn >= range.from && score.completedOn <= range.to)
       )

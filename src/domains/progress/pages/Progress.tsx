@@ -27,8 +27,19 @@ export default function Progress() {
   const { active, loading } = useViewerContext()
   const student = active?.student ?? null
 
-  const { profile, route, path, achievements, completedCount, totalPoints, levelCompletion, experienceToNextLevel } =
-    useGamificationProfile(student?.id)
+  const {
+    profile,
+    route,
+    path,
+    wildcards,
+    canCoverYesterday,
+    coverYesterday,
+    achievements,
+    completedCount,
+    totalPoints,
+    levelCompletion,
+    experienceToNextLevel,
+  } = useGamificationProfile(student?.id, student?.birthDate ?? null)
   const { overview } = useProgressOverview(achievements, completedCount, totalPoints)
 
   return (
@@ -63,6 +74,9 @@ export default function Progress() {
           level={profile.level}
           levelCompletion={levelCompletion}
           experienceToNextLevel={experienceToNextLevel}
+          wildcards={wildcards}
+          canCoverYesterday={canCoverYesterday}
+          onCoverYesterday={() => void coverYesterday()}
         />
 
         <RoutePath route={route} nodes={path} />

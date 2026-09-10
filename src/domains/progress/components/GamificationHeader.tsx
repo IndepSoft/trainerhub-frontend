@@ -10,6 +10,11 @@ interface GamificationHeaderProps {
   level: LevelProgress
   levelCompletion: number
   experienceToNextLevel: number
+  /** Comodines de racha disponibles. */
+  wildcards: number
+  /** Si ayer se perdió la racha y hay comodín para cubrirlo. */
+  canCoverYesterday: boolean
+  onCoverYesterday: () => void
 }
 
 /**
@@ -28,6 +33,9 @@ export function GamificationHeader({
   level,
   levelCompletion,
   experienceToNextLevel,
+  wildcards,
+  canCoverYesterday,
+  onCoverYesterday,
 }: GamificationHeaderProps) {
   const { t } = useTranslation()
   const animatedStreak = useCountUp({ target: streak.currentDays })
@@ -76,6 +84,27 @@ export function GamificationHeader({
           </p>
         </div>
       </div>
+
+      {/*
+        El comodin: un dia perdido por cada ocho semanas seguidas, hasta dos.
+        Se ofrece SOLO cuando ayer se perdio la racha: cubrir un dia de hace un
+        mes no salva nada. A diferencia de las aplicaciones que castigan la
+        racha perdida, aqui se da la salida antes de que duela.
+      */}
+      {(wildcards > 0 || canCoverYesterday) && (
+        <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px] text-ink/55">
+          <span>{t('progress.wildcards', { count: wildcards })}</span>
+          {canCoverYesterday && (
+            <button
+              type="button"
+              onClick={onCoverYesterday}
+              className="inline-flex min-h-11 items-center rounded-action border border-ember/40 bg-ember/10 px-3 font-semibold uppercase tracking-wider text-ember-deep"
+            >
+              {t('progress.useWildcard')}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }
