@@ -20,6 +20,12 @@ import { cn } from '@/shared/lib/utils'
 import { STUDENT_GOALS } from '../data/studentGoals'
 import type { NewStudent } from '@/shared/domain/ports/StudentRepository'
 import type { Student, StudentLevel } from '@/shared/domain/entities/student'
+import { toLocalDateKey } from '@/shared/lib/dateKey'
+
+/** Hoy, para que el selector no ofrezca nacer mañana. */
+function todayKey(): string {
+  return toLocalDateKey(new Date())
+}
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { STUDENT_LEVEL_LABEL_KEY, goalLabel } from '@/shared/i18n/domainLabels'
 
@@ -95,7 +101,7 @@ function StudentFields({ student, onSave, onCancel }: StudentFieldsProps) {
   const [lastName, setLastName] = useState(student?.lastName ?? '')
   const [email, setEmail] = useState(student?.email ?? '')
   const [level, setLevel] = useState<StudentLevel>(student?.level ?? 'Principiante')
-  const [age, setAge] = useState(student === undefined ? '' : String(student?.age ?? ''))
+  const [birthDate, setBirthDate] = useState(student?.birthDate ?? '')
   const [bodyFat, setBodyFat] = useState(String(student?.bodyFatPercentage ?? ''))
   const [goals, setGoals] = useState<string[]>(student?.goals ?? [])
   const [missing, setMissing] = useState<FieldName[]>([])
@@ -123,10 +129,10 @@ function StudentFields({ student, onSave, onCancel }: StudentFieldsProps) {
       email: email.trim(),
       level,
       goals,
-      // Los números en blanco valen cero: la edad y el porcentaje graso son
-      // datos que se toman después, y exigirlos para dar de alta a alguien
-      // convertiría el alta en una consulta.
-      age: Number.parseInt(age, 10) || 0,
+      // En blanco valen «no se sabe» y cero: la fecha de nacimiento y el
+      // porcentaje graso son datos que se toman después, y exigirlos para dar
+      // de alta a alguien convertiría el alta en una consulta.
+      birthDate: birthDate === '' ? null : birthDate,
       bodyFatPercentage: Number.parseInt(bodyFat, 10) || 0,
       // Se conserva el enlace a la cuenta al editar: no es del formulario.
       profileId: student?.profileId ?? null,
@@ -224,17 +230,16 @@ function StudentFields({ student, onSave, onCancel }: StudentFieldsProps) {
         </div>
 
         <div>
-          <Label htmlFor={`${fieldId}-age`} className={FIELD_LABEL}>
-            {t('studentCard.age')}
+          <Label htmlFor={`${fieldId}-birth`} className={FIELD_LABEL}>
+            {t('studentForm.birthDate')}
           </Label>
           <Input
-            id={`${fieldId}-age`}
-            type="number"
-            inputMode="numeric"
-            min={0}
+            id={`${fieldId}-birth`}
+            type="date"
+            max={todayKey()}
             className="mt-1.5"
-            value={age}
-            onChange={(event) => setAge(event.target.value)}
+            value={birthDate}
+            onChange={(event) => setBirthDate(event.target.value)}
           />
         </div>
 

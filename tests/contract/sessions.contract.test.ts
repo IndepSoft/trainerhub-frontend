@@ -146,6 +146,40 @@ describe('sessions: cerrar la sesion', () => {
   })
 })
 
+describe('sessions: el RPE de cada serie', () => {
+  const created: TestAccount[] = []
+  afterAll(() => deleteAccounts(created))
+
+  it('entre 1 y 10 se guarda; fuera de rango la base lo rechaza; ausente vale', async () => {
+    const trainer = await signedInAs('rpe', { intent: 'trainer', first_name: 'T', last_name: 'R' })
+    const crew = await createActiveCrewAs(trainer, 'Con RPE')
+    const person = await signedInAs('esfuerzo', { intent: 'student', first_name: 'E', last_name: 'S' })
+    created.push(trainer, person)
+    const studentId = await enrollAs(trainer, crew.id, person)
+
+    const { data: session } = await trainer.client
+      .from('sessions')
+      .insert(sessionFor(crew.id, studentId, 'Con esfuerzo'))
+      .select('id')
+      .single()
+
+    const withRpe = (rpe: number) => ({
+      ...VALID_RESULT,
+      sets: [{ ...VALID_RESULT.sets[0], rpe }],
+    })
+
+    const tooHigh = await trainer.client.rpc('complete_session', { session: session?.id, session_result: withRpe(11) })
+    expect(tooHigh.error?.code).toBe('23514')
+    const tooLow = await trainer.client.rpc('complete_session', { session: session?.id, session_result: withRpe(0) })
+    expect(tooLow.error?.code).toBe('23514')
+
+    const accepted = await trainer.client.rpc('complete_session', { session: session?.id, session_result: withRpe(8) })
+    expect(accepted.error).toBeNull()
+    const { data: row } = await adminClient().from('sessions').select('result').eq('id', session?.id).single()
+    expect(row?.result).toEqual(withRpe(8))
+  })
+})
+
 describe('sessions: volcar un plan', () => {
   const created: TestAccount[] = []
   afterAll(() => deleteAccounts(created))

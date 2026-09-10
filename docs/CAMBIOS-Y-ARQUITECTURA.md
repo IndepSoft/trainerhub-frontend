@@ -2974,3 +2974,129 @@ La rampa `--scale-*` de las insignias de nivel daba 1,96:1, 2,88:1 y 2,92:1
 sobre Bone, en texto de 10 px. Se oscureció hasta pasar de 4,5:1 y se añadió
 `--scale-*-lift` para las mismas insignias sobre Ink, donde el tono oscuro
 desaparece. Los grises de la tarjeta de alumno subieron de `ink/45` a `ink/60`.
+
+## 30. Motores de progreso (10 sep 2026)
+
+Plan completo en el artefacto «Motores de progreso de TrainerHub»; aquí las
+decisiones por fase, conforme se ejecutan en `feature/motores-de-progreso`.
+
+### 30.1 Fase 0: los datos antes que las reglas
+
+**Fecha de nacimiento, no edad.** `students.age` era un entero escrito el día
+del alta que envejecía solo, y de él iba a salir la cohorte que pondera la
+puntuación. Se sustituye por `birth_date` y la edad se deriva al leer con
+`ageOf`, que resta partes de fecha y no milisegundos: dividir por 365,25 se
+equivoca justo el día del cumpleaños. La fecha la escribe **el propio alumno**
+desde Configuración además de quien gestiona: es un dato suyo, como el nombre,
+y el entrenador rara vez lo sabe. La guardia de `students` deja de vigilar
+`age` y no añade `birth_date` a la lista de `students.manage`. El alta del
+entrenador no la exige: pedirla convertiría el alta en una consulta.
+
+**RPE por serie, opcional.** `SetRecord.rpe` de 1 a 10, validado en
+`is_valid_session_result`. Se pide durante el descanso y no al cerrar la serie:
+cerrar es un toque con la barra aún en la mano, y el descanso es el único rato
+en que se puede pensar cuánto costó. Es opcional a propósito; sin él el
+progreso se medirá sólo en kilos.
+
+**Volumen planificado.** `plannedWeekVolume(plan, semana, rutinas)` suma
+sesiones, series y minutos de una semana de plan. Es la mitad de la adherencia
+que no existía como número.
+
+**El ranking regalaba veinte puntos.** `crew_ranking` hacía `left join` y
+`sum(20 + …)`: la fila extendida a NULL de quien nunca entrenó sumaba 20. Lo
+tapaban dos filtros del cliente. Corregido con un `case` sobre `s.id`, y con
+prueba de contrato.
+
+**Suite unitaria.** `vitest.unit.config.ts` y `tests/unit/`, separada de los
+contratos porque aquélla exige Docker y una función que calcula una edad no
+debería. Corre en la CI junto al lint.
+
+### 30.2 Fase 1: la puntuación y los desbloqueos viven en la base
+
+**La regla, una sola vez y en el servidor.** La experiencia era «20 + series»
+escrita en `experience.ts` y otra vez en `crew_ranking`, y los logros se
+deducían en el cliente repasando la historia día a día. Ahora un disparador de
+`sessions` llama a `score_session` y `evaluate_badges` al cerrar —o al editar
+hasta cerrar— y deja escritas `session_scores` y `student_badges`. Cualquier
+camino que cierre cuenta; una grupal no puntúa a nadie; reabrir borra la
+puntuación. Nadie escribe esas tablas desde la API: no tienen política de
+escritura, y la prueba de contrato lo afirma con un `42501`.
+
+**Regla versión 1.** `puntos = base × adherencia × progreso × cohorte`. La
+adherencia se acota a 1,10 —y no a 1,20 como proponía el documento— porque
+pasarse del plan no puede valer más que cumplirlo. El progreso compara, por
+ejercicio con kilos, la mejor carga de la sesión con la mediana de las cuatro
+semanas anteriores, y una mejora con RPE mayor que 8 no cuenta: es una serie
+forzada. La cohorte sale de la fecha de nacimiento y el nivel; sin fecha es 1.
+Cada fila guarda `rule_version`: cambiar la fórmula no reescribe la historia.
+
+**El espejo simulado.** La suite de interfaz vive de las semillas, así que la
+misma regla existe en `fake/scoring.ts` y `fake/badgeRules.ts`, derivada de las
+sesiones en cada lectura. Es la única duplicación que se acepta, y por eso está
+vigilada dos veces: la unitaria afirma que el espejo da los mismos números que
+el contrato exige a la base.
+
+**Veinte insignias, seis rarezas.** Las ocho de antes más doce con datos
+reales; ninguna que exija GPS, y ningún «+5 % permanente». La regla vive en
+SQL, la presentación —nombre, icono, rareza— en `badgeCatalog.ts`, y el
+contrato compara ambos catálogos por código. Platino y Diamante nacen con
+`validated_at` a NULL: las confirma el entrenador en la fase 2.
+
+**La celebración celebra lo nuevo.** `student_badges.session_id` dice qué
+sesión desbloqueó cada insignia, así que la pantalla pide las de ésta y, si no
+hay ninguna, celebra igual la puntuación de la sesión y la racha. Antes
+enseñaba el último logro de toda la historia.
+
+### 30.3 Fase 2: las rutas y la mano del entrenador
+
+**La ruta se deriva, no se elige.** Un alumno con un plan de hipertrofia está
+en Titan sin que nadie lo diga; uno de acondicionamiento, en Vitality; sin
+plan, en Hybrid. El mapa objetivo → ruta es un catálogo de sistema
+(`route_objectives`) y el entrenador puede cambiar la ruta a mano, lo que
+reinicia los puntos de la ruta. Apex no tiene objetivo que la active: es
+siempre elección del entrenador.
+
+**Tres criterios, y el tercero es una persona.** Pasar de nodo exige puntos
+acumulados en la ruta, semanas seguidas con adherencia de al menos el 85 %
+—cerradas sobre lo decidido; una semana sin nada programado ni rompe ni
+alarga— y una validación del entrenador. `route_progress` calcula el nodo al
+vuelo y nunca lo guarda: un contador almacenado se desincroniza al primer
+cambio. La escalera fija de sesiones («Primeros pasos», «Meta del mes»)
+desaparece: era igual para todo el mundo y no la abría nadie.
+
+**Confirmar y revisar.** Platino y Diamante se confirman con `validate_badge`;
+un salto de carga —más de un 20 % sobre la mediana de cuatro semanas— marca
+la sesión, deja el progreso en 1,00 y espera a `accept_load_jump`, que
+repuntúa confiando en la carga. Es una heurística de una línea sobre datos que
+ya se guardan, y se parece más a lo que hace un entrenador que un modelo.
+Cinco hitos validados dan el «Sello del Entrenador», la única insignia que no
+nace de una sesión.
+
+**Sin avisos al entrenador todavía.** Los avisos son una bandeja del alumno;
+lo que espera confirmación se ve en la ficha del alumno, sección «Ruta de
+desarrollo», que sólo pinta quien tiene `students.manage`.
+
+### 30.4 Fase 3: la racha se protege, y el ranking compara entre iguales
+
+**Tres reglas y ninguna castiga.** Un día sin entrenar no rompe la racha si
+está cubierto por una pausa —lesión o viaje, que escribe quien gestiona—, si
+lo cubre un comodín que el propio alumno gasta, o si es descanso programado:
+no hay sesión ese día y hay sesiones del mismo volcado de plan antes y
+después. Ese día no suma; se salta. `protected_streak` es la racha que miran
+las insignias y la misma que pinta el alumno: `streakFrom` recibe las pausas.
+
+**El comodín se cuenta, no se guarda.** Uno por cada ocho semanas seguidas
+entrenando, hasta dos, menos los gastados en las últimas dieciséis semanas.
+`wildcards_available` lo calcula cada vez; no hay contador que envejezca. Sólo
+cubre un día ya pasado —cubrir el futuro sería pausar— y sólo se ofrece cuando
+ayer se perdió la racha: cubrir un día de hace un mes no salva nada.
+
+**Cohortes con nombre.** `cohort_of` devuelve youth, adult o senior, nunca la
+edad. El ranking acepta cohorte y por defecto compara entre iguales; quien no
+tiene cohorte —el entrenador, quien no dijo su fecha— ve a todos. La
+diferencia entre lo que ve el senior y lo que ve el juvenil es la copia y con
+quién se compara, no otra interfaz.
+
+**Lo que queda fuera.** Ligas, eventos e insignias míticas: dependen de
+eventos del equipo y de cobro, y ninguno de los dos existe. Es la fase 4 del
+plan, sin fecha.

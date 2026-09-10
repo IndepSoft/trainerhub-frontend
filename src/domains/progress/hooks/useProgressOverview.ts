@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Flame, Target, Trophy } from 'lucide-react'
-import { unlockedAchievements } from '../libs/achievementEvaluation'
+import { unlockedAchievements } from '../libs/badges'
 import type { Achievement } from '../types/achievement.types'
 import type { ProgressOverview } from '../types/progress.types'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
@@ -26,7 +26,8 @@ interface UseProgressOverviewResult {
  */
 export function useProgressOverview(
   achievements: Achievement[],
-  completedCount: number
+  completedCount: number,
+  totalPoints: number
 ): UseProgressOverviewResult {
   const { t } = useTranslation()
   const overview = useMemo<ProgressOverview>(() => {
@@ -42,21 +43,16 @@ export function useProgressOverview(
         },
         { id: 'sessions', icon: Flame, label: t('progress.stat.sessions'), value: completedCount },
         {
-          id: 'experience',
+          id: 'points',
           icon: Target,
-          label: t('progress.stat.experience'),
-          // La suma de lo que dan los logros ya conseguidos. Es un número
-          // distinto del nivel —el nivel sale de las series— y por eso se
-          // etiqueta aparte: dos cifras llamadas «XP» a media pantalla una de
-          // otra harían pensar que una de las dos está mal.
-          value: unlockedAchievements(achievements).reduce(
-            (total, achievement) => total + achievement.pointsReward,
-            0
-          ),
+          label: t('progress.stat.points'),
+          // La suma de puntos de todas las sesiones, tal y como la calculó el
+          // servidor. Es la misma cifra de la que sale el nivel: una sola.
+          value: totalPoints,
         },
       ],
     }
-  }, [achievements, completedCount, t])
+  }, [achievements, completedCount, totalPoints, t])
 
   return { overview }
 }

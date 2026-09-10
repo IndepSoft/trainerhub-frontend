@@ -403,9 +403,43 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
 - Hay registro de auditoría de lo que CAMBIA —`audit_log`, escrito por un
   disparador en equipos, puestos, fichas y cuotas; lo lee quien gobierna el
   equipo—, pero ninguna pantalla lo enseña todavía y nadie registra quién MIRÓ.
-- Props declaradas y sin conectar, marcadas con `TODO:` en gamification y
-  calendar. `ChallengeCard.onUpdate` es la más grave: el padre le pasa un
-  manejador real que nunca se invoca.
+- MOTORES DE PROGRESO, en marcha por fases (plan en `CAMBIOS` §30). Fase 0:
+  `students.birth_date` sustituye a `age` —la edad se deriva con `ageOf` y
+  la escribe el propio alumno—, cada serie admite `rpe` opcional (1–10,
+  validado en `is_valid_session_result`), `plannedWeekVolume` suma lo que una
+  semana de plan programa, y `crew_ranking` ya no regala 20 puntos a quien no
+  entrena. Hay suite UNITARIA —`npm run test:unit`, `tests/unit/`— para las
+  funciones puras del dominio; corre en la CI junto al lint.
+  Fase 1: LA PUNTUACIÓN Y LAS INSIGNIAS LAS ESCRIBE LA BASE. Cerrar una
+  sesión dispara `score_session` y `evaluate_badges` en la misma transacción
+  (`session_scores`, `student_badges`, regla versión 1); `crew_ranking` suma
+  puntos y ya no conoce la fórmula; el cliente los lee por `ScoreRepository`
+  y `BadgeRepository`, y `CrewProgressRepository` desapareció absorbido. La
+  fórmula sólo existe en SQL y en su ESPEJO simulado (`fake/scoring.ts`,
+  `fake/badgeRules.ts`), que prueba la suite unitaria; el contrato prueba la
+  base, y si divergen manda la base. Las veinte insignias: la regla en
+  `evaluate_badges`, la presentación en `badgeCatalog.ts`, y una prueba de
+  contrato compara los códigos. Platino y Diamante nacen pendientes de que el
+  entrenador las confirme.
+  Fase 2: las RUTAS de desarrollo —Titan, Endurance, Apex, Vitality, Hybrid—
+  con cuatro nodos; la ruta sale del objetivo del último plan asignado
+  (`route_objectives`) y el entrenador la cambia a mano; el nodo lo calcula
+  `route_progress` con tres criterios —puntos en la ruta, semanas de
+  adherencia ≥ 85 %, y una fila en `milestone_validations` que sólo escribe
+  `students.manage`—. El sendero de hitos fijo desapareció. `validate_badge`
+  confirma Platino y Diamante; un salto de carga (> 20 % sobre la mediana de
+  cuatro semanas) marca la sesión con `flagged_reason` y progreso 1,00 hasta
+  que `accept_load_jump` la repuntúe. Cinco validaciones dan «Sello del
+  Entrenador». Todo con espejo simulado (`fake/routeRules.ts`) y contrato.
+  Fase 3: la RACHA SE PROTEGE. `streak_pauses` —lesión y viaje las escribe
+  `students.manage` con `pause_streak`; el comodín lo usa el propio alumno
+  con `use_streak_wildcard`, uno por cada ocho semanas seguidas hasta dos, y
+  la base los cuenta cada vez—; un día sin sesión que es descanso de un plan
+  volcado tampoco rompe. `protected_streak` es la racha que miran las
+  insignias y la que pinta el alumno (`streakFrom` recibe las pausas). El
+  ranking acepta cohorte —`cohort_of`: youth/adult/senior— y por defecto
+  compara entre iguales; el entrenador ve a todos. La razón `noWildcards`
+  viaja como las demás.
 - El aviso de fin de descanso son TRES señales y ninguna llega sola: color,
   vibración y sonido. El color no sirve con el teléfono en el bolsillo; la
   vibración no existe en iOS —Apple nunca implementó la Vibration API—; el sonido

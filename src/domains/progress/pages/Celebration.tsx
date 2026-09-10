@@ -29,7 +29,7 @@ export default function Celebration() {
   // Qué sesión se acaba de cerrar. Sin ella no se sabe a quién felicitar: la
   // pantalla celebraba una racha que no era de nadie.
   const [searchParams] = useSearchParams()
-  const { achievement, headlineValue, headlineLabel, loading } = useLatestAchievement(
+  const { achievement, score, headlineValue, headlineLabel, loading } = useLatestAchievement(
     searchParams.get('session') ?? undefined
   )
 
@@ -49,7 +49,9 @@ export default function Celebration() {
    * pinta es lo que react-router señala como uso incorrecto, y aqui ademas
    * ocurria en cada render mientras cargaba.
    */
-  const shouldLeave = !loading && !loadingViewer && !achievement
+  // Sin puntuacion ni insignia no hay nada que celebrar: una sesion grupal, o
+  // una que no llego a puntuar. Con puntuacion se celebra siempre.
+  const shouldLeave = !loading && !loadingViewer && achievement === null && score === null
   useEffect(() => {
     if (shouldLeave) navigate(exit, { replace: true })
   }, [shouldLeave, exit, navigate])
@@ -59,13 +61,12 @@ export default function Celebration() {
   // a saber quién mira, o el destino se elegiría antes de saberlo.
   if (loading || loadingViewer) return null
 
-  // Sin logro desbloqueado no hay nada que celebrar: se sale en vez de pintar
-  // una pantalla de celebración vacía.
-  if (!achievement) return null
+  if (achievement === null && score === null) return null
 
   return (
     <AchievementCelebration
       achievement={achievement}
+      score={score}
       headlineValue={headlineValue}
       headlineLabel={headlineLabel}
       onDismiss={() => navigate(exit)}

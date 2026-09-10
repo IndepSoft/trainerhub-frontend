@@ -113,6 +113,23 @@ describe('ranking: agregados para quien pertenece', () => {
   const created: TestAccount[] = []
   afterAll(() => deleteAccounts(created))
 
+  it('quien no ha entrenado tiene cero, no veinte', async () => {
+    const trainer = await signedInAs('ranking-cero', { intent: 'trainer', first_name: 'T', last_name: 'R' })
+    const crew = await createActiveCrewAs(trainer, 'Ranking en cero')
+    const idle = await signedInAs('ocioso', { intent: 'student', first_name: 'O', last_name: 'C' })
+    created.push(trainer, idle)
+    const idleId = await enrollAs(trainer, crew.id, idle)
+
+    // Con `left join` y `sum(20 + ...)`, la fila extendida a NULL sumaba 20.
+    const { data, error } = await trainer.client.rpc('crew_ranking', { crew: crew.id, period: 'all' })
+    expect(error).toBeNull()
+    const row = (data as { student_id: string; experience: number; completed_sessions: number }[]).find(
+      (entry) => entry.student_id === idleId
+    )
+    expect(row?.completed_sessions).toBe(0)
+    expect(row?.experience).toBe(0)
+  })
+
   it('veinte por sesion y una por serie, y el extraño no lo pide', async () => {
     const trainer = await signedInAs('ranking', { intent: 'trainer', first_name: 'T', last_name: 'R' })
     const crew = await createActiveCrewAs(trainer, 'Ranking')

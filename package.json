@@ -13,6 +13,7 @@
     "preview": "vite preview",
     "test:e2e": "playwright test",
     "test:contract": "vitest run --config vitest.contract.config.ts",
+    "test:unit": "vitest run --config vitest.unit.config.ts",
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset"

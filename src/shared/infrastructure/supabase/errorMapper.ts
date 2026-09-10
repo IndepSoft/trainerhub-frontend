@@ -53,6 +53,7 @@ const SERVER_REASONS: Partial<Record<string, [AppErrorCode, AppErrorReason]>> = 
   enrollmentClosed: [AppErrorCode.VALIDATION, 'enrollmentClosed'],
   notFound: [AppErrorCode.NOT_FOUND, 'notFound'],
   tooManyAttempts: [AppErrorCode.FORBIDDEN, 'tooManyAttempts'],
+  noWildcards: [AppErrorCode.VALIDATION, 'noWildcards'],
   sessionExpired: [AppErrorCode.UNAUTHORIZED, 'sessionExpired'],
 }
 

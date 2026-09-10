@@ -16,7 +16,8 @@ import { SupabaseCatalogRepository } from '@/shared/infrastructure/supabase/Supa
 import { SupabaseBlockLibraryRepository } from '@/shared/infrastructure/supabase/SupabaseBlockLibraryRepository'
 import { SupabaseSessionRepository } from '@/shared/infrastructure/supabase/SupabaseSessionRepository'
 import { SupabaseCrewPostRepository } from '@/shared/infrastructure/supabase/SupabaseCrewPostRepository'
-import { SupabaseCrewProgressRepository } from '@/shared/infrastructure/supabase/SupabaseCrewProgressRepository'
+import { SupabaseScoreRepository } from '@/shared/infrastructure/supabase/SupabaseScoreRepository'
+import { SupabaseBadgeRepository } from '@/shared/infrastructure/supabase/SupabaseBadgeRepository'
 import type { CatalogRepository } from '@/shared/domain/ports/CatalogRepository'
 import { FakeCatalogRepository } from '@/shared/infrastructure/fake/FakeCatalogRepository'
 import type { BlockLibraryRepository } from '@/shared/domain/ports/BlockLibraryRepository'
@@ -41,8 +42,16 @@ import type { PlatformRepository } from '@/shared/domain/ports/PlatformRepositor
 import { FakePlatformRepository } from '@/shared/infrastructure/fake/FakePlatformRepository'
 import type { CrewPostRepository } from '@/shared/domain/ports/CrewPostRepository'
 import { FakeCrewPostRepository } from '@/shared/infrastructure/fake/FakeCrewPostRepository'
-import type { CrewProgressRepository } from '@/shared/domain/ports/CrewProgressRepository'
-import { FakeCrewProgressRepository } from '@/shared/infrastructure/fake/FakeCrewProgressRepository'
+import type { ScoreRepository } from '@/shared/domain/ports/ScoreRepository'
+import type { BadgeRepository } from '@/shared/domain/ports/BadgeRepository'
+import { FakeScoreRepository } from '@/shared/infrastructure/fake/FakeScoreRepository'
+import { FakeBadgeRepository } from '@/shared/infrastructure/fake/FakeBadgeRepository'
+import { FakeRouteRepository } from '@/shared/infrastructure/fake/FakeRouteRepository'
+import { FakeStreakRepository } from '@/shared/infrastructure/fake/FakeStreakRepository'
+import type { StreakRepository } from '@/shared/domain/ports/StreakRepository'
+import { SupabaseStreakRepository } from '@/shared/infrastructure/supabase/SupabaseStreakRepository'
+import type { RouteRepository } from '@/shared/domain/ports/RouteRepository'
+import { SupabaseRouteRepository } from '@/shared/infrastructure/supabase/SupabaseRouteRepository'
 import type { CrewStaffRepository } from '@/shared/domain/ports/CrewStaffRepository'
 import { FakeCrewStaffRepository } from '@/shared/infrastructure/fake/FakeCrewStaffRepository'
 import type { SubscriptionRepository } from '@/shared/domain/ports/SubscriptionRepository'
@@ -74,7 +83,14 @@ export interface Container {
   crewPosts: CrewPostRepository
   subscriptions: SubscriptionRepository
   notices: NoticeRepository
-  crewProgress: CrewProgressRepository
+  /** La puntuacion de cada sesion y el agregado del equipo. La escribe el servidor. */
+  scores: ScoreRepository
+  /** Las insignias conseguidas. Las desbloquea el servidor al cerrar la sesion. */
+  badges: BadgeRepository
+  /** Las rutas de desarrollo: donde esta cada alumno, y la mano del entrenador. */
+  routes: RouteRepository
+  /** Las pausas de racha y los comodines. */
+  streaks: StreakRepository
   platform: PlatformRepository
   trainers: TrainerRepository
   students: StudentRepository
@@ -174,6 +190,13 @@ const fakeCrews = new FakeCrewRepository(async (crewId, founder) => {
 })
 const fakeStudents = new FakeStudentRepository(crewScope)
 const fakeSessions = new FakeSessionRepository(crewScope)
+const fakePlans = new FakePlanRepository(crewScope)
+const fakeAssignments = new FakeAssignmentRepository(crewScope)
+// La puntuacion, las insignias y las rutas simuladas se cruzan entre si como
+// en la base lo hacen las funciones: se instancian una vez y se comparten.
+const fakeScores = new FakeScoreRepository(fakeSessions, fakeStudents, crewScope)
+const fakeStreaks = new FakeStreakRepository(fakeSessions)
+const fakeBadges = new FakeBadgeRepository(fakeSessions, fakeStudents, fakeStreaks, crewScope)
 const trainers: TrainerRepository = fakeTrainers ?? new SupabaseTrainerRepository()
 
 /*
@@ -221,9 +244,12 @@ export const container: Container = {
     : new SupabaseCrewPostRepository(crewScope),
   subscriptions,
   notices,
-  crewProgress: shouldUseFakeAuthentication
-    ? new FakeCrewProgressRepository(fakeSessions, fakeStudents, crewScope)
-    : new SupabaseCrewProgressRepository(crewScope),
+  scores: shouldUseFakeAuthentication ? fakeScores : new SupabaseScoreRepository(crewScope),
+  badges: shouldUseFakeAuthentication ? fakeBadges : new SupabaseBadgeRepository(),
+  routes: shouldUseFakeAuthentication
+    ? new FakeRouteRepository(fakeSessions, fakeAssignments, fakePlans, fakeScores, fakeBadges)
+    : new SupabaseRouteRepository(),
+  streaks: shouldUseFakeAuthentication ? fakeStreaks : new SupabaseStreakRepository(),
   platform,
   trainers,
   /*
@@ -253,10 +279,10 @@ export const container: Container = {
    */
   sessions: shouldUseFakeAuthentication ? fakeSessions : new SupabaseSessionRepository(crewScope),
   plans: shouldUseFakeAuthentication
-    ? new FakePlanRepository(crewScope)
+    ? fakePlans
     : new SupabasePlanRepository(crewScope),
   assignments: shouldUseFakeAuthentication
-    ? new FakeAssignmentRepository(crewScope)
+    ? fakeAssignments
     : new SupabaseAssignmentRepository(crewScope),
   exercises: shouldUseFakeAuthentication
     ? new FakeExerciseRepository()

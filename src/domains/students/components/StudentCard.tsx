@@ -17,7 +17,7 @@ import { useStudentEditor } from '../hooks/useStudentEditor'
 import { StudentProgressStrip } from './StudentProgressStrip'
 import { LEVEL_BADGE } from '../libs/levelBadge'
 import type { StudentProgress } from '../hooks/useStudentsProgress'
-import type { Student } from '@/shared/domain/entities/student'
+import { ageOf, type Student } from '@/shared/domain/entities/student'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { STUDENT_LEVEL_LABEL_KEY, goalLabel } from '@/shared/i18n/domainLabels'
 
@@ -153,7 +153,8 @@ export function StudentCard({ student, progress, onEdit }: StudentCardProps) {
             {t('studentCard.age')}
           </dt>
           <dd className="metric-figures font-display text-xl font-bold text-ink">
-            {student.age}
+            {/* Sin fecha se dice «—», no cero: nadie tiene cero años. */}
+            {ageOf(student.birthDate) ?? '—'}
             <span className="ml-1 text-xs font-semibold text-ink/55">{t('studentCard.years')}</span>
           </dd>
         </div>

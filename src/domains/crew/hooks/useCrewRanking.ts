@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
 import { container } from '@/app/container'
-import type { CrewMemberProgress, ProgressPeriod } from '@/shared/domain/ports/CrewProgressRepository'
+import type { CrewMemberProgress, ProgressPeriod } from '@/shared/domain/ports/ScoreRepository'
+import type { Cohort } from '@/shared/domain/entities/progress'
 
 interface UseCrewRankingResult {
   entries: CrewMemberProgress[]
   period: ProgressPeriod
   setPeriod: (period: ProgressPeriod) => void
+  /** `true` compara sólo dentro de la cohorte de quien mira. */
+  ownCohortOnly: boolean
+  setOwnCohortOnly: (only: boolean) => void
   loading: boolean
 }
 
@@ -21,21 +25,24 @@ interface UseCrewRankingResult {
  * mueve la clasificación, y esperar a recargar la dejaría desactualizada justo
  * después del momento en el que a alguien le importa mirarla.
  */
-export function useCrewRanking(): UseCrewRankingResult {
+export function useCrewRanking(viewerCohort: Cohort | null): UseCrewRankingResult {
   const [period, setPeriod] = useState<ProgressPeriod>('week')
+  // Por defecto, entre iguales: un juvenil no compite con un senior. Quien no
+  // tiene cohorte -el entrenador, quien no dijo su fecha- ve a todos.
+  const [ownCohortOnly, setOwnCohortOnly] = useState(viewerCohort !== null)
   const [entries, setEntries] = useState<CrewMemberProgress[]>([])
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async (): Promise<void> => {
-    setEntries(await container.crewProgress.ofCrew(period))
+    setEntries(await container.scores.ofCrew(period, ownCohortOnly ? viewerCohort : null))
     setLoading(false)
-  }, [period])
+  }, [period, ownCohortOnly, viewerCohort])
 
   useEffect(() => {
     void load()
 
     const unsubscribes = [
-      container.crewProgress.onChange(() => void load()),
+      container.scores.onChange(() => void load()),
       container.sessions.onChange(() => void load()),
     ]
 
@@ -44,5 +51,5 @@ export function useCrewRanking(): UseCrewRankingResult {
     }
   }, [load])
 
-  return { entries, period, setPeriod, loading }
+  return { entries, period, setPeriod, ownCohortOnly, setOwnCohortOnly, loading }
 }

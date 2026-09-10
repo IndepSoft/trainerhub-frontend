@@ -39,7 +39,7 @@ export function useStudentsProgress(): UseStudentsProgressResult {
   const load = useCallback(async (): Promise<void> => {
     // `all` y no la semana: en una ficha lo que importa es lo acumulado, no
     // quién va ganando este lunes.
-    const entries = await container.crewProgress.ofCrew('all')
+    const entries = await container.scores.ofCrew('all')
 
     setProgressById(
       new Map(
@@ -62,7 +62,7 @@ export function useStudentsProgress(): UseStudentsProgressResult {
     // A las sesiones también: cerrar una cambia el nivel de quien la hizo, y la
     // lista tiene que enterarse sin recargar.
     const unsubscribes = [
-      container.crewProgress.onChange(() => void load()),
+      container.scores.onChange(() => void load()),
       container.sessions.onChange(() => void load()),
     ]
 

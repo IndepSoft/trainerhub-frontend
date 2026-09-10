@@ -141,6 +141,8 @@ export interface StudentProfile {
   firstName: string
   lastName: string
   photoUrl?: string
+  /** Suya, como el nombre: `null` si no la ha dicho. */
+  birthDate: string | null
 }
 
 export interface ClaimMembershipInput {

@@ -2,7 +2,7 @@
  * Entidades del registro de gamificación.
  *
  * Se separan de `progress.types` a propósito: aquello describe el resumen que
- * ve el entrenador; esto describe el juego —racha, nivel, hitos—, que es un
+ * ve el entrenador; esto describe el juego —racha, nivel, sendero—, que es un
  * concepto distinto con su propio ciclo de vida.
  */
 
@@ -28,21 +28,29 @@ export interface LevelProgress {
   experienceForNextLevel: number
 }
 
-export type MilestoneState = 'completed' | 'active' | 'locked'
+export type PathNodeState = 'completed' | 'active' | 'locked'
 
-export interface Milestone {
-  id: string
+/**
+ * Un nodo del sendero, YA CRUZADO con dónde está el alumno.
+ *
+ * ERA UNA ESCALERA FIJA DE SESIONES —tres, siete, doce…— igual para todo el
+ * mundo. Ahora es la ruta de desarrollo: cuatro nodos que se abren con puntos,
+ * semanas de adherencia y la validación del entrenador, y que dependen del
+ * objetivo del plan. Las cifras vienen del servidor; aquí sólo se pintan.
+ */
+export interface PathNode {
+  position: number
   titleKey: TranslationKey
   descriptionKey: TranslationKey
-  state: MilestoneState
-  /** Sesiones hechas y exigidas. La fracción se deriva, no se almacena. */
-  completedSessions: number
-  requiredSessions: number
-  experienceReward: number
+  state: PathNodeState
+  points: { current: number; target: number }
+  weeks: { current: number; target: number }
+  /** Si el entrenador ya validó este hito. El nodo 1 no lo necesita. */
+  validated: boolean
+  needsValidation: boolean
 }
 
 export interface GamificationProfile {
   streak: StreakStatus
   level: LevelProgress
-  milestones: Milestone[]
 }

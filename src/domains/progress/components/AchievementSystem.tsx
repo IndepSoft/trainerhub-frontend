@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
 import { AchievementBadge } from './AchievementBadge'
+import { RARITY_LABEL_KEY as PLATE_RARITY_LABEL_KEY } from '../libs/badgeLabels'
 import { cn } from '@/shared/lib/utils'
-import { unlockedAchievements } from '../libs/achievementEvaluation'
-import type { Achievement, AchievementCategory } from '../types/achievement.types'
+import { unlockedAchievements } from '../libs/badges'
+import type { Achievement } from '../types/achievement.types'
+import type { BadgeCategory } from '@/shared/domain/entities/progress'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 import { activeLocale } from '@/shared/i18n/activeLocale'
@@ -23,19 +25,17 @@ interface AchievementSystemProps {
 type CategoryFilter = 'all' | Achievement['category']
 type RarityFilter = 'all' | Achievement['rarity']
 
-const CATEGORY_LABEL_KEY: Record<AchievementCategory, TranslationKey> = {
-  attendance: 'achievement.category.attendance',
-  consistency: 'achievement.category.consistency',
-  metrics: 'achievement.category.metrics',
-  challenges: 'achievement.category.challenges',
+const CATEGORY_LABEL_KEY: Record<BadgeCategory, TranslationKey> = {
+  streak: 'badge.category.streak',
+  performance: 'badge.category.performance',
+  technique: 'badge.category.technique',
+  longevity: 'badge.category.longevity',
+  community: 'badge.category.community',
 }
 
 const RARITY_LABEL_KEY: Record<RarityFilter, TranslationKey> = {
   all: 'achievement.rarity.all',
-  common: 'achievement.rarity.common',
-  rare: 'achievement.rarity.rare',
-  epic: 'achievement.rarity.epic',
-  legendary: 'achievement.rarity.legendary',
+  ...PLATE_RARITY_LABEL_KEY,
 }
 
 
@@ -158,7 +158,7 @@ export function AchievementSystem({ achievements }: AchievementSystemProps) {
         <div className="grid grid-cols-3 gap-3 pt-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7">
           {filtered.map((achievement) => (
             <AchievementBadge
-              key={achievement.id}
+              key={achievement.code}
               achievement={achievement}
               unlocked={Boolean(achievement.unlockedAt)}
               size="medium"
@@ -186,7 +186,7 @@ export function AchievementSystem({ achievements }: AchievementSystemProps) {
 
         <ul className="space-y-5">
           {recent.map((achievement) => (
-            <li key={achievement.id} className="flex items-center gap-4">
+            <li key={achievement.code} className="flex items-center gap-4">
               <AchievementBadge achievement={achievement} unlocked size="small" />
 
               <div className="min-w-0 flex-1">
@@ -197,8 +197,8 @@ export function AchievementSystem({ achievements }: AchievementSystemProps) {
                 </p>
               </div>
 
-              <span className="metric-figures shrink-0 font-display text-sm font-bold text-cobalt">
-                +{achievement.pointsReward} XP
+              <span className="shrink-0 font-display text-sm font-bold uppercase tracking-wider text-cobalt">
+                {t(RARITY_LABEL_KEY[achievement.rarity])}
               </span>
             </li>
           ))}

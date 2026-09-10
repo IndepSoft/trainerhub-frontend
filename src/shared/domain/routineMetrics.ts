@@ -1,4 +1,5 @@
 import type { Block, PrescribedExercise, Routine } from './entities/routine'
+import type { TrainingPlan } from './entities/plan'
 
 /**
  * Lo que se mide de una rutina: cuánto dura y cuánto trabajo tiene. Funciones
@@ -100,5 +101,46 @@ export function countTotalSets(routine: Routine): number {
   return flattenPrescribedExercises(routine).reduce(
     (total, exercise) => total + exercise.sets,
     0
+  )
+}
+
+/**
+ * Lo que una semana de un plan PROGRAMA, sumado sobre sus rutinas.
+ *
+ * Es la mitad que faltaba de la adherencia: lo hecho ya se anota en cada
+ * sesión (`SessionResult`), lo previsto no existía como número en ningún
+ * sitio. Se resuelve contra el mapa de rutinas y no contra el puerto: es
+ * aritmética, no acceso a datos, y así la usan igual el cliente y una prueba.
+ *
+ * Un día con `routineId` que no está en el mapa —la rutina se borró— cuenta
+ * como sesión programada sin series ni minutos: el plan sigue diciendo que
+ * ese día se entrena.
+ */
+export interface PlannedWeekVolume {
+  /** Días con rutina. Los días de descanso no cuentan. */
+  sessions: number
+  sets: number
+  minutes: number
+}
+
+export function plannedWeekVolume(
+  plan: TrainingPlan,
+  weekNumber: number,
+  routinesById: ReadonlyMap<string, Routine>
+): PlannedWeekVolume {
+  const week = plan.weeks.find((candidate) => candidate.number === weekNumber)
+  if (week === undefined) return { sessions: 0, sets: 0, minutes: 0 }
+
+  return week.days.reduce<PlannedWeekVolume>(
+    (total, day) => {
+      if (day.routineId === null) return total
+      const routine = routinesById.get(day.routineId)
+      return {
+        sessions: total.sessions + 1,
+        sets: total.sets + (routine === undefined ? 0 : countTotalSets(routine)),
+        minutes: total.minutes + (routine === undefined ? 0 : estimateRoutineMinutes(routine)),
+      }
+    },
+    { sessions: 0, sets: 0, minutes: 0 }
   )
 }

@@ -93,6 +93,13 @@ export interface SetRecord {
   /** Descanso REAL tras la serie. Cero si no llegó a descansarse. */
   restSeconds: number
   prescribedRestSeconds: number
+  /**
+   * Esfuerzo percibido de la serie, de 1 a 10; 10 es el fallo. OPCIONAL, y
+   * ausente si no se anotó: obligarlo encarece cada serie y es lo que hace que
+   * se deje de anotar a la tercera semana. Es lo que distingue una mejora de
+   * carga real de una serie forzada; sin él, el progreso se mide sólo en kilos.
+   */
+  rpe?: number
 }
 
 export interface SessionResult {
