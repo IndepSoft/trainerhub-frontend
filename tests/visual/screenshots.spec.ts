@@ -3444,9 +3444,11 @@ test.describe('equipo', () => {
      * con «Tu camino» sin peldaños y «0 / 0 logros», que se lee como que algo no
      * ha cargado.
      */
-    await expect(page.getByText('Primeros pasos')).toBeVisible()
-    await expect(page.getByText('0/3')).toBeVisible()
-    await expect(page.getByText('0 / 20 logros conseguidos')).toBeVisible()
+    // La ruta: sin plan es Hybrid, en Iniciacion, con Consolidacion a cero.
+    await expect(page.getByText('Ruta Hybrid')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Consolidación' })).toBeVisible()
+    await expect(page.getByText('0/300')).toBeVisible()
+    await expect(page.getByText('0 / 21 logros conseguidos')).toBeVisible()
   })
 
   test('el QR mete a alguien en el equipo, con el visto bueno del entrenador', async ({
@@ -5249,5 +5251,38 @@ test.describe('datos de progreso', () => {
     const cumplidos = hoy.getFullYear() - 1998 - (hoy.getMonth() + 1 < 3 || (hoy.getMonth() + 1 === 3 && hoy.getDate() < 14) ? 1 : 0)
     // El valor y la unidad van en el mismo parrafo: «28 años».
     await expect(page.getByText(new RegExp('^' + cumplidos + ' *años$')).first()).toBeVisible()
+  })
+})
+
+/**
+ * Fase 2 de los motores de progreso: la ruta y la mano del entrenador.
+ */
+test.describe('rutas de desarrollo', () => {
+  test('la ruta sale del objetivo del plan, y el entrenador valida el hito', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    // `student-2` tiene asignado `plan-1`, de acondicionamiento: Vitality.
+    await page.goto('/students/student-2')
+
+    const ruta = page.locator('section').filter({ hasText: 'Ruta de desarrollo' })
+    await expect(ruta.getByRole('combobox', { name: 'Ruta' })).toContainText('Vitality')
+    await expect(ruta.getByText('Iniciación')).toBeVisible()
+
+    // Validar el hito de Consolidacion: queda validado, y el nodo no se abre
+    // hasta que los puntos y las semanas lleguen. Son tres criterios.
+    await ruta.getByLabel('Notas de la evaluación').fill('Sentadilla limpia a 60 kg')
+    await ruta.getByRole('button', { name: 'Validar hito de Consolidación' }).click()
+    await expect(ruta.getByText('Hito validado. Se abre cuando los puntos y las semanas lleguen.')).toBeVisible()
+    await expect(ruta.getByText('Iniciación')).toBeVisible()
+  })
+
+  test('cambiar la ruta a mano se refleja en el progreso del alumno', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students/student-2')
+
+    const ruta = page.locator('section').filter({ hasText: 'Ruta de desarrollo' })
+    await elegirDelDesplegable(page, ruta.getByRole('combobox', { name: 'Ruta' }), 'Apex')
+    await expect(ruta.getByRole('combobox', { name: 'Ruta' })).toContainText('Apex')
   })
 })

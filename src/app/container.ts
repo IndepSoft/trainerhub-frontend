@@ -46,6 +46,9 @@ import type { ScoreRepository } from '@/shared/domain/ports/ScoreRepository'
 import type { BadgeRepository } from '@/shared/domain/ports/BadgeRepository'
 import { FakeScoreRepository } from '@/shared/infrastructure/fake/FakeScoreRepository'
 import { FakeBadgeRepository } from '@/shared/infrastructure/fake/FakeBadgeRepository'
+import { FakeRouteRepository } from '@/shared/infrastructure/fake/FakeRouteRepository'
+import type { RouteRepository } from '@/shared/domain/ports/RouteRepository'
+import { SupabaseRouteRepository } from '@/shared/infrastructure/supabase/SupabaseRouteRepository'
 import type { CrewStaffRepository } from '@/shared/domain/ports/CrewStaffRepository'
 import { FakeCrewStaffRepository } from '@/shared/infrastructure/fake/FakeCrewStaffRepository'
 import type { SubscriptionRepository } from '@/shared/domain/ports/SubscriptionRepository'
@@ -81,6 +84,8 @@ export interface Container {
   scores: ScoreRepository
   /** Las insignias conseguidas. Las desbloquea el servidor al cerrar la sesion. */
   badges: BadgeRepository
+  /** Las rutas de desarrollo: donde esta cada alumno, y la mano del entrenador. */
+  routes: RouteRepository
   platform: PlatformRepository
   trainers: TrainerRepository
   students: StudentRepository
@@ -180,6 +185,12 @@ const fakeCrews = new FakeCrewRepository(async (crewId, founder) => {
 })
 const fakeStudents = new FakeStudentRepository(crewScope)
 const fakeSessions = new FakeSessionRepository(crewScope)
+const fakePlans = new FakePlanRepository(crewScope)
+const fakeAssignments = new FakeAssignmentRepository(crewScope)
+// La puntuacion, las insignias y las rutas simuladas se cruzan entre si como
+// en la base lo hacen las funciones: se instancian una vez y se comparten.
+const fakeScores = new FakeScoreRepository(fakeSessions, fakeStudents, crewScope)
+const fakeBadges = new FakeBadgeRepository(fakeSessions, fakeStudents, crewScope)
 const trainers: TrainerRepository = fakeTrainers ?? new SupabaseTrainerRepository()
 
 /*
@@ -227,12 +238,11 @@ export const container: Container = {
     : new SupabaseCrewPostRepository(crewScope),
   subscriptions,
   notices,
-  scores: shouldUseFakeAuthentication
-    ? new FakeScoreRepository(fakeSessions, fakeStudents, crewScope)
-    : new SupabaseScoreRepository(crewScope),
-  badges: shouldUseFakeAuthentication
-    ? new FakeBadgeRepository(fakeSessions)
-    : new SupabaseBadgeRepository(),
+  scores: shouldUseFakeAuthentication ? fakeScores : new SupabaseScoreRepository(crewScope),
+  badges: shouldUseFakeAuthentication ? fakeBadges : new SupabaseBadgeRepository(),
+  routes: shouldUseFakeAuthentication
+    ? new FakeRouteRepository(fakeSessions, fakeAssignments, fakePlans, fakeScores, fakeBadges)
+    : new SupabaseRouteRepository(),
   platform,
   trainers,
   /*
@@ -262,10 +272,10 @@ export const container: Container = {
    */
   sessions: shouldUseFakeAuthentication ? fakeSessions : new SupabaseSessionRepository(crewScope),
   plans: shouldUseFakeAuthentication
-    ? new FakePlanRepository(crewScope)
+    ? fakePlans
     : new SupabasePlanRepository(crewScope),
   assignments: shouldUseFakeAuthentication
-    ? new FakeAssignmentRepository(crewScope)
+    ? fakeAssignments
     : new SupabaseAssignmentRepository(crewScope),
   exercises: shouldUseFakeAuthentication
     ? new FakeExerciseRepository()

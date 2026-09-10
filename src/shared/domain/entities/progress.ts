@@ -35,6 +35,13 @@ export interface SessionScore {
   cohort: number
   points: number
   ruleVersion: number
+  /**
+   * Marcada por un salto de carga: más de un 20 % sobre la mediana de cuatro
+   * semanas en algún ejercicio. El progreso se queda en 1,00 hasta que el
+   * entrenador la revise; si la acepta, se repuntúa confiando en la carga.
+   */
+  flaggedReason: 'load_jump' | null
+  reviewedAt: string | null
 }
 
 export type BadgeRarity = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' | 'mythic'
@@ -59,10 +66,72 @@ export const BADGE_CATEGORIES: BadgeCategory[] = [
  * celebración sepa qué es NUEVO. Platino y Diamante nacen con `validatedAt` a
  * `null` y las confirma quien gestiona alumnos.
  */
+/** Las que nacen pendientes de que el entrenador las confirme. */
+export const BADGES_REQUIRING_VALIDATION: string[] = ['legend', 'persistence']
+
 export interface StudentBadge {
   studentId: string
   code: string
   unlockedOn: string
   sessionId: string | null
   validatedAt: string | null
+}
+
+/**
+ * Las cinco rutas de desarrollo. Catálogo de sistema: se siembra y no cambia.
+ *
+ * La ruta de un alumno SE DERIVA del objetivo de su último plan asignado
+ * —`ROUTE_BY_OBJECTIVE`— y el entrenador puede cambiarla a mano. Apex no
+ * tiene objetivo que la active: es siempre elección del entrenador.
+ */
+export type ProgressRouteCode = 'titan' | 'endurance' | 'apex' | 'vitality' | 'hybrid'
+
+export const PROGRESS_ROUTES: ProgressRouteCode[] = ['titan', 'endurance', 'apex', 'vitality', 'hybrid']
+
+export function isProgressRouteCode(value: string): value is ProgressRouteCode {
+  return (PROGRESS_ROUTES as string[]).includes(value)
+}
+
+export const ROUTE_BY_OBJECTIVE: Record<string, ProgressRouteCode> = {
+  hipertrofia: 'titan',
+  'fuerza-maxima': 'titan',
+  'resistencia-muscular': 'endurance',
+  'perdida-grasa': 'vitality',
+  acondicionamiento: 'vitality',
+}
+
+/**
+ * Los cuatro nodos de toda ruta. El 1 es donde nace todo el mundo; a partir
+ * del 2 hacen falta puntos acumulados en la ruta, semanas seguidas de
+ * adherencia, y que el entrenador valide el hito. Espejo de `route_nodes`;
+ * una prueba de contrato compara los dos.
+ */
+export interface RouteNode {
+  position: number
+  pointsRequired: number
+  weeksRequired: number
+}
+
+export const ROUTE_NODES: RouteNode[] = [
+  { position: 1, pointsRequired: 0, weeksRequired: 0 },
+  { position: 2, pointsRequired: 300, weeksRequired: 4 },
+  { position: 3, pointsRequired: 1200, weeksRequired: 6 },
+  { position: 4, pointsRequired: 3000, weeksRequired: 8 },
+]
+
+/** El umbral de adherencia semanal que cuenta como semana cumplida. */
+export const ADHERENCE_THRESHOLD = 0.85
+
+/** Dónde está un alumno en su ruta. Calculado en el servidor, nunca guardado. */
+export interface RouteProgress {
+  studentId: string
+  routeCode: ProgressRouteCode
+  /** El nodo en el que está, de 1 a 4. */
+  position: number
+  /** Puntos acumulados desde que entró en la ruta. */
+  points: number
+  /** Semanas seguidas con adherencia de al menos el 85 %, terminando en ésta. */
+  adherentWeeks: number
+  /** Nodos que el entrenador ya validó. */
+  validatedPositions: number[]
 }

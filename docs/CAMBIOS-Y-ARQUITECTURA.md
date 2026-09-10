@@ -3046,3 +3046,32 @@ contrato compara ambos catálogos por código. Platino y Diamante nacen con
 sesión desbloqueó cada insignia, así que la pantalla pide las de ésta y, si no
 hay ninguna, celebra igual la puntuación de la sesión y la racha. Antes
 enseñaba el último logro de toda la historia.
+
+### 30.3 Fase 2: las rutas y la mano del entrenador
+
+**La ruta se deriva, no se elige.** Un alumno con un plan de hipertrofia está
+en Titan sin que nadie lo diga; uno de acondicionamiento, en Vitality; sin
+plan, en Hybrid. El mapa objetivo → ruta es un catálogo de sistema
+(`route_objectives`) y el entrenador puede cambiar la ruta a mano, lo que
+reinicia los puntos de la ruta. Apex no tiene objetivo que la active: es
+siempre elección del entrenador.
+
+**Tres criterios, y el tercero es una persona.** Pasar de nodo exige puntos
+acumulados en la ruta, semanas seguidas con adherencia de al menos el 85 %
+—cerradas sobre lo decidido; una semana sin nada programado ni rompe ni
+alarga— y una validación del entrenador. `route_progress` calcula el nodo al
+vuelo y nunca lo guarda: un contador almacenado se desincroniza al primer
+cambio. La escalera fija de sesiones («Primeros pasos», «Meta del mes»)
+desaparece: era igual para todo el mundo y no la abría nadie.
+
+**Confirmar y revisar.** Platino y Diamante se confirman con `validate_badge`;
+un salto de carga —más de un 20 % sobre la mediana de cuatro semanas— marca
+la sesión, deja el progreso en 1,00 y espera a `accept_load_jump`, que
+repuntúa confiando en la carga. Es una heurística de una línea sobre datos que
+ya se guardan, y se parece más a lo que hace un entrenador que un modelo.
+Cinco hitos validados dan el «Sello del Entrenador», la única insignia que no
+nace de una sesión.
+
+**Sin avisos al entrenador todavía.** Los avisos son una bandeja del alumno;
+lo que espera confirmación se ve en la ficha del alumno, sección «Ruta de
+desarrollo», que sólo pinta quien tiene `students.manage`.

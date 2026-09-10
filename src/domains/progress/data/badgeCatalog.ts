@@ -34,6 +34,7 @@ export const badgeCatalog: BadgeDefinition[] = [
   { code: 'thousand-sets', nameKey: 'badge.thousandSets.name', descriptionKey: 'badge.thousandSets.description', icon: 'dumbbell', category: 'performance', rarity: 'gold', requiresValidation: false },
   { code: 'full-plan', nameKey: 'badge.fullPlan.name', descriptionKey: 'badge.fullPlan.description', icon: 'medal', category: 'technique', rarity: 'gold', requiresValidation: false },
   { code: 'unstoppable', nameKey: 'achievement.unstoppable.name', descriptionKey: 'achievement.unstoppable.description', icon: 'flame', category: 'streak', rarity: 'gold', requiresValidation: false },
+  { code: 'coach-seal', nameKey: 'badge.coachSeal.name', descriptionKey: 'badge.coachSeal.description', icon: 'shield', category: 'technique', rarity: 'platinum', requiresValidation: false },
   { code: 'legend', nameKey: 'achievement.legend.name', descriptionKey: 'achievement.legend.description', icon: 'flame', category: 'streak', rarity: 'platinum', requiresValidation: true },
   { code: 'persistence', nameKey: 'badge.persistence.name', descriptionKey: 'badge.persistence.description', icon: 'trophy', category: 'longevity', rarity: 'diamond', requiresValidation: true },
 ]

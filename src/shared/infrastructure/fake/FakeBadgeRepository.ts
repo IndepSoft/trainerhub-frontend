@@ -1,22 +1,37 @@
 import type { BadgeRepository } from '@/shared/domain/ports/BadgeRepository'
-import type { StudentBadge } from '@/shared/domain/entities/progress'
+import { BADGES_REQUIRING_VALIDATION, type StudentBadge } from '@/shared/domain/entities/progress'
+import type { CrewScope } from '@/shared/domain/ports/CrewScope'
 import type { FakeSessionRepository } from './FakeSessionRepository'
+import type { FakeStudentRepository } from './FakeStudentRepository'
 import { unlockBadges } from './badgeRules'
 
 /**
  * Las insignias simuladas: se derivan de la historia en cada lectura, con las
- * mismas reglas que `evaluate_badges`. Ver `FakeScoreRepository`.
+ * mismas reglas que `evaluate_badges`. Lo que no se deriva -las confirmadas
+ * por el entrenador, y las que da una validacion- vive en memoria encima.
  */
 export class FakeBadgeRepository implements BadgeRepository {
   private readonly sessions: FakeSessionRepository
+  private readonly students: FakeStudentRepository
+  private readonly scope: CrewScope
+  private readonly validated = new Map<string, string>()
+  private readonly granted = new Map<string, StudentBadge>()
+  private readonly listeners = new Set<() => void>()
 
-  constructor(sessions: FakeSessionRepository) {
+  constructor(sessions: FakeSessionRepository, students: FakeStudentRepository, scope: CrewScope) {
     this.sessions = sessions
+    this.students = students
+    this.scope = scope
   }
 
   private badgesOf(studentId: string): StudentBadge[] {
     const history = this.sessions.listAll().filter((session) => session.studentId === studentId)
-    return unlockBadges(studentId, history)
+    const derived = unlockBadges(studentId, history)
+    const extra = [...this.granted.values()].filter((badge) => badge.studentId === studentId)
+    return [...derived, ...extra].map((badge) => ({
+      ...badge,
+      validatedAt: this.validated.get(`${studentId}:${badge.code}`) ?? badge.validatedAt,
+    }))
   }
 
   async unlockedOf(studentId: string): Promise<StudentBadge[]> {
@@ -29,7 +44,44 @@ export class FakeBadgeRepository implements BadgeRepository {
     return this.badgesOf(session.studentId).filter((badge) => badge.sessionId === sessionId)
   }
 
+  async pendingValidation(): Promise<StudentBadge[]> {
+    const crewId = this.scope.current()
+    if (crewId === null) return []
+    return this.students
+      .membersOf(crewId)
+      .flatMap((student) => this.badgesOf(student.id))
+      .filter((badge) => BADGES_REQUIRING_VALIDATION.includes(badge.code) && badge.validatedAt === null)
+  }
+
+  async validate(studentId: string, code: string): Promise<void> {
+    this.validated.set(`${studentId}:${code}`, new Date().toISOString())
+    this.notify()
+  }
+
+  /** Lo que da una validacion de hito, no una sesion. Lo llama la ruta simulada. */
+  grant(studentId: string, code: string): void {
+    const key = `${studentId}:${code}`
+    if (this.granted.has(key)) return
+    this.granted.set(key, {
+      studentId,
+      code,
+      unlockedOn: new Date().toISOString().slice(0, 10),
+      sessionId: null,
+      validatedAt: null,
+    })
+    this.notify()
+  }
+
   onChange(listener: () => void): () => void {
-    return this.sessions.onChange(listener)
+    this.listeners.add(listener)
+    const unsubscribeSessions = this.sessions.onChange(listener)
+    return () => {
+      this.listeners.delete(listener)
+      unsubscribeSessions()
+    }
+  }
+
+  private notify(): void {
+    for (const listener of this.listeners) listener()
   }
 }

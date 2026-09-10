@@ -23,6 +23,9 @@ export class FakeScoreRepository implements ScoreRepository {
   private readonly sessions: FakeSessionRepository
   private readonly students: FakeStudentRepository
   private readonly scope: CrewScope
+  /** Las sesiones cuya carga marcada el entrenador dio por buena. */
+  private readonly trusted = new Set<string>()
+  private readonly listeners = new Set<() => void>()
 
   constructor(sessions: FakeSessionRepository, students: FakeStudentRepository, scope: CrewScope) {
     this.sessions = sessions
@@ -34,7 +37,7 @@ export class FakeScoreRepository implements ScoreRepository {
     const student = this.students.listAll().find((candidate) => candidate.id === studentId)
     const history = this.sessions.listAll().filter((session) => session.studentId === studentId)
     return history
-      .map((session) => scoreSession(session, history, student))
+      .map((session) => scoreSession(session, history, student, new Date(), this.trusted.has(session.id)))
       .filter((score): score is SessionScore => score !== null)
       .sort((left, right) => right.completedOn.localeCompare(left.completedOn))
   }
@@ -76,9 +79,25 @@ export class FakeScoreRepository implements ScoreRepository {
     })
   }
 
-  // Lo que mueve una puntuacion es una sesion: se escucha alli.
+  async flaggedOf(studentId: string): Promise<SessionScore[]> {
+    return this.scoresOf(studentId).filter(
+      (score) => score.flaggedReason !== null && score.reviewedAt === null
+    )
+  }
+
+  async acceptLoadJump(sessionId: string): Promise<void> {
+    this.trusted.add(sessionId)
+    for (const listener of this.listeners) listener()
+  }
+
+  // Lo que mueve una puntuacion es una sesion, o el entrenador aceptando una carga.
   onChange(listener: () => void): () => void {
-    return this.sessions.onChange(listener)
+    this.listeners.add(listener)
+    const unsubscribeSessions = this.sessions.onChange(listener)
+    return () => {
+      this.listeners.delete(listener)
+      unsubscribeSessions()
+    }
   }
 }
 

@@ -62,6 +62,24 @@ export class SupabaseScoreRepository implements ScoreRepository {
     return ((data ?? []) as CrewProgressRow[]).map(toCrewMemberProgress)
   }
 
+  async flaggedOf(studentId: string): Promise<SessionScore[]> {
+    const { data, error } = await supabase
+      .from('session_scores')
+      .select('*')
+      .eq('student_id', studentId)
+      .not('flagged_reason', 'is', null)
+      .is('reviewed_at', null)
+      .order('completed_on', { ascending: false })
+
+    if (error) throw mapDataError(error)
+    return ((data ?? []) as SessionScoreRow[]).map(toSessionScore)
+  }
+
+  async acceptLoadJump(sessionId: string): Promise<void> {
+    const { error } = await supabase.rpc('accept_load_jump', { session: sessionId })
+    if (error) throw mapDataError(error)
+  }
+
   onChange(listener: () => void): () => void {
     return subscribeToTable('session_scores', listener)
   }

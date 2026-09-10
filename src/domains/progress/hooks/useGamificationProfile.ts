@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { container } from '@/app/container'
 import { calculateLevelCompletion, experienceRemaining } from '../libs/gamification.utils'
-import { completedSessions, levelFromExperience, milestonesFrom, streakFrom } from '../libs/progressRules'
+import { completedSessions, levelFromExperience, streakFrom } from '../libs/progressRules'
 import { achievementsFrom } from '../data/badgeCatalog'
+import { emptyRoutePath, routePathFrom } from '../libs/routePath'
+import type { ProgressRouteCode } from '@/shared/domain/entities/progress'
 import type { Achievement } from '../types/achievement.types'
 import type { Session } from '@/shared/domain/entities/session'
-import type { GamificationProfile } from '../types/gamification.types'
+import type { GamificationProfile, PathNode } from '../types/gamification.types'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { describeError } from '@/shared/i18n/errorMessages'
 
@@ -22,13 +24,17 @@ const NO_SESSIONS: Session[] = []
 const EMPTY_PROFILE: GamificationProfile = {
   streak: streakFrom(NO_SESSIONS),
   level: levelFromExperience(0),
-  milestones: milestonesFrom(NO_SESSIONS),
 }
+
+const EMPTY_PATH: PathNode[] = emptyRoutePath()
 
 const EMPTY_ACHIEVEMENTS: Achievement[] = achievementsFrom([])
 
 interface UseGamificationProfileResult {
   profile: GamificationProfile
+  /** La ruta de desarrollo y su sendero. Hybrid a cero sin equipo. */
+  route: ProgressRouteCode
+  path: PathNode[]
   achievements: Achievement[]
   /** Sesiones cerradas. */
   completedCount: number
@@ -58,6 +64,8 @@ export function useGamificationProfile(studentId?: string): UseGamificationProfi
   const { t } = useTranslation()
   const [profile, setProfile] = useState<GamificationProfile>(EMPTY_PROFILE)
   const [achievements, setAchievements] = useState<Achievement[]>(EMPTY_ACHIEVEMENTS)
+  const [route, setRoute] = useState<ProgressRouteCode>('hybrid')
+  const [path, setPath] = useState<PathNode[]>(EMPTY_PATH)
   const [completedCount, setCompletedCount] = useState(0)
   const [totalPoints, setTotalPoints] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -67,6 +75,8 @@ export function useGamificationProfile(studentId?: string): UseGamificationProfi
     if (studentId === undefined) {
       setProfile(EMPTY_PROFILE)
       setAchievements(EMPTY_ACHIEVEMENTS)
+      setRoute('hybrid')
+      setPath(EMPTY_PATH)
       setCompletedCount(0)
       setTotalPoints(0)
       setLoading(false)
@@ -77,19 +87,21 @@ export function useGamificationProfile(studentId?: string): UseGamificationProfi
     setError(null)
 
     try {
-      const [sessions, scores, badges] = await Promise.all([
+      const [sessions, scores, badges, routeProgress] = await Promise.all([
         container.sessions.findByStudent(studentId),
         container.scores.ofStudent(studentId),
         container.badges.unlockedOf(studentId),
+        container.routes.progressOf(studentId),
       ])
       const points = scores.reduce((total, score) => total + score.points, 0)
 
       setProfile({
         streak: streakFrom(sessions),
         level: levelFromExperience(points),
-        milestones: milestonesFrom(sessions),
       })
       setAchievements(achievementsFrom(badges))
+      setRoute(routeProgress.routeCode)
+      setPath(routePathFrom(routeProgress))
       setCompletedCount(completedSessions(sessions).length)
       setTotalPoints(points)
     } catch (caught) {
@@ -105,6 +117,7 @@ export function useGamificationProfile(studentId?: string): UseGamificationProfi
       container.sessions.onChange(() => void load()),
       container.scores.onChange(() => void load()),
       container.badges.onChange(() => void load()),
+      container.routes.onChange(() => void load()),
     ]
     return () => {
       for (const unsubscribe of unsubscribes) unsubscribe()
@@ -113,6 +126,8 @@ export function useGamificationProfile(studentId?: string): UseGamificationProfi
 
   return {
     profile,
+    route,
+    path,
     achievements,
     completedCount,
     totalPoints,

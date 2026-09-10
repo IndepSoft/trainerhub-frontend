@@ -35,7 +35,12 @@ import type { Session, SessionResult, SessionStatus } from '@/shared/domain/enti
 import type { NewSession } from '@/shared/domain/ports/SessionRepository'
 import type { CrewPost } from '@/shared/domain/entities/crewPost'
 import type { CrewMemberProgress } from '@/shared/domain/ports/ScoreRepository'
-import type { SessionScore, StudentBadge } from '@/shared/domain/entities/progress'
+import {
+  isProgressRouteCode,
+  type RouteProgress,
+  type SessionScore,
+  type StudentBadge,
+} from '@/shared/domain/entities/progress'
 
 /**
  * Fila cruda de la tabla `profiles`. Nombres tal cual estan en Postgres.
@@ -833,6 +838,8 @@ export interface SessionScoreRow {
   cohort: number | string
   points: number | string
   rule_version: number
+  flagged_reason?: string | null
+  reviewed_at?: string | null
 }
 
 export function toSessionScore(row: SessionScoreRow): SessionScore {
@@ -847,6 +854,8 @@ export function toSessionScore(row: SessionScoreRow): SessionScore {
     cohort: Number(row.cohort),
     points: Number(row.points),
     ruleVersion: row.rule_version,
+    flaggedReason: row.flagged_reason === 'load_jump' ? 'load_jump' : null,
+    reviewedAt: row.reviewed_at ?? null,
   }
 }
 
@@ -866,5 +875,27 @@ export function toStudentBadge(row: StudentBadgeRow): StudentBadge {
     unlockedOn: row.unlocked_on,
     sessionId: row.session_id,
     validatedAt: row.validated_at,
+  }
+}
+
+/** Fila de `route_progress`. Los enteros de una funcion llegan como numero o texto. */
+export interface RouteProgressRow {
+  route_code: string
+  position: number | string
+  points: number | string
+  adherent_weeks: number | string
+  validated_positions: number[] | null
+}
+
+export function toRouteProgress(studentId: string, row: RouteProgressRow): RouteProgress {
+  return {
+    studentId,
+    // La frontera vuelve a comprobar el codigo: el catalogo es de sistema, pero
+    // es la unica que puede prometerselo al dominio.
+    routeCode: isProgressRouteCode(row.route_code) ? row.route_code : 'hybrid',
+    position: Number(row.position),
+    points: Number(row.points),
+    adherentWeeks: Number(row.adherent_weeks),
+    validatedPositions: (row.validated_positions ?? []).map(Number),
   }
 }

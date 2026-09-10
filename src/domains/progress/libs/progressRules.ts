@@ -1,11 +1,10 @@
 import { toLocalDateKey } from '@/shared/lib/dateKey'
-import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 // Lo que cuenta como sesion cerrada vive en `shared/domain`: lo comparten la
 // racha, los hitos y el simulador. La FORMULA de puntos ya no esta en el
 // cliente: la aplica el servidor al cerrar cada sesion.
 import { completedSessions } from '@/shared/domain/experience'
 import type { Session } from '@/shared/domain/entities/session'
-import type { LevelProgress, Milestone, StreakStatus } from '../types/gamification.types'
+import type { LevelProgress, StreakStatus } from '../types/gamification.types'
 
 /**
  * Las reglas del juego. Puras: entran sesiones, salen números.
@@ -163,74 +162,3 @@ const nextDayKey = (dayKey: string): string => shiftDayKey(dayKey, 1)
  * semana se cuenta y castiga a quien se salta una: un hito superado no se
  * pierde.
  */
-interface MilestoneStep {
-  id: string
-  /* Claves, no textos: esta escalera se evalua al importar. Ver el catalogo. */
-  titleKey: TranslationKey
-  descriptionKey: TranslationKey
-  requiredSessions: number
-  experienceReward: number
-}
-
-const MILESTONE_LADDER: MilestoneStep[] = [
-  {
-    id: 'first-steps',
-    titleKey: 'milestone.firstSteps.title',
-    descriptionKey: 'milestone.firstSteps.description',
-    requiredSessions: 3,
-    experienceReward: 100,
-  },
-  {
-    id: 'consistency',
-    titleKey: 'milestone.consistency.title',
-    descriptionKey: 'milestone.consistency.description',
-    requiredSessions: 7,
-    experienceReward: 150,
-  },
-  {
-    id: 'load',
-    titleKey: 'milestone.load.title',
-    descriptionKey: 'milestone.load.description',
-    requiredSessions: 12,
-    experienceReward: 200,
-  },
-  {
-    id: 'endurance',
-    titleKey: 'milestone.endurance.title',
-    descriptionKey: 'milestone.endurance.description',
-    requiredSessions: 20,
-    experienceReward: 250,
-  },
-  {
-    id: 'milestone',
-    titleKey: 'milestone.monthGoal.title',
-    descriptionKey: 'milestone.monthGoal.description',
-    requiredSessions: 30,
-    experienceReward: 400,
-  },
-]
-
-/**
- * El sendero, con el estado de cada peldaño.
- *
- * Sólo hay un hito `active`: el primero sin superar. Los de más allá quedan
- * `locked` aunque el avance ya sume, porque el sendero se lee como un camino y
- * dos puntos brillando a la vez no dice por dónde se va.
- */
-export function milestonesFrom(sessions: Session[]): Milestone[] {
-  const done = completedSessions(sessions).length
-  let activeFound = false
-
-  // El tipo de retorno se anota en la lambda para que los estados se infieran
-  // como literales de `MilestoneState`. Sin el, TypeScript los ensancha a
-  // `string` y haria falta un `as`, que aqui no pinta nada.
-  return MILESTONE_LADDER.map((step): Milestone => {
-    if (done >= step.requiredSessions) {
-      return { ...step, state: 'completed', completedSessions: step.requiredSessions }
-    }
-
-    const state = activeFound ? 'locked' : 'active'
-    activeFound = true
-    return { ...step, state, completedSessions: done }
-  })
-}

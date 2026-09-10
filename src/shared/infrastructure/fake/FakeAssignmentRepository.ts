@@ -54,6 +54,11 @@ export class FakeAssignmentRepository implements AssignmentRepository {
     this.notify()
   }
 
+  /** Todo, sin acotar. Fuera del puerto: se lo entrega la raiz a la ruta simulada. */
+  listAll(): Assignment[] {
+    return this.assignments
+  }
+
   onChange(listener: () => void): () => void {
     this.listeners.add(listener)
     return () => {

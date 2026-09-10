@@ -421,6 +421,16 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   `evaluate_badges`, la presentación en `badgeCatalog.ts`, y una prueba de
   contrato compara los códigos. Platino y Diamante nacen pendientes de que el
   entrenador las confirme.
+  Fase 2: las RUTAS de desarrollo —Titan, Endurance, Apex, Vitality, Hybrid—
+  con cuatro nodos; la ruta sale del objetivo del último plan asignado
+  (`route_objectives`) y el entrenador la cambia a mano; el nodo lo calcula
+  `route_progress` con tres criterios —puntos en la ruta, semanas de
+  adherencia ≥ 85 %, y una fila en `milestone_validations` que sólo escribe
+  `students.manage`—. El sendero de hitos fijo desapareció. `validate_badge`
+  confirma Platino y Diamante; un salto de carga (> 20 % sobre la mediana de
+  cuatro semanas) marca la sesión con `flagged_reason` y progreso 1,00 hasta
+  que `accept_load_jump` la repuntúe. Cinco validaciones dan «Sello del
+  Entrenador». Todo con espejo simulado (`fake/routeRules.ts`) y contrato.
 - El aviso de fin de descanso son TRES señales y ninguna llega sola: color,
   vibración y sonido. El color no sirve con el teléfono en el bolsillo; la
   vibración no existe en iOS —Apple nunca implementó la Vibration API—; el sonido

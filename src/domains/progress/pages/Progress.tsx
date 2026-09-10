@@ -1,7 +1,7 @@
 import { MetricBlock } from '@/shared/components/MetricBlock'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { GamificationHeader } from '../components/GamificationHeader'
-import { MilestonePath } from '../components/MilestonePath'
+import { RoutePath } from '../components/RoutePath'
 import { AchievementSystem } from '../components/AchievementSystem'
 import { JoinCrewPrompt } from '../components/JoinCrewPrompt'
 import { useGamificationProfile } from '../hooks/useGamificationProfile'
@@ -27,7 +27,7 @@ export default function Progress() {
   const { active, loading } = useViewerContext()
   const student = active?.student ?? null
 
-  const { profile, achievements, completedCount, totalPoints, levelCompletion, experienceToNextLevel } =
+  const { profile, route, path, achievements, completedCount, totalPoints, levelCompletion, experienceToNextLevel } =
     useGamificationProfile(student?.id)
   const { overview } = useProgressOverview(achievements, completedCount, totalPoints)
 
@@ -65,7 +65,7 @@ export default function Progress() {
           experienceToNextLevel={experienceToNextLevel}
         />
 
-        <MilestonePath milestones={profile.milestones} />
+        <RoutePath route={route} nodes={path} />
 
         {/* Contadores en el registro sobrio, con reglas de 1 px en vez de
             tarjetas. Los tres salen ahora de sesiones reales: antes eran

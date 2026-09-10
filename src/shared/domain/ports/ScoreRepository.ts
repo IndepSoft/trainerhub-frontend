@@ -24,6 +24,12 @@ export interface ScoreRepository {
   /** El esfuerzo de cada miembro del crew activo, de más a menos puntos. */
   ofCrew(period: ProgressPeriod): Promise<CrewMemberProgress[]>
 
+  /** Las de un alumno marcadas por salto de carga y sin revisar. */
+  flaggedOf(studentId: string): Promise<SessionScore[]>
+
+  /** El entrenador da por buena la carga: se repuntúa confiando en ella. */
+  acceptLoadJump(sessionId: string): Promise<void>
+
   /** Avisa de que algo ha cambiado. Devuelve la función de baja. */
   onChange(listener: () => void): () => void
 }

@@ -94,12 +94,45 @@ export function progressFactor(session: Session, history: Session[]): number {
   return round2(1 + (0.15 * improved) / withBaseline)
 }
 
-/** Lo que valio una sesion cerrada, o `null` si no puntua: sin resultado, o grupal. */
+/**
+ * Si algun ejercicio de la sesion supera en mas de un 20 % la mediana de sus
+ * cuatro semanas anteriores. Es la heuristica antifraude: no parece una
+ * progresion, se marca y el entrenador decide.
+ */
+export function loadJumpIn(session: Session, history: Session[]): boolean {
+  if (session.result === null) return false
+  const own = bestByExercise(session.result.sets ?? [])
+  if (own.size === 0) return false
+
+  const completedOn = session.result.completedAt
+  const since = shiftDateKey(completedOn, -28)
+  const previous = new Map<string, number[]>()
+  for (const other of history) {
+    if (other.id === session.id || other.status !== 'completed' || other.result === null) continue
+    const day = other.result.completedAt
+    if (day >= completedOn || day < since) continue
+    for (const [exerciseId, best] of bestByExercise(other.result.sets ?? [])) {
+      previous.set(exerciseId, [...(previous.get(exerciseId) ?? []), best.weight])
+    }
+  }
+
+  for (const [exerciseId, best] of own) {
+    const baseline = previous.get(exerciseId)
+    if (baseline !== undefined && best.weight > median(baseline) * 1.2) return true
+  }
+  return false
+}
+
+/**
+ * Lo que valio una sesion cerrada, o `null` si no puntua: sin resultado, o
+ * grupal. `trustJump` es el entrenador dando por buena una carga marcada.
+ */
 export function scoreSession(
   session: Session,
   history: Session[],
   student: Student | undefined,
-  today: Date = new Date()
+  today: Date = new Date(),
+  trustJump = false
 ): SessionScore | null {
   if (session.status !== 'completed' || session.result === null || session.studentId === null) {
     return null
@@ -119,7 +152,8 @@ export function scoreSession(
   }
 
   const adherence = planned > 0 ? clamp(round2(done / planned), 0.8, 1.1) : 1
-  const progress = progressFactor(session, history)
+  const jumped = !trustJump && loadJumpIn(session, history)
+  const progress = jumped ? 1 : progressFactor(session, history)
   const cohort = cohortFactor(student, today)
 
   return {
@@ -133,5 +167,7 @@ export function scoreSession(
     cohort,
     points: Math.round(base * adherence * progress * cohort),
     ruleVersion: SCORE_RULE_VERSION,
+    flaggedReason: jumped ? 'load_jump' : null,
+    reviewedAt: trustJump ? new Date().toISOString() : null,
   }
 }
