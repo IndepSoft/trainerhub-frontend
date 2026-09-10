@@ -359,7 +359,9 @@ begin
 
   -- La historia hasta ese dia, una sola vez.
   create temp table if not exists evaluated_days (day date primary key) on commit drop;
-  delete from evaluated_days;
+  -- `where true` porque la base corre con `pg-safeupdate`: un DELETE sin
+  -- WHERE se rechaza aunque sea sobre una tabla temporal.
+  delete from evaluated_days where true;
   insert into evaluated_days (day)
   select distinct (s.result ->> 'completedAt')::date
   from public.sessions s
