@@ -2,10 +2,14 @@ import { useEffect } from 'react'
 import { ConfettiBurst } from '@/shared/components/ConfettiBurst'
 import { HapticPattern, vibrate } from '@/shared/lib/haptics'
 import type { Achievement } from '../types/achievement.types'
+import type { SessionScore } from '@/shared/domain/entities/progress'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface AchievementCelebrationProps {
-  achievement: Achievement
+  /** La insignia nueva, si esta sesión desbloqueó alguna. */
+  achievement: Achievement | null
+  /** Lo que valió la sesión. `null` sólo si no puntuó. */
+  score: SessionScore | null
   /** Cifra protagonista: días de racha, sesiones, lo que el logro celebre. */
   headlineValue: number
   headlineLabel: string
@@ -35,6 +39,7 @@ interface AchievementCelebrationProps {
  */
 export function AchievementCelebration({
   achievement,
+  score,
   headlineValue,
   headlineLabel,
   onDismiss,
@@ -62,7 +67,7 @@ export function AchievementCelebration({
 
       <div className="relative flex flex-1 flex-col justify-center px-6 py-16">
         <p className="font-display text-sm font-bold uppercase tracking-[0.3em] text-ember">
-          {t('achievement.unlocked')}
+          {achievement === null ? t('celebration.sessionClosed') : t('achievement.unlocked')}
         </p>
 
         <p className="metric-figures mt-2 font-display text-[7rem] font-extrabold leading-[0.82] tracking-tighter text-white sm:text-[9rem]">
@@ -74,18 +79,28 @@ export function AchievementCelebration({
         </p>
 
         <div className="mt-10 max-w-sm">
-          <h2 className="font-display text-2xl font-bold uppercase tracking-tight text-white">
-            {t(achievement.nameKey)}
-          </h2>
-          <p className="mt-1 text-white/60">{t(achievement.descriptionKey)}</p>
-          {/* Blanco y no Ember: este bloque puede caer sobre la banda naranja,
-              y Ember sobre Ember no se ve. Se comprobo en captura. */}
-          <p className="metric-figures mt-4 font-display text-2xl font-extrabold text-white">
-            +{achievement.pointsReward}
-            <span className="ml-1.5 text-sm font-bold uppercase tracking-widest text-white/60">
-              XP
-            </span>
-          </p>
+          {achievement !== null && (
+            <>
+              <h2 className="font-display text-2xl font-bold uppercase tracking-tight text-white">
+                {t(achievement.nameKey)}
+              </h2>
+              <p className="mt-1 text-white/60">{t(achievement.descriptionKey)}</p>
+              {achievement.pendingValidation && (
+                <p className="mt-1 text-sm text-ember">{t('achievement.pendingValidation')}</p>
+              )}
+            </>
+          )}
+          {/* Los puntos de LA SESION, tal y como los calculo el servidor. Blanco
+              y no Ember: este bloque puede caer sobre la banda naranja, y
+              Ember sobre Ember no se ve. Se comprobo en captura. */}
+          {score !== null && (
+            <p className="metric-figures mt-4 font-display text-2xl font-extrabold text-white">
+              +{score.points}
+              <span className="ml-1.5 text-sm font-bold uppercase tracking-widest text-white/60">
+                {t('celebration.points')}
+              </span>
+            </p>
+          )}
         </div>
       </div>
 

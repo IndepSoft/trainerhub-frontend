@@ -1,8 +1,9 @@
 import { toLocalDateKey } from '@/shared/lib/dateKey'
 import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
-// La experiencia vive en `shared/domain` desde que la necesita tambien el
-// ranking del equipo: dos formulas para la misma cifra darian dos numeros.
-import { completedSessions, totalExperience } from '@/shared/domain/experience'
+// Lo que cuenta como sesion cerrada vive en `shared/domain`: lo comparten la
+// racha, los hitos y el simulador. La FORMULA de puntos ya no esta en el
+// cliente: la aplica el servidor al cerrar cada sesion.
+import { completedSessions } from '@/shared/domain/experience'
 import type { Session } from '@/shared/domain/entities/session'
 import type { LevelProgress, Milestone, StreakStatus } from '../types/gamification.types'
 
@@ -25,9 +26,7 @@ import type { LevelProgress, Milestone, StreakStatus } from '../types/gamificati
  * ajustarlo sea cambiar una constante y no rastrear multiplicadores.
  */
 
-// Se reexportan para no tocar a quien ya las importaba de aqui: la experiencia
-// subio a `shared/domain` al necesitarla tambien el ranking del equipo.
-export { completedSessions, totalExperience }
+export { completedSessions }
 
 /**
  * Lo que cuesta cada nivel, en experiencia.

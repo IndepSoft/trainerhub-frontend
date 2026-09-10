@@ -16,7 +16,8 @@ import { SupabaseCatalogRepository } from '@/shared/infrastructure/supabase/Supa
 import { SupabaseBlockLibraryRepository } from '@/shared/infrastructure/supabase/SupabaseBlockLibraryRepository'
 import { SupabaseSessionRepository } from '@/shared/infrastructure/supabase/SupabaseSessionRepository'
 import { SupabaseCrewPostRepository } from '@/shared/infrastructure/supabase/SupabaseCrewPostRepository'
-import { SupabaseCrewProgressRepository } from '@/shared/infrastructure/supabase/SupabaseCrewProgressRepository'
+import { SupabaseScoreRepository } from '@/shared/infrastructure/supabase/SupabaseScoreRepository'
+import { SupabaseBadgeRepository } from '@/shared/infrastructure/supabase/SupabaseBadgeRepository'
 import type { CatalogRepository } from '@/shared/domain/ports/CatalogRepository'
 import { FakeCatalogRepository } from '@/shared/infrastructure/fake/FakeCatalogRepository'
 import type { BlockLibraryRepository } from '@/shared/domain/ports/BlockLibraryRepository'
@@ -41,8 +42,10 @@ import type { PlatformRepository } from '@/shared/domain/ports/PlatformRepositor
 import { FakePlatformRepository } from '@/shared/infrastructure/fake/FakePlatformRepository'
 import type { CrewPostRepository } from '@/shared/domain/ports/CrewPostRepository'
 import { FakeCrewPostRepository } from '@/shared/infrastructure/fake/FakeCrewPostRepository'
-import type { CrewProgressRepository } from '@/shared/domain/ports/CrewProgressRepository'
-import { FakeCrewProgressRepository } from '@/shared/infrastructure/fake/FakeCrewProgressRepository'
+import type { ScoreRepository } from '@/shared/domain/ports/ScoreRepository'
+import type { BadgeRepository } from '@/shared/domain/ports/BadgeRepository'
+import { FakeScoreRepository } from '@/shared/infrastructure/fake/FakeScoreRepository'
+import { FakeBadgeRepository } from '@/shared/infrastructure/fake/FakeBadgeRepository'
 import type { CrewStaffRepository } from '@/shared/domain/ports/CrewStaffRepository'
 import { FakeCrewStaffRepository } from '@/shared/infrastructure/fake/FakeCrewStaffRepository'
 import type { SubscriptionRepository } from '@/shared/domain/ports/SubscriptionRepository'
@@ -74,7 +77,10 @@ export interface Container {
   crewPosts: CrewPostRepository
   subscriptions: SubscriptionRepository
   notices: NoticeRepository
-  crewProgress: CrewProgressRepository
+  /** La puntuacion de cada sesion y el agregado del equipo. La escribe el servidor. */
+  scores: ScoreRepository
+  /** Las insignias conseguidas. Las desbloquea el servidor al cerrar la sesion. */
+  badges: BadgeRepository
   platform: PlatformRepository
   trainers: TrainerRepository
   students: StudentRepository
@@ -221,9 +227,12 @@ export const container: Container = {
     : new SupabaseCrewPostRepository(crewScope),
   subscriptions,
   notices,
-  crewProgress: shouldUseFakeAuthentication
-    ? new FakeCrewProgressRepository(fakeSessions, fakeStudents, crewScope)
-    : new SupabaseCrewProgressRepository(crewScope),
+  scores: shouldUseFakeAuthentication
+    ? new FakeScoreRepository(fakeSessions, fakeStudents, crewScope)
+    : new SupabaseScoreRepository(crewScope),
+  badges: shouldUseFakeAuthentication
+    ? new FakeBadgeRepository(fakeSessions)
+    : new SupabaseBadgeRepository(),
   platform,
   trainers,
   /*

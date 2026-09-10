@@ -1,41 +1,52 @@
-import type { Session } from '@/shared/domain/entities/session'
+import type { BadgeCategory, BadgeRarity } from '@/shared/domain/entities/progress'
 import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 
-export type AchievementCategory = 'attendance' | 'consistency' | 'metrics' | 'challenges'
-
-export type AchievementRarity = 'common' | 'rare' | 'epic' | 'legendary'
+export type BadgeIcon =
+  | 'trophy'
+  | 'star'
+  | 'target'
+  | 'flame'
+  | 'award'
+  | 'medal'
+  | 'dumbbell'
+  | 'timer'
+  | 'heart'
+  | 'shield'
+  | 'sunrise'
+  | 'calendar'
 
 /**
- * Un logro tal y como se define: lo que es, y CUÁNDO se consigue.
+ * Una insignia tal y como se PRESENTA: nombre, icono, rareza, categoría.
  *
- * La condición es una función y no una frase. Antes la definición traía una
- * fecha de desbloqueo escrita a mano junto a una descripción en prosa, así que
- * el catálogo afirmaba cosas que nada comprobaba.
- *
- * Recibe las sesiones del alumno y la fecha en la que se evalúa, porque muchas
- * condiciones son «a día de hoy» —una racha de siete— y no acumulativas.
+ * LA REGLA NO ESTÁ AQUÍ. Vive en la base —`evaluate_badges`— y corre al cerrar
+ * cada sesión; este catálogo sólo sabe cómo se llama cada código y con qué
+ * placa se pinta. Una prueba de contrato compara los códigos de aquí con los
+ * de `badge_definitions`, así que una insignia que el servidor no conozca no
+ * compila en silencio: falla la CI.
  */
-export interface AchievementDefinition {
-  id: string
+export interface BadgeDefinition {
+  code: string
   /*
    * SON CLAVES, no textos: el catalogo es una constante de modulo, se evalua al
    * importar y ahi todavia no hay idioma que consultar. Traduce quien pinta.
    */
   nameKey: TranslationKey
   descriptionKey: TranslationKey
-  icon: string
-  category: AchievementCategory
-  rarity: AchievementRarity
-  pointsReward: number
-  condition: (sessions: Session[], asOf: Date) => boolean
+  icon: BadgeIcon
+  category: BadgeCategory
+  rarity: BadgeRarity
+  /** Platino y Diamante: nacen pendientes y las confirma el entrenador. */
+  requiresValidation: boolean
 }
 
 /**
- * Un logro ya evaluado contra un historial concreto.
+ * Una insignia del catálogo, cruzada con lo que este alumno ha conseguido.
  *
- * `unlockedAt` es DERIVADO: sale de repasar el historial, no del catálogo. Sin
- * fecha significa que aún no se ha conseguido.
+ * `unlockedAt` viene del servidor —la sesión que la desbloqueó—, no de repasar
+ * la historia. Sin fecha significa que aún no se ha conseguido.
  */
-export interface Achievement extends AchievementDefinition {
+export interface Achievement extends BadgeDefinition {
   unlockedAt?: Date
+  /** Conseguida y a la espera de que el entrenador la confirme. */
+  pendingValidation: boolean
 }

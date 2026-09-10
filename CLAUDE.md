@@ -410,6 +410,17 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   semana de plan programa, y `crew_ranking` ya no regala 20 puntos a quien no
   entrena. Hay suite UNITARIA —`npm run test:unit`, `tests/unit/`— para las
   funciones puras del dominio; corre en la CI junto al lint.
+  Fase 1: LA PUNTUACIÓN Y LAS INSIGNIAS LAS ESCRIBE LA BASE. Cerrar una
+  sesión dispara `score_session` y `evaluate_badges` en la misma transacción
+  (`session_scores`, `student_badges`, regla versión 1); `crew_ranking` suma
+  puntos y ya no conoce la fórmula; el cliente los lee por `ScoreRepository`
+  y `BadgeRepository`, y `CrewProgressRepository` desapareció absorbido. La
+  fórmula sólo existe en SQL y en su ESPEJO simulado (`fake/scoring.ts`,
+  `fake/badgeRules.ts`), que prueba la suite unitaria; el contrato prueba la
+  base, y si divergen manda la base. Las veinte insignias: la regla en
+  `evaluate_badges`, la presentación en `badgeCatalog.ts`, y una prueba de
+  contrato compara los códigos. Platino y Diamante nacen pendientes de que el
+  entrenador las confirme.
 - El aviso de fin de descanso son TRES señales y ninguna llega sola: color,
   vibración y sonido. El color no sirve con el teléfono en el bolsillo; la
   vibración no existe en iOS —Apple nunca implementó la Vibration API—; el sonido

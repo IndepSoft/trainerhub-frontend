@@ -2868,6 +2868,12 @@ test.describe('sesion en vivo', () => {
     await page.getByRole('button', { name: 'Finalizar la sesión' }).press('Enter')
     await page.waitForURL(/progress/)
 
+    // La celebracion: primera sesion de `student-2`, con sus puntos. Se sale
+    // por el boton, porque la pantalla no tiene menu a proposito.
+    await expect(page.getByRole('heading', { name: 'Primera Sesión' })).toBeVisible()
+    await page.getByRole('button', { name: 'Seguir' }).click()
+    await page.waitForURL(/\/calendar/, { timeout: 20_000 })
+
     /*
      * Se navega por la interfaz, sin `goto`: los adaptadores falsos viven en
      * memoria y recargar devolveria la sesion a su estado de semilla.
@@ -2879,17 +2885,19 @@ test.describe('sesion en vivo', () => {
     await page.getByRole('link', { name: /Estudiantes/ }).first().click()
     await page.waitForURL(/\/students$/, { timeout: 15_000 })
 
-    // En la TARJETA, de un vistazo: 20 XP por terminar mas 1 por cada una de
-    // las 5 series marcadas.
+    // En la TARJETA, de un vistazo: base 20 + 5 series = 25, por la adherencia
+    // al suelo -5 de 14 series- 0,80, y por la cohorte de una adulta de nivel
+    // avanzado, 0,85: 17 puntos. La formula es del servidor; aqui la aplica su
+    // espejo.
     const tarjeta = page.getByRole('article').filter({ hasText: 'María Gómez' })
-    await expect(tarjeta).toContainText('25 / 100 XP')
+    await expect(tarjeta).toContainText('17 / 100 XP')
     await expect(tarjeta).toContainText('1 sesión')
 
     // Y en su ficha, con la misma cifra: sale del mismo agregado, asi que las
     // dos no pueden discrepar.
     await tarjeta.getByRole('link', { name: 'María Gómez' }).click()
     await page.waitForURL(/\/students\/student-2/, { timeout: 15_000 })
-    await expect(page.getByText('25 / 100 XP')).toBeVisible()
+    await expect(page.getByText('17 / 100 XP')).toBeVisible()
   })
 
   test('terminar una sesion no lleva al entrenador a progreso', async ({ page }) => {
@@ -2916,7 +2924,10 @@ test.describe('sesion en vivo', () => {
     await page.getByRole('button', { name: 'Pausar la sesión' }).press('Enter')
     await page.getByRole('button', { name: 'Finalizar la sesión' }).press('Enter')
 
-    // A la agenda, que es de donde salio la sesion y donde esta la siguiente.
+    // Se celebra -es la primera de la alumna- y al salir, a la agenda, que es
+    // de donde salio la sesion y donde esta la siguiente.
+    await page.waitForURL(/celebracion/, { timeout: 20_000 })
+    await page.getByRole('button', { name: 'Seguir' }).click()
     await page.waitForURL(/\/calendar/, { timeout: 20_000 })
     await expect(page.getByRole('heading', { name: 'Agenda', level: 1 })).toBeVisible()
   })
@@ -3139,13 +3150,13 @@ test.describe('progreso', () => {
      * ahora exigia abrir otra pantalla y elegir a la persona en un desplegable.
      *
      * Las cifras se comprueban contra la regla, no contra un numero copiado: la
-     * semilla de `student-1` son diez sesiones cerradas y 105 series. Con 20 XP
-     * por sesion y 1 por serie son 305; descontando 100 del nivel 1 y 150 del 2,
-     * quedan 55 dentro del nivel 3, que cuesta 200.
+     * semilla de `student-1` son diez sesiones cerradas que el espejo de la regla
+     * del servidor puntua en 326; descontando 100 del nivel 1 y 150 del 2,
+     * quedan 76 dentro del nivel 3, que cuesta 200.
      */
     const juan = page.getByRole('article').filter({ hasText: 'Juan Pérez' })
     await expect(juan).toContainText('Nivel 3')
-    await expect(juan).toContainText('55 / 200 XP')
+    await expect(juan).toContainText('76 / 200 XP')
     await expect(juan).toContainText('10 sesiones')
 
     // Quien no ha entrenado no lleva una barra a cero -se lee como un mal
@@ -3162,7 +3173,7 @@ test.describe('progreso', () => {
 
     await expect(page.getByRole('heading', { name: 'Progreso' })).toBeVisible()
     await expect(page.getByText('Nivel 3')).toBeVisible()
-    await expect(page.getByText('55 / 200 XP')).toBeVisible()
+    await expect(page.getByText('76 / 200 XP')).toBeVisible()
 
     /*
      * SIN «TU CAMINO» NI RACHA. Llegaron aqui reutilizando la cabecera de la
@@ -3435,7 +3446,7 @@ test.describe('equipo', () => {
      */
     await expect(page.getByText('Primeros pasos')).toBeVisible()
     await expect(page.getByText('0/3')).toBeVisible()
-    await expect(page.getByText('0 / 8 logros conseguidos')).toBeVisible()
+    await expect(page.getByText('0 / 20 logros conseguidos')).toBeVisible()
   })
 
   test('el QR mete a alguien en el equipo, con el visto bueno del entrenador', async ({
@@ -3802,16 +3813,17 @@ test.describe('ranking', () => {
 
     /*
      * Las cifras salen de la regla, no de un numero copiado: la semilla de
-     * `student-1` son diez sesiones cerradas y 105 series, que a 20 XP por
-     * sesion mas 1 por serie son 305 en total. En la semana en curso solo cae
+     * `student-1` son diez sesiones cerradas, puntuadas por el espejo de la
+     * regla del servidor -base 20 mas series, adherencia acotada, progreso por
+     * mejora de carga-, 326 en total. En la semana en curso solo cae
      * una parte, asi que las dos vistas TIENEN que diferir.
      */
     const semana = await ranking.getByRole('listitem').first().innerText()
 
     await ranking.getByRole('button', { name: 'Siempre' }).click()
-    await expect(ranking.getByRole('listitem').first()).toContainText('305 XP')
+    await expect(ranking.getByRole('listitem').first()).toContainText('326 XP')
     await expect(ranking.getByRole('listitem').first()).toContainText('10 sesiones')
-    expect(semana).not.toContain('305 XP')
+    expect(semana).not.toContain('326 XP')
   })
 
   test('un alumno ve el ranking del equipo pero NO las sesiones de sus companeros', async ({
@@ -4371,10 +4383,13 @@ test.describe('progresion de cargas', () => {
     await page.getByRole('button', { name: 'Finalizar la sesión' }).press('Enter')
 
     /*
-     * Se pasa por la celebracion y sale sola: `student-2` no tiene historial en
-     * la semilla, asi que esta primera sesion no desbloquea ningun logro y la
-     * pantalla se salta a si misma en vez de pintar una celebracion vacia.
+     * Se pasa por la celebracion: es la primera sesion de `student-2` en la
+     * semilla, asi que desbloquea «Primera Sesion» y se celebra con los puntos
+     * que el servidor -aqui, su espejo- le dio. Se sale por el boton.
      */
+    await page.waitForURL(/celebracion/, { timeout: 20_000 })
+    await expect(page.getByRole('heading', { name: 'Primera Sesión' })).toBeVisible()
+    await page.getByRole('button', { name: 'Seguir' }).click()
     await page.waitForURL(/\/calendar/, { timeout: 20_000 })
 
     await page.getByRole('link', { name: /Estudiantes/ }).first().click()
@@ -5233,6 +5248,6 @@ test.describe('datos de progreso', () => {
     const hoy = new Date()
     const cumplidos = hoy.getFullYear() - 1998 - (hoy.getMonth() + 1 < 3 || (hoy.getMonth() + 1 === 3 && hoy.getDate() < 14) ? 1 : 0)
     // El valor y la unidad van en el mismo parrafo: «28 años».
-    await expect(page.getByText(new RegExp('^' + cumplidos + '\s*años$')).first()).toBeVisible()
+    await expect(page.getByText(new RegExp('^' + cumplidos + ' *años$')).first()).toBeVisible()
   })
 })

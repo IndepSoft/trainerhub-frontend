@@ -2,7 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { getInitials, getShortName } from '@/shared/lib/personName'
 import { cn } from '@/shared/lib/utils'
 import { useCrewRanking } from '../hooks/useCrewRanking'
-import type { ProgressPeriod } from '@/shared/domain/ports/CrewProgressRepository'
+import type { ProgressPeriod } from '@/shared/domain/ports/ScoreRepository'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 

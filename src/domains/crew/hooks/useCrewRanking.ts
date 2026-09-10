@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { container } from '@/app/container'
-import type { CrewMemberProgress, ProgressPeriod } from '@/shared/domain/ports/CrewProgressRepository'
+import type { CrewMemberProgress, ProgressPeriod } from '@/shared/domain/ports/ScoreRepository'
 
 interface UseCrewRankingResult {
   entries: CrewMemberProgress[]
@@ -27,7 +27,7 @@ export function useCrewRanking(): UseCrewRankingResult {
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async (): Promise<void> => {
-    setEntries(await container.crewProgress.ofCrew(period))
+    setEntries(await container.scores.ofCrew(period))
     setLoading(false)
   }, [period])
 
@@ -35,7 +35,7 @@ export function useCrewRanking(): UseCrewRankingResult {
     void load()
 
     const unsubscribes = [
-      container.crewProgress.onChange(() => void load()),
+      container.scores.onChange(() => void load()),
       container.sessions.onChange(() => void load()),
     ]
 

@@ -3010,3 +3010,39 @@ prueba de contrato.
 **Suite unitaria.** `vitest.unit.config.ts` y `tests/unit/`, separada de los
 contratos porque aquélla exige Docker y una función que calcula una edad no
 debería. Corre en la CI junto al lint.
+
+### 30.2 Fase 1: la puntuación y los desbloqueos viven en la base
+
+**La regla, una sola vez y en el servidor.** La experiencia era «20 + series»
+escrita en `experience.ts` y otra vez en `crew_ranking`, y los logros se
+deducían en el cliente repasando la historia día a día. Ahora un disparador de
+`sessions` llama a `score_session` y `evaluate_badges` al cerrar —o al editar
+hasta cerrar— y deja escritas `session_scores` y `student_badges`. Cualquier
+camino que cierre cuenta; una grupal no puntúa a nadie; reabrir borra la
+puntuación. Nadie escribe esas tablas desde la API: no tienen política de
+escritura, y la prueba de contrato lo afirma con un `42501`.
+
+**Regla versión 1.** `puntos = base × adherencia × progreso × cohorte`. La
+adherencia se acota a 1,10 —y no a 1,20 como proponía el documento— porque
+pasarse del plan no puede valer más que cumplirlo. El progreso compara, por
+ejercicio con kilos, la mejor carga de la sesión con la mediana de las cuatro
+semanas anteriores, y una mejora con RPE mayor que 8 no cuenta: es una serie
+forzada. La cohorte sale de la fecha de nacimiento y el nivel; sin fecha es 1.
+Cada fila guarda `rule_version`: cambiar la fórmula no reescribe la historia.
+
+**El espejo simulado.** La suite de interfaz vive de las semillas, así que la
+misma regla existe en `fake/scoring.ts` y `fake/badgeRules.ts`, derivada de las
+sesiones en cada lectura. Es la única duplicación que se acepta, y por eso está
+vigilada dos veces: la unitaria afirma que el espejo da los mismos números que
+el contrato exige a la base.
+
+**Veinte insignias, seis rarezas.** Las ocho de antes más doce con datos
+reales; ninguna que exija GPS, y ningún «+5 % permanente». La regla vive en
+SQL, la presentación —nombre, icono, rareza— en `badgeCatalog.ts`, y el
+contrato compara ambos catálogos por código. Platino y Diamante nacen con
+`validated_at` a NULL: las confirma el entrenador en la fase 2.
+
+**La celebración celebra lo nuevo.** `student_badges.session_id` dice qué
+sesión desbloqueó cada insignia, así que la pantalla pide las de ésta y, si no
+hay ninguna, celebra igual la puntuación de la sesión y la racha. Antes
+enseñaba el último logro de toda la historia.

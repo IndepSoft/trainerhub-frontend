@@ -27,9 +27,9 @@ export default function Progress() {
   const { active, loading } = useViewerContext()
   const student = active?.student ?? null
 
-  const { profile, achievements, completedCount, levelCompletion, experienceToNextLevel } =
+  const { profile, achievements, completedCount, totalPoints, levelCompletion, experienceToNextLevel } =
     useGamificationProfile(student?.id)
-  const { overview } = useProgressOverview(achievements, completedCount)
+  const { overview } = useProgressOverview(achievements, completedCount, totalPoints)
 
   return (
     // Misma estructura de scroll que el resto de paginas: la cabecera queda

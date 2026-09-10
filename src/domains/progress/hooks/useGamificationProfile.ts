@@ -1,14 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { container } from '@/app/container'
 import { calculateLevelCompletion, experienceRemaining } from '../libs/gamification.utils'
-import {
-  completedSessions,
-  levelFromExperience,
-  milestonesFrom,
-  streakFrom,
-  totalExperience,
-} from '../libs/progressRules'
-import { evaluateAchievements } from '../libs/achievementEvaluation'
+import { completedSessions, levelFromExperience, milestonesFrom, streakFrom } from '../libs/progressRules'
+import { achievementsFrom } from '../data/badgeCatalog'
 import type { Achievement } from '../types/achievement.types'
 import type { Session } from '@/shared/domain/entities/session'
 import type { GamificationProfile } from '../types/gamification.types'
@@ -19,11 +13,9 @@ import { describeError } from '@/shared/i18n/errorMessages'
  * El perfil de quien no ha entrenado nunca.
  *
  * SE CALCULA CON LAS MISMAS REGLAS, sobre un historial vacío, en vez de
- * escribirse a mano. No es purismo: la versión escrita a mano dejaba
- * `milestones` en `[]`, y un alumno recién registrado abría Progreso y veía «Tu
- * camino» sin ningún peldaño y «0 / 0 logros». El vacío tiene que enseñar LO QUE
- * VA A TENER —la escalera entera en gris, los ocho logros por conseguir—, y eso
- * es exactamente lo que devuelven las reglas cuando no hay nada que contar.
+ * escribirse a mano: el vacío tiene que enseñar LO QUE VA A TENER —la escalera
+ * entera en gris, las veinte insignias por conseguir—, y eso es exactamente lo
+ * que devuelven las reglas cuando no hay nada que contar.
  */
 const NO_SESSIONS: Session[] = []
 
@@ -33,13 +25,15 @@ const EMPTY_PROFILE: GamificationProfile = {
   milestones: milestonesFrom(NO_SESSIONS),
 }
 
-const EMPTY_ACHIEVEMENTS: Achievement[] = evaluateAchievements(NO_SESSIONS)
+const EMPTY_ACHIEVEMENTS: Achievement[] = achievementsFrom([])
 
 interface UseGamificationProfileResult {
   profile: GamificationProfile
   achievements: Achievement[]
-  /** Sesiones cerradas. Es la cifra de la que sale todo lo demás. */
+  /** Sesiones cerradas. */
   completedCount: number
+  /** La suma de puntos de todas sus sesiones. De aquí sale el nivel. */
+  totalPoints: number
   /** Fracción de 0 a 1 del nivel en curso. Derivada, nunca almacenada. */
   levelCompletion: number
   experienceToNextLevel: number
@@ -48,25 +42,24 @@ interface UseGamificationProfileResult {
 }
 
 /**
- * El perfil de juego de UN ALUMNO, calculado desde sus sesiones.
+ * El perfil de juego de UN ALUMNO.
  *
- * ANTES NO ERA DE NADIE. Devolvía un objeto escrito a mano —nivel 7, racha de 12
- * días, hitos a medias— idéntico para todo el mundo y sin argumentos: la
- * pantalla de progreso enseñaba lo mismo estuviera quien estuviera delante y se
- * hubiera entrenado o no.
+ * LOS PUNTOS Y LAS INSIGNIAS LLEGAN DEL SERVIDOR. Antes se recalculaban aquí
+ * desde las sesiones —la experiencia con una fórmula escrita dos veces, los
+ * logros repasando la historia día a día—; ahora `session_scores` y
+ * `student_badges` los escribe la base al cerrar la sesión y este hook los
+ * lee. Lo que sigue saliendo de las sesiones es lo que no autoriza nada: la
+ * racha y la escalera de hitos, que son presentación.
  *
- * Ahora recibe el alumno y lo deriva de su historial por los puertos. Las
- * reglas viven en `progressRules`, que es puro y comprobable; aquí sólo se
- * orquesta el estado.
- *
- * SE SUSCRIBE A LOS CAMBIOS: terminar una sesión recalcula la racha y el nivel
- * sin recargar, igual que hace el panel.
+ * SE SUSCRIBE A LOS TRES: terminar una sesión mueve la racha, los puntos y
+ * las insignias sin recargar.
  */
 export function useGamificationProfile(studentId?: string): UseGamificationProfileResult {
   const { t } = useTranslation()
   const [profile, setProfile] = useState<GamificationProfile>(EMPTY_PROFILE)
   const [achievements, setAchievements] = useState<Achievement[]>(EMPTY_ACHIEVEMENTS)
   const [completedCount, setCompletedCount] = useState(0)
+  const [totalPoints, setTotalPoints] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -75,6 +68,7 @@ export function useGamificationProfile(studentId?: string): UseGamificationProfi
       setProfile(EMPTY_PROFILE)
       setAchievements(EMPTY_ACHIEVEMENTS)
       setCompletedCount(0)
+      setTotalPoints(0)
       setLoading(false)
       return
     }
@@ -83,15 +77,21 @@ export function useGamificationProfile(studentId?: string): UseGamificationProfi
     setError(null)
 
     try {
-      const sessions = await container.sessions.findByStudent(studentId)
+      const [sessions, scores, badges] = await Promise.all([
+        container.sessions.findByStudent(studentId),
+        container.scores.ofStudent(studentId),
+        container.badges.unlockedOf(studentId),
+      ])
+      const points = scores.reduce((total, score) => total + score.points, 0)
 
       setProfile({
         streak: streakFrom(sessions),
-        level: levelFromExperience(totalExperience(sessions)),
+        level: levelFromExperience(points),
         milestones: milestonesFrom(sessions),
       })
-      setAchievements(evaluateAchievements(sessions))
+      setAchievements(achievementsFrom(badges))
       setCompletedCount(completedSessions(sessions).length)
+      setTotalPoints(points)
     } catch (caught) {
       setError(describeError(caught, t, 'progress.error'))
     } finally {
@@ -101,15 +101,21 @@ export function useGamificationProfile(studentId?: string): UseGamificationProfi
 
   useEffect(() => {
     void load()
-    return container.sessions.onChange(() => {
-      void load()
-    })
+    const unsubscribes = [
+      container.sessions.onChange(() => void load()),
+      container.scores.onChange(() => void load()),
+      container.badges.onChange(() => void load()),
+    ]
+    return () => {
+      for (const unsubscribe of unsubscribes) unsubscribe()
+    }
   }, [load])
 
   return {
     profile,
     achievements,
     completedCount,
+    totalPoints,
     levelCompletion: calculateLevelCompletion(profile.level),
     experienceToNextLevel: experienceRemaining(profile.level),
     loading,

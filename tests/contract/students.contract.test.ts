@@ -42,7 +42,7 @@ describe('students: la ficha y quien la escribe', () => {
         last_name: 'Ejemplo',
         email: person.email,
         level: 'Intermedio',
-        age: 30,
+        birth_date: '1996-05-20',
         body_fat_percentage: 21.5,
         membership_status: 'active',
       })

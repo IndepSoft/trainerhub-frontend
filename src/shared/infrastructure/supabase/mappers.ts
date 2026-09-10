@@ -34,7 +34,8 @@ import type { SavedBlock } from '@/shared/domain/entities/savedBlock'
 import type { Session, SessionResult, SessionStatus } from '@/shared/domain/entities/session'
 import type { NewSession } from '@/shared/domain/ports/SessionRepository'
 import type { CrewPost } from '@/shared/domain/entities/crewPost'
-import type { CrewMemberProgress } from '@/shared/domain/ports/CrewProgressRepository'
+import type { CrewMemberProgress } from '@/shared/domain/ports/ScoreRepository'
+import type { SessionScore, StudentBadge } from '@/shared/domain/entities/progress'
 
 /**
  * Fila cruda de la tabla `profiles`. Nombres tal cual estan en Postgres.
@@ -817,5 +818,53 @@ export function toAuthUser(row: AuthUserRow): AuthUser {
   return {
     id: row.id,
     email: row.email ?? '',
+  }
+}
+
+/** Fila cruda de `session_scores`. Los numericos de Postgres llegan como texto. */
+export interface SessionScoreRow {
+  session_id: string
+  student_id: string
+  crew_id: string
+  completed_on: string
+  base: number | string
+  adherence: number | string
+  progress: number | string
+  cohort: number | string
+  points: number | string
+  rule_version: number
+}
+
+export function toSessionScore(row: SessionScoreRow): SessionScore {
+  return {
+    sessionId: row.session_id,
+    studentId: row.student_id,
+    crewId: row.crew_id,
+    completedOn: row.completed_on,
+    base: Number(row.base),
+    adherence: Number(row.adherence),
+    progress: Number(row.progress),
+    cohort: Number(row.cohort),
+    points: Number(row.points),
+    ruleVersion: row.rule_version,
+  }
+}
+
+/** Fila cruda de `student_badges`. */
+export interface StudentBadgeRow {
+  student_id: string
+  badge_code: string
+  unlocked_on: string
+  session_id: string | null
+  validated_at: string | null
+}
+
+export function toStudentBadge(row: StudentBadgeRow): StudentBadge {
+  return {
+    studentId: row.student_id,
+    code: row.badge_code,
+    unlockedOn: row.unlocked_on,
+    sessionId: row.session_id,
+    validatedAt: row.validated_at,
   }
 }

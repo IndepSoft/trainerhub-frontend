@@ -152,6 +152,15 @@ export class FakeSessionRepository implements SessionRepository {
     return this.sessions.filter((session) => session.crewId === crewId)
   }
 
+  /**
+   * Todas, sin acotar. Fuera del puerto: se la entrega la raiz de composicion
+   * a la puntuacion y a las insignias simuladas, que hacen lo que en la base
+   * hace un disparador con los privilegios de su dueño.
+   */
+  listAll(): Session[] {
+    return this.sessions
+  }
+
   onChange(listener: () => void): () => void {
     this.listeners.add(listener)
     return () => {

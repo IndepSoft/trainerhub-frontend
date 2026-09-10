@@ -1,7 +1,24 @@
-import { Award, Flame, Lock, Medal, Star, Target, Trophy } from 'lucide-react'
+import {
+  Award,
+  CalendarCheck,
+  Dumbbell,
+  Flame,
+  Heart,
+  Lock,
+  Medal,
+  Shield,
+  Star,
+  Sunrise,
+  Target,
+  Timer,
+  Trophy,
+  type LucideIcon,
+} from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
-import type { Achievement } from '../types/achievement.types'
+import type { Achievement, BadgeIcon } from '../types/achievement.types'
+import type { BadgeRarity } from '@/shared/domain/entities/progress'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { RARITY_LABEL_KEY } from '../libs/badgeLabels'
 
 export type AchievementPlateSize = 'small' | 'medium' | 'large'
 
@@ -12,31 +29,38 @@ interface AchievementBadgeProps {
   onClick?: () => void
 }
 
-const ICONS = {
+const ICONS: Record<BadgeIcon, LucideIcon> = {
   trophy: Trophy,
   star: Star,
   target: Target,
   flame: Flame,
   award: Award,
   medal: Medal,
+  dumbbell: Dumbbell,
+  timer: Timer,
+  heart: Heart,
+  shield: Shield,
+  sunrise: Sunrise,
+  calendar: CalendarCheck,
 }
+
 
 /**
  * Acabado de la placa según su rareza.
  *
- * Es una progresión, no cuatro colores sueltos: sube desde el hueso, atraviesa
- * Cobalt hasta llenarlo, y culmina en una placa de Ink con canto Ember. Que el
- * legendario sea Ember no es casual: es el naranja de la racha y de la
- * celebración, el color que en este sistema significa logro.
- *
- * `epic` pasa a relleno sólido a propósito: el salto de tinte a sólido es lo que
- * hace visible el escalón sin necesidad de introducir otro tono.
+ * Es una progresión, no seis colores sueltos: sube desde el hueso, atraviesa
+ * Cobalt hasta llenarlo, y culmina en placas de Ink con canto Ember. Que lo
+ * más raro sea Ember no es casual: es el naranja de la racha y de la
+ * celebración, el color que en este sistema significa logro. Diamante y
+ * Mítico se distinguen del Platino por el relleno, no por otro tono.
  */
-const PLATE_FINISH: Record<string, string> = {
-  common: 'bg-bone border-ink/20 text-ink',
-  rare: 'bg-cobalt-tint-2 border-cobalt/35 text-cobalt',
-  epic: 'bg-cobalt border-cobalt text-white',
-  legendary: 'bg-ink border-ember text-ember',
+const PLATE_FINISH: Record<BadgeRarity, string> = {
+  bronze: 'bg-bone border-ink/20 text-ink',
+  silver: 'bg-cobalt-tint-2 border-cobalt/35 text-cobalt',
+  gold: 'bg-cobalt border-cobalt text-white',
+  platinum: 'bg-ink border-ink text-bone',
+  diamond: 'bg-ink border-ember text-ember',
+  mythic: 'bg-ember border-ember text-ink',
 }
 
 /**
@@ -84,7 +108,7 @@ export function AchievementBadge({
   onClick,
 }: AchievementBadgeProps) {
   const { t } = useTranslation()
-  const Icon = ICONS[achievement.icon as keyof typeof ICONS] ?? Trophy
+  const Icon = ICONS[achievement.icon]
   const isInteractive = onClick !== undefined
 
   return (
@@ -96,7 +120,7 @@ export function AchievementBadge({
         unlocked
           ? t('achievement.badge.unlocked', {
               name: t(achievement.nameKey),
-              points: achievement.pointsReward,
+              rarity: t(RARITY_LABEL_KEY[achievement.rarity]),
             })
           : t('achievement.badge.locked', { name: t(achievement.nameKey) })
       }
@@ -134,8 +158,10 @@ export function AchievementBadge({
           {/* Regla de canto a canto: es el grabado que separa el nombre de la
               recompensa, y sustituye a la insignia flotante de antes. */}
           <span aria-hidden="true" className="h-px w-6 bg-current opacity-40" />
-          <span className="metric-figures text-[10px] font-bold tracking-wider">
-            {achievement.pointsReward} XP
+          <span className="text-[10px] font-bold uppercase tracking-wider">
+            {achievement.pendingValidation
+              ? t('achievement.pendingShort')
+              : t(RARITY_LABEL_KEY[achievement.rarity])}
           </span>
         </>
       )}
