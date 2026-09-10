@@ -13,6 +13,7 @@ import { SubscriptionNotice } from '../components/SubscriptionNotice'
 import { CrewWall } from '../components/CrewWall'
 import { CrewRanking } from '../components/CrewRanking'
 import { canEnrollMembers } from '@/shared/domain/entities/crew'
+import { cohortOf } from '@/shared/domain/entities/progress'
 import type { Student } from '@/shared/domain/entities/student'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { STUDENT_LEVEL_LABEL_KEY } from '@/shared/i18n/domainLabels'
@@ -166,7 +167,10 @@ export default function CrewPage() {
           {/* El equipo puede apagarlo: en un grupo de rehabilitación o de salud
               general, comparar públicamente el esfuerzo hace daño. */}
           {crew.rankingEnabled && (
-            <CrewRanking viewerStudentId={active.student?.id ?? null} />
+            <CrewRanking
+              viewerStudentId={active.student?.id ?? null}
+              viewerCohort={cohortOf(active.student?.birthDate ?? null)}
+            />
           )}
 
           <section className="space-y-3" aria-labelledby="miembros-titulo">

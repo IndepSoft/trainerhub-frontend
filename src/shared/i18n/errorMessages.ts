@@ -14,6 +14,7 @@ export const ERROR_REASON_KEY: Record<AppErrorReason, TranslationKey> = {
   emailNotConfirmed: 'error.emailNotConfirmed',
   userNotFound: 'error.userNotFound',
   tooManyAttempts: 'error.tooManyAttempts',
+  noWildcards: 'error.noWildcards',
   signInFailed: 'error.signInFailed',
   signOutFailed: 'error.signOutFailed',
   userDataUnavailable: 'error.userDataUnavailable',

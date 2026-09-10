@@ -57,6 +57,11 @@ export class FakePlanRepository implements PlanRepository {
     this.notify()
   }
 
+  /** Todo, sin acotar. Fuera del puerto: se lo entrega la raiz a la ruta simulada. */
+  listAll(): TrainingPlan[] {
+    return this.plans
+  }
+
   onChange(listener: () => void): () => void {
     this.listeners.add(listener)
     return () => {

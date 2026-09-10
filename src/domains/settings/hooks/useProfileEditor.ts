@@ -10,6 +10,8 @@ export interface ProfileDraft {
   firstName: string
   lastName: string
   photoUrl: string
+  /** Solo para la ficha de alumno; el entrenador no la lleva. Vacio es «no se sabe». */
+  birthDate: string
 }
 
 /** Dónde vive el perfil de quien mira. */
@@ -84,6 +86,7 @@ export function useProfileEditor(): UseProfileEditorResult {
     firstName: source?.firstName ?? '',
     lastName: source?.lastName ?? '',
     photoUrl: source?.photoUrl ?? '',
+    birthDate: student?.birthDate ?? '',
   }
 
   const save = useCallback(
@@ -114,6 +117,7 @@ export function useProfileEditor(): UseProfileEditorResult {
             firstName: draft.firstName.trim(),
             lastName: draft.lastName.trim(),
             photoUrl,
+            birthDate: draft.birthDate === '' ? null : draft.birthDate,
           })
           return true
         }

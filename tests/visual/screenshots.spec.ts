@@ -2868,6 +2868,12 @@ test.describe('sesion en vivo', () => {
     await page.getByRole('button', { name: 'Finalizar la sesión' }).press('Enter')
     await page.waitForURL(/progress/)
 
+    // La celebracion: primera sesion de `student-2`, con sus puntos. Se sale
+    // por el boton, porque la pantalla no tiene menu a proposito.
+    await expect(page.getByRole('heading', { name: 'Primera Sesión' })).toBeVisible()
+    await page.getByRole('button', { name: 'Seguir' }).click()
+    await page.waitForURL(/\/calendar/, { timeout: 20_000 })
+
     /*
      * Se navega por la interfaz, sin `goto`: los adaptadores falsos viven en
      * memoria y recargar devolveria la sesion a su estado de semilla.
@@ -2879,17 +2885,19 @@ test.describe('sesion en vivo', () => {
     await page.getByRole('link', { name: /Estudiantes/ }).first().click()
     await page.waitForURL(/\/students$/, { timeout: 15_000 })
 
-    // En la TARJETA, de un vistazo: 20 XP por terminar mas 1 por cada una de
-    // las 5 series marcadas.
+    // En la TARJETA, de un vistazo: base 20 + 5 series = 25, por la adherencia
+    // al suelo -5 de 14 series- 0,80, y por la cohorte de una adulta de nivel
+    // avanzado, 0,85: 17 puntos. La formula es del servidor; aqui la aplica su
+    // espejo.
     const tarjeta = page.getByRole('article').filter({ hasText: 'María Gómez' })
-    await expect(tarjeta).toContainText('25 / 100 XP')
+    await expect(tarjeta).toContainText('17 / 100 XP')
     await expect(tarjeta).toContainText('1 sesión')
 
     // Y en su ficha, con la misma cifra: sale del mismo agregado, asi que las
     // dos no pueden discrepar.
     await tarjeta.getByRole('link', { name: 'María Gómez' }).click()
     await page.waitForURL(/\/students\/student-2/, { timeout: 15_000 })
-    await expect(page.getByText('25 / 100 XP')).toBeVisible()
+    await expect(page.getByText('17 / 100 XP')).toBeVisible()
   })
 
   test('terminar una sesion no lleva al entrenador a progreso', async ({ page }) => {
@@ -2916,7 +2924,10 @@ test.describe('sesion en vivo', () => {
     await page.getByRole('button', { name: 'Pausar la sesión' }).press('Enter')
     await page.getByRole('button', { name: 'Finalizar la sesión' }).press('Enter')
 
-    // A la agenda, que es de donde salio la sesion y donde esta la siguiente.
+    // Se celebra -es la primera de la alumna- y al salir, a la agenda, que es
+    // de donde salio la sesion y donde esta la siguiente.
+    await page.waitForURL(/celebracion/, { timeout: 20_000 })
+    await page.getByRole('button', { name: 'Seguir' }).click()
     await page.waitForURL(/\/calendar/, { timeout: 20_000 })
     await expect(page.getByRole('heading', { name: 'Agenda', level: 1 })).toBeVisible()
   })
@@ -3077,7 +3088,7 @@ test.describe('alumnos', () => {
     await dialogo.getByLabel('Nombre').fill('Lucía')
     await dialogo.getByLabel('Apellidos').fill('Ramos')
     await dialogo.getByLabel('Correo').fill('lramos@correo.com')
-    await dialogo.getByLabel('Edad').fill('31')
+    await dialogo.getByLabel('Fecha de nacimiento').fill('1995-04-12')
     await dialogo.getByRole('button', { name: 'Movilidad' }).click()
     await dialogo.getByRole('button', { name: 'Añadir alumno' }).click()
 
@@ -3139,13 +3150,13 @@ test.describe('progreso', () => {
      * ahora exigia abrir otra pantalla y elegir a la persona en un desplegable.
      *
      * Las cifras se comprueban contra la regla, no contra un numero copiado: la
-     * semilla de `student-1` son diez sesiones cerradas y 105 series. Con 20 XP
-     * por sesion y 1 por serie son 305; descontando 100 del nivel 1 y 150 del 2,
-     * quedan 55 dentro del nivel 3, que cuesta 200.
+     * semilla de `student-1` son diez sesiones cerradas que el espejo de la regla
+     * del servidor puntua en 326; descontando 100 del nivel 1 y 150 del 2,
+     * quedan 76 dentro del nivel 3, que cuesta 200.
      */
     const juan = page.getByRole('article').filter({ hasText: 'Juan Pérez' })
     await expect(juan).toContainText('Nivel 3')
-    await expect(juan).toContainText('55 / 200 XP')
+    await expect(juan).toContainText('76 / 200 XP')
     await expect(juan).toContainText('10 sesiones')
 
     // Quien no ha entrenado no lleva una barra a cero -se lee como un mal
@@ -3162,7 +3173,7 @@ test.describe('progreso', () => {
 
     await expect(page.getByRole('heading', { name: 'Progreso' })).toBeVisible()
     await expect(page.getByText('Nivel 3')).toBeVisible()
-    await expect(page.getByText('55 / 200 XP')).toBeVisible()
+    await expect(page.getByText('76 / 200 XP')).toBeVisible()
 
     /*
      * SIN «TU CAMINO» NI RACHA. Llegaron aqui reutilizando la cabecera de la
@@ -3433,9 +3444,11 @@ test.describe('equipo', () => {
      * con «Tu camino» sin peldaños y «0 / 0 logros», que se lee como que algo no
      * ha cargado.
      */
-    await expect(page.getByText('Primeros pasos')).toBeVisible()
-    await expect(page.getByText('0/3')).toBeVisible()
-    await expect(page.getByText('0 / 8 logros conseguidos')).toBeVisible()
+    // La ruta: sin plan es Hybrid, en Iniciacion, con Consolidacion a cero.
+    await expect(page.getByText('Ruta Hybrid')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Consolidación' })).toBeVisible()
+    await expect(page.getByText('0/300')).toBeVisible()
+    await expect(page.getByText('0 / 21 logros conseguidos')).toBeVisible()
   })
 
   test('el QR mete a alguien en el equipo, con el visto bueno del entrenador', async ({
@@ -3802,16 +3815,17 @@ test.describe('ranking', () => {
 
     /*
      * Las cifras salen de la regla, no de un numero copiado: la semilla de
-     * `student-1` son diez sesiones cerradas y 105 series, que a 20 XP por
-     * sesion mas 1 por serie son 305 en total. En la semana en curso solo cae
+     * `student-1` son diez sesiones cerradas, puntuadas por el espejo de la
+     * regla del servidor -base 20 mas series, adherencia acotada, progreso por
+     * mejora de carga-, 326 en total. En la semana en curso solo cae
      * una parte, asi que las dos vistas TIENEN que diferir.
      */
     const semana = await ranking.getByRole('listitem').first().innerText()
 
     await ranking.getByRole('button', { name: 'Siempre' }).click()
-    await expect(ranking.getByRole('listitem').first()).toContainText('305 XP')
+    await expect(ranking.getByRole('listitem').first()).toContainText('326 XP')
     await expect(ranking.getByRole('listitem').first()).toContainText('10 sesiones')
-    expect(semana).not.toContain('305 XP')
+    expect(semana).not.toContain('326 XP')
   })
 
   test('un alumno ve el ranking del equipo pero NO las sesiones de sus companeros', async ({
@@ -4371,10 +4385,13 @@ test.describe('progresion de cargas', () => {
     await page.getByRole('button', { name: 'Finalizar la sesión' }).press('Enter')
 
     /*
-     * Se pasa por la celebracion y sale sola: `student-2` no tiene historial en
-     * la semilla, asi que esta primera sesion no desbloquea ningun logro y la
-     * pantalla se salta a si misma en vez de pintar una celebracion vacia.
+     * Se pasa por la celebracion: es la primera sesion de `student-2` en la
+     * semilla, asi que desbloquea «Primera Sesion» y se celebra con los puntos
+     * que el servidor -aqui, su espejo- le dio. Se sale por el boton.
      */
+    await page.waitForURL(/celebracion/, { timeout: 20_000 })
+    await expect(page.getByRole('heading', { name: 'Primera Sesión' })).toBeVisible()
+    await page.getByRole('button', { name: 'Seguir' }).click()
     await page.waitForURL(/\/calendar/, { timeout: 20_000 })
 
     await page.getByRole('link', { name: /Estudiantes/ }).first().click()
@@ -5197,5 +5214,97 @@ test.describe('fugas de secuencia', () => {
     await expect(page.getByText('No estás en ningún equipo.')).toBeVisible()
     await page.getByRole('main').getByRole('link', { name: 'Tengo un código' }).click()
     await page.waitForURL(/\/crew\/unirse/, { timeout: 15_000 })
+  })
+})
+
+/**
+ * Fase 0 de los motores de progreso: los datos que las reglas van a leer.
+ */
+test.describe('datos de progreso', () => {
+  test('la serie se puede calificar con RPE durante el descanso, o no', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/session/session-1')
+
+    await page.getByRole('button', { name: 'Repetición 6' }).click()
+    await page.getByRole('button', { name: 'Finalizar serie' }).click()
+
+    // Durante el descanso, y opcional: sin tocar nada se sigue igual.
+    const rpe = page.getByRole('group', { name: 'Esfuerzo de la serie' })
+    await expect(rpe).toBeVisible()
+    await page.getByRole('button', { name: 'RPE 8' }).click()
+    await expect(page.getByRole('button', { name: 'RPE 8' })).toHaveAttribute('aria-pressed', 'true')
+
+    await page.getByRole('button', { name: 'Empezar la siguiente' }).click()
+    await page.getByRole('button', { name: 'Finalizar serie' }).click()
+    // La segunda serie arranca sin calificar: el RPE es de cada serie.
+    await expect(page.getByRole('button', { name: 'RPE 8' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  test('la ficha muestra la edad derivada de la fecha, o nada', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students/student-1')
+
+    // Juan nacio el 14 de marzo de 1998: la edad sale de la fecha, no de un numero escrito.
+    const hoy = new Date()
+    const cumplidos = hoy.getFullYear() - 1998 - (hoy.getMonth() + 1 < 3 || (hoy.getMonth() + 1 === 3 && hoy.getDate() < 14) ? 1 : 0)
+    // El valor y la unidad van en el mismo parrafo: «28 años».
+    await expect(page.getByText(new RegExp('^' + cumplidos + ' *años$')).first()).toBeVisible()
+  })
+})
+
+/**
+ * Fase 2 de los motores de progreso: la ruta y la mano del entrenador.
+ */
+test.describe('rutas de desarrollo', () => {
+  test('la ruta sale del objetivo del plan, y el entrenador valida el hito', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    // `student-2` tiene asignado `plan-1`, de acondicionamiento: Vitality.
+    await page.goto('/students/student-2')
+
+    const ruta = page.locator('section').filter({ hasText: 'Ruta de desarrollo' })
+    await expect(ruta.getByRole('combobox', { name: 'Ruta' })).toContainText('Vitality')
+    await expect(ruta.getByText('Iniciación')).toBeVisible()
+
+    // Validar el hito de Consolidacion: queda validado, y el nodo no se abre
+    // hasta que los puntos y las semanas lleguen. Son tres criterios.
+    await ruta.getByLabel('Notas de la evaluación').fill('Sentadilla limpia a 60 kg')
+    await ruta.getByRole('button', { name: 'Validar hito de Consolidación' }).click()
+    await expect(ruta.getByText('Hito validado. Se abre cuando los puntos y las semanas lleguen.')).toBeVisible()
+    await expect(ruta.getByText('Iniciación')).toBeVisible()
+  })
+
+  test('cambiar la ruta a mano se refleja en el progreso del alumno', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students/student-2')
+
+    const ruta = page.locator('section').filter({ hasText: 'Ruta de desarrollo' })
+    await elegirDelDesplegable(page, ruta.getByRole('combobox', { name: 'Ruta' }), 'Apex')
+    await expect(ruta.getByRole('combobox', { name: 'Ruta' })).toContainText('Apex')
+  })
+})
+
+/**
+ * Fase 3 de los motores de progreso: la racha se protege.
+ */
+test.describe('rachas protegidas', () => {
+  test('el entrenador pausa la racha desde la ficha, y la pausa queda escrita', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students/student-1')
+
+    const ruta = page.locator('section').filter({ hasText: 'Ruta de desarrollo' })
+    await ruta.getByLabel('Desde').fill('2026-09-01')
+    await ruta.getByLabel('Hasta').fill('2026-09-03')
+    await elegirDelDesplegable(page, ruta.getByRole('combobox', { name: 'Motivo' }), 'Viaje')
+    await ruta.getByRole('button', { name: 'Pausar' }).click()
+
+    // En la LISTA de pausas: el desplegable sigue diciendo «Viaje» y no vale.
+    const pausa = ruta.getByRole('listitem').filter({ hasText: '2026-09-01 – 2026-09-03' })
+    await expect(pausa).toBeVisible()
+    await expect(pausa).toContainText('Viaje')
   })
 })

@@ -2,7 +2,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { getInitials, getShortName } from '@/shared/lib/personName'
 import { cn } from '@/shared/lib/utils'
 import { useCrewRanking } from '../hooks/useCrewRanking'
-import type { ProgressPeriod } from '@/shared/domain/ports/CrewProgressRepository'
+import type { ProgressPeriod } from '@/shared/domain/ports/ScoreRepository'
+import type { Cohort } from '@/shared/domain/entities/progress'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 
@@ -15,9 +16,17 @@ const PERIOD_LABEL_KEY: Record<ProgressPeriod, TranslationKey> = {
 /** De más reciente a más largo: lo ganable primero. */
 const PERIODS: ProgressPeriod[] = ['week', 'month', 'all']
 
+const COHORT_LABEL_KEY: Record<Cohort, TranslationKey> = {
+  youth: 'cohort.youth',
+  adult: 'cohort.adult',
+  senior: 'cohort.senior',
+}
+
 interface CrewRankingProps {
   /** La ficha de quien mira, para señalar su fila. `null` si entrena. */
   viewerStudentId: string | null
+  /** La cohorte de quien mira, para comparar entre iguales por defecto. */
+  viewerCohort: Cohort | null
 }
 
 /**
@@ -36,9 +45,10 @@ interface CrewRankingProps {
  * comprueba antes: en un grupo de rehabilitación o de salud general, competir no
  * es lo que hace falta.
  */
-export function CrewRanking({ viewerStudentId }: CrewRankingProps) {
+export function CrewRanking({ viewerStudentId, viewerCohort }: CrewRankingProps) {
   const { t, plural } = useTranslation()
-  const { entries, period, setPeriod, loading } = useCrewRanking()
+  const { entries, period, setPeriod, ownCohortOnly, setOwnCohortOnly, loading } =
+    useCrewRanking(viewerCohort)
 
   const withEffort = entries.filter((entry) => entry.completedSessions > 0)
 
@@ -71,6 +81,29 @@ export function CrewRanking({ viewerStudentId }: CrewRankingProps) {
           ))}
         </div>
       </div>
+
+      {/* Entre iguales o todo el equipo. Solo quien tiene cohorte elige: al
+          entrenador, y a quien no dijo su fecha, se les enseña a todos. */}
+      {viewerCohort !== null && (
+        <div role="group" aria-label={t('crew.rankingScope')} className="flex gap-1">
+          {[true, false].map((only) => (
+            <button
+              key={String(only)}
+              type="button"
+              aria-pressed={only === ownCohortOnly}
+              onClick={() => setOwnCohortOnly(only)}
+              className={cn(
+                'inline-flex min-h-11 items-center rounded-action px-3 text-xs font-semibold uppercase tracking-wider transition-colors',
+                only === ownCohortOnly
+                  ? 'bg-ink text-bone'
+                  : 'text-ink/45 hover:bg-cobalt-tint hover:text-cobalt'
+              )}
+            >
+              {only ? t(COHORT_LABEL_KEY[viewerCohort]) : t('crew.rankingWholeCrew')}
+            </button>
+          ))}
+        </div>
+      )}
 
       {!loading && withEffort.length === 0 ? (
         <p className="py-6 text-sm text-ink/45">

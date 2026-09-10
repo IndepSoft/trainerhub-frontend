@@ -1,10 +1,11 @@
 import { toLocalDateKey } from '@/shared/lib/dateKey'
-import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
-// La experiencia vive en `shared/domain` desde que la necesita tambien el
-// ranking del equipo: dos formulas para la misma cifra darian dos numeros.
-import { completedSessions, totalExperience } from '@/shared/domain/experience'
+// Lo que cuenta como sesion cerrada vive en `shared/domain`: lo comparten la
+// racha, los hitos y el simulador. La FORMULA de puntos ya no esta en el
+// cliente: la aplica el servidor al cerrar cada sesion.
+import { completedSessions } from '@/shared/domain/experience'
 import type { Session } from '@/shared/domain/entities/session'
-import type { LevelProgress, Milestone, StreakStatus } from '../types/gamification.types'
+import type { StreakPause } from '@/shared/domain/entities/progress'
+import type { LevelProgress, StreakStatus } from '../types/gamification.types'
 
 /**
  * Las reglas del juego. Puras: entran sesiones, salen números.
@@ -25,9 +26,7 @@ import type { LevelProgress, Milestone, StreakStatus } from '../types/gamificati
  * ajustarlo sea cambiar una constante y no rastrear multiplicadores.
  */
 
-// Se reexportan para no tocar a quien ya las importaba de aqui: la experiencia
-// subio a `shared/domain` al necesitarla tambien el ranking del equipo.
-export { completedSessions, totalExperience }
+export { completedSessions }
 
 /**
  * Lo que cuesta cada nivel, en experiencia.
@@ -77,27 +76,48 @@ export function levelFromExperience(experience: number): LevelProgress {
  *
  * `completedToday` va aparte para poder avisar de que está en riesgo.
  */
-export function streakFrom(sessions: Session[], today: Date = new Date()): StreakStatus {
+export function streakFrom(
+  sessions: Session[],
+  today: Date = new Date(),
+  pauses: StreakPause[] = []
+): StreakStatus {
   const trainedDays = trainedDayKeys(sessions)
   const todayKey = toLocalDateKey(today)
-  const yesterdayKey = toLocalDateKey(
-    new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1)
-  )
-
   const completedToday = trainedDays.has(todayKey)
 
+  /*
+   * LA RACHA PROTEGIDA. Un dia sin entrenar no la rompe si esta cubierto por
+   * una pausa -lesion, viaje, comodin- o si es descanso programado: no hay
+   * sesion ese dia y hay sesiones del mismo volcado de plan antes y despues.
+   * Ese dia no suma. Hoy, sin entrenar todavia, tampoco rompe: el dia no ha
+   * terminado.
+   */
   let currentDays = 0
-  if (completedToday || trainedDays.has(yesterdayKey)) {
-    const cursor = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-    if (!completedToday) cursor.setDate(cursor.getDate() - 1)
-
-    while (trainedDays.has(toLocalDateKey(cursor))) {
-      currentDays += 1
-      cursor.setDate(cursor.getDate() - 1)
-    }
+  let cursor = completedToday ? todayKey : previousDayKey(todayKey)
+  for (let looked = 0; looked < 400; looked += 1) {
+    if (trainedDays.has(cursor)) currentDays += 1
+    else if (!isCovered(cursor, pauses) && !isPlannedRest(cursor, sessions)) break
+    cursor = previousDayKey(cursor)
   }
 
   return { currentDays, bestDays: longestRun(trainedDays), completedToday }
+}
+
+function isCovered(day: string, pauses: StreakPause[]): boolean {
+  return pauses.some((pause) => day >= pause.fromDay && day <= pause.toDay)
+}
+
+function isPlannedRest(day: string, sessions: Session[]): boolean {
+  if (sessions.some((session) => session.date === day)) return false
+  const dumpsBefore = new Set(
+    sessions
+      .filter((session) => session.assignmentId !== undefined && session.date < day)
+      .map((session) => session.assignmentId)
+  )
+  return sessions.some(
+    (session) =>
+      session.assignmentId !== undefined && dumpsBefore.has(session.assignmentId) && session.date > day
+  )
 }
 
 /**
@@ -164,74 +184,3 @@ const nextDayKey = (dayKey: string): string => shiftDayKey(dayKey, 1)
  * semana se cuenta y castiga a quien se salta una: un hito superado no se
  * pierde.
  */
-interface MilestoneStep {
-  id: string
-  /* Claves, no textos: esta escalera se evalua al importar. Ver el catalogo. */
-  titleKey: TranslationKey
-  descriptionKey: TranslationKey
-  requiredSessions: number
-  experienceReward: number
-}
-
-const MILESTONE_LADDER: MilestoneStep[] = [
-  {
-    id: 'first-steps',
-    titleKey: 'milestone.firstSteps.title',
-    descriptionKey: 'milestone.firstSteps.description',
-    requiredSessions: 3,
-    experienceReward: 100,
-  },
-  {
-    id: 'consistency',
-    titleKey: 'milestone.consistency.title',
-    descriptionKey: 'milestone.consistency.description',
-    requiredSessions: 7,
-    experienceReward: 150,
-  },
-  {
-    id: 'load',
-    titleKey: 'milestone.load.title',
-    descriptionKey: 'milestone.load.description',
-    requiredSessions: 12,
-    experienceReward: 200,
-  },
-  {
-    id: 'endurance',
-    titleKey: 'milestone.endurance.title',
-    descriptionKey: 'milestone.endurance.description',
-    requiredSessions: 20,
-    experienceReward: 250,
-  },
-  {
-    id: 'milestone',
-    titleKey: 'milestone.monthGoal.title',
-    descriptionKey: 'milestone.monthGoal.description',
-    requiredSessions: 30,
-    experienceReward: 400,
-  },
-]
-
-/**
- * El sendero, con el estado de cada peldaño.
- *
- * Sólo hay un hito `active`: el primero sin superar. Los de más allá quedan
- * `locked` aunque el avance ya sume, porque el sendero se lee como un camino y
- * dos puntos brillando a la vez no dice por dónde se va.
- */
-export function milestonesFrom(sessions: Session[]): Milestone[] {
-  const done = completedSessions(sessions).length
-  let activeFound = false
-
-  // El tipo de retorno se anota en la lambda para que los estados se infieran
-  // como literales de `MilestoneState`. Sin el, TypeScript los ensancha a
-  // `string` y haria falta un `as`, que aqui no pinta nada.
-  return MILESTONE_LADDER.map((step): Milestone => {
-    if (done >= step.requiredSessions) {
-      return { ...step, state: 'completed', completedSessions: step.requiredSessions }
-    }
-
-    const state = activeFound ? 'locked' : 'active'
-    activeFound = true
-    return { ...step, state, completedSessions: done }
-  })
-}

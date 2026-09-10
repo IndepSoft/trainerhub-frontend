@@ -127,7 +127,7 @@ export class FakeStudentRepository implements StudentRepository {
 
   async updateProfile(studentId: string, data: StudentProfile): Promise<void> {
     this.students = this.students.map((student) =>
-      // Sólo los tres campos: el resto es la valoración del entrenador.
+      // Sólo lo suyo -nombre, foto, fecha de nacimiento-: el resto es la valoración del entrenador.
       student.id === studentId ? { ...student, ...data } : student
     )
     this.notify()
@@ -180,7 +180,7 @@ export class FakeStudentRepository implements StudentRepository {
       email: input.email.trim(),
       level: 'Principiante',
       goals: [],
-      age: 0,
+      birthDate: null,
       bodyFatPercentage: 0,
       photoUrl: undefined,
       membershipStatus: input.status,

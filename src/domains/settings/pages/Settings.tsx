@@ -99,6 +99,7 @@ export default function Settings() {
                 key={profileId ?? 'sin-ficha'}
                 initial={initial}
                 saving={saving}
+                asksBirthDate={owner === 'student'}
                 onSave={save}
               />
             )}
@@ -241,10 +242,12 @@ export default function Settings() {
 interface ProfileFieldsProps {
   initial: ProfileDraft
   saving: boolean
+  /** La fecha de nacimiento es de la ficha de alumno; la de entrenador no la lleva. */
+  asksBirthDate: boolean
   onSave: (draft: ProfileDraft) => Promise<boolean>
 }
 
-function ProfileFields({ initial, saving, onSave }: ProfileFieldsProps) {
+function ProfileFields({ initial, saving, asksBirthDate, onSave }: ProfileFieldsProps) {
   const { t } = useTranslation()
   const [draft, setDraft] = useState(initial)
   const [justSaved, setJustSaved] = useState(false)
@@ -383,6 +386,25 @@ function ProfileFields({ initial, saving, onSave }: ProfileFieldsProps) {
           />
         </div>
       </div>
+
+      {/* La fecha la dice el propio alumno: el entrenador rara vez la sabe, y
+          de ella sale la cohorte que pondera su progreso. Solo se enseña a el
+          y a quien le entrena. */}
+      {asksBirthDate && (
+        <div>
+          <Label htmlFor="perfil-nacimiento" className={FIELD_LABEL}>
+            {t('settings.profile.birthDate')}
+          </Label>
+          <Input
+            id="perfil-nacimiento"
+            type="date"
+            value={draft.birthDate}
+            onChange={(event) => setField('birthDate', event.target.value)}
+            className="mt-1.5"
+          />
+          <p className="mt-1 text-xs text-ink/55">{t('settings.profile.birthDateHint')}</p>
+        </div>
+      )}
 
       <Button type="submit" className="w-full gap-2" disabled={saving}>
         {justSaved ? <Check className="size-4" /> : null}

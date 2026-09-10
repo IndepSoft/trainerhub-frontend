@@ -10,12 +10,15 @@ import { useStudent } from '../hooks/useStudent'
 import { StudentAssignments } from '../components/StudentAssignments'
 import { StudentLoadProgression } from '../components/StudentLoadProgression'
 import { StudentProgressSection } from '../components/StudentProgressSection'
+import { StudentRouteSection } from '../components/StudentRouteSection'
+import { useViewerContext } from '@/app/ViewerContext'
 import { StudentSubscriptionSection } from '../components/StudentSubscriptionSection'
 import { StudentSessions } from '../components/StudentSessions'
 import { ScheduleSessionDialog } from '../components/ScheduleSessionDialog'
 import { LEVEL_BADGE } from '../libs/levelBadge'
 import { cn } from '@/shared/lib/utils'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { ageOf } from '@/shared/domain/entities/student'
 import { STUDENT_LEVEL_LABEL_KEY, goalLabel } from '@/shared/i18n/domainLabels'
 
 /**
@@ -23,6 +26,7 @@ import { STUDENT_LEVEL_LABEL_KEY, goalLabel } from '@/shared/i18n/domainLabels'
  */
 export default function StudentDetail() {
   const { t } = useTranslation()
+  const { can } = useViewerContext()
   const { studentId } = useParams<{ studentId: string }>()
   const { student, loading } = useStudent(studentId)
 
@@ -122,7 +126,7 @@ export default function StudentDetail() {
         <div className="grid grid-cols-1 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           <Metric
             label={t('studentCard.age')}
-            value={`${student.age}`}
+            value={`${ageOf(student.birthDate) ?? '—'}`}
             unit={t('studentCard.years')}
           />
           <Metric label={t('studentDetail.bodyFat')} value={`${student.bodyFatPercentage}`} unit="%" />
@@ -152,6 +156,10 @@ export default function StudentDetail() {
         <StudentSubscriptionSection student={student} />
 
         <StudentProgressSection studentId={student.id} />
+
+        {/* La ruta y las validaciones son decisiones de quien gestiona: a
+            quien no, la base le diria «forbidden» en cada boton. */}
+        {can('students.manage') && <StudentRouteSection studentId={student.id} />}
 
         {/* Debajo del progreso y no dentro: aquello es el juego -nivel, racha,
             hitos- y esto es la medida de fuerza. Se leen por motivos distintos. */}

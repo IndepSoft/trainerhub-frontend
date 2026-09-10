@@ -34,7 +34,15 @@ import type { SavedBlock } from '@/shared/domain/entities/savedBlock'
 import type { Session, SessionResult, SessionStatus } from '@/shared/domain/entities/session'
 import type { NewSession } from '@/shared/domain/ports/SessionRepository'
 import type { CrewPost } from '@/shared/domain/entities/crewPost'
-import type { CrewMemberProgress } from '@/shared/domain/ports/CrewProgressRepository'
+import type { CrewMemberProgress } from '@/shared/domain/ports/ScoreRepository'
+import {
+  isProgressRouteCode,
+  type RouteProgress,
+  type SessionScore,
+  type StreakPause,
+  type StreakPauseReason,
+  type StudentBadge,
+} from '@/shared/domain/entities/progress'
 
 /**
  * Fila cruda de la tabla `profiles`. Nombres tal cual estan en Postgres.
@@ -286,7 +294,7 @@ export interface StudentRow {
   email: string
   level: string
   goals: string[] | null
-  age: number
+  birth_date?: string | null
   body_fat_percentage: number | string
   photo_url?: string | null
   extra_capabilities: string[] | null
@@ -316,7 +324,7 @@ export function toStudent(row: StudentRow): Student {
     email: row.email,
     level: isStudentLevel(row.level) ? row.level : 'Principiante',
     goals: row.goals ?? [],
-    age: row.age,
+    birthDate: row.birth_date ?? null,
     bodyFatPercentage: Number(row.body_fat_percentage),
     photoUrl: optional(row.photo_url),
     extraCapabilities: (row.extra_capabilities ?? []).filter(isCapability),
@@ -333,7 +341,7 @@ export function toStudentRow(student: NewStudent): Omit<StudentRow, 'id' | 'crew
     email: student.email,
     level: student.level,
     goals: student.goals,
-    age: student.age,
+    birth_date: student.birthDate,
     body_fat_percentage: student.bodyFatPercentage,
     photo_url: student.photoUrl ?? null,
     extra_capabilities: student.extraCapabilities,
@@ -344,11 +352,12 @@ export function toStudentRow(student: NewStudent): Omit<StudentRow, 'id' | 'crew
 /** Lo que un alumno cambia de si mismo. Nada mas: lo demas es la libreta del entrenador. */
 export function toStudentProfileRow(
   profile: StudentProfile
-): Pick<StudentRow, 'first_name' | 'last_name' | 'photo_url'> {
+): Pick<StudentRow, 'first_name' | 'last_name' | 'photo_url' | 'birth_date'> {
   return {
     first_name: profile.firstName,
     last_name: profile.lastName,
     photo_url: profile.photoUrl ?? null,
+    birth_date: profile.birthDate,
   }
 }
 
@@ -816,5 +825,100 @@ export function toAuthUser(row: AuthUserRow): AuthUser {
   return {
     id: row.id,
     email: row.email ?? '',
+  }
+}
+
+/** Fila cruda de `session_scores`. Los numericos de Postgres llegan como texto. */
+export interface SessionScoreRow {
+  session_id: string
+  student_id: string
+  crew_id: string
+  completed_on: string
+  base: number | string
+  adherence: number | string
+  progress: number | string
+  cohort: number | string
+  points: number | string
+  rule_version: number
+  flagged_reason?: string | null
+  reviewed_at?: string | null
+}
+
+export function toSessionScore(row: SessionScoreRow): SessionScore {
+  return {
+    sessionId: row.session_id,
+    studentId: row.student_id,
+    crewId: row.crew_id,
+    completedOn: row.completed_on,
+    base: Number(row.base),
+    adherence: Number(row.adherence),
+    progress: Number(row.progress),
+    cohort: Number(row.cohort),
+    points: Number(row.points),
+    ruleVersion: row.rule_version,
+    flaggedReason: row.flagged_reason === 'load_jump' ? 'load_jump' : null,
+    reviewedAt: row.reviewed_at ?? null,
+  }
+}
+
+/** Fila cruda de `student_badges`. */
+export interface StudentBadgeRow {
+  student_id: string
+  badge_code: string
+  unlocked_on: string
+  session_id: string | null
+  validated_at: string | null
+}
+
+export function toStudentBadge(row: StudentBadgeRow): StudentBadge {
+  return {
+    studentId: row.student_id,
+    code: row.badge_code,
+    unlockedOn: row.unlocked_on,
+    sessionId: row.session_id,
+    validatedAt: row.validated_at,
+  }
+}
+
+/** Fila de `route_progress`. Los enteros de una funcion llegan como numero o texto. */
+export interface RouteProgressRow {
+  route_code: string
+  node_position: number | string
+  points: number | string
+  adherent_weeks: number | string
+  validated_positions: number[] | null
+}
+
+export function toRouteProgress(studentId: string, row: RouteProgressRow): RouteProgress {
+  return {
+    studentId,
+    // La frontera vuelve a comprobar el codigo: el catalogo es de sistema, pero
+    // es la unica que puede prometerselo al dominio.
+    routeCode: isProgressRouteCode(row.route_code) ? row.route_code : 'hybrid',
+    position: Number(row.node_position),
+    points: Number(row.points),
+    adherentWeeks: Number(row.adherent_weeks),
+    validatedPositions: (row.validated_positions ?? []).map(Number),
+  }
+}
+
+/** Fila cruda de `streak_pauses`. */
+export interface StreakPauseRow {
+  student_id: string
+  from_day: string
+  to_day: string
+  reason: string
+}
+
+function isStreakPauseReason(value: string): value is StreakPauseReason {
+  return value === 'injury' || value === 'travel' || value === 'wildcard'
+}
+
+export function toStreakPause(row: StreakPauseRow): StreakPause {
+  return {
+    studentId: row.student_id,
+    fromDay: row.from_day,
+    toDay: row.to_day,
+    reason: isStreakPauseReason(row.reason) ? row.reason : 'injury',
   }
 }
