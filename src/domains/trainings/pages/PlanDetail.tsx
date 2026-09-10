@@ -14,6 +14,7 @@ import { LEVEL_BADGE } from '../libs/levelBadge'
 import { PlanSummary } from '../components/PlanSummary'
 import { ConfirmDeleteDialog } from '@/shared/components/ConfirmDeleteDialog'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { useViewerContext } from '@/app/ViewerContext'
 import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 import {
   catalogLabel,
@@ -38,6 +39,9 @@ export default function PlanDetail() {
   ) =>
     entry === undefined ? t(emptyKey) : catalogLabel(entry.id, entry.name, t)
   const navigate = useNavigate()
+  const { can } = useViewerContext()
+  // La ficha la lee cualquier miembro; lo que la cambia, quien gestiona.
+  const manages = can('training.manage')
   const { planId } = useParams<{ planId: string }>()
   const { plan, loading } = usePlan(planId)
   const { routines } = useRoutines()
@@ -75,11 +79,11 @@ export default function PlanDetail() {
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
       <PageHeader>
         <Link
-          to="/trainings?tab=planes"
+          to={manages ? '/trainings?tab=planes' : '/progress'}
           className="-ms-2 mb-3 inline-flex h-11 items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/45 transition-colors hover:text-cobalt"
         >
           <ArrowLeft className="size-4" />
-          Planes
+          {manages ? t('plan.plural') : t('nav.progress')}
         </Link>
 
         <PageHeader.Content>
@@ -90,7 +94,7 @@ export default function PlanDetail() {
             </PageHeader.Title>
           </div>
 
-          <PageHeader.Actions>
+          {manages && <PageHeader.Actions>
             <Button
               type="button"
               variant="outline"
@@ -106,7 +110,7 @@ export default function PlanDetail() {
                 {t('common.edit')}
               </Link>
             </Button>
-          </PageHeader.Actions>
+          </PageHeader.Actions>}
         </PageHeader.Content>
       </PageHeader>
 
@@ -116,7 +120,7 @@ export default function PlanDetail() {
         {/* La puerta a asignarlo. Se asigna desde la ficha del alumno -es a
             una persona a quien se asigna-, y desde aqui no habia forma de
             llegar: el plan se veia y no se sabia que hacer con el. */}
-        <p className="border-b border-cobalt-tint-3 px-5 py-3 text-sm text-ink/60">
+        {manages && <p className="border-b border-cobalt-tint-3 px-5 py-3 text-sm text-ink/60">
           {t('plan.assignHint')}{' '}
           <Link
             to="/students"
@@ -124,7 +128,7 @@ export default function PlanDetail() {
           >
             {t('plan.goToStudents')}
           </Link>
-        </p>
+        </p>}
 
         <dl className="grid grid-cols-1 gap-x-6 gap-y-3 px-5 py-6 sm:grid-cols-3">
           <div>
@@ -249,7 +253,7 @@ export default function PlanDetail() {
       <ConfirmDeleteDialog
         open={isDeleteOpen}
         name={plan.title}
-        kind="el plan"
+        kind={t('plan.kind')}
         blockedReason={blockedReason}
         onOpenChange={setIsDeleteOpen}
         onConfirm={() => {

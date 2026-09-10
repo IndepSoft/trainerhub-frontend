@@ -5,6 +5,7 @@ import { SubscriptionBadge } from '@/shared/components/SubscriptionBadge'
 import { cn } from '@/shared/lib/utils'
 import { container } from '@/app/container'
 import { useViewerContext } from '@/app/ViewerContext'
+import { describeError } from '@/shared/i18n/errorMessages'
 import { SUBSCRIPTION_PERIOD_DAYS } from '@/shared/domain/entities/studentSubscription'
 import { SUBSCRIPTION_PERIOD_LABEL_KEY } from '@/shared/i18n/domainLabels'
 import { formatDateKey } from '../libs/dateKey'
@@ -41,23 +42,46 @@ export function StudentSubscriptionSection({ student }: StudentSubscriptionSecti
 
   const [noticeOpen, setNoticeOpen] = useState(false)
   const [justRenewed, setJustRenewed] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   if (loading) return null
 
   const subscription = byStudent.get(student.id)
   const standing = standingOf(student.id)
   const canManage = can('students.manage')
+  /*
+   * Sin cuenta no hay campana: un aviso a una ficha `invited` se guardaba y
+   * la pantalla decia «enviado» a alguien que no lo iba a leer nunca. Con la
+   * vía A como alta corriente era el caso normal, no el raro.
+   */
+  const canNotify = student.profileId !== null
 
   const handleSend = async (body: string, kind: NoticeKind) => {
     await container.notices.send({ studentId: student.id, kind, body })
   }
 
+  // Cobrar y cambiar el periodo se esperan y se dicen: eran promesas sueltas.
   const handleRenew = async () => {
-    await renew(student.id, student.crewId)
+    setError(null)
+    try {
+      await renew(student.id, student.crewId)
+    } catch (caught) {
+      setError(describeError(caught, t, 'dues.error'))
+      return
+    }
     // Confirmación breve y en el sitio: cobrar mueve una fecha, y sin acuse el
     // botón parece no haber hecho nada.
     setJustRenewed(true)
     window.setTimeout(() => setJustRenewed(false), 2500)
+  }
+
+  const handleSetPeriod = async (days: number) => {
+    setError(null)
+    try {
+      await setPeriod(student.id, student.crewId, days)
+    } catch (caught) {
+      setError(describeError(caught, t, 'dues.error'))
+    }
   }
 
   return (
@@ -89,11 +113,21 @@ export function StudentSubscriptionSection({ student }: StudentSubscriptionSecti
               {justRenewed ? t('dues.renewed') : t('dues.registerPayment')}
             </Button>
 
-            <Button variant="outline" className="gap-2" onClick={() => setNoticeOpen(true)}>
-              <BellRing className="size-4" />
-              {t('reports.notify')}
-            </Button>
+            {canNotify ? (
+              <Button variant="outline" className="gap-2" onClick={() => setNoticeOpen(true)}>
+                <BellRing className="size-4" />
+                {t('reports.notify')}
+              </Button>
+            ) : (
+              <p className="self-center text-xs text-ink/50">{t('notice.noAccount')}</p>
+            )}
           </div>
+
+          {error !== null && (
+            <p role="alert" className="mt-2 text-sm text-danger">
+              {error}
+            </p>
+          )}
 
           <div role="group" aria-label={t('dues.period')} className="mt-6">
             <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
@@ -115,7 +149,7 @@ export function StudentSubscriptionSection({ student }: StudentSubscriptionSecti
                     key={days}
                     type="button"
                     aria-pressed={isSelected}
-                    onClick={() => void setPeriod(student.id, student.crewId, days)}
+                    onClick={() => void handleSetPeriod(days)}
                     className={cn(
                       'inline-flex min-h-11 items-center rounded-action border px-3 text-xs font-semibold transition-colors',
                       isSelected

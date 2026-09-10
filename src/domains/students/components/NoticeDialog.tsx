@@ -10,6 +10,7 @@ import {
 } from '@/shared/ui/dialog'
 import { Textarea } from '@/shared/ui/textarea'
 import { NOTICE_MAX_LENGTH, type NoticeKind } from '@/shared/domain/entities/notice'
+import { describeError } from '@/shared/i18n/errorMessages'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface NoticeDialogProps {
@@ -83,14 +84,27 @@ function NoticeFields({ draft, kind, onSend, onCancel }: NoticeFieldsProps) {
   const { t } = useTranslation()
   const [body, setBody] = useState(draft)
   const [sending, setSending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
+  /*
+   * `finally` y no dos `setSending(false)`: si el puerto rechazaba, el
+   * segundo no llegaba a ejecutarse y el boton se quedaba en «Enviando…»
+   * para siempre. El fallo se dice aqui, donde se pulso.
+   */
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (body.trim() === '') return
 
     setSending(true)
-    await onSend(body.trim(), kind)
-    setSending(false)
+    setError(null)
+    try {
+      await onSend(body.trim(), kind)
+    } catch (caught) {
+      setError(describeError(caught, t, 'notice.error'))
+      return
+    } finally {
+      setSending(false)
+    }
     onCancel()
   }
 
@@ -107,6 +121,12 @@ function NoticeFields({ draft, kind, onSend, onCancel }: NoticeFieldsProps) {
         rows={4}
         className="resize-none"
       />
+
+      {error !== null && (
+        <p role="alert" className="text-sm text-danger">
+          {error}
+        </p>
+      )}
 
       <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
         <Button type="button" variant="outline" onClick={onCancel}>

@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Check, Plus, Settings, UserPlus, Users, X } from 'lucide-react'
+import { toast } from 'sonner'
+import { describeError } from '@/shared/i18n/errorMessages'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Button } from '@/shared/ui/button'
 import { PageHeader } from '@/shared/components/PageHeader'
@@ -8,7 +10,7 @@ import { useViewerContext } from '@/app/ViewerContext'
 import { useCrewEditor } from '../hooks/useCrewEditor'
 import { useCrewMembers } from '../hooks/useCrewMembers'
 import { CrewInviteCard } from '../components/CrewInviteCard'
-import { CopyInviteButton } from '../components/CopyInviteButton'
+import { CopyInviteButton } from '@/shared/components/CopyInviteButton'
 import { SubscriptionNotice } from '../components/SubscriptionNotice'
 import { CrewWall } from '../components/CrewWall'
 import { CrewRanking } from '../components/CrewRanking'
@@ -38,10 +40,19 @@ import { STUDENT_LEVEL_LABEL_KEY } from '@/shared/i18n/domainLabels'
  * quedada, sí lo es.
  */
 export default function CrewPage() {
-  const { t } = useTranslation()
+  const { t, plural } = useTranslation()
   const { active, trainer, can, loading: loadingViewer } = useViewerContext()
   const { members, pending, loading, approve, reject } = useCrewMembers()
   const { rotateJoinToken, requestActivation, saving, error: editorError } = useCrewEditor()
+
+  // Aceptar y rechazar se esperan y se dicen: eran dos `void` mudos.
+  const decide = async (decision: () => Promise<void>) => {
+    try {
+      await decision()
+    } catch (caught) {
+      toast.error(describeError(caught, t, 'crew.memberActionError'))
+    }
+  }
 
   if (loadingViewer) return null
 
@@ -65,7 +76,10 @@ export default function CrewPage() {
         <PageHeader.Content>
           <div className="min-w-0">
             <PageHeader.Eyebrow>
-              {crew.denomination} · {members.length} {members.length === 1 ? 'miembro' : 'miembros'}
+              {crew.denomination} ·{' '}
+              {plural('crew.memberCount.one', 'crew.memberCount.other', members.length, {
+                count: members.length,
+              })}
             </PageHeader.Eyebrow>
             <PageHeader.Title>{crew.name}</PageHeader.Title>
           </div>
@@ -115,7 +129,7 @@ export default function CrewPage() {
                 id="solicitudes-titulo"
                 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60"
               >
-                Solicitudes · {pending.length}
+                {t('crew.requestsHeading', { count: pending.length })}
               </h2>
 
               <ul className="divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3">
@@ -132,16 +146,20 @@ export default function CrewPage() {
                     <div className="flex shrink-0 gap-1">
                       <button
                         type="button"
-                        aria-label={`Aceptar a ${getShortName(student.firstName, student.lastName)}`}
-                        onClick={() => void approve(student.id)}
+                        aria-label={t('crew.acceptLabel', {
+                          name: getShortName(student.firstName, student.lastName),
+                        })}
+                        onClick={() => void decide(() => approve(student.id))}
                         className="inline-flex size-11 items-center justify-center rounded-action text-cobalt transition-colors hover:bg-cobalt-tint"
                       >
                         <Check className="size-5" />
                       </button>
                       <button
                         type="button"
-                        aria-label={`Rechazar a ${getShortName(student.firstName, student.lastName)}`}
-                        onClick={() => void reject(student.id)}
+                        aria-label={t('crew.rejectLabel', {
+                          name: getShortName(student.firstName, student.lastName),
+                        })}
+                        onClick={() => void decide(() => reject(student.id))}
                         className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:text-danger"
                       >
                         <X className="size-5" />

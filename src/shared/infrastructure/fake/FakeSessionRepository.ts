@@ -2,7 +2,8 @@ import type { CrewScope } from '@/shared/domain/ports/CrewScope'
 import type { NewSession, SessionRepository } from '@/shared/domain/ports/SessionRepository'
 import type { Session, SessionResult, SessionStatus } from '@/shared/domain/entities/session'
 import { sessionsSeed } from './sessionsSeed'
-import { shiftDateKey } from '@/shared/lib/dateKey'
+import { shiftDateKey, todayKey } from '@/shared/lib/dateKey'
+import { isUpcomingSession } from '@/shared/domain/sessionLifecycle'
 
 /**
  * Sesiones simuladas mientras no hay backend.
@@ -85,16 +86,33 @@ export class FakeSessionRepository implements SessionRepository {
     return created
   }
 
+  /**
+   * Cancela lo que un alumno tenia por venir. Fuera del puerto: es la mitad
+   * de `deactivate_student`, y solo la llama el almacen de alumnos simulado.
+   */
+  cancelUpcomingOf(studentId: string): void {
+    const today = todayKey()
+    this.sessions = this.sessions.map((session) =>
+      session.studentId === studentId && isUpcomingSession(session, today)
+        ? { ...session, status: 'cancelled' }
+        : session
+    )
+    this.notify()
+  }
+
   async findByAssignment(assignmentId: string): Promise<Session[]> {
     return this.inScope()
       .filter((session) => session.assignmentId === assignmentId)
       .sort(compareByStartInstant)
   }
 
+  // Solo lo que queda por venir, como `shift_sessions`: una sesion cuyo dia
+  // paso sin cerrarse «no ocurrio», y moverla la resucitaria en silencio.
   async shiftByAssignment(assignmentId: string, days: number): Promise<number> {
+    const today = todayKey()
     let moved = 0
     this.sessions = this.sessions.map((session) => {
-      if (session.assignmentId !== assignmentId || !isOpen(session)) return session
+      if (session.assignmentId !== assignmentId || !isUpcomingSession(session, today)) return session
       moved += 1
       return { ...session, date: addDaysToKey(session.date, days) }
     })
@@ -103,9 +121,10 @@ export class FakeSessionRepository implements SessionRepository {
   }
 
   async cancelByAssignment(assignmentId: string): Promise<number> {
+    const today = todayKey()
     let cancelled = 0
     this.sessions = this.sessions.map((session) => {
-      if (session.assignmentId !== assignmentId || !isOpen(session)) return session
+      if (session.assignmentId !== assignmentId || !isUpcomingSession(session, today)) return session
       cancelled += 1
       return { ...session, status: 'cancelled' }
     })
@@ -215,10 +234,6 @@ function compareByStartInstant(left: Session, right: Session): number {
 }
 
 /** Todavia por ocurrir: es lo que un volcado puede mover o cancelar. */
-function isOpen(session: Session): boolean {
-  return session.status === 'pending' || session.status === 'confirmed'
-}
-
 function addDaysToKey(dateKey: string, days: number): string {
   return shiftDateKey(dateKey, days)
 }

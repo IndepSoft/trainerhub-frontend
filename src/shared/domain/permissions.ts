@@ -19,7 +19,7 @@ export type Capability =
   | 'crew.settings'
   /** Añadir y quitar gente del equipo técnico. */
   | 'crew.staff'
-  /** Enseñar el QR, rotarlo y dar de alta fichas. */
+  /** Enseñar el QR, rotarlo y copiar el enlace de invitación. */
   | 'crew.invite'
   /** Aceptar o rechazar solicitudes, y dar de baja a un alumno. */
   | 'crew.members'
@@ -37,7 +37,8 @@ export type Capability =
  *
  *   crew.settings     `/crew/ajustes`
  *   crew.staff        `/crew/equipo`
- *   crew.invite       el QR del equipo, y el alta en el padrón de alumnos
+ *   crew.invite       el QR del equipo y el enlace de invitación
+ *   students.manage   también el alta en el padrón: es lo que exige la base
  *   crew.members      aceptar y rechazar solicitudes
  *   crew.wall         publicar y borrar anuncios
  *   training.manage   el destino «Entrenamientos» de la navegación

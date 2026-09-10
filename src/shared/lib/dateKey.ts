@@ -20,6 +20,8 @@
  * columna equivocada. El fallo sólo se manifestaba según la hora del día, que es
  * lo que lo hacía difícil de ver.
  */
+import { activeLocale } from '@/shared/i18n/activeLocale'
+
 export function toLocalDateKey(date: Date): string {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -30,6 +32,22 @@ export function toLocalDateKey(date: Date): string {
 /**
  * La clave de hoy. Atajo del anterior, que se pide en muchos sitios.
  */
+/**
+ * `2026-09-08` → «martes, 8 de septiembre».
+ *
+ * Se trocea la cadena en vez de `new Date('2026-09-08')`, que ISO interpreta
+ * como UTC medianoche y en un huso negativo cae en el dia anterior. Vivia en
+ * `students/libs`; sube porque el repertorio del alumno la necesita tambien.
+ */
+export function formatDateKey(key: string): string {
+  const [year, month, day] = key.split('-').map(Number)
+  return new Date(year, month - 1, day).toLocaleDateString(activeLocale(), {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  })
+}
+
 export function todayKey(): string {
   return toLocalDateKey(new Date())
 }

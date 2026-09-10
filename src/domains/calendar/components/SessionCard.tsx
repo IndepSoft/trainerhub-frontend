@@ -1,7 +1,8 @@
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { ArrowUpRight } from 'lucide-react'
 import { getStudentInitials } from '../libs/calendar.utils'
-import { SESSION_STATUS } from '../libs/sessionStatus'
+import { presentationOf } from '../libs/sessionStatus'
+import { todayKey } from '@/shared/lib/dateKey'
 import { cn } from '@/shared/lib/utils'
 import type { Session } from '../types/calendar.types'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
@@ -48,7 +49,9 @@ export function SessionCard({
   variant = 'full',
 }: SessionCardProps) {
   const { t } = useTranslation()
-  const status = SESSION_STATUS[session.status]
+  // «No ocurrio» se deriva del dia: la tarjeta lo pinta apagado sin que nadie
+  // haya escrito nada.
+  const status = presentationOf(session, todayKey())
   const statusTextClassName = status.outlineBadgeClassName.split(' ')[1]
   const isCompact = variant === 'compact'
 

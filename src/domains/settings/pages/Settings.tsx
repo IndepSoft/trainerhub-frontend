@@ -1,6 +1,9 @@
 import { useId, useState, type FormEvent } from 'react'
 import { Check, LogOut, Upload, Users } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { container } from '@/app/container'
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
+import { describeError } from '@/shared/i18n/errorMessages'
 import { useViewerContext } from '@/app/ViewerContext'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
@@ -60,6 +63,34 @@ export default function Settings() {
     useProfileEditor()
   const { handleLogout } = useLogout()
   const { active, trainer, can } = useViewerContext()
+  const navigate = useNavigate()
+
+  /*
+   * SALIR DEL EQUIPO, que no existia: un alumno activo solo podia irse
+   * eliminando la cuenta entera. Es la misma baja que da el entrenador,
+   * sobre la propia ficha; la base lo permite solo a quien esta dentro.
+   */
+  const [isLeaveOpen, setIsLeaveOpen] = useState(false)
+  const [leaving, setLeaving] = useState(false)
+  const [leaveError, setLeaveError] = useState<string | null>(null)
+  const ownStudentId = active?.role === 'student' ? active.student?.id : undefined
+
+  const handleLeave = async () => {
+    if (ownStudentId === undefined) return
+    setLeaving(true)
+    setLeaveError(null)
+    try {
+      await container.students.deactivate(ownStudentId)
+    } catch (caught) {
+      setLeaveError(describeError(caught, t, 'settings.leaveCrewError'))
+      setLeaving(false)
+      return
+    }
+    setLeaving(false)
+    setIsLeaveOpen(false)
+    // A la raiz: sin equipo, `HomeRedirect` decide a donde.
+    navigate('/', { replace: true })
+  }
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
@@ -175,7 +206,8 @@ export default function Settings() {
                 </div>
               </>
             ) : (
-              <div className="flex flex-col gap-2 sm:flex-row">
+              <>
+              <div className="flex flex-wrap gap-2">
                 <Button asChild variant="outline" className="gap-2">
                   <Link to="/crew">
                     <Users className="size-4" />
@@ -187,7 +219,37 @@ export default function Settings() {
                     <Link to="/crew/ajustes">{t('settings.crewSettings')}</Link>
                   </Button>
                 )}
+                {/* Un segundo equipo -el segundo local- no tenia puerta con uno
+                    ya creado: solo quien tiene ficha de entrenador la ve. */}
+                {trainer !== null && (
+                  <Button asChild variant="outline">
+                    <Link to="/crew/nuevo">{t('crewSwitcher.createAnother')}</Link>
+                  </Button>
+                )}
+                {ownStudentId !== undefined && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="text-danger hover:text-danger"
+                    onClick={() => setIsLeaveOpen(true)}
+                  >
+                    {t('settings.leaveCrew')}
+                  </Button>
+                )}
               </div>
+
+              <ConfirmDialog
+                open={isLeaveOpen}
+                title={t('settings.leaveCrewTitle', { crew: active.crew.name })}
+                body={t('settings.leaveCrewBody')}
+                confirmLabel={t('settings.leaveCrew')}
+                destructive
+                busy={leaving}
+                error={leaveError}
+                onOpenChange={setIsLeaveOpen}
+                onConfirm={() => void handleLeave()}
+              />
+              </>
             )}
           </section>
 

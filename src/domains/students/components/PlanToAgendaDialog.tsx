@@ -16,8 +16,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
+import { toast } from 'sonner'
 import { cn } from '@/shared/lib/utils'
 import { container } from '@/app/container'
+import { describeError } from '@/shared/i18n/errorMessages'
 import { SESSION_LOCATIONS, SESSION_TIME_SLOTS } from '@/shared/domain/entities/session'
 import {
   countConflicting,
@@ -161,8 +163,11 @@ export function PlanToAgendaDialog({
   const missingWeekdays = weekdays.filter((dayOfWeek) => timesByWeekday[dayOfWeek] === undefined)
   const chosenCount = weekdays.length - missingWeekdays.length
 
+  const [saveError, setSaveError] = useState<string | null>(null)
+
   const handleConfirm = async () => {
     setIsSaving(true)
+    setSaveError(null)
     try {
       // Todas o ninguna, y cada una con la asignacion de la que salio. Eran
       // doce altas sueltas en serie, y una red que se cae a mitad dejaba
@@ -171,10 +176,16 @@ export function PlanToAgendaDialog({
         planned.map((entry) => entry.session),
         assignmentId
       )
-      onOpenChange(false)
+    } catch (caught) {
+      // Se dice donde se pulso: un `finally` sin `catch` dejaba el dialogo
+      // abierto y mudo cuando la base rechazaba el lote.
+      setSaveError(describeError(caught, t, 'planDump.error'))
+      return
     } finally {
       setIsSaving(false)
     }
+    toast.success(t('planDump.confirmCount', { count: planned.length }))
+    onOpenChange(false)
   }
 
   return (
@@ -323,6 +334,12 @@ export function PlanToAgendaDialog({
                 ))}
               </ul>
             </div>
+          )}
+
+          {saveError !== null && (
+            <p role="alert" className="text-sm text-danger">
+              {saveError}
+            </p>
           )}
 
           <Button

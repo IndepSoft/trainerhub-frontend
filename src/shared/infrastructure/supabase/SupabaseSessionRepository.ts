@@ -6,6 +6,7 @@ import { supabase } from './client'
 import { mapDataError } from './errorMapper'
 import { toSession, toSessionRow, type SessionRow } from './mappers'
 import { subscribeToTable } from './realtime'
+import { todayKey } from '@/shared/lib/dateKey'
 
 /**
  * Implementacion de SessionRepository sobre PostgREST.
@@ -151,11 +152,15 @@ export class SupabaseSessionRepository implements SessionRepository {
   }
 
   async cancelByAssignment(assignmentId: string): Promise<number> {
+    // Solo lo que queda por venir: una sesion cuyo dia paso sin cerrarse ya
+    // «no ocurrio», y cancelarla en bloque borraria ese dato. Misma regla que
+    // `shift_sessions` en el servidor.
     const { data, error } = await supabase
       .from('sessions')
       .update({ status: 'cancelled' })
       .eq('assignment_id', assignmentId)
       .in('status', ['pending', 'confirmed'])
+      .gte('date', todayKey())
       .select('id')
 
     if (error) throw mapDataError(error)

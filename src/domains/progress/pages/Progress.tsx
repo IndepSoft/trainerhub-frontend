@@ -4,6 +4,7 @@ import { GamificationHeader } from '../components/GamificationHeader'
 import { RoutePath } from '../components/RoutePath'
 import { AchievementSystem } from '../components/AchievementSystem'
 import { JoinCrewPrompt } from '../components/JoinCrewPrompt'
+import { AssignedRepertoire } from '../components/AssignedRepertoire'
 import { useGamificationProfile } from '../hooks/useGamificationProfile'
 import { useProgressOverview } from '../hooks/useProgressOverview'
 import { useViewerContext } from '@/app/ViewerContext'
@@ -80,6 +81,10 @@ export default function Progress() {
         />
 
         <RoutePath route={route} nodes={path} />
+
+        {/* Lo que le han asignado: la base ya se lo dejaba leer y ninguna
+            pantalla lo pintaba. Sin ficha no hay repertorio. */}
+        {student !== null && <AssignedRepertoire studentId={student.id} />}
 
         {/* Contadores en el registro sobrio, con reglas de 1 px en vez de
             tarjetas. Los tres salen ahora de sesiones reales: antes eran

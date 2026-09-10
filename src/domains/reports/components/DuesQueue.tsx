@@ -65,16 +65,21 @@ export function DuesQueue() {
             <div className="flex items-center gap-3">
               <SubscriptionBadge standing={entry.standing} />
 
-              {canManage && (
-                <Button
-                  variant="outline"
-                  className="ms-auto shrink-0 gap-2 sm:ms-0"
-                  onClick={() => setReminding(entry)}
-                >
-                  <BellRing className="size-4" />
-                  {t('reports.notify')}
-                </Button>
-              )}
+              {/* Sin cuenta no hay campana a la que avisar: se dice, en vez
+                  de dar por enviado un aviso que nadie va a leer. */}
+              {canManage &&
+                (entry.student.profileId !== null ? (
+                  <Button
+                    variant="outline"
+                    className="ms-auto shrink-0 gap-2 sm:ms-0"
+                    onClick={() => setReminding(entry)}
+                  >
+                    <BellRing className="size-4" />
+                    {t('reports.notify')}
+                  </Button>
+                ) : (
+                  <span className="ms-auto text-xs text-ink/50 sm:ms-0">{t('notice.noAccount')}</span>
+                ))}
             </div>
           </li>
         ))}

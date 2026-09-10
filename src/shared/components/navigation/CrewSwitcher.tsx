@@ -136,6 +136,14 @@ export function CrewSwitcher({ memberships, active, loading, onSelect }: CrewSwi
           <Plus className="me-2 size-4" />
           {t('crewSwitcher.joinAnother')}
         </DropdownMenuItem>
+        {/* Fundar otro: el caso del segundo local, que `crew.ts` razona y no
+            tenia puerta. Solo para quien tiene ficha de entrenador. */}
+        {trainer !== null && (
+          <DropdownMenuItem onSelect={() => navigate('/crew/nuevo')}>
+            <Plus className="me-2 size-4" />
+            {t('crewSwitcher.createAnother')}
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )

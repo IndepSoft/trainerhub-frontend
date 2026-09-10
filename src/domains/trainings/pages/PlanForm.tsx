@@ -1,8 +1,10 @@
 import { useMemo, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { AlertCircle, ArrowLeft, CalendarPlus } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/shared/ui/button'
 import { PageHeader } from '@/shared/components/PageHeader'
+import { describeError } from '@/shared/i18n/errorMessages'
 import { usePlan } from '../hooks/usePlans'
 import { usePlanDraft } from '../hooks/usePlanDraft'
 import { useRoutines } from '../hooks/useRoutines'
@@ -102,14 +104,20 @@ function PlanFormFields({ plan }: PlanFormFieldsProps) {
     const data = submit()
     if (data === null) return
 
-    if (planId === undefined) {
-      const created = await createPlan(data)
-      navigate(`/trainings/plans/${created.id}`)
-      return
-    }
+    // Se espera y se dice, como en la rutina: sin esto un rechazo de la base
+    // dejaba el formulario mudo.
+    try {
+      if (planId === undefined) {
+        const created = await createPlan(data)
+        navigate(`/trainings/plans/${created.id}`)
+        return
+      }
 
-    await updatePlan(planId, data)
-    navigate(`/trainings/plans/${planId}`)
+      await updatePlan(planId, data)
+      navigate(`/trainings/plans/${planId}`)
+    } catch (caught) {
+      toast.error(describeError(caught, t, 'plan.saveError'))
+    }
   }
 
   return (

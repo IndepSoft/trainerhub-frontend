@@ -1,12 +1,14 @@
 import type { MilestoneValidationInput, RouteRepository } from '@/shared/domain/ports/RouteRepository'
-import type { ProgressRouteCode, RouteProgress } from '@/shared/domain/entities/progress'
+import type { PendingMilestone, ProgressRouteCode, RouteProgress } from '@/shared/domain/entities/progress'
 import type { TrainingPlan } from '@/shared/domain/entities/plan'
+import type { CrewScope } from '@/shared/domain/ports/CrewScope'
+import type { FakeStudentRepository } from './FakeStudentRepository'
 import type { FakeAssignmentRepository } from './FakeAssignmentRepository'
 import type { FakeBadgeRepository } from './FakeBadgeRepository'
 import type { FakePlanRepository } from './FakePlanRepository'
 import type { FakeScoreRepository } from './FakeScoreRepository'
 import type { FakeSessionRepository } from './FakeSessionRepository'
-import { adherentWeeks, positionFrom, routeFromAssignments } from './routeRules'
+import { adherentWeeks, nextNodeReady, positionFrom, routeFromAssignments } from './routeRules'
 
 interface ChosenRoute {
   route: ProgressRouteCode
@@ -27,6 +29,8 @@ export class FakeRouteRepository implements RouteRepository {
   private readonly plans: FakePlanRepository
   private readonly scores: FakeScoreRepository
   private readonly badges: FakeBadgeRepository
+  private readonly students: FakeStudentRepository
+  private readonly scope: CrewScope
   private readonly chosen = new Map<string, ChosenRoute>()
   private readonly validations = new Map<string, number[]>()
   private readonly listeners = new Set<() => void>()
@@ -36,13 +40,17 @@ export class FakeRouteRepository implements RouteRepository {
     assignments: FakeAssignmentRepository,
     plans: FakePlanRepository,
     scores: FakeScoreRepository,
-    badges: FakeBadgeRepository
+    badges: FakeBadgeRepository,
+    students: FakeStudentRepository,
+    scope: CrewScope
   ) {
     this.sessions = sessions
     this.assignments = assignments
     this.plans = plans
     this.scores = scores
     this.badges = badges
+    this.students = students
+    this.scope = scope
   }
 
   private routeOf(studentId: string): ChosenRoute {
@@ -68,7 +76,24 @@ export class FakeRouteRepository implements RouteRepository {
       points,
       adherentWeeks: weeks,
       validatedPositions: validated,
+      chosenByTrainer: this.chosen.has(studentId),
     }
+  }
+
+  // Espejo de `crew_pending_milestones`: el siguiente nodo cumple puntos y
+  // semanas y solo le falta la validacion.
+  async pendingMilestones(): Promise<PendingMilestone[]> {
+    const crewId = this.scope.current()
+    if (crewId === null) return []
+    const pending: PendingMilestone[] = []
+    for (const student of this.students.membersOf(crewId)) {
+      const progress = await this.progressOf(student.id)
+      const next = nextNodeReady(progress)
+      if (next !== null) {
+        pending.push({ studentId: student.id, routeCode: progress.routeCode, position: next })
+      }
+    }
+    return pending
   }
 
   async choose(studentId: string, route: ProgressRouteCode): Promise<void> {

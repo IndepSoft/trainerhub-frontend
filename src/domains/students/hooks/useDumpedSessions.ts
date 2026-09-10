@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
 import { container } from '@/app/container'
 import type { Session } from '@/shared/domain/entities/session'
+import { isMissedSession, isUpcomingSession } from '@/shared/domain/sessionLifecycle'
+import { todayKey } from '@/shared/lib/dateKey'
 
 interface UseDumpedSessionsResult {
   /** Las que salieron de este volcado, en orden. */
   sessions: Session[]
-  /** Las que todavía se pueden mover o cancelar. */
+  /** Las que todavía se pueden mover o cancelar: abiertas y por venir. */
   openCount: number
+  /** Las abiertas cuyo día pasó: no ocurrieron, y las acciones en bloque las dejan quietas. */
+  missedCount: number
   shiftOneWeek: () => Promise<number>
   cancelOpen: () => Promise<number>
 }
@@ -43,9 +47,9 @@ export function useDumpedSessions(assignmentId: string): UseDumpedSessionsResult
     }
   }, [assignmentId])
 
-  const openCount = sessions.filter(
-    (session) => session.status === 'pending' || session.status === 'confirmed'
-  ).length
+  const today = todayKey()
+  const openCount = sessions.filter((session) => isUpcomingSession(session, today)).length
+  const missedCount = sessions.filter((session) => isMissedSession(session, today)).length
 
   const shiftOneWeek = useCallback(
     () => container.sessions.shiftByAssignment(assignmentId, 7),
@@ -57,5 +61,5 @@ export function useDumpedSessions(assignmentId: string): UseDumpedSessionsResult
     [assignmentId]
   )
 
-  return { sessions, openCount, shiftOneWeek, cancelOpen }
+  return { sessions, openCount, missedCount, shiftOneWeek, cancelOpen }
 }

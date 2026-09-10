@@ -33,7 +33,13 @@ export interface Notice {
   readAt: string | null
 }
 
-export type NoticeKind = 'dues' | 'general'
+/**
+ * `membership` lo escribe el SERVIDOR al aprobar una solicitud, en la misma
+ * transacción, y el cuerpo lleva el nombre del equipo: el texto lo pone el
+ * diccionario de quien lo lee. Es la primera promesa de «te avisaremos» que
+ * tiene mecanismo detrás.
+ */
+export type NoticeKind = 'dues' | 'general' | 'membership'
 
 /** Lo máximo que cabe en un aviso. */
 export const NOTICE_MAX_LENGTH = 300

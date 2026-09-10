@@ -75,6 +75,18 @@ export class SupabaseScoreRepository implements ScoreRepository {
     return ((data ?? []) as SessionScoreRow[]).map(toSessionScore)
   }
 
+  async flaggedOfCrew(): Promise<SessionScore[]> {
+    const crewId = this.scope.current()
+    if (crewId === null) return []
+
+    // Funcion y no consulta: cruza `students` para acotar al equipo, y RLS
+    // sigue decidiendo que filas puede ver quien pregunta.
+    const { data, error } = await supabase.rpc('crew_flagged_scores', { crew: crewId })
+
+    if (error) throw mapDataError(error)
+    return ((data ?? []) as SessionScoreRow[]).map(toSessionScore)
+  }
+
   async acceptLoadJump(sessionId: string): Promise<void> {
     const { error } = await supabase.rpc('accept_load_jump', { session: sessionId })
     if (error) throw mapDataError(error)

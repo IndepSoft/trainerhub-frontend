@@ -19,9 +19,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
+import { toast } from 'sonner'
 import { cn } from '@/shared/lib/utils'
+import { describeError } from '@/shared/i18n/errorMessages'
 import { useAssignableRoutines } from '../hooks/useAssignableRoutines'
 import { useAssignablePlans } from '../hooks/useAssignablePlans'
+import { useRouteChangeHint, type RouteChangeHint } from '../hooks/useRouteChangeHint'
+import { ROUTE_NAME_KEY } from '@/domains/progress/libs/routePath'
+import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 import { toDateKey } from '../libs/dateKey'
 import type {
   NewAssignment,
@@ -33,6 +38,12 @@ import { useTranslation } from '@/shared/i18n/LanguageContext'
 /** Registro de etiqueta del formulario, igual que en el resto de la aplicación. */
 const FIELD_LABEL =
   'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
+
+const ROUTE_HINT_KEY: Record<RouteChangeHint['outcome'], TranslationKey> = {
+  change: 'assign.routeChange',
+  same: 'assign.routeSame',
+  chosen: 'assign.routeChosen',
+}
 
 interface AssignDialogProps {
   student: Student
@@ -69,11 +80,21 @@ export function AssignDialog({
   const [missingTarget, setMissingTarget] = useState(false)
 
   const isPlan = kind === 'plan'
+  // Lo que el plan le hace a la ruta del alumno, dicho antes de asignar.
+  const routeHint = useRouteChangeHint(student.id, plans, isPlan ? targetId : '')
 
+  /*
+   * El «hoy» por defecto se REPONE, no se vacia. `resetForm` y `changeKind`
+   * la dejaban en `undefined`, asi que el valor por defecto solo valia la
+   * primera vez que se abria el dialogo: a partir de la segunda asignacion, o
+   * tras pulsar «Rutina» y volver a «Plan», el plan volvia a quedar «asignado
+   * sin empezar», que es justo el defecto que el comentario de arriba dice
+   * haber resuelto.
+   */
   const resetForm = () => {
     setKind('plan')
     setTargetId('')
-    setStartDate(undefined)
+    setStartDate(new Date())
     setNotes('')
     setMissingTarget(false)
   }
@@ -82,7 +103,7 @@ export function AssignDialog({
   const changeKind = (next: AssignmentKind) => {
     setKind(next)
     setTargetId('')
-    setStartDate(undefined)
+    setStartDate(new Date())
     setMissingTarget(false)
   }
 
@@ -96,27 +117,39 @@ export function AssignDialog({
 
     const assignedOn = toDateKey(new Date())
 
-    await onAssign(
-      isPlan
-        ? {
-            kind: 'plan',
-            studentId: student.id,
-            planId: targetId,
-            assignedOn,
-            // Sin fecha de inicio es un estado válido: «éste es tu programa, ya
-            // veremos cuándo empiezas».
-            startDate: startDate === undefined ? null : toDateKey(startDate),
-            notes,
-          }
-        : {
-            kind: 'routine',
-            studentId: student.id,
-            routineId: targetId,
-            assignedOn,
-            notes,
-          }
-    )
+    /*
+     * SE ESPERA AL PUERTO Y SE DICE LO QUE PASO. Antes la promesa rechazada
+     * se perdia: la base decia que no, el dialogo se quedaba abierto y nadie
+     * explicaba por que. Si falla, se queda con lo escrito y lo dice; si va
+     * bien, lo confirma.
+     */
+    try {
+      await onAssign(
+        isPlan
+          ? {
+              kind: 'plan',
+              studentId: student.id,
+              planId: targetId,
+              assignedOn,
+              // Sin fecha de inicio es un estado válido: «éste es tu programa, ya
+              // veremos cuándo empiezas».
+              startDate: startDate === undefined ? null : toDateKey(startDate),
+              notes,
+            }
+          : {
+              kind: 'routine',
+              studentId: student.id,
+              routineId: targetId,
+              assignedOn,
+              notes,
+            }
+      )
+    } catch (caught) {
+      toast.error(describeError(caught, t, 'assign.error'))
+      return
+    }
 
+    toast.success(t('assign.done', { name: student.firstName }))
     resetForm()
     onOpenChange(false)
   }
@@ -207,6 +240,21 @@ export function AssignDialog({
                     ))}
               </SelectContent>
             </Select>
+            {routeHint !== null && (
+              <p
+                className={cn(
+                  'text-xs',
+                  routeHint.outcome === 'change' ? 'text-ember-deep' : 'text-ink/55'
+                )}
+              >
+                {t(ROUTE_HINT_KEY[routeHint.outcome], {
+                  name: student.firstName,
+                  current: t(ROUTE_NAME_KEY[routeHint.current]),
+                  next: t(ROUTE_NAME_KEY[routeHint.next]),
+                })}
+              </p>
+            )}
+
             {/* Sin nada que elegir se dice, con la puerta a crearlo: el
                 desplegable vacio no explicaba por que no habia opciones. */}
             {(isPlan ? plans : routines).length === 0 && (

@@ -98,7 +98,12 @@ export function NotificationButton() {
                 className={cn('px-4 py-3', notice.readAt === null && 'bg-cobalt-tint')}
               >
                 <p className="whitespace-pre-line text-sm leading-relaxed text-ink/80">
-                  {notice.body}
+                  {/* El aviso de pertenencia lo escribe el servidor con el
+                      nombre del equipo como cuerpo; el texto lo pone el
+                      diccionario de quien lo lee. */}
+                  {notice.kind === 'membership'
+                    ? t('notices.membershipApproved', { crew: notice.body })
+                    : notice.body}
                 </p>
                 <p className="mt-1 text-[11px] text-ink/40">
                   {new Date(notice.createdAt).toLocaleDateString(activeLocale(), {

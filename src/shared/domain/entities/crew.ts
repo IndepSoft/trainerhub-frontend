@@ -190,7 +190,13 @@ export const CREW_ROLE_RANK: Record<CrewRole, number> = {
  * La primera versión los agrupaba al revés —contaba miembros sólo los `active`—
  * y la pantalla decía «0 miembros» sobre un equipo con cuatro alumnos con ficha.
  */
-export type MembershipStatus = 'invited' | 'pending' | 'active' | 'rejected'
+/**
+ * `inactive` es la BAJA: estuvo dentro y ya no viene. Se distingue de
+ * `rejected` -nunca entró- y de borrar la ficha -que no se puede en cuanto
+ * hay una sesión que la referencia-. Sale del padrón, del panel, de la
+ * retención y de los cobros; el historial se queda, y se puede reactivar.
+ */
+export type MembershipStatus = 'invited' | 'pending' | 'active' | 'rejected' | 'inactive'
 
 /** Si esta pertenencia cuenta como ser del equipo. */
 export function isMember(status: MembershipStatus): boolean {

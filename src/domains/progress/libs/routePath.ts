@@ -70,5 +70,6 @@ export function emptyRoutePath(): PathNode[] {
     points: 0,
     adherentWeeks: 0,
     validatedPositions: [],
+    chosenByTrainer: false,
   })
 }

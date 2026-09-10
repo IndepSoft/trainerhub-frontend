@@ -9,7 +9,6 @@ import {
   DialogTrigger,
 } from '@/shared/ui/dialog'
 import { Label } from '@/shared/ui/label'
-import { Textarea } from '@/shared/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -17,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
-import { Calendar } from '@/shared/ui/calendar'
 import { CalendarCheck, Plus, User, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/shared/lib/utils'
@@ -29,12 +27,16 @@ import { container } from '@/app/container'
 import { toLocalDateKey } from '@/shared/lib/dateKey'
 import { activeLocale } from '@/shared/i18n/activeLocale'
 import { ScheduleConflictNotice } from '@/shared/components/ScheduleConflictNotice'
-import { SessionModalityPicker } from '@/shared/components/SessionModalityPicker'
+import {
+  NO_ROUTINE,
+  SessionScheduleFields,
+  type SessionFieldName,
+  type SessionScheduleValue,
+} from '@/shared/components/SessionScheduleFields'
 import { parseLocalDateKey } from '../libs/calendar.utils'
 import type { Translate } from '@/shared/i18n/LanguageContext'
 import { describeOverlap, findOverlappingSessions } from '@/shared/domain/sessionScheduling'
-import type { Session, SessionModality } from '@/shared/domain/entities/session'
-import { SESSION_LOCATIONS, TIME_SLOTS } from '../data/calendarOptions'
+import type { Session } from '@/shared/domain/entities/session'
 import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 
@@ -48,8 +50,6 @@ const SESSION_TYPES = [
   labelKey: TranslationKey
   icon: typeof User
 }>
-
-const DURATIONS = ['30', '45', '60', '90'] as const
 
 /**
  * El tipo con el que se creó una sesión, recuperado para editarla.
@@ -65,17 +65,10 @@ function sessionTypeOf(session: Session, t: Translate): string {
   return match?.value ?? 'personal'
 }
 
-/** Campos que la validación puede marcar. */
-type FieldName = 'sessionType' | 'student' | 'date' | 'time' | 'location'
+/** Campos que la validación puede marcar: los propios de aquí, y los compartidos. */
+type FieldName = 'sessionType' | 'student' | SessionFieldName
 
-/**
- * Valor del desplegable cuando la sesión no ejecuta ninguna rutina.
- *
- * No puede ser la cadena vacía: Radix la reserva para «sin seleccionar» y lanza
- * si un `SelectItem` la usa. Y «sin rutina» es una elección de verdad —una
- * evaluación inicial no ejecuta ninguna—, no la ausencia de elección.
- */
-const NO_ROUTINE = 'sin-rutina'
+const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
 
 /**
  * Alta de una sesión.
@@ -90,6 +83,10 @@ const NO_ROUTINE = 'sin-rutina'
  *     montado, así que enviar el formulario incompleto no producía NADA. Ahora
  *     además marca los campos que faltan junto a ellos.
  *  3. Cuatro `Card` anidadas dentro de un diálogo, que ya es un contenedor.
+ *
+ * Y una cuarta, después: lo que pregunta igual que la ficha del alumno
+ * —cuándo, cuánto, dónde, qué— es `SessionScheduleFields`, compartido. Aquí
+ * queda lo que sólo se decide en la agenda: el tipo y de quién es.
  */
 interface CreateSessionModalProps {
   /**
@@ -111,6 +108,21 @@ interface CreateSessionModalProps {
   editing?: Session
   open?: boolean
   onOpenChange?: (open: boolean) => void
+}
+
+/** Con qué arranca el tronco: vacío, con la rutina traída, o con la sesión que se edita. */
+function initialValue(editing: Session | undefined, preselectedRoutineId: string | undefined): SessionScheduleValue {
+  return {
+    // Con una rutina preseleccionada -desde «Usar en una sesion»- la
+    // modalidad es fuerza sin preguntar: se viene de una rutina de sala.
+    modality: editing?.modality ?? 'strength',
+    routineId: editing?.routineId ?? preselectedRoutineId ?? NO_ROUTINE,
+    date: editing === undefined ? undefined : parseLocalDateKey(editing.date),
+    time: editing?.time ?? '',
+    duration: String(editing?.durationMinutes ?? 60),
+    location: editing?.location ?? '',
+    notes: editing?.notes ?? '',
+  }
 }
 
 /**
@@ -137,29 +149,18 @@ export function CreateSessionModal({
   }
 
   /*
-   * Si se llega con una rutina preseleccionada -desde «Usar en una sesion»-, la
-   * modalidad es fuerza sin preguntar: se viene de una rutina de sala.
-   *
    * Al editar, todo arranca de la sesion. El tipo se recupera por su etiqueta
    * porque la sesion guarda la categoria como TEXTO -en el idioma en que se
    * creo-; si no casa con ninguna, queda «personal», que es lo que era casi
    * siempre.
    */
-  const [modality, setModality] = useState<SessionModality>(editing?.modality ?? 'strength')
-  const [routineId, setRoutineId] = useState(
-    editing?.routineId ?? preselectedRoutineId ?? NO_ROUTINE
-  )
   const [sessionType, setSessionType] = useState(
     editing === undefined ? '' : sessionTypeOf(editing, t)
   )
   const [studentId, setStudentId] = useState(editing?.studentId ?? '')
-  const [date, setDate] = useState<Date | undefined>(
-    editing === undefined ? undefined : parseLocalDateKey(editing.date)
+  const [value, setValue] = useState<SessionScheduleValue>(() =>
+    initialValue(editing, preselectedRoutineId)
   )
-  const [time, setTime] = useState(editing?.time ?? '')
-  const [duration, setDuration] = useState(String(editing?.durationMinutes ?? 60))
-  const [location, setLocation] = useState(editing?.location ?? '')
-  const [notes, setNotes] = useState(editing?.notes ?? '')
   const [missing, setMissing] = useState<FieldName[]>([])
   /** Con qué choca, o `null` si no choca o ya se decidió agendar igual. */
   const [conflict, setConflict] = useState<string | null>(null)
@@ -168,37 +169,34 @@ export function CreateSessionModal({
 
   // Sólo el día elegido, no la agenda entera: ver `SessionRepository.findByDate`.
   useEffect(() => {
-    if (date === undefined) {
+    if (value.date === undefined) {
       setSessionsOfDay([])
       return
     }
 
     let active = true
-    container.sessions.findByDate(toLocalDateKey(date)).then((result) => {
+    container.sessions.findByDate(toLocalDateKey(value.date)).then((result) => {
       if (active) setSessionsOfDay(result)
     })
 
     return () => {
       active = false
     }
-  }, [date])
+  }, [value.date])
 
   /** Un choque deja de serlo en cuanto cambia alguna de las tres piezas. */
-  const forgetConflict = () => setConflict(null)
+  const handleChange = (changes: Partial<SessionScheduleValue>) => {
+    if ('date' in changes || 'time' in changes || 'duration' in changes) setConflict(null)
+    setValue((current) => ({ ...current, ...changes }))
+  }
 
   const isGroupSession = sessionType === 'group'
 
   const resetForm = () => {
     setConflict(null)
-    setModality('strength')
-    setRoutineId(NO_ROUTINE)
     setSessionType('')
     setStudentId('')
-    setDate(undefined)
-    setTime('')
-    setDuration('60')
-    setLocation('')
-    setNotes('')
+    setValue(initialValue(undefined, undefined))
     setMissing([])
   }
 
@@ -206,13 +204,13 @@ export function CreateSessionModal({
     const faltan: FieldName[] = []
     if (!sessionType) faltan.push('sessionType')
     if (!isGroupSession && !studentId) faltan.push('student')
-    if (!date) faltan.push('date')
-    if (!time) faltan.push('time')
-    if (!location) faltan.push('location')
+    if (value.date === undefined) faltan.push('date')
+    if (value.time === '') faltan.push('time')
+    if (value.location === '') faltan.push('location')
 
     setMissing(faltan)
 
-    if (faltan.length > 0) {
+    if (faltan.length > 0 || value.date === undefined) {
       toast.error(
         plural('newSession.missingOne', 'newSession.missingMany', faltan.length, {
           count: faltan.length,
@@ -221,18 +219,20 @@ export function CreateSessionModal({
       return
     }
 
+    const dateKey = toLocalDateKey(value.date)
+
     /*
      * Se relee del puerto en vez de usar `sessionsOfDay`: entre elegir la hora y
      * pulsar puede haberse agendado algo, y la lista se cargo con la duracion de
      * entonces. Esta es la comprobacion que vale.
      */
-    void container.sessions.findByDate(toLocalDateKey(date!)).then((sameDay) => {
+    void container.sessions.findByDate(dateKey).then((sameDay) => {
       // Al editar, la sesion no choca consigo misma.
       const others = sameDay.filter((candidate) => candidate.id !== editing?.id)
       const choques = findOverlappingSessions(others, {
-        date: toLocalDateKey(date!),
-        time,
-        durationMinutes: Number(duration),
+        date: dateKey,
+        time: value.time,
+        durationMinutes: Number(value.duration),
       })
 
       if (choques.length > 0) {
@@ -253,12 +253,14 @@ export function CreateSessionModal({
    * abierto con lo escrito y lo dice.
    */
   const scheduleSession = async () => {
+    if (value.date === undefined) return
+
     const student = students.find((candidate) => candidate.id === studentId)
     const quien = isGroupSession
       ? t('newSession.theGroupClass')
       : getShortName(student?.firstName, student?.lastName)
 
-    const routine = routines.find((candidate) => candidate.id === routineId)
+    const routine = routines.find((candidate) => candidate.id === value.routineId)
     /*
      * La categoria y el titulo se GUARDAN, asi que quedan en el idioma de quien
      * creo la sesion. Es deliberado y es lo que dice el aviso del selector de
@@ -278,15 +280,16 @@ export function CreateSessionModal({
       title: routine?.title ?? t(category),
       studentId: isGroupSession ? null : studentId,
       kind: isGroupSession ? 'group' : 'individual',
-      modality,
+      modality: value.modality,
       category: t(category),
-      date: toLocalDateKey(date!),
-      time,
-      durationMinutes: Number(duration),
-      location,
-      notes,
+      date: toLocalDateKey(value.date),
+      time: value.time,
+      durationMinutes: Number(value.duration),
+      location: value.location,
+      notes: value.notes,
       // Una sesion de cardio no ejecuta una rutina de sala.
-      routineId: modality === 'cardio' || routineId === NO_ROUTINE ? null : routineId,
+      routineId:
+        value.modality === 'cardio' || value.routineId === NO_ROUTINE ? null : value.routineId,
     } as const
 
     if (editing !== undefined) {
@@ -327,8 +330,8 @@ export function CreateSessionModal({
     toast.success(
       t('newSession.scheduled', {
         who: quien,
-        date: date!.toLocaleDateString(activeLocale()),
-        time,
+        date: value.date.toLocaleDateString(activeLocale()),
+        time: value.time,
       })
     )
 
@@ -374,9 +377,7 @@ export function CreateSessionModal({
         <div className="space-y-6 px-5 pb-5">
           <fieldset className="space-y-2">
             <div className="flex items-baseline justify-between gap-3">
-              <legend className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
-                {t('newSession.type')}
-              </legend>
+              <legend className={FIELD_LABEL}>{t('newSession.type')}</legend>
               {fieldError('sessionType')}
             </div>
 
@@ -410,10 +411,7 @@ export function CreateSessionModal({
           {sessionType && !isGroupSession && (
             <div className="space-y-2">
               <div className="flex items-baseline justify-between gap-3">
-                <Label
-                  htmlFor="new-session-student"
-                  className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60"
-                >
+                <Label htmlFor="new-session-student" className={FIELD_LABEL}>
                   {t('newSession.student')}
                 </Label>
                 {fieldError('student')}
@@ -436,204 +434,16 @@ export function CreateSessionModal({
             </div>
           )}
 
-          <div className="space-y-2">
-            <div className="flex items-baseline justify-between gap-3">
-              {/* `<span>` y no `<Label>`: no hay un control unico al que
-                  apuntar -detras hay una rejilla de dias- y una etiqueta sin
-                  asociar es peor que ninguna. */}
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
-                {t('newSession.date')}
-              </span>
-              {fieldError('date')}
-            </div>
-            <div
-              className={cn(
-                'rounded-block border p-2',
-                missing.includes('date') ? 'border-danger' : 'border-cobalt-tint-3'
-              )}
-            >
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={(next) => {
-                  forgetConflict()
-                  setDate(next)
-                }}
-                // No se agenda en el pasado: dejarlo permitiría crear una
-                // sesión que nace ya vencida.
-                disabled={(candidate) =>
-                  candidate < new Date(new Date().setHours(0, 0, 0, 0))
-                }
-                className="mx-auto"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <div className="flex items-baseline justify-between gap-2">
-                <Label
-                  htmlFor="new-session-time"
-                  className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60"
-                >
-                  {t('newSession.time')}
-                </Label>
-                {fieldError('time')}
-              </div>
-              <Select
-                value={time}
-                onValueChange={(next) => {
-                  forgetConflict()
-                  setTime(next)
-                }}
-              >
-                <SelectTrigger
-                  id="new-session-time"
-                  className={cn('w-full', missing.includes('time') && 'border-danger')}
-                >
-                  <SelectValue placeholder="--:--" />
-                </SelectTrigger>
-                {/* Los tramos ocupados se MARCAN, no se deshabilitan: avisar,
-                    no bloquear. Mismo criterio que en la ficha del alumno. */}
-                <SelectContent>
-                  {TIME_SLOTS.map((slot) => {
-                    const ocupadoPor = findOverlappingSessions(sessionsOfDay, {
-                      date: date === undefined ? '' : toLocalDateKey(date),
-                      time: slot,
-                      durationMinutes: Number(duration),
-                    })
-
-                    return (
-                      <SelectItem key={slot} value={slot}>
-                        {slot}
-                        {ocupadoPor.length > 0 && (
-                          <span className="ms-2 text-xs text-warning">
-                            {t('newSession.busySlot', { title: ocupadoPor[0].title })}
-                          </span>
-                        )}
-                      </SelectItem>
-                    )
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label
-                htmlFor="new-session-duration"
-                className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60"
-              >
-                {t('newSession.duration')}
-              </Label>
-              <Select
-                value={duration}
-                onValueChange={(next) => {
-                  forgetConflict()
-                  setDuration(next)
-                }}
-              >
-                <SelectTrigger id="new-session-duration" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {DURATIONS.map((minutes) => (
-                    <SelectItem key={minutes} value={minutes}>
-                      {minutes} min
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
-              {t('session.modality.label')}
-            </Label>
-            <SessionModalityPicker
-              value={modality}
-              onChange={(next) => {
-                setModality(next)
-                if (next === 'cardio') setRoutineId(NO_ROUTINE)
-              }}
-            />
-          </div>
-
-          {/*
-            La rutina es OPCIONAL, y solo aparece en fuerza: una evaluacion
-            inicial o una charla de seguimiento no ejecutan ninguna, y una salida
-            a correr tampoco. Obligar a elegir convertiria «ninguna» en un valor
-            que hay que buscar.
-          */}
-          {modality === 'strength' && (
-          <div className="space-y-2">
-            <Label
-              htmlFor="new-session-routine"
-              className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60"
-            >
-              {t('newSession.routine')}
-            </Label>
-            <Select value={routineId} onValueChange={setRoutineId}>
-              <SelectTrigger id="new-session-routine" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NO_ROUTINE}>{t('newSession.noRoutine')}</SelectItem>
-                {routines.map((candidate) => (
-                  <SelectItem key={candidate.id} value={candidate.id}>
-                    {candidate.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          )}
-
-          <div className="space-y-2">
-            <div className="flex items-baseline justify-between gap-3">
-              <Label
-                htmlFor="new-session-location"
-                className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60"
-              >
-                {t('newSession.location')}
-              </Label>
-              {fieldError('location')}
-            </div>
-            <Select value={location} onValueChange={setLocation}>
-              <SelectTrigger
-                id="new-session-location"
-                className={cn('w-full', missing.includes('location') && 'border-danger')}
-              >
-                <SelectValue placeholder={t('newSession.locationPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                {SESSION_LOCATIONS.map((place) => (
-                  <SelectItem key={place} value={place}>
-                    {place}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label
-              htmlFor="new-session-notes"
-              className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60"
-            >
-              {t('newSession.notes')}{' '}
-              <span className="font-normal normal-case text-ink/35">
-                {t('newSession.optional')}
-              </span>
-            </Label>
-            <Textarea
-              id="new-session-notes"
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-              placeholder={t('newSession.notesPlaceholder')}
-              rows={3}
-            />
-          </div>
+          <SessionScheduleFields
+            idPrefix="new-session"
+            value={value}
+            onChange={handleChange}
+            routines={routines}
+            sessionsOfDay={sessionsOfDay}
+            missing={missing.filter(isSharedField)}
+            notesPlaceholder={t('newSession.notesPlaceholder')}
+            notesOptionalHint
+          />
 
           {conflict !== null && (
             <ScheduleConflictNotice message={conflict} onOverride={scheduleSession} />
@@ -650,4 +460,8 @@ export function CreateSessionModal({
       </DialogContent>
     </Dialog>
   )
+}
+
+function isSharedField(field: FieldName): field is SessionFieldName {
+  return field === 'date' || field === 'time' || field === 'location'
 }
