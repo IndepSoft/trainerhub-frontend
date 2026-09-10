@@ -36,7 +36,15 @@ export interface Student {
   email: string
   level: StudentLevel
   goals: string[]
-  age: number
+  /**
+   * Fecha de nacimiento en `YYYY-MM-DD`, o `null` si no se sabe.
+   *
+   * ERA UNA EDAD, y una edad escrita a mano envejece sola: un año después
+   * seguía diciendo lo mismo. La edad se deriva al leer con `ageOf`, y de ella
+   * saldrá la cohorte que pondera el progreso. Es un dato del alumno —como su
+   * nombre y su foto— y lo cambia él además de quien gestiona.
+   */
+  birthDate: string | null
   bodyFatPercentage: number
   photoUrl?: string
   /**
@@ -76,4 +84,29 @@ export interface Student {
    * `docs/CAMBIOS-Y-ARQUITECTURA.md` §5.
    */
   profileId: string | null
+}
+
+/**
+ * La edad hoy, en años cumplidos, o `null` sin fecha de nacimiento.
+ *
+ * Se calcula con las partes de la fecha y no con milisegundos: restar
+ * instantes y dividir por 365,25 se equivoca el día del cumpleaños, que es
+ * exactamente el día en que alguien mira.
+ */
+export function ageOf(birthDate: string | null, today: Date = new Date()): number | null {
+  if (birthDate === null) return null
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(birthDate)
+  if (match === null) return null
+
+  const birthYear = Number(match[1])
+  const birthMonth = Number(match[2])
+  const birthDay = Number(match[3])
+
+  let age = today.getFullYear() - birthYear
+  const beforeBirthday =
+    today.getMonth() + 1 < birthMonth ||
+    (today.getMonth() + 1 === birthMonth && today.getDate() < birthDay)
+  if (beforeBirthday) age -= 1
+
+  return age < 0 ? null : age
 }

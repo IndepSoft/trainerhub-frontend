@@ -63,6 +63,8 @@ interface UseGuidedStrengthSessionResult {
    * salida era terminar la sesión y rehacerla entera.
    */
   undoLastSet: () => void
+  /** Anota el RPE de la última serie cerrada. Se ofrece durante su descanso. */
+  rateLastSet: (rpe: number) => void
   pause: () => void
   resume: () => void
 }
@@ -471,6 +473,14 @@ export function useGuidedStrengthSession(
 
   const doneSets = records.length
 
+  const rateLastSet = useCallback((rpe: number) => {
+    setRecords((current) => {
+      if (current.length === 0) return current
+      const last = current[current.length - 1]
+      return [...current.slice(0, -1), { ...last, rpe }]
+    })
+  }, [])
+
   return {
     steps,
     currentIndex,
@@ -492,6 +502,7 @@ export function useGuidedStrengthSession(
     finishSet,
     startNextSet,
     undoLastSet,
+    rateLastSet,
     pause,
     resume,
   }

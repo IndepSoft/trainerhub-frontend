@@ -67,6 +67,8 @@ export const english: Dictionary = {
   'settings.eyebrow': 'Your account',
   'settings.title': 'Settings',
   'settings.profile': 'Profile',
+  'settings.profile.birthDate': 'Date of birth',
+  'settings.profile.birthDateHint': 'Only you and your trainer see it. Your age group in progress comes from it.',
   'settings.crew': 'Crew',
   'settings.crewNone': 'You are not in any crew.',
   'settings.crewSettings': 'Crew settings',
@@ -497,6 +499,7 @@ export const english: Dictionary = {
   'studentForm.emailPlaceholder': 'student@email.com',
   'studentForm.emailHint': 'This email is what links their account when they register.',
   'studentForm.bodyFat': 'Body fat (%)',
+  'studentForm.birthDate': 'Date of birth',
   'studentForm.saveChanges': 'Save changes',
 
   // ---------------------------------------------------- asignar y avisar
@@ -918,6 +921,9 @@ export const english: Dictionary = {
   'liveSession.repsDone': '{done} of {prescribed} reps',
   'liveSession.expectedWork': 'About {seconds} s expected',
   'liveSession.setDone': '{reps} of {prescribed} reps in {seconds} s',
+  'liveSession.rpeLabel': 'Effort of the set',
+  'liveSession.rpeHint': 'Optional. 10 is failure.',
+  'liveSession.rpeOption': 'RPE {value}',
   'liveSession.nextUp': 'Up next: {exercise} · set {set} of {total}',
   'liveSession.plan': 'The routine',
   'liveSession.allDone': 'All sets done',

@@ -3077,7 +3077,7 @@ test.describe('alumnos', () => {
     await dialogo.getByLabel('Nombre').fill('Lucía')
     await dialogo.getByLabel('Apellidos').fill('Ramos')
     await dialogo.getByLabel('Correo').fill('lramos@correo.com')
-    await dialogo.getByLabel('Edad').fill('31')
+    await dialogo.getByLabel('Fecha de nacimiento').fill('1995-04-12')
     await dialogo.getByRole('button', { name: 'Movilidad' }).click()
     await dialogo.getByRole('button', { name: 'Añadir alumno' }).click()
 
@@ -5197,5 +5197,42 @@ test.describe('fugas de secuencia', () => {
     await expect(page.getByText('No estás en ningún equipo.')).toBeVisible()
     await page.getByRole('main').getByRole('link', { name: 'Tengo un código' }).click()
     await page.waitForURL(/\/crew\/unirse/, { timeout: 15_000 })
+  })
+})
+
+/**
+ * Fase 0 de los motores de progreso: los datos que las reglas van a leer.
+ */
+test.describe('datos de progreso', () => {
+  test('la serie se puede calificar con RPE durante el descanso, o no', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/session/session-1')
+
+    await page.getByRole('button', { name: 'Repetición 6' }).click()
+    await page.getByRole('button', { name: 'Finalizar serie' }).click()
+
+    // Durante el descanso, y opcional: sin tocar nada se sigue igual.
+    const rpe = page.getByRole('group', { name: 'Esfuerzo de la serie' })
+    await expect(rpe).toBeVisible()
+    await page.getByRole('button', { name: 'RPE 8' }).click()
+    await expect(page.getByRole('button', { name: 'RPE 8' })).toHaveAttribute('aria-pressed', 'true')
+
+    await page.getByRole('button', { name: 'Empezar la siguiente' }).click()
+    await page.getByRole('button', { name: 'Finalizar serie' }).click()
+    // La segunda serie arranca sin calificar: el RPE es de cada serie.
+    await expect(page.getByRole('button', { name: 'RPE 8' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  test('la ficha muestra la edad derivada de la fecha, o nada', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students/student-1')
+
+    // Juan nacio el 14 de marzo de 1998: la edad sale de la fecha, no de un numero escrito.
+    const hoy = new Date()
+    const cumplidos = hoy.getFullYear() - 1998 - (hoy.getMonth() + 1 < 3 || (hoy.getMonth() + 1 === 3 && hoy.getDate() < 14) ? 1 : 0)
+    // El valor y la unidad van en el mismo parrafo: «28 años».
+    await expect(page.getByText(new RegExp('^' + cumplidos + '\s*años$')).first()).toBeVisible()
   })
 })

@@ -78,6 +78,8 @@ export const spanish = {
   'settings.eyebrow': 'Tu cuenta',
   'settings.title': 'Configuración',
   'settings.profile': 'Perfil',
+  'settings.profile.birthDate': 'Fecha de nacimiento',
+  'settings.profile.birthDateHint': 'Sólo la ves tú y quien te entrena. De ella sale tu grupo de edad en el progreso.',
   'settings.crew': 'Equipo',
   'settings.crewNone': 'No estás en ningún equipo.',
   'settings.crewSettings': 'Ajustes del equipo',
@@ -507,6 +509,7 @@ export const spanish = {
   'studentForm.emailPlaceholder': 'alumno@correo.com',
   'studentForm.emailHint': 'Con este correo se enlazará su cuenta cuando se registre.',
   'studentForm.bodyFat': 'Grasa (%)',
+  'studentForm.birthDate': 'Fecha de nacimiento',
   'studentForm.saveChanges': 'Guardar cambios',
 
   // ---------------------------------------------------- asignar y avisar
@@ -928,6 +931,9 @@ export const spanish = {
   'liveSession.repsDone': '{done} de {prescribed} repeticiones',
   'liveSession.expectedWork': 'Prevista en unos {seconds} s',
   'liveSession.setDone': '{reps} de {prescribed} repeticiones en {seconds} s',
+  'liveSession.rpeLabel': 'Esfuerzo de la serie',
+  'liveSession.rpeHint': 'Opcional. 10 es el fallo.',
+  'liveSession.rpeOption': 'RPE {value}',
   'liveSession.nextUp': 'Siguiente: {exercise} · serie {set} de {total}',
   'liveSession.plan': 'La rutina',
   'liveSession.allDone': 'Series terminadas',

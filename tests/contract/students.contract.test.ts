@@ -198,6 +198,36 @@ describe('students: el alta que enlaza, en el servidor', () => {
   })
 })
 
+describe('students: la fecha de nacimiento es del alumno', () => {
+  const created: TestAccount[] = []
+  afterAll(() => deleteAccounts(created))
+
+  it('el alumno escribe su fecha; el nivel sigue siendo del entrenador', async () => {
+    const trainer = await signedInAs('nacimiento', { intent: 'trainer', first_name: 'T', last_name: 'R' })
+    const crew = await createActiveCrewAs(trainer, 'Con fechas')
+    const person = await signedInAs('nacida', { intent: 'student', first_name: 'N', last_name: 'A' })
+    created.push(trainer, person)
+
+    const { data: ficha } = await trainer.client
+      .from('students')
+      .insert({ crew_id: crew.id, profile_id: person.id, email: person.email, membership_status: 'active' })
+      .select('id')
+      .single()
+
+    const own = await person.client.from('students').update({ birth_date: '1995-04-12' }).eq('id', ficha?.id)
+    expect(own.error).toBeNull()
+    const { data: after } = await adminClient().from('students').select('birth_date').eq('id', ficha?.id).single()
+    expect(after?.birth_date).toBe('1995-04-12')
+
+    // Antes de 1900 no nace nadie: lo corta el check.
+    const ancient = await person.client.from('students').update({ birth_date: '1850-01-01' }).eq('id', ficha?.id)
+    expect(ancient.error?.code).toBe('23514')
+
+    const level = await person.client.from('students').update({ level: 'Avanzado' }).eq('id', ficha?.id)
+    expect(level.error?.message).toBe('forbidden')
+  })
+})
+
 describe('students: una solicitud pendiente la retira quien la hizo', () => {
   const created: TestAccount[] = []
   afterAll(() => deleteAccounts(created))

@@ -403,9 +403,13 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
 - Hay registro de auditoría de lo que CAMBIA —`audit_log`, escrito por un
   disparador en equipos, puestos, fichas y cuotas; lo lee quien gobierna el
   equipo—, pero ninguna pantalla lo enseña todavía y nadie registra quién MIRÓ.
-- Props declaradas y sin conectar, marcadas con `TODO:` en gamification y
-  calendar. `ChallengeCard.onUpdate` es la más grave: el padre le pasa un
-  manejador real que nunca se invoca.
+- MOTORES DE PROGRESO, en marcha por fases (plan en `CAMBIOS` §30). Fase 0:
+  `students.birth_date` sustituye a `age` —la edad se deriva con `ageOf` y
+  la escribe el propio alumno—, cada serie admite `rpe` opcional (1–10,
+  validado en `is_valid_session_result`), `plannedWeekVolume` suma lo que una
+  semana de plan programa, y `crew_ranking` ya no regala 20 puntos a quien no
+  entrena. Hay suite UNITARIA —`npm run test:unit`, `tests/unit/`— para las
+  funciones puras del dominio; corre en la CI junto al lint.
 - El aviso de fin de descanso son TRES señales y ninguna llega sola: color,
   vibración y sonido. El color no sirve con el teléfono en el bolsillo; la
   vibración no existe en iOS —Apple nunca implementó la Vibration API—; el sonido

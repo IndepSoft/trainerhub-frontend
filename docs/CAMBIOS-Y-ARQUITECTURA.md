@@ -2974,3 +2974,39 @@ La rampa `--scale-*` de las insignias de nivel daba 1,96:1, 2,88:1 y 2,92:1
 sobre Bone, en texto de 10 px. Se oscureció hasta pasar de 4,5:1 y se añadió
 `--scale-*-lift` para las mismas insignias sobre Ink, donde el tono oscuro
 desaparece. Los grises de la tarjeta de alumno subieron de `ink/45` a `ink/60`.
+
+## 30. Motores de progreso (10 sep 2026)
+
+Plan completo en el artefacto «Motores de progreso de TrainerHub»; aquí las
+decisiones por fase, conforme se ejecutan en `feature/motores-de-progreso`.
+
+### 30.1 Fase 0: los datos antes que las reglas
+
+**Fecha de nacimiento, no edad.** `students.age` era un entero escrito el día
+del alta que envejecía solo, y de él iba a salir la cohorte que pondera la
+puntuación. Se sustituye por `birth_date` y la edad se deriva al leer con
+`ageOf`, que resta partes de fecha y no milisegundos: dividir por 365,25 se
+equivoca justo el día del cumpleaños. La fecha la escribe **el propio alumno**
+desde Configuración además de quien gestiona: es un dato suyo, como el nombre,
+y el entrenador rara vez lo sabe. La guardia de `students` deja de vigilar
+`age` y no añade `birth_date` a la lista de `students.manage`. El alta del
+entrenador no la exige: pedirla convertiría el alta en una consulta.
+
+**RPE por serie, opcional.** `SetRecord.rpe` de 1 a 10, validado en
+`is_valid_session_result`. Se pide durante el descanso y no al cerrar la serie:
+cerrar es un toque con la barra aún en la mano, y el descanso es el único rato
+en que se puede pensar cuánto costó. Es opcional a propósito; sin él el
+progreso se medirá sólo en kilos.
+
+**Volumen planificado.** `plannedWeekVolume(plan, semana, rutinas)` suma
+sesiones, series y minutos de una semana de plan. Es la mitad de la adherencia
+que no existía como número.
+
+**El ranking regalaba veinte puntos.** `crew_ranking` hacía `left join` y
+`sum(20 + …)`: la fila extendida a NULL de quien nunca entrenó sumaba 20. Lo
+tapaban dos filtros del cliente. Corregido con un `case` sobre `s.id`, y con
+prueba de contrato.
+
+**Suite unitaria.** `vitest.unit.config.ts` y `tests/unit/`, separada de los
+contratos porque aquélla exige Docker y una función que calcula una edad no
+debería. Corre en la CI junto al lint.

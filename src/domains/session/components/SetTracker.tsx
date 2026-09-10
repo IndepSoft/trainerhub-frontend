@@ -46,6 +46,9 @@ const REST_VERDICT_KEY: Record<RestVerdict, TranslationKey> = {
  * que la insignia de cuota.
  */
 const OFF_TARGET = 'text-ember'
+
+/** Los valores de RPE que se ofrecen: por debajo de 6 nadie anota. */
+const RPE_OPTIONS = [6, 7, 8, 9, 10] as const
 const ON_TARGET = 'text-ink/45'
 
 interface SetTrackerProps {
@@ -69,6 +72,8 @@ interface SetTrackerProps {
   onSetWeight: (kilos: number | null) => void
   onAdjustWeight: (delta: number) => void
   onFinishSet: () => void
+  /** Anota el RPE de la serie que acaba de cerrarse. */
+  onRateLastSet: (rpe: number) => void
   onStartNextSet: () => void
   /** Reabre la última serie cerrada. `null` cuando no hay ninguna que deshacer. */
   onUndoLastSet: (() => void) | null
@@ -108,6 +113,7 @@ export function SetTracker({
   onFinishSet,
   onStartNextSet,
   onUndoLastSet,
+  onRateLastSet,
 }: SetTrackerProps) {
   const { t } = useTranslation()
 
@@ -176,6 +182,39 @@ export function SetTracker({
             {' · '}
             {t(PACE_VERDICT_KEY[paceVerdict(lastRecord.workSeconds, lastExpected)])}
           </p>
+        )}
+
+        {/*
+          El RPE se pide DURANTE el descanso y no al cerrar: cerrar la serie es
+          un toque con la barra aun en la mano, y el descanso es el unico rato
+          en que se puede pensar cuanto costo. Un toque, y opcional.
+        */}
+        {lastRecord !== null && (
+          <div className="mt-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/55">
+              {t('liveSession.rpeLabel')}
+              <span className="ms-2 normal-case tracking-normal text-ink/45">{t('liveSession.rpeHint')}</span>
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label={t('liveSession.rpeLabel')}>
+              {RPE_OPTIONS.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  aria-pressed={lastRecord.rpe === option}
+                  aria-label={t('liveSession.rpeOption', { value: option })}
+                  onClick={() => onRateLastSet(option)}
+                  className={cn(
+                    'metric-figures flex size-11 items-center justify-center rounded-action border text-sm font-bold transition-colors',
+                    lastRecord.rpe === option
+                      ? 'border-ink bg-ink text-bone'
+                      : 'border-cobalt-tint-3 bg-surface text-ink hover:border-cobalt/40'
+                  )}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </div>
         )}
 
         {nextStep !== null && (

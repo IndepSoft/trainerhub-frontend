@@ -43,6 +43,11 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # Funciones puras del dominio: sin navegador y sin base, en segundos.
+      - name: Pruebas unitarias
+        if: '!cancelled()'
+        run: npm run test:unit
+
       # Si el lint falla, esto sigue ejecutandose: mejor ver los dos informes de
       # una vez que arreglar uno, esperar otra ronda y descubrir el siguiente.
       - name: Build

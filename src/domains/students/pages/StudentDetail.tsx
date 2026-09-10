@@ -16,6 +16,7 @@ import { ScheduleSessionDialog } from '../components/ScheduleSessionDialog'
 import { LEVEL_BADGE } from '../libs/levelBadge'
 import { cn } from '@/shared/lib/utils'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { ageOf } from '@/shared/domain/entities/student'
 import { STUDENT_LEVEL_LABEL_KEY, goalLabel } from '@/shared/i18n/domainLabels'
 
 /**
@@ -122,7 +123,7 @@ export default function StudentDetail() {
         <div className="grid grid-cols-1 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           <Metric
             label={t('studentCard.age')}
-            value={`${student.age}`}
+            value={`${ageOf(student.birthDate) ?? '—'}`}
             unit={t('studentCard.years')}
           />
           <Metric label={t('studentDetail.bodyFat')} value={`${student.bodyFatPercentage}`} unit="%" />

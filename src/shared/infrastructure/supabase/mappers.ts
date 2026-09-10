@@ -286,7 +286,7 @@ export interface StudentRow {
   email: string
   level: string
   goals: string[] | null
-  age: number
+  birth_date?: string | null
   body_fat_percentage: number | string
   photo_url?: string | null
   extra_capabilities: string[] | null
@@ -316,7 +316,7 @@ export function toStudent(row: StudentRow): Student {
     email: row.email,
     level: isStudentLevel(row.level) ? row.level : 'Principiante',
     goals: row.goals ?? [],
-    age: row.age,
+    birthDate: row.birth_date ?? null,
     bodyFatPercentage: Number(row.body_fat_percentage),
     photoUrl: optional(row.photo_url),
     extraCapabilities: (row.extra_capabilities ?? []).filter(isCapability),
@@ -333,7 +333,7 @@ export function toStudentRow(student: NewStudent): Omit<StudentRow, 'id' | 'crew
     email: student.email,
     level: student.level,
     goals: student.goals,
-    age: student.age,
+    birth_date: student.birthDate,
     body_fat_percentage: student.bodyFatPercentage,
     photo_url: student.photoUrl ?? null,
     extra_capabilities: student.extraCapabilities,
@@ -344,11 +344,12 @@ export function toStudentRow(student: NewStudent): Omit<StudentRow, 'id' | 'crew
 /** Lo que un alumno cambia de si mismo. Nada mas: lo demas es la libreta del entrenador. */
 export function toStudentProfileRow(
   profile: StudentProfile
-): Pick<StudentRow, 'first_name' | 'last_name' | 'photo_url'> {
+): Pick<StudentRow, 'first_name' | 'last_name' | 'photo_url' | 'birth_date'> {
   return {
     first_name: profile.firstName,
     last_name: profile.lastName,
     photo_url: profile.photoUrl ?? null,
+    birth_date: profile.birthDate,
   }
 }
 

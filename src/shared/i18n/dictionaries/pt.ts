@@ -67,6 +67,8 @@ export const portuguese: Dictionary = {
   'settings.eyebrow': 'Sua conta',
   'settings.title': 'Configurações',
   'settings.profile': 'Perfil',
+  'settings.profile.birthDate': 'Data de nascimento',
+  'settings.profile.birthDateHint': 'Só você e quem treina você veem. Dela sai seu grupo de idade no progresso.',
   'settings.crew': 'Equipe',
   'settings.crewNone': 'Você não está em nenhuma equipe.',
   'settings.crewSettings': 'Ajustes da equipe',
@@ -497,6 +499,7 @@ export const portuguese: Dictionary = {
   'studentForm.emailPlaceholder': 'aluno@email.com',
   'studentForm.emailHint': 'Com este e-mail a conta dele será vinculada quando se cadastrar.',
   'studentForm.bodyFat': 'Gordura (%)',
+  'studentForm.birthDate': 'Data de nascimento',
   'studentForm.saveChanges': 'Salvar mudanças',
 
   // ---------------------------------------------------- asignar y avisar
@@ -918,6 +921,9 @@ export const portuguese: Dictionary = {
   'liveSession.repsDone': '{done} de {prescribed} repetições',
   'liveSession.expectedWork': 'Prevista em cerca de {seconds} s',
   'liveSession.setDone': '{reps} de {prescribed} repetições em {seconds} s',
+  'liveSession.rpeLabel': 'Esforço da série',
+  'liveSession.rpeHint': 'Opcional. 10 é a falha.',
+  'liveSession.rpeOption': 'RPE {value}',
   'liveSession.nextUp': 'A seguir: {exercise} · série {set} de {total}',
   'liveSession.plan': 'A rotina',
   'liveSession.allDone': 'Séries terminadas',
