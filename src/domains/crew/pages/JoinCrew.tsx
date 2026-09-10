@@ -8,7 +8,7 @@ import { Label } from '@/shared/ui/label'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { useViewerContext } from '@/app/ViewerContext'
 import { useJoinCrew, type JoinOutcome } from '../hooks/useJoinCrew'
-import { JOIN_CODE_PARAM } from '../libs/joinLink'
+import { JOIN_CODE_PARAM } from '@/shared/lib/joinLink'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 
@@ -78,10 +78,7 @@ export default function JoinCrew() {
 
       <div className="flex-1 overflow-auto">
         <div className="mx-auto max-w-md space-y-6 px-5 py-6">
-          <p className="text-sm text-ink/60">
-            Pídele a tu entrenador el código de su equipo, o apunta la cámara a su
-            QR: se abrirá esta misma pantalla con el código ya puesto.
-          </p>
+          <p className="text-sm text-ink/60">{t('join.intro')}</p>
 
           {error !== null && (
             <Alert variant="destructive">

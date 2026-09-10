@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
-import { getMobileRoutes } from '@/app/config/navigation.config'
+import { getMobileRoutes, managesWork } from '@/app/config/navigation.config'
+import { usePendingWork } from '@/shared/hooks/usePendingWork'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { cn } from '@/shared/lib/utils'
 import type { NavigationViewer } from '@/app/config/navigation.config'
@@ -29,6 +30,7 @@ interface BottomTabBarProps {
 export function BottomTabBar({ navigationViewer }: BottomTabBarProps) {
   const { t } = useTranslation()
   const routes = getMobileRoutes(navigationViewer)
+  const pending = usePendingWork(managesWork(navigationViewer))
 
   return (
     <nav
@@ -67,10 +69,20 @@ export function BottomTabBar({ navigationViewer }: BottomTabBarProps) {
                   />
 
                   {route.icon && (
-                    <route.icon
-                      className="size-5 shrink-0"
-                      strokeWidth={isActive ? 2.5 : 2}
-                    />
+                    <span className="relative">
+                      <route.icon
+                        className="size-5 shrink-0"
+                        strokeWidth={isActive ? 2.5 : 2}
+                      />
+                      {route.id === 'dashboard' && pending.total > 0 && (
+                        <span
+                          aria-label={t('nav.pendingLabel', { count: pending.total })}
+                          className="metric-figures absolute -end-2.5 -top-1.5 flex min-w-4 items-center justify-center rounded-full bg-ember px-1 text-[9px] font-bold leading-4 text-white"
+                        >
+                          {pending.total > 9 ? '9+' : pending.total}
+                        </span>
+                      )}
+                    </span>
                   )}
 
                   <span className="text-[10px] font-semibold uppercase tracking-wider">

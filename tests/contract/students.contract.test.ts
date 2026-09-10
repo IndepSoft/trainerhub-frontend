@@ -295,3 +295,156 @@ describe('platform: solo quien administra', () => {
     expect(users.error?.message).toBe('forbidden')
   })
 })
+
+describe('students: la baja y la vuelta', () => {
+  const created: TestAccount[] = []
+  afterAll(() => deleteAccounts(created))
+
+  it('quien gestiona da la baja y cancela lo por venir; el alumno se va solo si esta dentro; solo quien gestiona reactiva', async () => {
+    const trainer = await signedInAs('baja', { intent: 'trainer', first_name: 'T', last_name: 'R' })
+    const crew = await createActiveCrewAs(trainer, 'Con bajas')
+    const person = await signedInAs('dado-de-baja', { intent: 'student', first_name: 'D', last_name: 'B' })
+    const other = await signedInAs('otra-alumna', { intent: 'student', first_name: 'O', last_name: 'A' })
+    created.push(trainer, person, other)
+
+    const { data: ficha } = await trainer.client
+      .from('students')
+      .insert({ crew_id: crew.id, profile_id: person.id, email: person.email, membership_status: 'active' })
+      .select('id')
+      .single()
+    const studentId = ficha?.id as string
+
+    // Una sesion por venir y otra ya pasada sin cerrar.
+    // En local y no en UTC: `toISOString` cambia de dia cerca de medianoche.
+    const dayKey = (offset: number): string => {
+      const date = new Date()
+      date.setDate(date.getDate() + offset)
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      return `${date.getFullYear()}-${month}-${day}`
+    }
+    await trainer.client.from('sessions').insert([
+      { crew_id: crew.id, student_id: studentId, title: 'Por venir', kind: 'individual', modality: 'strength', date: dayKey(3), time: '09:00', duration_minutes: 60 },
+      { crew_id: crew.id, student_id: studentId, title: 'No ocurrio', kind: 'individual', modality: 'strength', date: dayKey(-3), time: '09:00', duration_minutes: 60 },
+    ])
+
+    // Otra alumna no da de baja a nadie.
+    const denied = await other.client.rpc('deactivate_student', { student: studentId })
+    expect(denied.error?.message).toBeTruthy()
+
+    const done = await trainer.client.rpc('deactivate_student', { student: studentId })
+    expect(done.error).toBeNull()
+    const { data: after } = await adminClient().from('students').select('membership_status').eq('id', studentId).single()
+    expect(after?.membership_status).toBe('inactive')
+    const { data: sessions } = await adminClient().from('sessions').select('title, status').eq('student_id', studentId).order('title')
+    expect(sessions).toEqual([
+      { title: 'No ocurrio', status: 'pending' },
+      { title: 'Por venir', status: 'cancelled' },
+    ])
+
+    // De baja no es miembro: el padron del equipo tecnico no la lista.
+    const { data: roster } = await trainer.client.from('students').select('id').eq('crew_id', crew.id).in('membership_status', ['active', 'invited'])
+    expect(roster).toEqual([])
+
+    // El alumno no se reactiva a si mismo; quien gestiona, si, y vuelve activo.
+    const selfBack = await person.client.rpc('reactivate_student', { student: studentId })
+    expect(selfBack.error?.message).toBe('forbidden')
+    const back = await trainer.client.rpc('reactivate_student', { student: studentId })
+    expect(back.error).toBeNull()
+    const { data: again } = await adminClient().from('students').select('membership_status').eq('id', studentId).single()
+    expect(again?.membership_status).toBe('active')
+
+    // Y el propio alumno puede irse mientras este dentro.
+    const leave = await person.client.rpc('deactivate_student', { student: studentId })
+    expect(leave.error).toBeNull()
+    const { data: gone } = await adminClient().from('students').select('membership_status').eq('id', studentId).single()
+    expect(gone?.membership_status).toBe('inactive')
+    // Ya fuera, no puede volver a irse ni volver por su cuenta.
+    const twice = await person.client.rpc('deactivate_student', { student: studentId })
+    expect(twice.error?.message).toBe('forbidden')
+  })
+})
+
+describe('students: el rechazo se retira, y aprobar avisa', () => {
+  const created: TestAccount[] = []
+  afterAll(() => deleteAccounts(created))
+
+  it('la ficha rechazada la borra su dueño; la aprobada deja un aviso de pertenencia en su campana', async () => {
+    const trainer = await signedInAs('decide', { intent: 'trainer', first_name: 'T', last_name: 'R' })
+    const crew = await createActiveCrewAs(trainer, 'Que decide')
+    // Con aprobacion: es lo que deja fichas pendientes.
+    await adminClient().from('crews').update({ requires_approval: true }).eq('id', crew.id)
+    const refused = await signedInAs('rechazada', { intent: 'student', first_name: 'R', last_name: 'E' })
+    const welcomed = await signedInAs('aceptada', { intent: 'student', first_name: 'A', last_name: 'C' })
+    created.push(trainer, refused, welcomed)
+
+    const { data: token } = await adminClient().from('crews').select('join_token').eq('id', crew.id).single()
+    const first = await refused.client.rpc('claim_membership', { crew_token: token?.join_token })
+    const second = await welcomed.client.rpc('claim_membership', { crew_token: token?.join_token })
+    const refusedId = (first.data as { id: string }).id
+    const welcomedId = (second.data as { id: string }).id
+
+    await trainer.client.from('students').update({ membership_status: 'rejected' }).eq('id', refusedId)
+    await trainer.client.from('students').update({ membership_status: 'active' }).eq('id', welcomedId)
+
+    // El rechazo llega al alumno -su fila sigue siendo suya- y se retira con un borrado.
+    const { data: seen } = await refused.client.from('students').select('membership_status').eq('id', refusedId).single()
+    expect(seen?.membership_status).toBe('rejected')
+    const withdrawn = await refused.client.from('students').delete().eq('id', refusedId)
+    expect(withdrawn.error).toBeNull()
+    const { data: left } = await adminClient().from('students').select('id').eq('id', refusedId)
+    expect(left).toEqual([])
+
+    // Aprobar dejo un aviso de pertenencia, con el nombre del equipo como cuerpo.
+    const { data: notices } = await welcomed.client.from('notices').select('kind, body, read_at').eq('student_id', welcomedId)
+    expect(notices).toEqual([{ kind: 'membership', body: 'Que decide', read_at: null }])
+  })
+})
+
+describe('students: nada apunta a un alumno de otro equipo', () => {
+  const created: TestAccount[] = []
+  afterAll(() => deleteAccounts(created))
+
+  it('una sesion, una asignacion, un aviso o una cuota del equipo A no pueden ser de un alumno del equipo B', async () => {
+    const trainerA = await signedInAs('equipo-a', { intent: 'trainer', first_name: 'A', last_name: 'A' })
+    const trainerB = await signedInAs('equipo-b', { intent: 'trainer', first_name: 'B', last_name: 'B' })
+    const crewA = await createActiveCrewAs(trainerA, 'Equipo A')
+    const crewB = await createActiveCrewAs(trainerB, 'Equipo B')
+    const person = await signedInAs('de-b', { intent: 'student', first_name: 'D', last_name: 'B' })
+    created.push(trainerA, trainerB, person)
+
+    const { data: ficha } = await trainerB.client
+      .from('students')
+      .insert({ crew_id: crewB.id, profile_id: person.id, email: person.email, membership_status: 'active' })
+      .select('id')
+      .single()
+    const studentOfB = ficha?.id as string
+
+    const session = await trainerA.client.from('sessions').insert({
+      crew_id: crewA.id, student_id: studentOfB, title: 'Ajena', kind: 'individual', modality: 'strength',
+      date: '2026-10-01', time: '09:00', duration_minutes: 60,
+    })
+    expect(session.error?.message).toBe('forbidden')
+
+    const notice = await trainerA.client.from('notices').insert({ crew_id: crewA.id, student_id: studentOfB, kind: 'general', body: 'Hola' })
+    expect(notice.error?.message).toBe('forbidden')
+
+    const dues = await trainerA.client.from('student_subscriptions').insert({ crew_id: crewA.id, student_id: studentOfB, period_days: 30, paid_through: null })
+    expect(dues.error?.message).toBe('forbidden')
+
+    const { data: plan } = await trainerA.client
+      .from('plans')
+      .insert({ crew_id: crewA.id, title: 'Plan A', objective_id: 'hipertrofia', split_id: 'full-body', weekly_frequency: 3, level: 'Principiante', weeks: [{ number: 1, isDeload: false, days: [] }] })
+      .select('id')
+      .single()
+    const assignment = await trainerA.client.from('assignments').insert({ crew_id: crewA.id, student_id: studentOfB, kind: 'plan', plan_id: plan?.id })
+    expect(assignment.error?.message).toBe('forbidden')
+
+    // Y en su propio equipo, todo eso sigue entrando.
+    const own = await trainerB.client.from('sessions').insert({
+      crew_id: crewB.id, student_id: studentOfB, title: 'Propia', kind: 'individual', modality: 'strength',
+      date: '2026-10-01', time: '09:00', duration_minutes: 60,
+    })
+    expect(own.error).toBeNull()
+  })
+})

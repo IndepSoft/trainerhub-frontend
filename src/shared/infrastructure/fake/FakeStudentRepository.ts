@@ -10,6 +10,9 @@ import type { MembershipStatus } from '@/shared/domain/entities/crew'
 import type { Capability } from '@/shared/domain/permissions'
 import type { Student } from '@/shared/domain/entities/student'
 import { studentsSeed } from './studentsSeed'
+import { crewNameOf } from './crewsSeed'
+import type { FakeSessionRepository } from './FakeSessionRepository'
+import type { FakeNoticeRepository } from './FakeNoticeRepository'
 
 /**
  * Estudiantes simulados mientras no hay backend.
@@ -36,9 +39,20 @@ export class FakeStudentRepository implements StudentRepository {
   // Campo declarado y asignado, no propiedad de parametro: `erasableSyntaxOnly`
   // esta activo en el `tsconfig`, y esa azucar de TypeScript emite codigo.
   private readonly scope: CrewScope
+  /*
+   * Los dos almacenes que la base cruza desde sus funciones: la baja cancela
+   * sesiones (`deactivate_student`) y aprobar deja un aviso (el disparador
+   * `students_notify_membership`). La simulacion recibe las clases concretas
+   * por lo mismo que el ranking: son escrituras que el ambito de un puerto no
+   * expresa.
+   */
+  private readonly sessions: FakeSessionRepository
+  private readonly notices: FakeNoticeRepository
 
-  constructor(scope: CrewScope) {
+  constructor(scope: CrewScope, sessions: FakeSessionRepository, notices: FakeNoticeRepository) {
     this.scope = scope
+    this.sessions = sessions
+    this.notices = notices
   }
 
   async findAll(): Promise<Student[]> {
@@ -47,6 +61,10 @@ export class FakeStudentRepository implements StudentRepository {
 
   async findRequests(): Promise<Student[]> {
     return this.inScope().filter((student) => student.membershipStatus === 'pending')
+  }
+
+  async findInactive(): Promise<Student[]> {
+    return this.inScope().filter((student) => student.membershipStatus === 'inactive')
   }
 
   async findById(studentId: string): Promise<Student | null> {
@@ -134,8 +152,41 @@ export class FakeStudentRepository implements StudentRepository {
   }
 
   async updateMembership(studentId: string, status: MembershipStatus): Promise<void> {
+    const before = this.students.find((student) => student.id === studentId)
     this.students = this.students.map((student) =>
       student.id === studentId ? { ...student, membershipStatus: status } : student
+    )
+    // Lo que hace el disparador: aprobar deja un aviso en la campana del
+    // alumno, con el nombre del equipo como cuerpo.
+    if (
+      before !== undefined &&
+      before.membershipStatus === 'pending' &&
+      status === 'active' &&
+      before.profileId !== null
+    ) {
+      this.notices.record(before.crewId, before.id, 'membership', crewNameOf(before.crewId))
+    }
+    this.notify()
+  }
+
+  async deactivate(studentId: string): Promise<void> {
+    const target = this.students.find((student) => student.id === studentId)
+    if (target === undefined || !isMember(target.membershipStatus)) {
+      throw new Error('La baja solo se da a quien esta dentro.')
+    }
+    this.students = this.students.map((student) =>
+      student.id === studentId ? { ...student, membershipStatus: 'inactive' } : student
+    )
+    // Las dos escrituras de `deactivate_student`: la ficha y su agenda.
+    this.sessions.cancelUpcomingOf(studentId)
+    this.notify()
+  }
+
+  async reactivate(studentId: string): Promise<void> {
+    this.students = this.students.map((student) =>
+      student.id === studentId && student.membershipStatus === 'inactive'
+        ? { ...student, membershipStatus: student.profileId === null ? 'invited' : 'active' }
+        : student
     )
     this.notify()
   }
@@ -196,9 +247,13 @@ export class FakeStudentRepository implements StudentRepository {
   }
 
   async withdrawRequest(studentId: string): Promise<void> {
-    // La regla del servidor -solo la pendiente-, en memoria.
+    // La regla del servidor -la pendiente o la rechazada-, en memoria.
     this.students = this.students.filter(
-      (student) => !(student.id === studentId && student.membershipStatus === 'pending')
+      (student) =>
+        !(
+          student.id === studentId &&
+          (student.membershipStatus === 'pending' || student.membershipStatus === 'rejected')
+        )
     )
     this.notify()
   }

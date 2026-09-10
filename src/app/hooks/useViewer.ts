@@ -39,6 +39,12 @@ interface UseViewerResult {
   memberships: Membership[]
   /** Las solicitudes enviadas y sin responder, sólo para poder decirlo. */
   pending: Membership[]
+  /**
+   * Las rechazadas, sólo para poder decirlo. Antes se descartaban y el alumno
+   * volvía a ver «únete» como si nunca hubiera pedido nada; lo normal era que
+   * volviera a escanear. Se enseña una vez y se retira con «entendido».
+   */
+  rejected: Membership[]
   /** En cuál se está trabajando ahora. `null` cuando no se pertenece a ninguno. */
   active: Membership | null
   /** Atajo de `active?.role`. `null` sin crew: no se es nada todavía. */
@@ -310,6 +316,7 @@ export function useViewer(): UseViewerResult {
     person: trainer ?? active?.student ?? {},
     memberships: belonging,
     pending: memberships.filter((entry) => entry.status === 'pending'),
+    rejected: memberships.filter((entry) => entry.status === 'rejected'),
     active,
     role: active?.role ?? null,
     can: (capability: Capability) =>

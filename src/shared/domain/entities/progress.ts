@@ -136,6 +136,22 @@ export interface RouteProgress {
   adherentWeeks: number
   /** Nodos que el entrenador ya validó. */
   validatedPositions: number[]
+  /**
+   * Si la ruta la eligió el entrenador a mano. Cuando no, sale del objetivo
+   * del último plan asignado, y asignar otro plan la cambia: es lo que el
+   * diálogo de asignar tiene que poder avisar.
+   */
+  chosenByTrainer: boolean
+}
+
+/**
+ * Un hito que ya cumple puntos y semanas y sólo espera la validación del
+ * entrenador. Es lo que la bandeja del panel lista por equipo.
+ */
+export interface PendingMilestone {
+  studentId: string
+  routeCode: ProgressRouteCode
+  position: number
 }
 
 /**

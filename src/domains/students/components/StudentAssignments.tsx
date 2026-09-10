@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CalendarCheck, CalendarRange, Dumbbell, Plus, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/shared/ui/button'
+import { describeError } from '@/shared/i18n/errorMessages'
 import { useStudentAssignments } from '../hooks/useStudentAssignments'
 import { useAssignableRoutines } from '../hooks/useAssignableRoutines'
 import { useAssignablePlans } from '../hooks/useAssignablePlans'
@@ -30,7 +32,18 @@ interface StudentAssignmentsProps {
  */
 export function StudentAssignments({ student }: StudentAssignmentsProps) {
   const { t } = useTranslation()
-  const { assignments, loading, assign, unassign } = useStudentAssignments(student.id)
+  const { assignments, loading, error, assign, unassign } = useStudentAssignments(student.id)
+
+  // Quitar tambien se espera y se dice: era un `void` que se tragaba el rechazo.
+  const handleUnassign = async (assignmentId: string) => {
+    try {
+      await unassign(assignmentId)
+    } catch (caught) {
+      toast.error(describeError(caught, t, 'assignments.removeError'))
+      return
+    }
+    toast.success(t('assignments.removed'))
+  }
   const { routines } = useAssignableRoutines()
   const { plans } = useAssignablePlans()
 
@@ -75,6 +88,10 @@ export function StudentAssignments({ student }: StudentAssignmentsProps) {
           {t('assign.title')}
         </Button>
       </div>
+
+      {/* El error de lectura existia en el hook y no se pintaba: una lista
+          vacia por un fallo de red se leia como «no tiene nada asignado». */}
+      {error !== null && <p className="py-4 text-sm text-danger">{error}</p>}
 
       {loading ? null : assignments.length === 0 ? (
         <p className="py-8 text-center text-sm text-ink/40">
@@ -142,7 +159,7 @@ export function StudentAssignments({ student }: StudentAssignmentsProps) {
 
               <button
                 type="button"
-                onClick={() => void unassign(assignment.id)}
+                onClick={() => void handleUnassign(assignment.id)}
                 aria-label={t('assignments.removeLabel', {
                   title: titlesById.get(targetOf(assignment)) ?? t('assignments.thisItem'),
                 })}

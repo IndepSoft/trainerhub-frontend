@@ -56,3 +56,12 @@ export const crewsSeed: Crew[] = [
     activationRequestedAt: null,
   },
 ]
+
+/**
+ * El nombre de un equipo de la semilla, para lo que el servidor escribe con
+ * el nombre dentro -el aviso de pertenencia-. El identificador si no se
+ * encuentra: un aviso con un nombre feo es mejor que uno que no llega.
+ */
+export function crewNameOf(crewId: string): string {
+  return crewsSeed.find((crew) => crew.id === crewId)?.name ?? crewId
+}

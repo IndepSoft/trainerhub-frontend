@@ -15,7 +15,7 @@ import type { MembershipStatus } from '@/shared/domain/entities/crew'
 import type { Student, StudentLevel } from '@/shared/domain/entities/student'
 import type { NewStudent, StudentProfile } from '@/shared/domain/ports/StudentRepository'
 import type { StudentSubscription } from '@/shared/domain/entities/studentSubscription'
-import type { Notice } from '@/shared/domain/entities/notice'
+import type { Notice, NoticeKind } from '@/shared/domain/entities/notice'
 import type { CrewOverview, PlatformUser } from '@/shared/domain/ports/PlatformRepository'
 import type { Block, Routine, TrainingLevel } from '@/shared/domain/entities/routine'
 import type { NewRoutine } from '@/shared/domain/ports/RoutineRepository'
@@ -42,6 +42,7 @@ import {
   type StreakPause,
   type StreakPauseReason,
   type StudentBadge,
+  type PendingMilestone,
 } from '@/shared/domain/entities/progress'
 
 /**
@@ -306,7 +307,13 @@ function isStudentLevel(value: string): value is StudentLevel {
 }
 
 function isMembershipStatus(value: string): value is MembershipStatus {
-  return value === 'invited' || value === 'pending' || value === 'active' || value === 'rejected'
+  return (
+    value === 'invited' ||
+    value === 'pending' ||
+    value === 'active' ||
+    value === 'rejected' ||
+    value === 'inactive'
+  )
 }
 
 /**
@@ -398,12 +405,16 @@ export interface NoticeRow {
   read_at: string | null
 }
 
+function isNoticeKind(value: string): value is NoticeKind {
+  return value === 'dues' || value === 'general' || value === 'membership'
+}
+
 export function toNotice(row: NoticeRow): Notice {
   return {
     id: row.id,
     crewId: row.crew_id,
     studentId: row.student_id,
-    kind: row.kind === 'dues' ? 'dues' : 'general',
+    kind: isNoticeKind(row.kind) ? row.kind : 'general',
     body: row.body,
     createdAt: row.created_at,
     readAt: row.read_at,
@@ -887,6 +898,7 @@ export interface RouteProgressRow {
   points: number | string
   adherent_weeks: number | string
   validated_positions: number[] | null
+  chosen: boolean | null
 }
 
 export function toRouteProgress(studentId: string, row: RouteProgressRow): RouteProgress {
@@ -899,6 +911,22 @@ export function toRouteProgress(studentId: string, row: RouteProgressRow): Route
     points: Number(row.points),
     adherentWeeks: Number(row.adherent_weeks),
     validatedPositions: (row.validated_positions ?? []).map(Number),
+    chosenByTrainer: row.chosen === true,
+  }
+}
+
+/** Fila de `crew_pending_milestones`. */
+export interface PendingMilestoneRow {
+  student_id: string
+  route_code: string
+  node_position: number | string
+}
+
+export function toPendingMilestone(row: PendingMilestoneRow): PendingMilestone {
+  return {
+    studentId: row.student_id,
+    routeCode: isProgressRouteCode(row.route_code) ? row.route_code : 'hybrid',
+    position: Number(row.node_position),
   }
 }
 

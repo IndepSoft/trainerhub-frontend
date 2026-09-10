@@ -3100,3 +3100,85 @@ quién se compara, no otra interfaz.
 **Lo que queda fuera.** Ligas, eventos e insignias míticas: dependen de
 eventos del equipo y de cobro, y ninguno de los dos existe. Es la fase 4 del
 plan, sin fecha.
+
+## 31. Los ciclos de vida y la bandeja (11 sep 2026)
+
+Sale de la segunda lectura de los flujos —`docs/FLUJOS-DEL-SISTEMA.md`—, que
+contrastó el primer mapa contra el código y encontró tres raíces: trabajo
+pendiente sin cola, ciclos de vida sin estado final, y la regla de respuesta
+—aviso después de escribir, fallo donde se actuó— cumplida en la mitad de los
+diálogos. El plan de aquel documento tenía veintiún puntos en cuatro bloques;
+esta entrada es lo que se hizo con ellos, de una vez y en una rama.
+
+**Los defectos de una función (bloque A).** La fecha por defecto de asignar se
+REPONE en `resetForm` y en `changeKind`: la vaciaban, y el «hoy» valía sólo la
+primera vez. Ocho diálogos escribían sin capturar el rechazo —asignar, quitar
+asignación, agendar desde la ficha, volcar, aceptar y rechazar, cobrar, avisar,
+guardar rutina y plan—; ahora todos esperan al puerto y lo dicen donde se
+pulsó, y el de avisos ya no se queda en «Enviando…» para siempre. El código
+del QR se rellena en el registro desde la ruta pretendida, porque con la
+confirmación por correo esa ruta se pierde y el código viaja con el alta. Un aviso a
+una ficha sin cuenta se sigue mandando —espera en la ficha y se lee al
+registrarse con ese correo—, y ahora se dice que todavía no tiene campana. Dieciséis cadenas en castellano fijo pasaron por los tres
+diccionarios. Y «Añadir alumno» pregunta por `students.manage`, que es lo que
+exige la política de inserción; preguntaba por `crew.invite`.
+
+**Decir lo que ya se sabía (bloque B).** `route_progress` devuelve `chosen`:
+si la ruta la eligió el entrenador. Con eso, asignar un plan AVISA de que la
+ruta va a cambiar —el efecto existía desde la fase 2 y era invisible—. La
+tarjeta del alumno dice «sin cuenta» y ofrece el enlace de invitación, que
+subió a `shared` con `joinLink`. La ficha de rutina explica cómo se asigna,
+como la del plan. El borrador de rutina vive en `sessionStorage` mientras se
+escribe, así salir al catálogo no lo pierde; se recupera con aviso y se
+descarta a mano. Las tres promesas de aviso sin mecanismo cambian de texto,
+y una se cumple: ver el bloque C.
+
+**La bandeja del entrenador (bloque C).** `usePendingWork` junta en una sola
+pregunta lo que espera una decisión: solicitudes, hitos que ya cumplen puntos
+y semanas, insignias por confirmar, cargas por revisar, cuotas vencidas y
+fichas sin cuenta. Dos consultas nuevas por equipo —`crew_pending_milestones`
+y `crew_flagged_scores`— porque las que había eran ficha a ficha. Se pinta en
+el panel con la puerta a cada cosa, y la cifra va en la barra lateral y en la
+inferior. Aprobar una solicitud deja un aviso de clase `membership` en la
+campana del alumno, escrito por un disparador en la misma transacción, con el
+nombre del equipo como cuerpo y el texto puesto por el diccionario de quien
+lee. Y «Primeros pasos» en el panel mientras falte algo del arranque: equipo,
+activación, rutina, alumno, sesión. Desaparece cuando está todo.
+
+**Los ciclos de vida (bloque D).** La BAJA existe: `membership_status =
+'inactive'`, que no es miembro y sale del padrón, del panel, de la retención y
+de los cobros sin tocar nada más, porque todo filtraba ya por `active` e
+`invited`. La da quien tiene `crew.members` desde la tarjeta, o el propio
+alumno desde Configuración —«Salir del equipo»—; `deactivate_student` cancela
+en la misma transacción lo que tenía por venir, y `reactivate_student` lo
+devuelve a activo o invitado según tenga cuenta. La sesión «NO OCURRIÓ» se
+deriva del día —abierta y con la fecha pasada— y no se guarda: nadie tendría
+que escribirla cada noche. La agenda la pinta apagada con su tile propio, el
+detalle dice qué hacer, y «mover una semana» y «cancelar las pendientes» dejan
+quieto lo que ya pasó, en el cliente y en `shift_sessions`. El RECHAZO llega al
+alumno: `useViewer` expone las fichas rechazadas, la invitación dice que no
+fue aceptado, y «entendido» retira la fila con la misma política que la
+pendiente. Un SEGUNDO EQUIPO se funda desde el conmutador y desde Configuración
+—el caso del segundo local no tenía puerta—. El REPERTORIO del alumno se ve en
+Progreso, y para que sus enlaces lleven a algo las fichas de rutina y de plan
+se abren a cualquier miembro: editar, borrar y agendar siguen detrás de
+`training.manage`. Y el tronco común de los dos formularios de sesión
+—modalidad, rutina, fecha, hora, duración, lugar, notas— es
+`SessionScheduleFields`: la agenda conserva el tipo y el alumno, la ficha su
+cabecera, y la deriva que había —duraciones, textos, respuesta al fallo— no
+tiene dónde volver a abrirse.
+
+**Lo que salió de auditar las políticas (§10 de la lectura).** Las políticas
+comprobaban la capacidad sobre `crew_id` y nada sobre `student_id`: quien
+gestiona el equipo A podía agendar, asignar, avisar o cobrar a un alumno del
+equipo B, que lo veía como suyo. `guard_student_crew` lo cierra en las cuatro
+tablas, con prueba de contrato. El resto de lo revisado estaba bien: `role`
+no es editable por el propio perfil, `platform_admin_emails` sólo la escribe el
+rol de servicio, el muro exige `author_profile_id = auth.uid()`, y las
+escrituras de rutas, insignias y pausas van por funciones que comprueban la
+capacidad.
+
+**Lo que sigue fuera.** Correo y push siguen siendo otro trabajo: la campana
+es dentro de la aplicación. La activación de la suscripción no avisa al equipo
+porque la campana es de alumnos; el texto ya no lo promete. Ligas, eventos y
+patrocinios, sin fecha.

@@ -102,10 +102,7 @@ export default function NewCrew() {
 
       <div className="flex-1 overflow-auto">
         <div className="mx-auto max-w-md space-y-6 px-5 py-6">
-          <p className="text-sm text-ink/60">
-            Tus alumnos, tus rutinas y tu agenda pertenecen a un equipo. Nadie
-            de fuera los ve.
-          </p>
+          <p className="text-sm text-ink/60">{t('crew.createIntro')}</p>
 
           {error !== null && (
             <Alert variant="destructive">

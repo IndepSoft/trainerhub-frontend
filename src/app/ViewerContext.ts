@@ -16,6 +16,7 @@ export interface ViewerContextValue {
   person: ViewerPerson
   memberships: Membership[]
   pending: Membership[]
+  rejected: Membership[]
   active: Membership | null
   role: CrewRole | null
   can: (capability: Capability) => boolean
@@ -43,6 +44,7 @@ export const ViewerContext = createContext<ViewerContextValue>({
   person: {},
   memberships: [],
   pending: [],
+  rejected: [],
   active: null,
   role: null,
   can: () => false,

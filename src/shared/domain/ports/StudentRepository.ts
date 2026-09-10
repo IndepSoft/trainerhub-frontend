@@ -33,6 +33,12 @@ export interface StudentRepository {
    * pantalla que las necesita.
    */
   findRequests(): Promise<Student[]>
+  /**
+   * Las bajas del crew activo: quien estuvo y ya no viene. Aparte de
+   * `findAll` porque no son del padrón -no se les agenda ni cuentan- y sólo
+   * las mira la pantalla que puede reactivarlas.
+   */
+  findInactive(): Promise<Student[]>
   findById(studentId: string): Promise<Student | null>
   /**
    * TODAS las fichas de una persona, en cualquier crew. **No está acotado.**
@@ -125,7 +131,19 @@ export interface StudentRepository {
   remove(studentId: string): Promise<void>
 
   /**
-   * Retira una solicitud de entrada que uno mismo hizo y sigue pendiente.
+   * La baja: deja de contar en el equipo y sus sesiones por hacer se
+   * cancelan; el historial se queda. La da quien tiene `crew.members`, o el
+   * propio alumno al irse. Con Supabase es `deactivate_student`, que hace las
+   * dos escrituras en una transacción.
+   */
+  deactivate(studentId: string): Promise<void>
+
+  /** Deshace la baja. Sólo quien tiene `crew.members`. */
+  reactivate(studentId: string): Promise<void>
+
+  /**
+   * Retira una solicitud de entrada que uno mismo hizo y sigue pendiente, o
+   * que fue rechazada: es como el alumno se da por enterado del rechazo.
    *
    * Aparte de `remove` porque quien la llama no gestiona alumnos: es el propio
    * solicitante, y la base sólo le deja borrar SU ficha mientras esté

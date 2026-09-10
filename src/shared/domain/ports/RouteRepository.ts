@@ -1,4 +1,4 @@
-import type { ProgressRouteCode, RouteProgress } from '../entities/progress'
+import type { PendingMilestone, ProgressRouteCode, RouteProgress } from '../entities/progress'
 
 /**
  * Puerto de las rutas de desarrollo.
@@ -17,6 +17,12 @@ export interface RouteRepository {
 
   /** Valida el hito de un nodo. Sin esto no se pasa de nodo, aunque los números den. */
   validateMilestone(input: MilestoneValidationInput): Promise<void>
+
+  /**
+   * Los hitos del equipo activo que ya cumplen puntos y semanas y sólo esperan
+   * la validación. Por equipo y no ficha a ficha: es la bandeja del entrenador.
+   */
+  pendingMilestones(): Promise<PendingMilestone[]>
 
   /** Avisa de que algo ha cambiado. Devuelve la función de baja. */
   onChange(listener: () => void): () => void

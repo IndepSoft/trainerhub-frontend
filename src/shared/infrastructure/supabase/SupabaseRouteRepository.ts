@@ -1,9 +1,15 @@
 import type { MilestoneValidationInput, RouteRepository } from '@/shared/domain/ports/RouteRepository'
-import type { ProgressRouteCode, RouteProgress } from '@/shared/domain/entities/progress'
+import type { PendingMilestone, ProgressRouteCode, RouteProgress } from '@/shared/domain/entities/progress'
+import type { CrewScope } from '@/shared/domain/ports/CrewScope'
 import { AppError, AppErrorCode } from '@/shared/domain/errors'
 import { supabase } from './client'
 import { mapDataError } from './errorMapper'
-import { toRouteProgress, type RouteProgressRow } from './mappers'
+import {
+  toPendingMilestone,
+  toRouteProgress,
+  type PendingMilestoneRow,
+  type RouteProgressRow,
+} from './mappers'
 import { subscribeToTables } from './realtime'
 
 /**
@@ -14,6 +20,12 @@ import { subscribeToTables } from './realtime'
  * es `choose_route` y `validate_milestone`, que comprueban `students.manage`.
  */
 export class SupabaseRouteRepository implements RouteRepository {
+  private readonly scope: CrewScope
+
+  constructor(scope: CrewScope) {
+    this.scope = scope
+  }
+
   async progressOf(studentId: string): Promise<RouteProgress> {
     const { data, error } = await supabase.rpc('route_progress', { student: studentId })
 
@@ -38,6 +50,16 @@ export class SupabaseRouteRepository implements RouteRepository {
       validation_notes: input.notes,
     })
     if (error) throw mapDataError(error)
+  }
+
+  async pendingMilestones(): Promise<PendingMilestone[]> {
+    const crewId = this.scope.current()
+    if (crewId === null) return []
+
+    const { data, error } = await supabase.rpc('crew_pending_milestones', { crew: crewId })
+
+    if (error) throw mapDataError(error)
+    return ((data ?? []) as PendingMilestoneRow[]).map(toPendingMilestone)
   }
 
   // Lo que mueve una ruta: elegirla, validar un hito, y cada sesion puntuada.

@@ -35,7 +35,9 @@ import { resolveSessionStudentName } from '../libs/sessionStudent'
 import { activeLocale } from '@/shared/i18n/activeLocale'
 import { toast } from 'sonner'
 import { cn } from '@/shared/lib/utils'
-import { SESSION_STATUS, SESSION_STATUS_ENTRIES } from '../libs/sessionStatus'
+import { SESSION_STATUS, SESSION_STATUS_ENTRIES, presentationOf } from '../libs/sessionStatus'
+import { isMissedSession } from '@/shared/domain/sessionLifecycle'
+import { todayKey } from '@/shared/lib/dateKey'
 import { getStudentInitials, parseLocalDateKey } from '../libs/calendar.utils'
 import type { Session, SessionStatus } from '../types/calendar.types'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
@@ -115,11 +117,16 @@ export function SessionDetailsModal({
     new Map(students.map((student) => [student.id, student])),
     t
   )
+  // El recordatorio va a la campana, y sin cuenta espera en la ficha hasta
+  // que se registre: se dice, en vez de dar por leido lo que aun no llego.
+  const studentHasAccount =
+    students.find((student) => student.id === session.studentId)?.profileId != null
   const routine = routines.find(
     (candidate) => candidate.id === session.routineId
   )
 
-  const status = SESSION_STATUS[session.status]
+  const status = presentationOf(session, todayKey())
+  const isMissed = isMissedSession(session, todayKey())
 
   /**
    * Una sesión cancelada no se puede empezar, y una completada TAMPOCO: volver
@@ -258,6 +265,12 @@ export function SessionDetailsModal({
                 ? t('sessionDetails.alreadyDone')
                 : t('sessionDetails.cannotStart')}
             </p>
+          )}
+
+          {/* Su dia paso sin cerrarla: se dice, y se dice que hacer. Iniciarla
+              sigue valiendo -una sesion del martes se cierra el miercoles-. */}
+          {isMissed && (
+            <p className="mt-2 text-center text-xs text-ink/55">{t('sessionDetails.missedHint')}</p>
           )}
         </div>
 
@@ -416,6 +429,7 @@ export function SessionDetailsModal({
                   variant="outline"
                   onClick={() => void handleSendReminder()}
                   className="gap-2"
+                  title={studentHasAccount ? undefined : t('notice.noAccount')}
                 >
                   <MessageSquare className="size-4" />
                   {t('sessionDetails.reminder')}

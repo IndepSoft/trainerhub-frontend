@@ -262,6 +262,15 @@ export function viewerMayVisit(item: AccessRule, viewer: NavigationViewer): bool
   return CREW_ROLE_RANK[viewer.role] <= CREW_ROLE_RANK[item.minRole]
 }
 
+/**
+ * Si quien navega tiene bandeja: gestiona alumnos, que es donde se resuelve
+ * casi todo lo que espera una decisión. Con la misma regla que la ruta y la
+ * barra, para que el contador y el destino no discrepen.
+ */
+export function managesWork(viewer: NavigationViewer): boolean {
+  return viewerMayVisit({ capability: 'students.manage' }, viewer)
+}
+
 /** Quien navega, en lo que hace falta para decidir qué se le ofrece. */
 export interface NavigationViewer {
   role: CrewRole | null

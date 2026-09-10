@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   createBlockDraft,
   createEmptyRoutineDraft,
@@ -16,6 +16,7 @@ import type {
   RoutineDraftErrors,
 } from '../types/routineDraft.types'
 import { copyBlockToDraft } from '../libs/blockLibrary'
+import { clearRoutineDraft, readRoutineDraft, writeRoutineDraft } from '../libs/draftStorage'
 import type { Block, Routine, TrainingLevel } from '../types/training.types'
 import type { NewRoutine } from '@/shared/domain/ports/RoutineRepository'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
@@ -45,6 +46,10 @@ interface UseRoutineDraftResult {
   ) => void
   /** Los datos listos para guardar, o `null` si el borrador no es válido. */
   submit: () => NewRoutine | null
+  /** Si el borrador se recuperó de una sesión anterior sin guardar. */
+  restored: boolean
+  /** Olvida el borrador guardado. Se llama al guardar, al cancelar y a mano. */
+  discard: () => void
 }
 
 /**
@@ -66,10 +71,29 @@ interface UseRoutineDraftResult {
  */
 export function useRoutineDraft(initial: Routine | null): UseRoutineDraftResult {
   const { t } = useTranslation()
-  const [draft, setDraft] = useState<RoutineDraft>(() =>
-    initial === null ? createEmptyRoutineDraft() : toRoutineDraft(initial)
-  )
+  const routineId = initial?.id ?? null
+  /*
+   * Si hay un borrador guardado de ESTA rutina, manda sobre lo cargado: es lo
+   * que la persona estaba escribiendo cuando salio al catalogo. Se lee una
+   * sola vez, al montar.
+   */
+  const [stored] = useState(() => readRoutineDraft(routineId))
+  const [draft, setDraft] = useState<RoutineDraft>(() => {
+    if (stored !== null) return stored
+    return initial === null ? createEmptyRoutineDraft() : toRoutineDraft(initial)
+  })
   const [wasSubmitted, setWasSubmitted] = useState(false)
+
+  // Cada cambio se guarda: es barato y es lo que hace que salir no cueste.
+  useEffect(() => {
+    writeRoutineDraft(routineId, draft)
+  }, [routineId, draft])
+
+  const discard = useCallback(() => {
+    clearRoutineDraft(routineId)
+    setDraft(initial === null ? createEmptyRoutineDraft() : toRoutineDraft(initial))
+    setWasSubmitted(false)
+  }, [routineId, initial])
 
   const errors = useMemo(
     () => (wasSubmitted ? validateRoutineDraft(draft, t) : {}),
@@ -191,5 +215,7 @@ export function useRoutineDraft(initial: Routine | null): UseRoutineDraftResult 
     removeExercise,
     updateExercise,
     submit,
+    restored: stored !== null,
+    discard,
   }
 }

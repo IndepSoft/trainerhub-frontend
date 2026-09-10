@@ -1,6 +1,6 @@
 import type { NewNotice, NoticeRepository } from '@/shared/domain/ports/NoticeRepository'
 import type { CrewScope } from '@/shared/domain/ports/CrewScope'
-import type { Notice } from '@/shared/domain/entities/notice'
+import type { Notice, NoticeKind } from '@/shared/domain/entities/notice'
 
 /**
  * Avisos simulados.
@@ -47,6 +47,25 @@ export class FakeNoticeRepository implements NoticeRepository {
     this.notices = [notice, ...this.notices]
     this.notify()
     return notice
+  }
+
+  /**
+   * Lo que escribe el SERVIDOR, no el entrenador: el aviso de pertenencia al
+   * aprobar una solicitud. Fuera del puerto y sin ambito, porque el
+   * disparador tampoco lo tiene: sabe el equipo por la ficha.
+   */
+  record(crewId: string, studentId: string, kind: NoticeKind, body: string): void {
+    const notice: Notice = {
+      id: crypto.randomUUID(),
+      crewId,
+      studentId,
+      kind,
+      body,
+      createdAt: new Date().toISOString(),
+      readAt: null,
+    }
+    this.notices = [notice, ...this.notices]
+    this.notify()
   }
 
   async markAllRead(studentId: string): Promise<void> {

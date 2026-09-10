@@ -6,6 +6,7 @@ import {
   ROUTE_BY_OBJECTIVE,
   ROUTE_NODES,
   type ProgressRouteCode,
+  type RouteProgress,
 } from '@/shared/domain/entities/progress'
 import { shiftDateKey, toLocalDateKey } from '@/shared/lib/dateKey'
 
@@ -77,4 +78,18 @@ export function positionFrom(points: number, weeks: number, validated: number[])
     node += 1
   }
   return node
+}
+
+/**
+ * El siguiente nodo si ya cumple puntos y semanas y solo le falta la
+ * validacion del entrenador, o `null`. Es lo que la bandeja del panel lista.
+ */
+export function nextNodeReady(
+  progress: Pick<RouteProgress, 'position' | 'points' | 'adherentWeeks' | 'validatedPositions'>
+): number | null {
+  const next = ROUTE_NODES.find((node) => node.position === progress.position + 1)
+  if (next === undefined) return null
+  if (progress.points < next.pointsRequired || progress.adherentWeeks < next.weeksRequired) return null
+  if (progress.validatedPositions.includes(next.position)) return null
+  return next.position
 }
