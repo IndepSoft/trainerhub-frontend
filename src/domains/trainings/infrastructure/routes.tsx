@@ -38,9 +38,15 @@ export const trainingsRoutes: RouteObject[] = [
     path: '/trainings/plans/new',
     element: withSuspense(withProtectedRoute(withRouteAccess(<PlanForm />, { capability: 'training.manage' }, 'access.trainingManage'))),
   },
+  /*
+   * Las FICHAS de plan y de rutina se abren a cualquier miembro: la base ya
+   * deja leerlas a los miembros, y el alumno llega a ellas desde su repertorio
+   * y desde el detalle de su sesion. Editar, borrar y agendar siguen siendo de
+   * `training.manage`, y cada pagina lo comprueba antes de ofrecerlo.
+   */
   {
     path: '/trainings/plans/:planId',
-    element: withSuspense(withProtectedRoute(withRouteAccess(<PlanDetail />, { capability: 'training.manage' }, 'access.trainingManage'))),
+    element: withSuspense(withProtectedRoute(withRouteAccess(<PlanDetail />, { crewOnly: true }, 'access.trainingManage'))),
   },
   {
     path: '/trainings/plans/:planId/edit',
@@ -48,7 +54,7 @@ export const trainingsRoutes: RouteObject[] = [
   },
   {
     path: '/trainings/:routineId',
-    element: withSuspense(withProtectedRoute(withRouteAccess(<RoutineDetail />, { capability: 'training.manage' }, 'access.trainingManage'))),
+    element: withSuspense(withProtectedRoute(withRouteAccess(<RoutineDetail />, { crewOnly: true }, 'access.trainingManage'))),
   },
   {
     path: '/trainings/:routineId/edit',

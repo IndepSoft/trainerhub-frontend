@@ -7,7 +7,7 @@
  * construya por partes.
  */
 
-import { activeLocale } from '@/shared/i18n/activeLocale'
+import { formatDateKey as sharedFormatDateKey } from '@/shared/lib/dateKey'
 
 /** `new Date(2026, 8, 8)` → `2026-09-08`. */
 export function toDateKey(date: Date): string {
@@ -24,10 +24,5 @@ export function toDateKey(date: Date): string {
  * como UTC medianoche y en un huso negativo cae en el dia anterior.
  */
 export function formatDateKey(key: string): string {
-  const [year, month, day] = key.split('-').map(Number)
-  return new Date(year, month - 1, day).toLocaleDateString(activeLocale(), {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  })
+  return sharedFormatDateKey(key)
 }

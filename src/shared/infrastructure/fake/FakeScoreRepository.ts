@@ -88,6 +88,18 @@ export class FakeScoreRepository implements ScoreRepository {
     )
   }
 
+  async flaggedOfCrew(): Promise<SessionScore[]> {
+    const crewId = this.scope.current()
+    if (crewId === null) return []
+    return this.students
+      .membersOf(crewId)
+      .flatMap((student) =>
+        this.scoresOf(student.id).filter(
+          (score) => score.flaggedReason !== null && score.reviewedAt === null
+        )
+      )
+  }
+
   async acceptLoadJump(sessionId: string): Promise<void> {
     this.trusted.add(sessionId)
     for (const listener of this.listeners) listener()

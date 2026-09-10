@@ -21,7 +21,7 @@ interface DumpActionsProps {
  */
 export function DumpActions({ assignmentId }: DumpActionsProps) {
   const { t } = useTranslation()
-  const { sessions, openCount, shiftOneWeek, cancelOpen } = useDumpedSessions(assignmentId)
+  const { sessions, openCount, missedCount, shiftOneWeek, cancelOpen } = useDumpedSessions(assignmentId)
   const [confirmingCancel, setConfirmingCancel] = useState(false)
 
   if (sessions.length === 0) return null
@@ -51,6 +51,7 @@ export function DumpActions({ assignmentId }: DumpActionsProps) {
     <div className="mt-2 flex flex-wrap items-center gap-2">
       <span className="metric-figures text-xs text-ink/45">
         {t('assignments.dumped', { count: sessions.length, open: openCount })}
+        {missedCount > 0 && ` · ${t('assignments.missed', { count: missedCount })}`}
       </span>
 
       {openCount > 0 && (

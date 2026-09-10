@@ -188,8 +188,12 @@ const fakeCrews = new FakeCrewRepository(async (crewId, founder) => {
     email: founder.email,
   })
 })
-const fakeStudents = new FakeStudentRepository(crewScope)
 const fakeSessions = new FakeSessionRepository(crewScope)
+const fakeNotices = new FakeNoticeRepository(crewScope)
+// Las fichas cruzan sesiones y avisos como lo hacen `deactivate_student` y el
+// disparador de pertenencia en la base: la baja cancela la agenda del alumno
+// y aprobar deja un aviso en su campana.
+const fakeStudents = new FakeStudentRepository(crewScope, fakeSessions, fakeNotices)
 const fakePlans = new FakePlanRepository(crewScope)
 const fakeAssignments = new FakeAssignmentRepository(crewScope)
 // La puntuacion, las insignias y las rutas simuladas se cruzan entre si como
@@ -223,7 +227,7 @@ const subscriptions: SubscriptionRepository = shouldUseFakeAuthentication
   ? new FakeSubscriptionRepository(crewScope)
   : new SupabaseSubscriptionRepository(crewScope)
 const notices: NoticeRepository = shouldUseFakeAuthentication
-  ? new FakeNoticeRepository(crewScope)
+  ? fakeNotices
   : new SupabaseNoticeRepository(crewScope)
 const platform: PlatformRepository = shouldUseFakeAuthentication
   ? new FakePlatformRepository(fakeCrews, fakeStudents, fakeCrewStaff, trainers)
@@ -247,8 +251,16 @@ export const container: Container = {
   scores: shouldUseFakeAuthentication ? fakeScores : new SupabaseScoreRepository(crewScope),
   badges: shouldUseFakeAuthentication ? fakeBadges : new SupabaseBadgeRepository(),
   routes: shouldUseFakeAuthentication
-    ? new FakeRouteRepository(fakeSessions, fakeAssignments, fakePlans, fakeScores, fakeBadges)
-    : new SupabaseRouteRepository(),
+    ? new FakeRouteRepository(
+        fakeSessions,
+        fakeAssignments,
+        fakePlans,
+        fakeScores,
+        fakeBadges,
+        fakeStudents,
+        crewScope
+      )
+    : new SupabaseRouteRepository(crewScope),
   streaks: shouldUseFakeAuthentication ? fakeStreaks : new SupabaseStreakRepository(),
   platform,
   trainers,

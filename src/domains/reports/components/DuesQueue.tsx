@@ -60,6 +60,11 @@ export function DuesQueue() {
                   {t('reports.paidThrough', { date: formatDateKey(entry.paidThrough) })}
                 </p>
               )}
+              {/* Sin cuenta el aviso espera en su ficha: se dice, en vez de
+                  dar por leido lo que todavia no tiene campana. */}
+              {entry.student.profileId === null && (
+                <p className="truncate text-xs text-ink/45">{t('notice.noAccount')}</p>
+              )}
             </div>
 
             <div className="flex items-center gap-3">

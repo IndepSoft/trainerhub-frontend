@@ -5,6 +5,8 @@ import { useStudentSessions } from '../hooks/useStudentSessions'
 import { formatDateKey } from '../libs/dateKey'
 import type { SessionStatus } from '@/shared/domain/entities/session'
 import type { Student } from '@/shared/domain/entities/student'
+import { isMissedSession } from '@/shared/domain/sessionLifecycle'
+import { todayKey } from '@/shared/lib/dateKey'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { SESSION_STATUS_LABEL_KEY } from '@/shared/i18n/domainLabels'
 
@@ -17,6 +19,9 @@ const STATUS_CLASS: Record<SessionStatus, string> = {
   completed: 'border-cobalt/50 text-cobalt',
   cancelled: 'border-danger/50 text-danger',
 }
+
+/** «No ocurrio»: abierta y con el dia pasado. Se deriva, no se guarda. */
+const MISSED_CLASS = 'border-ink/25 text-ink/50 border-dashed'
 
 interface StudentSessionsProps {
   student: Student
@@ -37,6 +42,7 @@ interface StudentSessionsProps {
 export function StudentSessions({ student }: StudentSessionsProps) {
   const { t } = useTranslation()
   const { sessions, loading } = useStudentSessions(student.id)
+  const today = todayKey()
 
   return (
     <section className="px-5 py-8">
@@ -73,10 +79,12 @@ export function StudentSessions({ student }: StudentSessionsProps) {
               <span
                 className={cn(
                   'shrink-0 rounded-action border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]',
-                  STATUS_CLASS[session.status]
+                  isMissedSession(session, today) ? MISSED_CLASS : STATUS_CLASS[session.status]
                 )}
               >
-                {t(SESSION_STATUS_LABEL_KEY[session.status])}
+                {isMissedSession(session, today)
+                  ? t('session.status.missed')
+                  : t(SESSION_STATUS_LABEL_KEY[session.status])}
               </span>
             </li>
           ))}

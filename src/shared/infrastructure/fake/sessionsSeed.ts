@@ -171,6 +171,29 @@ const completedHistory: Session[] = trainedDaysAgo.map(({ days, sets, total, min
 export const sessionsSeed: Session[] = [
   ...completedHistory,
   {
+    /*
+     * Una sesion que quedo abierta y cuyo dia paso: «no ocurrio». Es lo que
+     * la agenda tiene que enseñar apagado y contar aparte, y lo que las
+     * acciones en bloque dejan quieto. Diez dias atras, fuera de esta semana,
+     * para no mover los contadores semanales del panel.
+     */
+    id: 'session-missed',
+    crewId: DEV_CREW_ID,
+    title: 'Seguimiento sin cerrar',
+    studentId: 'student-4',
+    kind: 'individual',
+    modality: 'strength',
+    category: 'Seguimiento',
+    date: daysAgo(10),
+    time: '17:00',
+    durationMinutes: 45,
+    location: 'Gimnasio Principal',
+    status: 'pending',
+    notes: '',
+    routineId: null,
+    result: null,
+  },
+  {
     id: 'session-1',
     crewId: DEV_CREW_ID,
     title: 'Entrenamiento Personal',

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Copy, RefreshCw } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
-import { buildJoinUrl, formatJoinCode } from '../libs/joinLink'
+import { buildJoinUrl, formatJoinCode } from '@/shared/lib/joinLink'
 import type { Crew } from '@/shared/domain/entities/crew'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 

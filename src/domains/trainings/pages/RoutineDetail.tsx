@@ -17,6 +17,7 @@ import { useTrainingCatalog } from '../hooks/useTrainingCatalog'
 import { useTrainingDeletion } from '../hooks/useTrainingDeletion'
 import { ConfirmDeleteDialog } from '@/shared/components/ConfirmDeleteDialog'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { useViewerContext } from '@/app/ViewerContext'
 import { STUDENT_LEVEL_LABEL_KEY } from '@/shared/i18n/domainLabels'
 import { BLOCK_METHOD_LABEL_KEY } from '@/shared/i18n/domainLabels'
 
@@ -26,6 +27,9 @@ import { BLOCK_METHOD_LABEL_KEY } from '@/shared/i18n/domainLabels'
 export default function RoutineDetail() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { can } = useViewerContext()
+  // La ficha la lee cualquier miembro; lo que la cambia, quien gestiona.
+  const manages = can('training.manage')
   const { routineId } = useParams<{ routineId: string }>()
   const { routine, loading } = useRoutine(routineId)
   const { exercisesById } = useTrainingCatalog()
@@ -63,11 +67,11 @@ export default function RoutineDetail() {
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
       <PageHeader>
         <Link
-          to="/trainings"
+          to={manages ? '/trainings' : '/progress'}
           className="-ms-2 mb-3 inline-flex h-11 items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/45 transition-colors hover:text-cobalt"
         >
           <ArrowLeft className="size-4" />
-          Rutinas
+          {manages ? t('routine.plural') : t('nav.progress')}
         </Link>
 
         <PageHeader.Content>
@@ -76,7 +80,7 @@ export default function RoutineDetail() {
             <PageHeader.Title className="text-3xl">{routine.title}</PageHeader.Title>
           </div>
 
-          <PageHeader.Actions>
+          {manages && <PageHeader.Actions>
             {/* «Usar en una sesion» navega a la agenda con la rutina en la
                 URL: esta ficha no puede abrir el dialogo de la agenda, que vive
                 en otro dominio, pero si decirle con que llegar. */}
@@ -104,11 +108,23 @@ export default function RoutineDetail() {
                 {t('routine.useInSession')}
               </Link>
             </Button>
-          </PageHeader.Actions>
+          </PageHeader.Actions>}
         </PageHeader.Content>
       </PageHeader>
 
       <div className="flex-1 overflow-auto">
+        {/* La puerta a asignarla, como la tiene la ficha del plan: la rutina
+            se veia y no se sabia que hacer con ella mas alla de agendarla. */}
+        {manages && <p className="border-b border-cobalt-tint-3 px-5 py-3 text-sm text-ink/60">
+          {t('routine.assignHint')}{' '}
+          <Link
+            to="/students"
+            className="inline-flex min-h-11 items-center font-semibold text-cobalt underline-offset-4 hover:underline"
+          >
+            {t('plan.goToStudents')}
+          </Link>
+        </p>}
+
         <div className="grid grid-cols-1 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           <div className="flex flex-col gap-2 px-5 py-6">
             <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
@@ -176,7 +192,7 @@ export default function RoutineDetail() {
                   </span>
 
                   <span className="metric-figures ms-auto shrink-0 text-xs text-ink/40">
-                    descanso {formatRest(block.restAfterSeconds)}
+                    {t('routine.restLabel', { rest: formatRest(block.restAfterSeconds) })}
                   </span>
                 </div>
 
@@ -219,9 +235,9 @@ export default function RoutineDetail() {
           <p className="metric-figures mt-5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink/40">
             <span className="flex items-center gap-1.5">
               <Clock className="size-3.5" />
-              {estimateRoutineMinutes(routine)} min estimados
+              {t('routine.estimatedMinutes', { minutes: estimateRoutineMinutes(routine) })}
             </span>
-            <span>{countTotalSets(routine)} series en total</span>
+            <span>{t('routine.totalSetsCount', { count: countTotalSets(routine) })}</span>
           </p>
         </section>
       </div>
@@ -229,7 +245,7 @@ export default function RoutineDetail() {
       <ConfirmDeleteDialog
         open={isDeleteOpen}
         name={routine.title}
-        kind="la rutina"
+        kind={t('routine.kind')}
         blockedReason={blockedReason}
         onOpenChange={setIsDeleteOpen}
         onConfirm={() => {

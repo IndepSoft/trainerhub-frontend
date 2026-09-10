@@ -1,6 +1,7 @@
-import { AlertCircle, CheckCircle, CircleCheckBig, XCircle } from 'lucide-react'
+import { AlertCircle, CheckCircle, CircleCheckBig, CircleDashed, XCircle } from 'lucide-react'
 import type { ReactNode } from 'react'
-import type { SessionStatus } from '../types/calendar.types'
+import type { Session, SessionStatus } from '../types/calendar.types'
+import { isMissedSession } from '@/shared/domain/sessionLifecycle'
 import { SESSION_STATUS_LABEL_KEY } from '@/shared/i18n/domainLabels'
 import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 
@@ -92,3 +93,30 @@ export const SESSION_STATUS_ENTRIES = Object.entries(SESSION_STATUS) as [
   SessionStatus,
   (typeof SESSION_STATUS)[SessionStatus],
 ][]
+
+/**
+ * «No ocurrio»: una sesion abierta cuyo dia paso. NO es un estado guardado
+ * -ver `sessionLifecycle`- y por eso no esta en `SESSION_STATUS`: nadie puede
+ * elegirlo en un desplegable. Se pinta apagada, ni pendiente ni cancelada,
+ * porque no es ninguna de las dos: es lo que hay que resolver.
+ */
+export const MISSED_SESSION: SessionStatusPresentation = {
+  labelKey: 'session.status.missed',
+  slotClassName: 'bg-cobalt-tint-1 text-ink/50 border-cobalt-tint-3 border-dashed',
+  badgeClassName: 'bg-cobalt-tint-1 text-ink/55',
+  outlineBadgeClassName: 'border-ink/25 text-ink/50 border-dashed',
+  accentClassName: 'bg-ink/10',
+  icon: <CircleDashed className="w-3 h-3" />,
+}
+
+export type SessionPresentationState = SessionStatus | 'missed'
+
+/** La presentacion que le toca a una sesion hoy: su estado, o «no ocurrio». */
+export function presentationOf(session: Session, todayKey: string): SessionStatusPresentation {
+  return isMissedSession(session, todayKey) ? MISSED_SESSION : SESSION_STATUS[session.status]
+}
+
+/** El estado con el que se cuenta y se pinta, «no ocurrio» incluido. */
+export function presentationStateOf(session: Session, todayKey: string): SessionPresentationState {
+  return isMissedSession(session, todayKey) ? 'missed' : session.status
+}

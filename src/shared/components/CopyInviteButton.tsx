@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Check, Link2 } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
-import { buildJoinUrl } from '../libs/joinLink'
+import { buildJoinUrl } from '@/shared/lib/joinLink'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface CopyInviteButtonProps {

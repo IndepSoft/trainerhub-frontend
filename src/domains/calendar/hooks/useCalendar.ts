@@ -3,11 +3,8 @@ import { useIsMobile } from '@/shared/hooks/useIsMobile'
 import { container } from '@/app/container'
 import { addDays, getWeekDates } from '../libs/calendar.utils'
 import { toLocalDateKey } from '@/shared/lib/dateKey'
-import type {
-  CalendarViewMode,
-  Session,
-  SessionStatus,
-} from '../types/calendar.types'
+import type { CalendarViewMode, Session } from '../types/calendar.types'
+import { presentationStateOf, type SessionPresentationState } from '../libs/sessionStatus'
 
 interface UseCalendarResult {
   sessions: Session[]
@@ -22,7 +19,7 @@ interface UseCalendarResult {
   /** false en movil, donde el modo esta forzado y el selector se oculta. */
   canChooseViewMode: boolean
   selectedSession: Session | null
-  countByStatus: Record<SessionStatus, number>
+  countByStatus: Record<SessionPresentationState, number>
   setViewMode: (mode: CalendarViewMode) => void
   goToToday: () => void
   goToPrevious: () => void
@@ -103,15 +100,18 @@ export function useCalendar(): UseCalendarResult {
     return index
   }, [sessions])
 
+  // Con «no ocurrio» aparte: una pendiente cuyo dia paso no es pendiente.
   const countByStatus = useMemo(() => {
-    const counts: Record<SessionStatus, number> = {
+    const today = toLocalDateKey(new Date())
+    const counts: Record<SessionPresentationState, number> = {
       pending: 0,
       confirmed: 0,
       completed: 0,
       cancelled: 0,
+      missed: 0,
     }
     for (const session of sessions) {
-      counts[session.status] += 1
+      counts[presentationStateOf(session, today)] += 1
     }
     return counts
   }, [sessions])

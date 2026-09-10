@@ -4,6 +4,7 @@ import { Plus } from 'lucide-react'
 import { StudentCard } from '../components/StudentCard'
 import { StudentFilters } from '../components/StudentFilters'
 import { StudentFormDialog } from '../components/StudentFormDialog'
+import { InactiveStudents } from '../components/InactiveStudents'
 import { useStudents } from '../hooks/useStudents'
 import { useStudentEditor } from '../hooks/useStudentEditor'
 import { useStudentsProgress } from '../hooks/useStudentsProgress'
@@ -32,10 +33,14 @@ export default function Students() {
 
   /*
    * Dar de alta a alguien es incorporarlo al equipo, así que pasa por la misma
-   * puerta que el QR. Editar y ver a los que ya están sigue abierto: lo que se
-   * activa es crecer, no trabajar con quien ya tienes.
+   * puerta de suscripción que el QR. Editar y ver a los que ya están sigue
+   * abierto: lo que se activa es crecer, no trabajar con quien ya tienes.
+   *
+   * La CAPACIDAD es `students.manage`, que es la que exige la política de
+   * inserción de `students`. Preguntaba por `crew.invite`, y a quien tuviera
+   * sólo esa llave prestada le salía el botón y le fallaba la escritura.
    */
-  const canEnroll = can('crew.invite') && active !== null && canEnrollMembers(active.crew)
+  const canEnroll = can('students.manage') && active !== null && canEnrollMembers(active.crew)
 
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editing, setEditing] = useState<Student | null>(null)
@@ -95,7 +100,7 @@ export default function Students() {
         suyo— y decirle que falta la suscripción seria mentirle. Su motivo se lo
         explica la cinta de arriba.
       */}
-      {can('crew.invite') && !canEnroll && active !== null && (
+      {can('students.manage') && !canEnroll && active !== null && (
         <p className="ps-4 pe-4 pt-3 text-sm text-ink/55">
           {/* Pendiente y suspendida no se explican igual: a una le falta la
               activacion, a la otra se le retiro. */}
@@ -140,6 +145,9 @@ export default function Students() {
             {!loading && students.length > 0 && visibleStudents.length === 0 && isFiltering ? (
               <p className="py-12 text-center text-sm text-ink/45">{t('students.noMatches')}</p>
             ) : null}
+
+            {/* Las bajas, plegadas: quien puede reactivarlas las encuentra aqui. */}
+            {can('crew.members') && <InactiveStudents />}
           </div>
         </div>
       </div>

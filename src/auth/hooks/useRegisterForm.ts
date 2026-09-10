@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { container } from '@/app/container'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { useAuthStore } from '@/app/stores/authStore'
-import { JOIN_CODE_PARAM } from '@/domains/crew/libs/joinLink'
+import { JOIN_CODE_PARAM } from '@/shared/lib/joinLink'
 import { canEnrollMembers } from '@/shared/domain/entities/crew'
 import { readIntendedPath } from '../libs/intendedPath'
 import type {
@@ -94,7 +94,17 @@ export function useRegisterForm(intent: RegisterIntent): UseRegisterFormResult {
   const navigate = useNavigate()
   const location = useLocation()
   const setUser = useAuthStore((state) => state.setUser)
-  const [formData, setFormData] = useState<RegisterFormData>(EMPTY_FORM)
+  /*
+   * EL CODIGO DEL QR SE RELLENA SOLO. Quien escanea sin cuenta llega a
+   * `/crew/unirse?codigo=…`, se desvia a identificarse, y con la confirmacion
+   * por correo activada la ruta pretendida se pierde: el enlace del correo
+   * aterriza en la raiz. Como el codigo viaja con el alta y lo honra el
+   * servidor, ponerlo aqui es lo que hace que el QR sobreviva a ese viaje.
+   */
+  const [formData, setFormData] = useState<RegisterFormData>(() => ({
+    ...EMPTY_FORM,
+    joinCode: joinCodeFrom(readIntendedPath(location.state)),
+  }))
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false)
@@ -197,6 +207,14 @@ export function useRegisterForm(intent: RegisterIntent): UseRegisterFormResult {
   }
 
   return { formData, isValid, loading, error, awaitingConfirmation, isRequired, setField, submit }
+}
+
+/** El código de equipo que traía la ruta pretendida, o vacío. */
+function joinCodeFrom(intendedPath: string | null): string {
+  if (intendedPath === null) return ''
+  const queryStart = intendedPath.indexOf('?')
+  if (queryStart < 0) return ''
+  return new URLSearchParams(intendedPath.slice(queryStart)).get(JOIN_CODE_PARAM) ?? ''
 }
 
 /** Lo escrito, o nada. Una cadena en blanco no es un dato: es un campo vacío. */

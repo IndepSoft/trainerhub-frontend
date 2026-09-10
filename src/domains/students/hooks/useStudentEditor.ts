@@ -11,6 +11,9 @@ interface UseStudentEditorResult {
   /** Por qué NO se puede borrar, o `undefined` si se puede. */
   deletionBlocker: (studentId: string) => Promise<string | undefined>
   deleteStudent: (studentId: string) => Promise<DeletionResult>
+  /** La baja: deja de contar y se cancelan sus sesiones por venir. Reversible. */
+  deactivateStudent: (studentId: string) => Promise<void>
+  reactivateStudent: (studentId: string) => Promise<void>
 }
 
 /**
@@ -60,5 +63,15 @@ export function useStudentEditor(): UseStudentEditorResult {
     [deletionBlocker]
   )
 
-  return { createStudent, updateStudent, deletionBlocker, deleteStudent }
+  const deactivateStudent = useCallback(
+    (studentId: string) => container.students.deactivate(studentId),
+    []
+  )
+
+  const reactivateStudent = useCallback(
+    (studentId: string) => container.students.reactivate(studentId),
+    []
+  )
+
+  return { createStudent, updateStudent, deletionBlocker, deleteStudent, deactivateStudent, reactivateStudent }
 }

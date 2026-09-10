@@ -32,6 +32,9 @@ export interface ScoreRepository {
   /** Las de un alumno marcadas por salto de carga y sin revisar. */
   flaggedOf(studentId: string): Promise<SessionScore[]>
 
+  /** Las de todo el equipo activo marcadas y sin revisar: la bandeja del entrenador. */
+  flaggedOfCrew(): Promise<SessionScore[]>
+
   /** El entrenador da por buena la carga: se repuntúa confiando en ella. */
   acceptLoadJump(sessionId: string): Promise<void>
 

@@ -65,6 +65,21 @@ export class SupabaseStudentRepository implements StudentRepository {
     return ((data ?? []) as StudentRow[]).map(toStudent)
   }
 
+  async findInactive(): Promise<Student[]> {
+    const crewId = this.scope.current()
+    if (crewId === null) return []
+
+    const { data, error } = await supabase
+      .from('students')
+      .select('*')
+      .eq('crew_id', crewId)
+      .eq('membership_status', 'inactive')
+      .order('created_at', { ascending: false })
+
+    if (error) throw mapDataError(error)
+    return ((data ?? []) as StudentRow[]).map(toStudent)
+  }
+
   async findById(studentId: string): Promise<Student | null> {
     const crewId = this.scope.current()
     if (crewId === null) return null
@@ -192,9 +207,21 @@ export class SupabaseStudentRepository implements StudentRepository {
     if (error) throw mapDataError(error)
   }
 
+  // Funciones del servidor: la baja cambia la ficha y cancela sus sesiones en
+  // una transaccion, y las dos comprueban quien puede.
+  async deactivate(studentId: string): Promise<void> {
+    const { error } = await supabase.rpc('deactivate_student', { student: studentId })
+    if (error) throw mapDataError(error)
+  }
+
+  async reactivate(studentId: string): Promise<void> {
+    const { error } = await supabase.rpc('reactivate_student', { student: studentId })
+    if (error) throw mapDataError(error)
+  }
+
   /*
    * La misma escritura que `remove`: quien decide si procede es la politica
-   * «una solicitud pendiente la retira quien la hizo». Un borrado que no
+   * «una solicitud pendiente o rechazada la retira quien la hizo». Un borrado que no
    * alcanza ninguna fila no es error para PostgREST, asi que una ficha ya
    * aprobada se queda donde esta y la pantalla lo ve al releer.
    */

@@ -11,7 +11,8 @@ import {
   SidebarFooter,
 } from '@/shared/ui/sidebar'
 import { GalleryVerticalEnd } from 'lucide-react'
-import { getSidebarRoutes } from '@/app/config/navigation.config'
+import { getSidebarRoutes, managesWork } from '@/app/config/navigation.config'
+import { usePendingWork } from '@/shared/hooks/usePendingWork'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { NavItem } from './NavItem'
 import { CrewSwitcher } from './CrewSwitcher'
@@ -48,6 +49,9 @@ export function AppSidebar({
   // gestion, y un alumno no tiene nada que hacer ahi.
   const { t } = useTranslation()
   const sidebarRoutes = getSidebarRoutes(navigationViewer)
+  // La bandeja del entrenador, como cifra sobre el panel: es la unica señal
+  // global de «hay algo que decidir» ademas del muro.
+  const pending = usePendingWork(managesWork(navigationViewer))
 
   return (
     <Sidebar variant="inset" {...props}>
@@ -88,7 +92,7 @@ export function AppSidebar({
                   key={route.id}
                   to={route.href}
                   icon={route.icon}
-                  badge={route.badge}
+                  badge={route.id === 'dashboard' && pending.total > 0 ? pending.total : route.badge}
                   disabled={route.disabled}
                 >
                   {t(route.labelKey)}

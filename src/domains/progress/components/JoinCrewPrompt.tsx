@@ -18,7 +18,7 @@ import { useWithdrawRequest } from '../hooks/useWithdrawRequest'
  */
 export function JoinCrewPrompt() {
   const { t } = useTranslation()
-  const { pending } = useViewerContext()
+  const { pending, rejected } = useViewerContext()
   const { withdraw, withdrawing, error } = useWithdrawRequest()
 
   /*
@@ -29,6 +29,44 @@ export function JoinCrewPrompt() {
    * pantalla tiene que distinguir «no has hecho nada» de «estás esperando».
    */
   const waiting = pending[0]
+  const refused = rejected[0]
+
+  /*
+   * Un rechazo SE DICE. La fila `rejected` no llegaba a esta pantalla, asi que
+   * quien lo recibia volvia a ver «unete a un equipo» como si no hubiera
+   * pedido nada. «Entendido» retira la ficha -la misma politica que la
+   * solicitud pendiente- y la invitacion vuelve a su sitio.
+   */
+  if (waiting === undefined && refused !== undefined) {
+    return (
+      <section className="border-b border-cobalt-tint-3 bg-bone px-5 py-6">
+        <div className="mx-auto flex max-w-xl flex-col items-start gap-3">
+          <h2 className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
+            {t('joinCrew.rejected', { crew: refused.crew.name })}
+          </h2>
+          <p className="text-sm text-ink/60">{t('joinCrew.rejectedHint')}</p>
+          <div className="mt-1 flex flex-wrap gap-2">
+            <Button asChild variant="outline" className="gap-2">
+              <Link to="/crew/unirse">
+                <QrCode className="size-4" />
+                {t('joinCrew.anotherCode')}
+              </Link>
+            </Button>
+            {refused.student !== null && (
+              <Button
+                variant="ghost"
+                disabled={withdrawing}
+                onClick={() => void withdraw(refused.student?.id ?? '')}
+              >
+                {t('joinCrew.dismiss')}
+              </Button>
+            )}
+          </div>
+          {error !== null && <p className="text-sm text-danger">{error}</p>}
+        </div>
+      </section>
+    )
+  }
 
   if (waiting !== undefined) {
     return (

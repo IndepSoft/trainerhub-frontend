@@ -440,6 +440,21 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   ranking acepta cohorte —`cohort_of`: youth/adult/senior— y por defecto
   compara entre iguales; el entrenador ve a todos. La razón `noWildcards`
   viaja como las demás.
+- CICLOS DE VIDA Y BANDEJA (`CAMBIOS` §31, y la lectura de flujos en
+  `docs/FLUJOS-DEL-SISTEMA.md`). El alumno tiene BAJA —`inactive`, que no es
+  miembro: la da `crew.members` o el propio alumno al irse, y
+  `deactivate_student` cancela lo por venir—; una sesión abierta con el día
+  pasado es «NO OCURRIÓ», derivado en `sessionLifecycle` y nunca guardado, y
+  las acciones en bloque la dejan quieta; el rechazo se enseña y se retira;
+  `route_progress` dice si la ruta se eligió a mano y asignar avisa del
+  cambio. La BANDEJA —`usePendingWork`— junta solicitudes, hitos, insignias,
+  cargas, cuotas y fichas sin cuenta por equipo (`crew_pending_milestones`,
+  `crew_flagged_scores`), se pinta en el panel y cuenta en la barra. Aprobar
+  deja un aviso `membership` por disparador. `guard_student_crew` impide que
+  una sesión, asignación, aviso o cuota apunte a un alumno de OTRO equipo. Los
+  dos formularios de sesión comparten `SessionScheduleFields`. El borrador de
+  rutina vive en `sessionStorage`. Las fichas de rutina y plan se abren a los
+  miembros; lo que las cambia sigue detrás de `training.manage`.
 - El aviso de fin de descanso son TRES señales y ninguna llega sola: color,
   vibración y sonido. El color no sirve con el teléfono en el bolsillo; la
   vibración no existe en iOS —Apple nunca implementó la Vibration API—; el sonido

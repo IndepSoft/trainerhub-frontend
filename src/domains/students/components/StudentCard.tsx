@@ -11,8 +11,14 @@ import {
 import { ArrowUpRight, Calendar, MoreHorizontal, TrendingUp } from 'lucide-react'
 import { getInitials, getShortName } from '@/shared/lib/personName'
 import { useLongPress } from '@/shared/hooks/useLongPress'
+import { useViewerContext } from '@/app/ViewerContext'
+import { canEnrollMembers } from '@/shared/domain/entities/crew'
+import { CopyInviteButton } from '@/shared/components/CopyInviteButton'
 import { cn } from '@/shared/lib/utils'
 import { ConfirmDeleteDialog } from '@/shared/components/ConfirmDeleteDialog'
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
+import { toast } from 'sonner'
+import { describeError } from '@/shared/i18n/errorMessages'
 import { useStudentEditor } from '../hooks/useStudentEditor'
 import { StudentProgressStrip } from './StudentProgressStrip'
 import { LEVEL_BADGE } from '../libs/levelBadge'
@@ -51,8 +57,14 @@ interface StudentCardProps {
 export function StudentCard({ student, progress, onEdit }: StudentCardProps) {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { deletionBlocker, deleteStudent } = useStudentEditor()
+  const { active, can } = useViewerContext()
+  const canInvite = can('crew.invite') && active !== null && canEnrollMembers(active.crew)
+  const joinToken = active?.crew.joinToken ?? null
+  const { deletionBlocker, deleteStudent, deactivateStudent } = useStudentEditor()
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [isDeactivateOpen, setIsDeactivateOpen] = useState(false)
+  const [deactivating, setDeactivating] = useState(false)
+  const [deactivateError, setDeactivateError] = useState<string | null>(null)
   const [blockedReason, setBlockedReason] = useState<string | undefined>(undefined)
   const fullName = getShortName(student.firstName, student.lastName)
   const initials = getInitials(student.firstName, student.lastName)
@@ -109,6 +121,24 @@ export function StudentCard({ student, progress, onEdit }: StudentCardProps) {
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => onEdit(student)}>{t('common.edit')}</DropdownMenuItem>
             {/*
+              LA BAJA, que no existia: quien dejaba el gimnasio no se podia borrar
+              en cuanto tenia una sesion, y seguia contando en el panel, en la
+              retencion y en los cobros. Es de `crew.members`, como aceptar y
+              rechazar: es una decision sobre la pertenencia.
+            */}
+            {can('crew.members') && (
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  event.preventDefault()
+                  setIsMenuOpen(false)
+                  setDeactivateError(null)
+                  setIsDeactivateOpen(true)
+                }}
+              >
+                {t('students.deactivate')}
+              </DropdownMenuItem>
+            )}
+            {/*
               «Duplicar» se quita en vez de implementarse: duplicar a una
               persona no significa nada -saldrian dos fichas con el mismo
               correo, que es justo la clave con la que se enlaza su cuenta-.
@@ -146,6 +176,21 @@ export function StudentCard({ student, progress, onEdit }: StudentCardProps) {
       </h3>
 
       <p className="mt-1.5 truncate px-5 text-xs text-ink/60">{student.email}</p>
+
+      {/*
+        Si tiene cuenta o no, DONDE SE TRABAJA. Lo decia el formulario y lo
+        marcaba /crew; la lista, que es la que se mira a diario, no. Sin cuenta
+        no le llegan avisos ni ve su progreso, y el enlace de invitacion es lo
+        que lo arregla: se lo manda por donde ya hablan.
+      */}
+      {student.profileId === null && (
+        <div className="relative z-10 mt-2 flex flex-wrap items-center gap-2 px-5">
+          <span className="rounded-action border border-cobalt-tint-3 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-ink/55">
+            {t('crew.noAccount')}
+          </span>
+          {canInvite && joinToken !== null && <CopyInviteButton joinToken={joinToken} />}
+        </div>
+      )}
 
       <dl className="mt-5 grid grid-cols-2 divide-x divide-cobalt-tint-3 border-y border-cobalt-tint-3">
         <div className="px-5 py-3">
@@ -195,6 +240,30 @@ export function StudentCard({ student, progress, onEdit }: StudentCardProps) {
           className="ms-auto size-5 text-ink/25 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-ember"
         />
       </div>
+
+      <ConfirmDialog
+        open={isDeactivateOpen}
+        title={t('students.deactivateTitle', { name: fullName })}
+        body={t('students.deactivateBody')}
+        confirmLabel={t('students.deactivate')}
+        destructive
+        busy={deactivating}
+        error={deactivateError}
+        onOpenChange={setIsDeactivateOpen}
+        onConfirm={() => {
+          setDeactivating(true)
+          setDeactivateError(null)
+          void deactivateStudent(student.id)
+            .then(() => {
+              setIsDeactivateOpen(false)
+              toast.success(t('students.deactivated', { name: fullName }))
+            })
+            .catch((caught: unknown) => {
+              setDeactivateError(describeError(caught, t, 'students.membershipError'))
+            })
+            .finally(() => setDeactivating(false))
+        }}
+      />
 
       <ConfirmDeleteDialog
         open={isDeleteOpen}

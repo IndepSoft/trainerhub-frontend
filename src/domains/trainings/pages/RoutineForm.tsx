@@ -1,14 +1,17 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { AlertCircle, ArrowLeft, Library, Plus } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/shared/ui/button'
 import { PageHeader } from '@/shared/components/PageHeader'
+import { describeError } from '@/shared/i18n/errorMessages'
 import { useTrainingCatalog } from '../hooks/useTrainingCatalog'
 import { useRoutine } from '../hooks/useRoutines'
 import { useRoutineDraft } from '../hooks/useRoutineDraft'
 import { useBlockLibrary } from '../hooks/useBlockLibrary'
 import { useRoutineActions } from '../hooks/useRoutineActions'
 import { canSaveBlockDraft } from '../libs/blockLibrary'
+import { clearRoutineDraft } from '../libs/draftStorage'
 import { BlockEditor } from '../components/BlockEditor'
 import { SavedBlockPicker } from '../components/SavedBlockPicker'
 import { RoutineDraftSummary } from '../components/RoutineDraftSummary'
@@ -104,6 +107,8 @@ function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
     removeExercise,
     updateExercise,
     submit,
+    restored,
+    discard,
   } = useRoutineDraft(routine)
   const { savedBlocks, saveFromDraft } = useBlockLibrary()
 
@@ -138,14 +143,28 @@ function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
     const data = submit()
     if (data === null) return
 
-    if (routineId === undefined) {
-      const created = await createRoutine(data)
-      navigate(`/trainings/${created.id}`)
-      return
-    }
+    // Se espera y se dice: un rechazo de la base dejaba el formulario tal
+    // cual, sin mensaje, y quien guardaba no sabia si habia guardado.
+    try {
+      if (routineId === undefined) {
+        const created = await createRoutine(data)
+        clearRoutineDraft(null)
+        navigate(`/trainings/${created.id}`)
+        return
+      }
 
-    await updateRoutine(routineId, data)
-    navigate(`/trainings/${routineId}`)
+      await updateRoutine(routineId, data)
+      clearRoutineDraft(routineId)
+      navigate(`/trainings/${routineId}`)
+    } catch (caught) {
+      toast.error(describeError(caught, t, 'routine.saveError'))
+    }
+  }
+
+  // Cancelar es olvidar: el borrador guardado no debe reaparecer despues.
+  const handleCancel = () => {
+    clearRoutineDraft(routineId ?? null)
+    navigate(isEditing ? `/trainings/${routineId}` : '/trainings')
   }
 
   return (
@@ -171,13 +190,7 @@ function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
           </div>
 
           <PageHeader.Actions>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() =>
-                navigate(isEditing ? `/trainings/${routineId}` : '/trainings')
-              }
-            >
+            <Button type="button" variant="outline" onClick={handleCancel}>
               {t('common.cancel')}
             </Button>
             <Button type="submit">
@@ -191,6 +204,17 @@ function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
         <RoutineDraftSummary routine={preview} />
 
         <div className="space-y-6 px-5 py-6">
+          {/* Se dice que lo que se ve es un borrador recuperado, con la
+              salida: quien no lo quiera lo descarta y empieza de cero. */}
+          {restored && (
+            <p className="flex flex-wrap items-center justify-between gap-2 rounded-block border border-cobalt-tint-3 bg-surface px-4 py-3 text-sm text-ink/70">
+              <span>{t('routine.draftRestored')}</span>
+              <Button type="button" variant="ghost" size="sm" onClick={discard}>
+                {t('routine.discardDraft')}
+              </Button>
+            </p>
+          )}
+
           {/*
             `role="alert"` para que un lector de pantalla lo anuncie al
             aparecer: el error surge tras pulsar Guardar, y quien no ve la
@@ -262,8 +286,7 @@ function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
             {/* `aria-live` y no `role="alert"`: es una confirmacion de algo que
                 el usuario acaba de pedir, no un aviso que interrumpa. */}
             <p aria-live="polite" className="mt-3 min-h-5 text-sm text-cobalt">
-              {lastSavedName !== null &&
-                `«${lastSavedName}» guardado en la biblioteca.`}
+              {lastSavedName !== null && t('routine.savedToLibrary', { name: lastSavedName })}
             </p>
 
             <div className="mt-1 flex flex-col gap-2 sm:flex-row">
