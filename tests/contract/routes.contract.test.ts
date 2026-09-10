@@ -49,11 +49,11 @@ async function progressOf(account: TestAccount, studentId: string): Promise<Rout
 
 describe('rutas: el catalogo de la base es el del codigo', () => {
   it('nodos y objetivos coinciden con las constantes', async () => {
-    const { data: nodes } = await adminClient().from('route_nodes').select('route_code, position, points_required, weeks_required')
-    const rows = (nodes ?? []) as { route_code: string; position: number; points_required: number; weeks_required: number }[]
+    const { data: nodes } = await adminClient().from('route_nodes').select('route_code, node_position, points_required, weeks_required')
+    const rows = (nodes ?? []) as { route_code: string; node_position: number; points_required: number; weeks_required: number }[]
     for (const route of ['titan', 'endurance', 'apex', 'vitality', 'hybrid']) {
-      const own = rows.filter((row) => row.route_code === route).sort((left, right) => left.position - right.position)
-      expect(own.map((row) => [row.position, row.points_required, row.weeks_required])).toEqual(
+      const own = rows.filter((row) => row.route_code === route).sort((left, right) => left.node_position - right.node_position)
+      expect(own.map((row) => [row.node_position, row.points_required, row.weeks_required])).toEqual(
         ROUTE_NODES.map((node) => [node.position, node.pointsRequired, node.weeksRequired])
       )
     }
