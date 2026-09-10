@@ -25,26 +25,28 @@ insert into public.progress_routes (code, sort_order) values
   ('vitality', 40),
   ('hybrid', 50);
 
--- Los nodos 2, 3 y 4 tienen criterio; el 1 es donde nace todo el mundo. Los
+-- Los nodos 2, 3 y 4 tienen criterio; el 1 es donde nace todo el mundo.
+-- `node_position` y no `position`: es palabra clave de SQL y como alias de
+-- columna es un error de sintaxis. Los
 -- puntos son los acumulados DESDE que se entro en la ruta; las semanas, las
 -- seguidas con adherencia de al menos el 85 % terminando en la actual.
 create table public.route_nodes (
   route_code text not null references public.progress_routes (code),
-  position integer not null check (position between 1 and 4),
+  node_position integer not null check (node_position between 1 and 4),
   points_required integer not null check (points_required >= 0),
   weeks_required integer not null check (weeks_required >= 0),
-  primary key (route_code, position)
+  primary key (route_code, node_position)
 );
 
-insert into public.route_nodes (route_code, position, points_required, weeks_required)
-select r.code, n.position, n.points_required, n.weeks_required
+insert into public.route_nodes (route_code, node_position, points_required, weeks_required)
+select r.code, n.node_position, n.points_required, n.weeks_required
 from public.progress_routes r
 cross join (values
   (1, 0, 0),
   (2, 300, 4),
   (3, 1200, 6),
   (4, 3000, 8)
-) as n (position, points_required, weeks_required);
+) as n (node_position, points_required, weeks_required);
 
 -- Que ruta activa cada objetivo del catalogo. Un plan de hipertrofia mete al
 -- alumno en Titan sin que nadie elija nada; el entrenador puede cambiarlo.
@@ -86,11 +88,11 @@ create table public.student_routes (
 create table public.milestone_validations (
   student_id uuid not null references public.students (id) on delete cascade,
   route_code text not null references public.progress_routes (code),
-  position integer not null check (position between 2 and 4),
+  node_position integer not null check (node_position between 2 and 4),
   validated_by uuid not null references public.profiles (id) on delete cascade,
   validated_at timestamptz not null default now(),
   notes text not null default '' check (length(notes) <= 300),
-  primary key (student_id, route_code, position)
+  primary key (student_id, route_code, node_position)
 );
 
 alter table public.student_routes enable row level security;
@@ -211,7 +213,7 @@ $function$;
 create or replace function public.route_progress(student uuid)
 returns table (
   route_code text,
-  position integer,
+  node_position integer,
   points integer,
   adherent_weeks integer,
   validated_positions integer[]
@@ -241,17 +243,17 @@ begin
   from public.session_scores sc
   where sc.student_id = student and sc.completed_on >= public.route_since(student);
   weeks := public.adherent_weeks(student);
-  select coalesce(array_agg(v.position order by v.position), '{}') into validated
+  select coalesce(array_agg(v.node_position order by v.node_position), '{}') into validated
   from public.milestone_validations v
   where v.student_id = student and v.route_code = route;
 
   -- Se sube nodo a nodo mientras el siguiente cumpla las tres cosas.
   loop
-    select * into next_node from public.route_nodes n where n.route_code = route and n.position = node + 1;
+    select * into next_node from public.route_nodes n where n.route_code = route and n.node_position = node + 1;
     exit when not found;
     exit when earned < next_node.points_required
            or weeks < next_node.weeks_required
-           or not (next_node.position = any (validated));
+           or not (next_node.node_position = any (validated));
     node := node + 1;
   end loop;
 
@@ -310,9 +312,9 @@ begin
     raise exception 'forbidden' using errcode = 'insufficient_privilege';
   end if;
 
-  insert into public.milestone_validations (student_id, route_code, position, validated_by, notes)
+  insert into public.milestone_validations (student_id, route_code, node_position, validated_by, notes)
   values (student, route, node, (select auth.uid()), coalesce(validation_notes, ''))
-  on conflict (student_id, route_code, position) do nothing;
+  on conflict (student_id, route_code, node_position) do nothing;
 
   -- El sello del entrenador: cinco hitos validados, en cualquier ruta.
   select count(*) into validations from public.milestone_validations v where v.student_id = student;

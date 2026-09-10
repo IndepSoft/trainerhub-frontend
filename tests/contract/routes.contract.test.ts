@@ -14,7 +14,7 @@ interface CrewRow {
 
 interface RouteProgressRow {
   route_code: string
-  position: number
+  node_position: number
   points: number
   adherent_weeks: number
   validated_positions: number[]
@@ -75,7 +75,7 @@ describe('rutas: donde esta cada alumno', () => {
     created.push(trainer, person)
     const studentId = await enrollAs(trainer, crew.id, person)
 
-    expect(await progressOf(person, studentId)).toMatchObject({ route_code: 'hybrid', position: 1, points: 0 })
+    expect(await progressOf(person, studentId)).toMatchObject({ route_code: 'hybrid', node_position: 1, points: 0 })
 
     // Un plan de fuerza maxima asignado: la ruta cambia sola.
     const { data: plan } = await trainer.client
@@ -112,7 +112,7 @@ describe('rutas: donde esta cada alumno', () => {
     expect(before.points).toBeGreaterThanOrEqual(300)
     expect(before.adherent_weeks).toBeGreaterThanOrEqual(4)
     // Sin validacion, sigue en Iniciacion.
-    expect(before.position).toBe(1)
+    expect(before.node_position).toBe(1)
 
     // El alumno no se valida a si mismo.
     const forged = await person.client.rpc('validate_milestone', { student: studentId, route: 'titan', node: 2 })
@@ -123,7 +123,7 @@ describe('rutas: donde esta cada alumno', () => {
     })
     expect(validated.error).toBeNull()
     const after = await progressOf(person, studentId)
-    expect(after.position).toBe(2)
+    expect(after.node_position).toBe(2)
     expect(after.validated_positions).toEqual([2])
 
     // Cambiar la ruta a mano reinicia los puntos de la ruta, y solo lo hace quien gestiona.
@@ -133,7 +133,7 @@ describe('rutas: donde esta cada alumno', () => {
     expect(chosen.error).toBeNull()
     const apex = await progressOf(person, studentId)
     expect(apex.route_code).toBe('apex')
-    expect(apex.position).toBe(1)
+    expect(apex.node_position).toBe(1)
   })
 
   it('cinco hitos validados dan el sello del entrenador', async () => {

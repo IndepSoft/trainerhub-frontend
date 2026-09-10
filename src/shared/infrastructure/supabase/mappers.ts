@@ -883,7 +883,7 @@ export function toStudentBadge(row: StudentBadgeRow): StudentBadge {
 /** Fila de `route_progress`. Los enteros de una funcion llegan como numero o texto. */
 export interface RouteProgressRow {
   route_code: string
-  position: number | string
+  node_position: number | string
   points: number | string
   adherent_weeks: number | string
   validated_positions: number[] | null
@@ -895,7 +895,7 @@ export function toRouteProgress(studentId: string, row: RouteProgressRow): Route
     // La frontera vuelve a comprobar el codigo: el catalogo es de sistema, pero
     // es la unica que puede prometerselo al dominio.
     routeCode: isProgressRouteCode(row.route_code) ? row.route_code : 'hybrid',
-    position: Number(row.position),
+    position: Number(row.node_position),
     points: Number(row.points),
     adherentWeeks: Number(row.adherent_weeks),
     validatedPositions: (row.validated_positions ?? []).map(Number),
