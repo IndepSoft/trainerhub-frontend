@@ -50,11 +50,12 @@ export function StudentSubscriptionSection({ student }: StudentSubscriptionSecti
   const standing = standingOf(student.id)
   const canManage = can('students.manage')
   /*
-   * Sin cuenta no hay campana: un aviso a una ficha `invited` se guardaba y
-   * la pantalla decia «enviado» a alguien que no lo iba a leer nunca. Con la
-   * vía A como alta corriente era el caso normal, no el raro.
+   * Sin cuenta no hay campana TODAVIA: el aviso se guarda con la ficha y lo
+   * lee cuando se registre con ese correo. Se dice, en vez de dar por leido lo
+   * que todavia no tiene donde llegar. Con la vía A como alta corriente es el
+   * caso normal, no el raro.
    */
-  const canNotify = student.profileId !== null
+  const hasAccount = student.profileId !== null
 
   const handleSend = async (body: string, kind: NoticeKind) => {
     await container.notices.send({ studentId: student.id, kind, body })
@@ -113,15 +114,13 @@ export function StudentSubscriptionSection({ student }: StudentSubscriptionSecti
               {justRenewed ? t('dues.renewed') : t('dues.registerPayment')}
             </Button>
 
-            {canNotify ? (
-              <Button variant="outline" className="gap-2" onClick={() => setNoticeOpen(true)}>
-                <BellRing className="size-4" />
-                {t('reports.notify')}
-              </Button>
-            ) : (
-              <p className="self-center text-xs text-ink/50">{t('notice.noAccount')}</p>
-            )}
+            <Button variant="outline" className="gap-2" onClick={() => setNoticeOpen(true)}>
+              <BellRing className="size-4" />
+              {t('reports.notify')}
+            </Button>
           </div>
+
+          {!hasAccount && <p className="mt-2 text-xs text-ink/50">{t('notice.noAccount')}</p>}
 
           {error !== null && (
             <p role="alert" className="mt-2 text-sm text-danger">

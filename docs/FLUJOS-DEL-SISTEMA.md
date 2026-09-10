@@ -12,6 +12,12 @@ No es una propuesta de cómo deberían ser los flujos. Es lo que el código hace
 hoy. Las propuestas van al final, en [§9](#9-plan-de-acción-priorizado), y
 están ordenadas.
 
+**Estado (11 de septiembre de 2026).** Los veintiún puntos del plan de §9 se
+ejecutaron en la rama `fix/ajustes-de-flujo` (`CAMBIOS` §31), y lo que §10
+dejaba fuera se cubre ahora en ese mismo apartado. Las secciones 3 a 8
+describen el sistema TAL COMO QUEDÓ; donde un hallazgo se resolvió, se dice al
+lado con «→ resuelto».
+
 **Método.** Cada afirmación sale de una de estas tres fuentes, y se cita:
 
 - el componente o hook que pinta o decide (`src/domains/…`, `src/app/…`);
@@ -139,25 +145,29 @@ stateDiagram-v2
     pending --> active: el entrenador acepta
     pending --> rejected: el entrenador rechaza
     pending --> [*]: el alumno retira la solicitud
+    rejected --> [*]: el alumno se da por enterado (entendido)
+    active --> inactive: baja (crew.members), o el alumno se va
+    invited --> inactive: baja (crew.members)
+    inactive --> active: reactivar (crew.members), con cuenta
+    inactive --> invited: reactivar, sin cuenta
     active --> [*]: borrar ficha (bloqueado si tiene sesiones)
 ```
 
-Tres cosas que este diagrama deja a la vista:
+Tres cosas que este diagrama dejaba a la vista, y cómo quedaron:
 
-1. **No hay baja.** `MembershipStatus` es `invited | pending | active |
+1. **No había baja.** → resuelto: `inactive`, `deactivate_student` y
+   `reactivate_student`; ver §5.3. `MembershipStatus` es `invited | pending | active |
    rejected`. La capacidad `crew.members` se describe como «aceptar o rechazar
    solicitudes, y dar de baja a un alumno», pero `updateMembership` sólo se
    llama con `active` y `rejected` (`useCrewMembers`). Un alumno que deja el
    gimnasio y tiene una sola sesión no se puede borrar
    (`useStudentEditor.deletionBlocker`) ni desactivar: sigue contando en
    «alumnos» del panel, en la cola de cobros y arriba del todo en retención.
-2. **El alumno activo no puede irse.** `withdrawRequest` sólo borra una ficha
-   `pending` (política «una solicitud pendiente la retira quien la hizo»). La
-   única salida de un equipo es eliminar la cuenta entera.
-3. **El rechazo es invisible.** Una ficha `rejected` no llega a `useViewer`
-   (la simulación la filtra; contra Supabase, `belongs` y `pending` la
-   descartan). El alumno rechazado vuelve a ver «Únete a un equipo» como si
-   nunca hubiera pedido nada, y lo normal es que vuelva a escanear.
+2. **El alumno activo no podía irse.** → resuelto: «Salir del equipo» en
+   Configuración da la misma baja sobre la propia ficha.
+3. **El rechazo era invisible.** → resuelto: `useViewer` expone `rejected`,
+   la invitación lo dice, y «entendido» retira la fila con la misma política
+   que la pendiente (`pending` o `rejected`).
 
 Y una que no se ve en el diagrama: **una ficha `invited` que escanea el QR entra
 sin aprobación** aunque el equipo la exija (`claim_membership_as`: «quien ya
@@ -181,11 +191,12 @@ stateDiagram-v2
   a ejecutar (`LiveSession` y `SessionDetailsModal` lo cierran; el disparador
   `guard_session_update` deja al alumno escribir sólo `completed` con su
   resultado).
-- **No hay caducidad.** Una sesión `pending` cuyo día pasó sigue `pending`
-  para siempre. Cuenta como «por hacer» en `DumpActions`, así que «Mover una
-  semana» la mueve a otro día ya pasado, y «Cancelar las pendientes» cancela
-  también lo que ya no ocurrió. Retención no la mira (usa `completedAt`), pero
-  el contador de pendientes de la agenda sólo crece. No existe «no vino».
+- **No había caducidad.** → resuelto con un estado DERIVADO, no guardado:
+  «no ocurrió» es abierta y con el día pasado (`sessionLifecycle`). La agenda
+  lo pinta apagado y lo cuenta aparte, el detalle dice qué hacer, y «Mover una
+  semana» y «Cancelar las pendientes» dejan quieto lo que ya pasó, en el
+  cliente y en `shift_sessions`. Iniciarla sigue valiendo: una sesión del
+  martes se cierra el miércoles.
 - `confirmed` **no lo consume nada**: cambia el color, cuenta en el resumen, y
   el onboarding promete algo que no hace (§6.3). Es un paso manual opcional
   sin consecuencia.
@@ -425,19 +436,17 @@ reclamación por correo y por QR, aprobación, retirada, guardia de columnas),
 
 **Hallazgos.**
 
-- Sin baja ni salida voluntaria (§3.2). Esto **contamina tres métricas**: el
-  panel cuenta `students.length` (incluye `invited` que nunca entraron),
-  retención lista a quien nunca entrenó arriba del todo, y la cola de cobros
-  reclama a quien ya no viene.
-- Rechazo invisible para el alumno (§3.2).
-- Solicitudes sin señal fuera de `/crew` (§6.2).
-- La tarjeta del alumno no dice si tiene cuenta ni en qué estado está su
-  pertenencia (§0 #4).
-- **La puerta del alta no pregunta lo mismo en el cliente que en la base.**
-  `Students` habilita «Añadir alumno» con `crew.invite`; la política de
-  inserción de `students` exige `students.manage`. Para `admin` y `trainer` da
-  igual, porque tienen las dos; a quien se le preste sólo `crew.invite` le
-  saldrá el botón y le fallará la escritura.
+- Sin baja ni salida voluntaria (§3.2). → resuelto: la baja saca al alumno
+  del panel, de la retención y de los cobros porque todo filtraba ya por
+  `active` e `invited`. Las fichas `invited` que nunca entraron siguen
+  contando, y ahora la bandeja las lista como «sin cuenta».
+- Rechazo invisible para el alumno (§3.2). → resuelto.
+- Solicitudes sin señal fuera de `/crew` (§6.2). → resuelto: la bandeja del
+  panel y la cifra de la barra.
+- La tarjeta del alumno no decía si tiene cuenta (§0 #4). → resuelto, con el
+  enlace de invitación al lado.
+- **La puerta del alta no preguntaba lo mismo en el cliente que en la base.**
+  → resuelto: «Añadir alumno» pregunta por `students.manage`.
 
 ### 5.4 Catálogo, rutina y plan
 
@@ -476,12 +485,13 @@ rutinas`, `catalogo del entrenamiento`, `biblioteca de bloques`, `planes`,
 
 **Hallazgos.**
 
-- El borrador de rutina se pierde al salir al catálogo (§0 #6). No hay alta de
-  ejercicio en línea desde el bloque.
-- Asimetría de las fichas: el plan explica cómo se asigna, la rutina no.
-- Textos sin traducir: «Rutinas», «Planes» (enlaces de vuelta), «descanso»,
-  «min estimados», «series en total», `kind="la rutina"` / `"el plan"`, y
-  «guardado en la biblioteca» en el formulario.
+- El borrador de rutina se perdía al salir al catálogo (§0 #6). → resuelto:
+  vive en `sessionStorage` mientras se escribe, se recupera con aviso y se
+  descarta a mano. Sigue sin haber alta de ejercicio en línea desde el bloque.
+- Asimetría de las fichas. → resuelto: la rutina también explica cómo se
+  asigna. Y las dos fichas se abren a cualquier miembro: el alumno llega a
+  ellas desde su repertorio y desde su sesión.
+- Textos sin traducir. → resueltos, con todos los de §6.6.
 
 ### 5.5 Asignar
 
@@ -520,13 +530,16 @@ plan).
 
 **Hallazgos.**
 
-- La fecha por defecto se pierde en `resetForm` y en `changeKind` (§0 #7).
-- Sin feedback de éxito ni de fallo.
-- Efecto sobre la ruta sin aviso (§0 #8).
-- Una rutina asignada sigue sin ciclo de vida: sin fecha, sin volcado, sin
-  pantalla del alumno. La justificación del código —«hay quien asigna un plan
-  para que el alumno lo siga por su cuenta»— no se sostiene mientras el alumno
-  no pueda ver lo que le han asignado: la base ya se lo deja leer.
+- La fecha por defecto se perdía en `resetForm` y en `changeKind` (§0 #7).
+  → resuelto: se repone.
+- Sin feedback de éxito ni de fallo. → resuelto.
+- Efecto sobre la ruta sin aviso (§0 #8). → resuelto: `route_progress` dice
+  si la ruta se eligió a mano, y el diálogo avisa de las tres situaciones
+  —cambia, es la misma, no cambia porque se eligió—.
+- Una rutina asignada sigue sin fecha ni volcado, pero ya tiene pantalla del
+  alumno: el repertorio en Progreso. La justificación del código —«hay quien
+  asigna un plan para que el alumno lo siga por su cuenta»— vuelve a
+  sostenerse.
 
 ### 5.6 Agendar: cinco entradas, dos formularios y un volcado
 
@@ -604,12 +617,12 @@ agenda`, `volcar un plan: lo que deja y lo que se hace con ello` (e2e);
 
 **Hallazgos.**
 
-- Tres derivas entre los formularios (§0 #11).
-- Volcado sin captura de error.
-- Sin caducidad de sesiones (§3.3): el bloque «M por hacer» y «Mover una
-  semana» operan también sobre lo que ya pasó.
-- Desde la lista de sesiones de la ficha no se puede abrir ninguna: para mover
-  una sesión de este alumno hay que ir a la agenda y encontrarla.
+- Tres derivas entre los formularios (§0 #11). → resueltas, y el tronco
+  común es un solo componente: `SessionScheduleFields`.
+- Volcado sin captura de error. → resuelto.
+- Sin caducidad de sesiones (§3.3). → resuelto con «no ocurrió».
+- Desde la lista de sesiones de la ficha sigue sin poderse abrir ninguna: para
+  mover una sesión de este alumno hay que ir a la agenda y encontrarla.
 
 ### 5.7 Ejecutar y celebrar
 
@@ -681,12 +694,11 @@ Correcto.
 
 **Hallazgos.**
 
-- Todo lo que el entrenador tiene que validar **sólo se descubre abriendo cada
-  ficha**. No hay lista de «pendientes de validar» en ningún sitio (§6.2). Ya
-  está anotado como deuda; aquí se mide su coste: con veinte alumnos, saber si
-  alguien espera una validación son veinte visitas.
-- El alumno no puede pedir una validación ni una pausa: la petición viaja por
-  fuera (WhatsApp, en el gimnasio).
+- Todo lo que el entrenador tenía que validar sólo se descubría abriendo cada
+  ficha (§6.2). → resuelto: la bandeja del panel lo lista por equipo, con la
+  puerta a cada ficha, y la barra lleva la cifra.
+- El alumno sigue sin poder pedir una validación ni una pausa: la petición
+  viaja por fuera (WhatsApp, en el gimnasio).
 
 ### 5.9 Cuotas, avisos y retención
 
@@ -717,11 +729,12 @@ completada; quien nunca entrenó arriba), actividad.
 
 **Hallazgos.**
 
-- **Se pueden mandar avisos a quien no tiene cuenta.** Ni la ficha, ni la cola,
-  ni el recordatorio de la agenda miran `profileId`. El aviso se guarda, la
-  campana no existe, y la pantalla dice «enviado». Con la vía A como alta
-  corriente, es el caso normal, no el raro.
-- Retención y cobros arrastran a quien no se puede dar de baja (§5.3).
+- **Se podían mandar avisos a quien no tiene cuenta sin decirlo.** → resuelto:
+  el aviso se sigue mandando —espera en la ficha y lo lee cuando se registre
+  con ese correo, que es como funciona la reclamación—, y la ficha, la cola y
+  el recordatorio de la agenda dicen que todavía no tiene campana.
+- Retención y cobros arrastraban a quien no se podía dar de baja (§5.3).
+  → resuelto con la baja.
 
 ### 5.10 Muro, plantilla, ajustes y plataforma
 
@@ -762,8 +775,12 @@ otra**, que es donde un proceso se atasca.
 | Entrenador | Alumno | Que pague | Aviso manual a la campana, sólo si tiene cuenta | — | — |
 | Plataforma | Equipos | Peticiones de activación | Lista ordenada en `/admin` | — | — |
 
-Dos de nueve relevos tienen señal propia (correo de confirmación, muro). El
-resto dependen de que alguien abra la pantalla correcta.
+Dos de nueve relevos tenían señal propia (correo de confirmación, muro).
+Después del plan son seis: la bandeja del panel cubre las solicitudes, las
+validaciones y las fichas sin cuenta del lado del entrenador; el aviso de
+pertenencia cubre la aprobación del lado del alumno; y el rechazo se enseña.
+Siguen sin señal la activación de la plataforma —la campana es de alumnos— y
+la petición de validación o de pausa del alumno hacia el entrenador.
 
 ### 6.2 Trabajo pendiente sin cola
 
@@ -783,10 +800,11 @@ bandeja para el entrenador.
 | Activación pedida | `requestActivation` | `/admin` (plataforma) | Ninguna |
 | Anuncio del muro sin leer | Publicar | Muro | **Sí**: contador en la insignia del equipo |
 
-Los puertos ya responden casi todas las preguntas por alumno
-(`badges.pendingValidation`, `scores.flaggedOf`, `routes.progressOf`,
-`students.findRequests`, `subscriptions.findAll`). Lo que falta es la vista que
-las junta, y en dos casos la consulta por equipo en vez de por alumno.
+Los puertos respondían casi todas las preguntas por alumno. → resuelto: la
+vista que las junta es `usePendingWork`, en el panel y en la barra, y las dos
+consultas por equipo que faltaban son `crew_pending_milestones` y
+`crew_flagged_scores`. La activación pedida sigue viviendo sólo en `/admin`:
+es la bandeja de la plataforma, no la del entrenador.
 
 ### 6.3 Promesas sin mecanismo
 
@@ -800,6 +818,9 @@ Textos de la interfaz que anuncian algo que ninguna pieza del sistema hace:
 | `onboarding.schedule.body` | «Crea la sesión, confirma y olvídate. El calendario avisa a quien tiene que aparecer.» | El recordatorio es un botón manual, y llega a una campana dentro de la aplicación. `confirmed` no dispara nada. |
 
 Una promesa sin mecanismo es peor que ninguna: quien la lee deja de mirar.
+→ resuelto: la aprobación tiene mecanismo —un aviso `membership` escrito por
+disparador—, y los otros tres textos dicen lo que de verdad pasa: «cuando esté
+lista, el QR aparecerá aquí», y «manda el recordatorio en un toque».
 
 ### 6.4 Escrituras sin respuesta
 
@@ -824,24 +845,32 @@ sitios y no en otros:
 | **`RoutineForm`, `PlanForm`** | guardar | sin capturar | navega |
 | **`handle_new_user`** | código de equipo | se ignora | — |
 
+→ Las nueve filas en negrita están resueltas: todas capturan y dicen, y el
+código de equipo del registro se rellena solo desde la ruta pretendida, que
+era el caso en que se perdía sin decirlo.
+
 ### 6.5 Callejones sin salida y estados sin fin
 
-- Un entrenador con equipo no puede fundar otro (§0 #1).
-- Un alumno activo no se puede dar de baja ni irse (§3.2).
-- Un rechazo no se comunica (§3.2).
-- Una sesión pendiente del pasado no se resuelve nunca (§3.3).
-- Una rutina asignada sólo admite borrarse (§5.5).
-- El borrador de rutina se pierde al ir al catálogo (§5.4).
-- El QR se pierde entre el registro y la confirmación del correo (§5.1).
-- Un aviso a una ficha sin cuenta se da por enviado (§5.9).
+Los ocho estaban en la primera lectura; siete se resolvieron:
+
+- Un entrenador con equipo no podía fundar otro (§0 #1). → resuelto.
+- Un alumno activo no se podía dar de baja ni irse (§3.2). → resuelto.
+- Un rechazo no se comunicaba (§3.2). → resuelto.
+- Una sesión pendiente del pasado no se resolvía nunca (§3.3). → resuelto.
+- Una rutina asignada sólo admite borrarse (§5.5): sigue así, pero ahora el
+  alumno la ve en su repertorio.
+- El borrador de rutina se perdía al ir al catálogo (§5.4). → resuelto.
+- El QR se perdía entre el registro y la confirmación del correo (§5.1).
+  → resuelto en el formulario; el aterrizaje en `/` tras confirmar sigue.
+- Un aviso a una ficha sin cuenta se daba por leído (§5.9). → resuelto: se
+  dice que espera a que se registre.
 
 ### 6.6 Duplicaciones y deriva
 
-- Dos formularios de sesión con tres frentes de deriva (§5.6).
-- Texto en castellano fijo en siete ficheros, dieciséis cadenas:
-  `ScheduleSessionDialog` (2), `CrewPage` (4), `NewCrew` (1), `JoinCrew` (1),
-  `RoutineDetail` (5), `PlanDetail` (2), `RoutineForm` (1). Los tres
-  diccionarios están; estas cadenas no pasaron por ellos.
+- Dos formularios de sesión con tres frentes de deriva (§5.6). → resuelto:
+  el tronco es `SessionScheduleFields`.
+- Texto en castellano fijo en siete ficheros, dieciséis cadenas. → resuelto:
+  todas pasan por los tres diccionarios.
 
 ### 6.7 Cobertura por flujo
 
@@ -921,8 +950,10 @@ qué va antes.
 
 ## 9. Plan de acción priorizado
 
-Ordenado por lo que cuesta frente a lo que arregla. Los tres primeros bloques
-no tocan el esquema.
+Ordenado por lo que cuesta frente a lo que arregla. **Los veintiún puntos
+están hechos** (`CAMBIOS` §31): se conserva la tabla como registro de por qué
+se hizo cada cosa y en qué orden. Lo que tocó esquema va en la migración
+`20260911100000_ciclos_de_vida_y_bandeja.sql`, con su prueba de contrato.
 
 ### A. Defectos de una función (un día en total)
 
@@ -932,7 +963,7 @@ no tocan el esquema.
 | 2 | Capturar y avisar en agendar desde la ficha; pasar las dos cadenas por `t()`; `SESSION_DURATIONS` en la agenda | `ScheduleSessionDialog`, `CreateSessionModal` |
 | 3 | `catch` en el volcado; en aceptar y rechazar; en cobrar y periodo; `finally` en el aviso | `PlanToAgendaDialog`, `CrewPage`, `StudentSubscriptionSection`, `NoticeDialog` |
 | 4 | Rellenar el código de equipo del registro desde la ruta pretendida (`?codigo=`) | `StudentRegisterForm`, `useRegisterForm` |
-| 5 | No ofrecer «Avisar» ni «Recordatorio» a fichas sin cuenta, y decir por qué | `StudentSubscriptionSection`, `DuesQueue`, `SessionDetailsModal` |
+| 5 | Decir junto a «Avisar» y «Recordatorio» que una ficha sin cuenta lo verá al registrarse | `StudentSubscriptionSection`, `DuesQueue`, `SessionDetailsModal` |
 | 6 | Las dieciséis cadenas en castellano fijo, a los tres diccionarios | siete ficheros de §6.6 |
 | 7 | Que «Añadir alumno» pregunte por `students.manage`, que es lo que exige la base | `Students` |
 
@@ -967,13 +998,103 @@ no tocan el esquema.
 
 ---
 
-## 10. Lo que este documento no cubre
+## 10. Lo que la primera lectura dejaba fuera
 
-- La fórmula de puntuación y las reglas de las insignias: `CAMBIOS` §30.
-- El interior de la sesión guiada (series, descansos, señales): `CAMBIOS` §21–24.
-- La seguridad de las políticas y el tiempo real como tales: tienen su suite
-  de contratos y no se han vuelto a auditar aquí.
-- El panel de plataforma más allá de activar y suspender.
+La primera versión de este apartado era una lista de exclusiones. Aquí se
+cubren, con la misma plantilla que el resto.
+
+### 10.1 Cómo se puntúa una sesión
+
+**Ficheros:** `score_session` y `evaluate_badges` en
+`20260910110000_puntuacion_e_insignias.sql`; su espejo simulado en
+`fake/scoring.ts` y `fake/badgeRules.ts`; la suite unitaria compara los dos y
+el contrato prueba la base. La regla, versión 1:
+
+```
+puntos = round(base × adherencia × progreso × cohorte)
+base        = 20 + min(series hechas, series previstas)      (cardio: 20 + min(minutos, duración) / 5)
+adherencia  = hecho / previsto, acotado a [0,8 – 1,1]
+progreso    = 1 + 0,15 × (ejercicios que mejoraron carga / con referencia), sobre la mediana de 4 semanas; RPE > 8 no cuenta
+cohorte     = juvenil 1,15 · senior 1,20 · adulto avanzado 0,85 · resto 1,00
+```
+
+**Dónde se corta.** Un salto de carga de más del 20 % sobre la mediana marca
+la sesión (`flagged_reason = load_jump`) y la puntúa con progreso 1,00 hasta
+que el entrenador la dé por buena (`accept_load_jump`); ahora aparece en la
+bandeja. Reabrir una sesión borra su puntuación. Nadie escribe puntuaciones
+desde la API. El detalle y las decisiones están en `CAMBIOS` §30.
+
+### 10.2 La sesión guiada, como flujo
+
+**Ficheros:** `session/components/StrengthSession.tsx`,
+`useGuidedStrengthSession`, `SetTracker`, `SetWeightField`, `CardioSession`.
+
+1. Entrar desde el detalle de la agenda, con el origen en `location.state`.
+2. Fuerza: el plan de la sesión se despliega en pasos —bloque, ejercicio,
+   serie— desde la rutina por referencia. Cada serie pide repeticiones, peso
+   (el historial por delante de lo prescrito) y RPE opcional; al terminarla
+   arranca el descanso con tres señales (color, vibración, sonido programado
+   en el reloj de audio, porque los temporizadores de segundo plano se
+   estrangulan). Una superserie encadena sin descanso.
+3. Cardio: cronómetro. Sólo tiempo, porque sin sensor no hay otra medida.
+4. Salir con la X no escribe nada. Terminar escribe `completed` con el
+   resultado en una llamada (`complete_session`), y la base puntúa, evalúa
+   insignias y marca saltos.
+5. La celebración enseña la insignia más rara de las nuevas o, si no hay, la
+   puntuación y la racha; «Seguir» vuelve al origen.
+
+**Controles.** `guard_session_update` deja al alumno escribir sólo `completed`
+con resultado; `is_valid_session_result` valida series, pesos y RPE 1–10.
+**Pruebas.** `sesion en vivo`, `celebracion` (e2e); `sessions`, `progress`
+(contrato). Detalle de las decisiones de pantalla en `CAMBIOS` §21–24.
+
+### 10.3 Auditoría de las políticas y el tiempo real
+
+Se repasaron las dieciséis migraciones buscando dos cosas: escrituras que
+crucen equipos, y datos que una cuenta pueda darse a sí misma.
+
+| Comprobación | Resultado |
+|---|---|
+| `profiles.role` editable por el propio perfil | No: `grant update (photo_url, bio)`; el rol lo pone `handle_new_user` desde `platform_admin_emails`, que sólo escribe el rol de servicio. |
+| Funciones de plataforma sin administrar | Todas pasan por `assert_platform_admin`; probado en `students.contract`. |
+| El muro | Insertar exige `crew.wall` **y** `author_profile_id = auth.uid()`: nadie publica en nombre de otro. |
+| Rutas, insignias, pausas, comodines | Sólo por funciones que comprueban `students.manage` o la propia ficha; sin políticas de escritura directas. |
+| Tiempo real | Todo lo publicado lleva `replica identity full`; la auditoría, las marcas de lectura y el catálogo quedan fuera a propósito. |
+| **Escrituras que cruzan equipos** | **Fallaba.** Las políticas de `sessions`, `assignments`, `notices` y `student_subscriptions` comprobaban la capacidad sobre `crew_id` y nada sobre `student_id`: quien gestiona el equipo A podía agendar, asignar, avisar o cobrar a un alumno del equipo B, que lo veía como suyo. → resuelto: `guard_student_crew` en las cuatro tablas, con prueba de contrato. |
+| `crew_flagged_scores` | Es `security invoker`: RLS de `session_scores` sigue decidiendo qué ve quien pregunta. |
+
+Lo que no se auditó aquí: el almacenamiento de fotos (cubo público en
+lectura, escritura por carpeta) y el límite de consultas del token, que tienen
+su prueba y no cambiaron.
+
+### 10.4 El panel de plataforma
+
+**Ficheros:** `platform/pages/PlatformAdmin.tsx`, `PlatformCrews`,
+`PlatformUsers`, `usePlatformCrews`, `usePlatformUsers`. Servidor:
+`platform_list_crews`, `platform_list_users`, `platform_set_subscription`,
+todas tras `assert_platform_admin`.
+
+- **Equipos.** Dos listas: los que esperan activación, ordenados por la fecha
+  en que la pidieron, y el resto. Activar y suspender son un botón cada uno;
+  suspender va en rojo porque es una decisión tomada, no una espera. Es la
+  única bandeja de la plataforma, y la única que no tiene señal fuera de su
+  pantalla: quien administra tiene que abrirla.
+- **Cuentas.** Búsqueda, filtro por rol y paginación; por cada cuenta, sus
+  puestos y concesiones. No se ve contenido de nadie —ni sesiones, ni fichas,
+  ni datos de salud—: administrar la plataforma es gestionar accesos.
+- **Quién administra.** `profiles.role = 'admin'`, dado por el disparador del
+  alta a quien esté en `platform_admin_emails`. No hay pantalla para nombrar
+  administradores: es una fila que se inserta con el rol de servicio.
+
+### 10.5 Lo que sigue fuera
+
+- Correo y push: la campana es dentro de la aplicación, y quien no la abra no
+  se entera. Es otro trabajo y otro consentimiento.
+- La activación de la suscripción no avisa al equipo: la campana es de
+  alumnos. El texto ya no lo promete.
+- El aterrizaje en `/` tras confirmar el correo: la ruta pretendida sigue sin
+  sobrevivir a ese viaje. El QR sí, porque va con el alta.
+- Ligas, eventos y patrocinios: fase 4, sin fecha.
 
 ---
 

@@ -1195,7 +1195,7 @@ export const spanish = {
   'plan.saveError': 'No se pudo guardar el plan. Inténtalo otra vez.',
   'dues.error': 'No se pudo guardar la cuota. Inténtalo otra vez.',
   'notice.error': 'No se pudo enviar el aviso. Inténtalo otra vez.',
-  'notice.noAccount': 'Sin cuenta todavía: el aviso no tendría dónde llegar.',
+  'notice.noAccount': 'Sin cuenta todavía: lo verá en su campana cuando se registre con este correo.',
   'assign.routeChange': 'Este plan lleva a la ruta {next}. {name} está en {current}: al asignarlo cambiará de ruta.',
   'assign.routeSame': 'Este plan lleva a la ruta {next}, la que {name} ya sigue.',
   'assign.routeChosen': 'La ruta de {name} se eligió a mano ({current}) y no cambia al asignar.',

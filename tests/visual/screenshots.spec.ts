@@ -658,7 +658,12 @@ test.describe('tarjeta de estudiante', () => {
     // Se busca el <article> contenedor y no una clase: la clase cambia con
     // cada iteracion de diseno -paso de `rounded-xl` a `rounded-block`- y la
     // prueba se rompia sin que la funcionalidad hubiera cambiado.
-    const caja = await tarjeta.locator('xpath=ancestor::article[1]').boundingBox()
+    // Con el pie de la tarjeta a la vista: desde que la tarjeta dice si el
+    // alumno tiene cuenta es mas alta que el hueco, y el punto de abajo caia
+    // sobre la barra inferior.
+    const articulo = tarjeta.locator('xpath=ancestor::article[1]')
+    await articulo.evaluate((element) => element.scrollIntoView({ block: 'end' }))
+    const caja = await articulo.boundingBox()
     expect(caja).not.toBeNull()
     await page.mouse.click(caja!.x + caja!.width - 60, caja!.y + caja!.height - 30)
 
@@ -2109,7 +2114,8 @@ test.describe('asignaciones del alumno', () => {
       .locator('section')
       .filter({ hasText: 'Sesiones' })
       .locator('ul > li')
-    await expect(filasDeSesion).toHaveCount(1)
+    // Ana tiene dos en la semilla: la de mañana y la que quedo sin cerrar.
+    await expect(filasDeSesion).toHaveCount(2)
 
     await page.getByRole('button', { name: 'Asignar' }).first().click()
     const dialogo = page.getByRole('dialog')
@@ -2128,7 +2134,7 @@ test.describe('asignaciones del alumno', () => {
      * son dos compromisos distintos, y mezclarlos obligaria a fijar horarios
      * para poder asignar.
      */
-    await expect(filasDeSesion).toHaveCount(1)
+    await expect(filasDeSesion).toHaveCount(2)
   })
 
   test('se pueden acumular varias asignaciones, sin excluirse', async ({ page }) => {
@@ -5306,5 +5312,105 @@ test.describe('rachas protegidas', () => {
     const pausa = ruta.getByRole('listitem').filter({ hasText: '2026-09-01 – 2026-09-03' })
     await expect(pausa).toBeVisible()
     await expect(pausa).toContainText('Viaje')
+  })
+})
+
+/**
+ * La segunda lectura de los flujos (`docs/FLUJOS-DEL-SISTEMA.md`, `CAMBIOS`
+ * §31): la bandeja del entrenador, la baja del alumno, la sesion que no
+ * ocurrio, el repertorio del alumno y el aviso de ruta al asignar.
+ */
+test.describe('ciclos de vida y bandeja', () => {
+  test('el panel lista lo pendiente y la barra lo cuenta; sin nada que arrancar, no hay primeros pasos', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+
+    // La semilla tiene cuatro fichas sin cuenta: la bandeja las lista, con la
+    // puerta al padron.
+    const bandeja = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Pendientes' }) })
+    await expect(bandeja).toBeVisible()
+    await expect(bandeja.getByRole('link', { name: /alumnos sin cuenta/ })).toBeVisible()
+
+    // La cifra en la barra lateral, sobre el panel.
+    const panel = page.getByRole('navigation').getByRole('link', { name: /Dashboard/ })
+    await expect(panel).toContainText(/\d+/)
+
+    // El equipo ya arranco: rutinas, alumnos y sesiones existen, y la
+    // suscripcion esta activa. La lista de primeros pasos no se pinta.
+    await expect(page.getByRole('heading', { name: 'Primeros pasos' })).toHaveCount(0)
+  })
+
+  test('dar de baja saca al alumno del padron, y reactivar lo devuelve', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students')
+
+    await page.getByRole('button', { name: 'Acciones para Ana Torres' }).click()
+    await page.getByRole('menuitem', { name: 'Dar de baja' }).click()
+    const dialogo = page.getByRole('dialog')
+    await expect(dialogo.getByText('¿Dar de baja a Ana Torres?')).toBeVisible()
+    await dialogo.getByRole('button', { name: 'Dar de baja' }).click()
+
+    await expect(page.getByRole('heading', { name: 'Ana Torres' })).toHaveCount(0)
+
+    // Las bajas, plegadas bajo el padron; reactivar la devuelve.
+    await page.getByRole('button', { name: 'Ver bajas (1)' }).click()
+    await expect(page.getByText('Bajas · 1')).toBeVisible()
+    await page.getByRole('button', { name: 'Reactivar' }).click()
+    await expect(page.getByRole('heading', { name: 'Ana Torres' })).toBeVisible()
+  })
+
+  test('una sesion abierta con el dia pasado se enseña como «no ocurrio» y se cuenta aparte', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/calendar')
+
+    // El resumen tiene el tile propio, con la de la semilla que quedo sin cerrar.
+    const noOcurrieron = contador(page, 'No ocurrieron')
+    await expect(noOcurrieron).toBeVisible()
+    expect(await leerCifra(noOcurrieron)).toBeGreaterThanOrEqual(1)
+
+    // Y en la ficha de su alumna, la insignia lo dice en vez de «pendiente».
+    await page.goto('/students/student-4')
+    await expect(page.getByText('No ocurrió').first()).toBeVisible()
+  })
+
+  test('asignar un plan avisa de que la ruta va a cambiar', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    // Juan no tiene plan: esta en Hybrid. «Base de fuerza» es de
+    // acondicionamiento, que lleva a Vitality.
+    await page.goto('/students/student-1')
+
+    await page.getByRole('button', { name: 'Asignar' }).first().click()
+    const dialogo = page.getByRole('dialog')
+    await elegirDelDesplegable(page, dialogo.getByRole('combobox', { name: 'Plan' }), 'Base de fuerza · 4 semanas')
+    await expect(dialogo.getByText(/al asignarlo cambiará de ruta/)).toBeVisible()
+  })
+
+  test('el alumno ve su repertorio, y la ficha del plan se le abre sin controles de edicion', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+
+    // Maria (student-2) tiene un plan y una rutina asignados; registrarse
+    // con su correo reclama la ficha.
+    await page.goto('/authentication')
+    await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
+    await page.getByRole('tab', { name: 'Registrarme' }).click()
+    await page.getByRole('button', { name: 'Entreno', exact: true }).click()
+    await page.getByLabel('Nombre').fill('María')
+    await page.getByLabel('Apellido').fill('Gómez')
+    await page.getByLabel('Email').fill('mgomez@gmail.com')
+    await page.locator('input[type=password]').fill('secreto123')
+    await page.getByRole('button', { name: 'Crear cuenta' }).click()
+    await page.waitForURL(/\/progress/, { timeout: 20_000 })
+
+    const repertorio = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Lo que te han asignado' }) })
+    await expect(repertorio).toBeVisible()
+    await repertorio.getByRole('link', { name: 'Base de fuerza · 4 semanas' }).click()
+
+    // La ficha se abre a un miembro; lo que la cambia, no.
+    await expect(page.getByRole('heading', { name: 'Base de fuerza · 4 semanas' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Editar' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Eliminar' })).toHaveCount(0)
   })
 })

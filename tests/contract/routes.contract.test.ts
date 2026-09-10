@@ -18,6 +18,7 @@ interface RouteProgressRow {
   points: number
   adherent_weeks: number
   validated_positions: number[]
+  chosen: boolean
 }
 
 async function createActiveCrewAs(account: TestAccount, name: string): Promise<CrewRow> {
@@ -113,6 +114,16 @@ describe('rutas: donde esta cada alumno', () => {
     expect(before.adherent_weeks).toBeGreaterThanOrEqual(4)
     // Sin validacion, sigue en Iniciacion.
     expect(before.node_position).toBe(1)
+    // La ruta sale del plan, no de la mano del entrenador.
+    expect(before.chosen).toBe(false)
+
+    // La bandeja del equipo: el hito cumple numeros y solo espera la validacion.
+    const { data: pendingBefore, error: pendingError } = await trainer.client.rpc('crew_pending_milestones', { crew: crew.id })
+    expect(pendingError).toBeNull()
+    expect(pendingBefore).toEqual([{ student_id: studentId, route_code: 'titan', node_position: 2 }])
+    // Y solo la ve el equipo tecnico.
+    const pendingDenied = await person.client.rpc('crew_pending_milestones', { crew: crew.id })
+    expect(pendingDenied.error?.message).toBe('forbidden')
 
     // El alumno no se valida a si mismo.
     const forged = await person.client.rpc('validate_milestone', { student: studentId, route: 'titan', node: 2 })
@@ -126,6 +137,10 @@ describe('rutas: donde esta cada alumno', () => {
     expect(after.node_position).toBe(2)
     expect(after.validated_positions).toEqual([2])
 
+    // Validado, sale de la bandeja: el siguiente nodo pide 1200 puntos.
+    const { data: pendingAfter } = await trainer.client.rpc('crew_pending_milestones', { crew: crew.id })
+    expect(pendingAfter).toEqual([])
+
     // Cambiar la ruta a mano reinicia los puntos de la ruta, y solo lo hace quien gestiona.
     const denied = await person.client.rpc('choose_route', { student: studentId, route: 'apex' })
     expect(denied.error?.message).toBe('forbidden')
@@ -134,6 +149,8 @@ describe('rutas: donde esta cada alumno', () => {
     const apex = await progressOf(person, studentId)
     expect(apex.route_code).toBe('apex')
     expect(apex.node_position).toBe(1)
+    // Elegida a mano: asignar otro plan ya no la mueve, y el cliente lo dice.
+    expect(apex.chosen).toBe(true)
   })
 
   it('cinco hitos validados dan el sello del entrenador', async () => {
@@ -215,6 +232,11 @@ describe('el entrenador confirma insignias y revisa cargas', () => {
     expect(flagged).toMatchObject({ flagged_reason: 'load_jump', points: 23 })
     expect(Number(flagged?.progress)).toBe(1)
 
+    // La bandeja del equipo la lista, por equipo y no ficha a ficha.
+    const { data: crewFlagged, error: crewFlaggedError } = await trainer.client.rpc('crew_flagged_scores', { crew: crew.id })
+    expect(crewFlaggedError).toBeNull()
+    expect((crewFlagged as { session_id: string }[]).map((row) => row.session_id)).toEqual([jump])
+
     const denied = await person.client.rpc('accept_load_jump', { session: jump })
     expect(denied.error?.message).toBe('forbidden')
 
@@ -225,5 +247,9 @@ describe('el entrenador confirma insignias y revisa cargas', () => {
     expect(Number(reviewed?.progress)).toBe(1.15)
     expect(reviewed?.points).toBe(26)
     expect(reviewed?.reviewed_by).toBe(trainer.id)
+
+    // Revisada, sale de la bandeja.
+    const { data: crewClear } = await trainer.client.rpc('crew_flagged_scores', { crew: crew.id })
+    expect(crewClear).toEqual([])
   })
 })

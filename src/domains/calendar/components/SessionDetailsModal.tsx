@@ -117,8 +117,8 @@ export function SessionDetailsModal({
     new Map(students.map((student) => [student.id, student])),
     t
   )
-  // El recordatorio va a la campana, y la campana es de quien tiene cuenta:
-  // sin ella se explica, en vez de dar por mandado lo que nadie va a leer.
+  // El recordatorio va a la campana, y sin cuenta espera en la ficha hasta
+  // que se registre: se dice, en vez de dar por leido lo que aun no llego.
   const studentHasAccount =
     students.find((student) => student.id === session.studentId)?.profileId != null
   const routine = routines.find(
@@ -424,19 +424,17 @@ export function SessionDetailsModal({
             </Button>
 
             <div className="flex flex-wrap gap-2 border-t border-cobalt-tint-3 pt-4">
-              {session.studentId !== null &&
-                (studentHasAccount ? (
-                  <Button
-                    variant="outline"
-                    onClick={() => void handleSendReminder()}
-                    className="gap-2"
-                  >
-                    <MessageSquare className="size-4" />
-                    {t('sessionDetails.reminder')}
-                  </Button>
-                ) : (
-                  <span className="self-center text-xs text-ink/50">{t('notice.noAccount')}</span>
-                ))}
+              {session.studentId !== null && (
+                <Button
+                  variant="outline"
+                  onClick={() => void handleSendReminder()}
+                  className="gap-2"
+                  title={studentHasAccount ? undefined : t('notice.noAccount')}
+                >
+                  <MessageSquare className="size-4" />
+                  {t('sessionDetails.reminder')}
+                </Button>
+              )}
               {/* Fecha, hora, alumno o rutina se cambian en el formulario de la
                 sesion, el mismo del alta pero con esta ya puesta. */}
               <Button variant="outline" onClick={handleEdit} className="gap-2">

@@ -31,6 +31,15 @@ async function enrollAs(trainer: TestAccount, crewId: string, person: TestAccoun
   return data.id as string
 }
 
+/** La clave `YYYY-MM-DD` de hoy mas `offset` dias, en local. */
+function dayKey(offset: number): string {
+  const date = new Date()
+  date.setDate(date.getDate() + offset)
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${date.getFullYear()}-${month}-${day}`
+}
+
 function sessionFor(crewId: string, studentId: string | null, title: string): Record<string, unknown> {
   return {
     crew_id: crewId,
@@ -264,11 +273,16 @@ describe('sessions: mover un volcado', () => {
       .select('id')
       .single()
 
+    // Fechas relativas a hoy: la regla mira `current_date`.
+    const soon = dayKey(3)
+    const past = dayKey(-3)
     await trainer.client.rpc('create_sessions', {
       batch: [
-        sessionFor(crew.id, studentId, 'Pendiente'),
-        { ...sessionFor(crew.id, studentId, 'Hecha'), status: 'completed' },
-        { ...sessionFor(crew.id, studentId, 'Cancelada'), status: 'cancelled' },
+        { ...sessionFor(crew.id, studentId, 'Pendiente'), date: soon },
+        { ...sessionFor(crew.id, studentId, 'Hecha'), status: 'completed', date: soon },
+        { ...sessionFor(crew.id, studentId, 'Cancelada'), status: 'cancelled', date: soon },
+        // Abierta y con el dia pasado: «no ocurrio», y se queda donde esta.
+        { ...sessionFor(crew.id, studentId, 'No ocurrio'), date: past },
       ],
       source_assignment: assignment?.id,
     })
@@ -286,9 +300,10 @@ describe('sessions: mover un volcado', () => {
       .eq('assignment_id', assignment?.id)
       .order('title')
     expect(rows).toEqual([
-      { title: 'Cancelada', date: '2026-09-10' },
-      { title: 'Hecha', date: '2026-09-10' },
-      { title: 'Pendiente', date: '2026-09-17' },
+      { title: 'Cancelada', date: soon },
+      { title: 'Hecha', date: soon },
+      { title: 'No ocurrio', date: past },
+      { title: 'Pendiente', date: dayKey(10) },
     ])
 
     // Un alumno no mueve un volcado: la funcion corre con sus permisos, y el

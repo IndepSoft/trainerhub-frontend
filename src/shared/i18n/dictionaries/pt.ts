@@ -1185,7 +1185,7 @@ export const portuguese: Dictionary = {
   'plan.saveError': 'Não foi possível guardar o plano. Tente outra vez.',
   'dues.error': 'Não foi possível guardar a mensalidade. Tente outra vez.',
   'notice.error': 'Não foi possível enviar o aviso. Tente outra vez.',
-  'notice.noAccount': 'Ainda sem conta: o aviso não teria onde chegar.',
+  'notice.noAccount': 'Ainda sem conta: verá no seu sino quando se registar com este e-mail.',
   'assign.routeChange': 'Este plano leva à rota {next}. {name} está em {current}: ao atribuí-lo, mudará de rota.',
   'assign.routeSame': 'Este plano leva à rota {next}, a que {name} já segue.',
   'assign.routeChosen': 'A rota de {name} foi escolhida à mão ({current}) e não muda ao atribuir.',

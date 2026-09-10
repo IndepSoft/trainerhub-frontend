@@ -1185,7 +1185,7 @@ export const english: Dictionary = {
   'plan.saveError': 'Could not save the plan. Try again.',
   'dues.error': 'Could not save the fee. Try again.',
   'notice.error': 'Could not send the notice. Try again.',
-  'notice.noAccount': 'No account yet: the notice would have nowhere to land.',
+  'notice.noAccount': 'No account yet: they will see it in their bell once they sign up with this email.',
   'assign.routeChange': 'This plan leads to the {next} route. {name} is on {current}: assigning it changes the route.',
   'assign.routeSame': 'This plan leads to the {next} route, the one {name} already follows.',
   'assign.routeChosen': '{name}’s route was chosen by hand ({current}) and does not change when assigning.',
