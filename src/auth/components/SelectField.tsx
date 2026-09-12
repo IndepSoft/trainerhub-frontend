@@ -5,7 +5,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
-import type { LucideIcon } from 'lucide-react'
+import { cn } from '@/shared/lib/utils'
+import { LINE_CONTROL_CLASS } from './FormInput'
 
 interface SelectFieldProps {
   id: string
@@ -13,36 +14,36 @@ interface SelectFieldProps {
   value: string
   onChange: (value: string) => void
   options: string[]
-  icon?: LucideIcon
 }
 
-export function SelectField({
-  id,
-  placeholder,
-  value,
-  onChange,
-  options,
-  icon: Icon,
-}: SelectFieldProps) {
+/**
+ * Un desplegable de las pantallas de acceso, en el registro de línea.
+ *
+ * Sigue siendo el `Select` de shadcn —el panel, el teclado y el lector de
+ * pantalla vienen de ahí— y sólo se viste el disparador como el campo de texto
+ * de al lado. `shadow-none` y `focus-visible:ring-0` quitan lo que el
+ * disparador trae de fábrica; la línea inferior en Cobalt al enfocar es el
+ * mismo aviso que da el campo de texto.
+ */
+export function SelectField({ id, placeholder, value, onChange, options }: SelectFieldProps) {
   return (
-    <div className="relative w-full">
-      {Icon && (
-        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-ink/40 z-10">
-          <Icon className="size-4 shrink-0" />
-        </div>
-      )}
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger id={id} className={`w-full ${Icon ? 'pl-9' : ''}`}>
-          <SelectValue placeholder={placeholder} />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((option) => (
-            <SelectItem key={option} value={option}>
-              {option}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger
+        id={id}
+        className={cn(
+          LINE_CONTROL_CLASS,
+          'justify-between py-0 shadow-none focus-visible:border-cobalt focus-visible:ring-0 data-[placeholder]:text-ink/35'
+        )}
+      >
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((option) => (
+          <SelectItem key={option} value={option}>
+            {option}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   )
 }
