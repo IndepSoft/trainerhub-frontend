@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Barlow:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; background: #0C1017; font-family: 'Barlow', 'Arial Narrow', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #6EA1FF; text-decoration: none; }
+    a:hover { color: #9BBDFF; }
+    input::placeholder { color: rgba(250, 248, 245, 0.3); }
+  </style>
+</helmet>
+
+<!-- Dirección B · Ink total. La hermana del onboarding: todo oscuro, la banda Ember cruza, la foto es textura de fondo. -->
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; background: #0C1017; display: flex; flex-direction: column;">
+
+  <!-- Foto como textura de fondo, a baja intensidad -->
+  <svg viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice" style="position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0.55;">
+    <defs>
+      <radialGradient id="glow" cx="0.75" cy="0.22" r="0.7">
+        <stop offset="0" stop-color="#2F6FE8" stop-opacity="0.7"></stop>
+        <stop offset="0.5" stop-color="#0B4BCC" stop-opacity="0.25"></stop>
+        <stop offset="1" stop-color="#0C1017" stop-opacity="0"></stop>
+      </radialGradient>
+      <filter id="grain" x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" stitchTiles="stitch"></feTurbulence>
+        <feColorMatrix type="saturate" values="0"></feColorMatrix>
+      </filter>
+    </defs>
+    <rect width="390" height="844" fill="#0C1017"></rect>
+    <rect width="390" height="844" fill="url(#glow)"></rect>
+    <ellipse cx="330" cy="300" rx="220" ry="160" fill="#05080F" opacity="0.9"></ellipse>
+    <path d="M60 844 C120 620 260 560 390 600 L390 844 Z" fill="#05080F"></path>
+    <rect width="390" height="844" filter="url(#grain)" opacity="0.16" style="mix-blend-mode: overlay;"></rect>
+  </svg>
+
+  <span style="position: absolute; top: 20px; right: 20px; padding: 6px 10px; border-radius: 999px; background: rgba(250, 248, 245, 0.08); color: rgba(250, 248, 245, 0.55); font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;">Foto · sustituir</span>
+
+  <!-- La banda Ember, como en el onboarding: cruza de lado a lado -->
+  <div aria-hidden="true" style="position: absolute; left: -12%; right: -12%; top: 220px; height: 192px; background: #FF4F1A; clip-path: polygon(0 40%, 100% 0, 100% 60%, 0 100%); pointer-events: none;"></div>
+
+  <div style="position: relative; display: flex; flex-direction: column; padding: 24px 24px 0;">
+    <div style="font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 800; font-size: 18px; letter-spacing: -0.01em; text-transform: uppercase; color: #FAF8F5;">TrainerHub</div>
+  </div>
+
+  <div style="position: relative; display: flex; flex-direction: column; gap: 14px; padding: 170px 24px 0;">
+    <p style="margin: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase; color: #FAF8F5;">Entra</p>
+    <h1 style="margin: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-size: 60px; font-weight: 800; line-height: 0.88; letter-spacing: -0.01em; text-transform: uppercase; color: #FAF8F5;">Bienvenido<br>de vuelta.</h1>
+  </div>
+
+  <div style="position: relative; flex: 1; display: flex; flex-direction: column; padding: 72px 24px 24px; gap: 22px;">
+
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <label style="font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(250, 248, 245, 0.5);">Email</label>
+      <input type="email" placeholder="tu@email.com" style="height: 44px; width: 100%; box-sizing: border-box; border: 0; border-bottom: 1px solid rgba(250, 248, 245, 0.25); border-radius: 0; background: transparent; padding: 0; font-family: 'Barlow', system-ui, sans-serif; font-size: 16px; color: #FAF8F5; outline: none;">
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px;">
+        <label style="font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(250, 248, 245, 0.5);">Contraseña</label>
+        <a href="#" style="font-size: 12px; font-weight: 600; color: #6EA1FF;">¿La olvidaste?</a>
+      </div>
+      <input type="password" value="••••••••••" style="height: 44px; width: 100%; box-sizing: border-box; border: 0; border-bottom: 1px solid rgba(250, 248, 245, 0.25); border-radius: 0; background: transparent; padding: 0; font-family: 'Barlow', system-ui, sans-serif; font-size: 16px; letter-spacing: 0.12em; color: #FAF8F5; outline: none;">
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 16px; margin-top: auto;">
+      <button type="button" style="height: 48px; width: 100%; border: 0; border-radius: 999px; background: #FF4F1A; color: #0A1224; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-size: 20px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer;">Iniciar sesión</button>
+      <p style="margin: 0; display: flex; justify-content: center; align-items: center; gap: 6px; min-height: 44px; font-size: 14px; color: rgba(250, 248, 245, 0.5);">¿No tienes cuenta? <a href="#" style="font-weight: 600; color: #FAF8F5;">Registrarme</a></p>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

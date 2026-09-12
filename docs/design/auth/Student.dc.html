@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Barlow:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; background: #FAF8F5; font-family: 'Barlow', 'Arial Narrow', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #0B4BCC; text-decoration: none; }
+    a:hover { color: #0A3FAE; }
+    input::placeholder { color: rgba(10, 18, 36, 0.35); }
+  </style>
+</helmet>
+
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; background: #FAF8F5; display: flex; flex-direction: column;">
+
+  <div style="position: relative; height: 300px; flex-shrink: 0; clip-path: polygon(0 0, 100% 0, 100% 80%, 0 100%); background: #0A1224;">
+    <svg viewBox="0 0 390 300" preserveAspectRatio="xMidYMid slice" style="position: absolute; inset: 0; width: 100%; height: 100%; display: block;">
+      <defs>
+        <radialGradient id="glow" cx="0.35" cy="0.3" r="0.62">
+          <stop offset="0" stop-color="#3B7BF0" stop-opacity="0.9"></stop>
+          <stop offset="0.5" stop-color="#0B4BCC" stop-opacity="0.4"></stop>
+          <stop offset="1" stop-color="#0A1224" stop-opacity="0"></stop>
+        </radialGradient>
+        <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0.3" stop-color="#0A1224" stop-opacity="0"></stop>
+          <stop offset="1" stop-color="#0A1224" stop-opacity="0.9"></stop>
+        </linearGradient>
+        <filter id="grain" x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"></feTurbulence>
+          <feColorMatrix type="saturate" values="0"></feColorMatrix>
+        </filter>
+      </defs>
+      <rect width="390" height="300" fill="#0A1224"></rect>
+      <rect width="390" height="300" fill="url(#glow)"></rect>
+      <ellipse cx="80" cy="180" rx="170" ry="105" fill="#060B16" opacity="0.92"></ellipse>
+      <path d="M0 300 L0 220 C70 175 160 165 250 200 L280 300 Z" fill="#050A14"></path>
+      <rect width="390" height="300" fill="url(#shade)"></rect>
+      <rect width="390" height="300" filter="url(#grain)" opacity="0.14" style="mix-blend-mode: overlay;"></rect>
+    </svg>
+
+    <span style="position: absolute; top: 20px; right: 20px; padding: 6px 10px; border-radius: 999px; background: rgba(10, 18, 36, 0.55); color: rgba(250, 248, 245, 0.7); font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;">Foto · sustituir</span>
+
+    <a href="#" style="position: absolute; top: 16px; left: 16px; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; color: #FAF8F5;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><path d="M11 18l-6-6 6-6"></path></svg>
+    </a>
+
+    <div style="position: absolute; left: 24px; right: 24px; bottom: 76px; display: flex; flex-direction: column; gap: 12px;">
+      <p style="margin: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase; color: #FF4F1A;">Alumno</p>
+      <h1 style="margin: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-size: 52px; font-weight: 800; line-height: 0.88; letter-spacing: -0.01em; text-transform: uppercase; color: #FAF8F5;">Crear<br>cuenta.</h1>
+    </div>
+  </div>
+
+  <div aria-hidden="true" style="position: absolute; left: -4%; right: -4%; top: 236px; height: 72px; background: #FF4F1A; clip-path: polygon(0 88%, 100% 6%, 100% 20%, 0 100%); pointer-events: none;"></div>
+
+  <div style="flex: 1; display: flex; flex-direction: column; padding: 24px 24px 24px; gap: 18px;">
+
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;">
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <label style="font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(10, 18, 36, 0.6);">Nombre</label>
+        <input type="text" placeholder="Juan" style="height: 44px; width: 100%; box-sizing: border-box; border: 0; border-bottom: 1px solid rgba(10, 18, 36, 0.22); border-radius: 0; background: transparent; padding: 0; font-family: 'Barlow', system-ui, sans-serif; font-size: 16px; color: #0A1224; outline: none;">
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <label style="font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(10, 18, 36, 0.6);">Apellido</label>
+        <input type="text" placeholder="Pérez" style="height: 44px; width: 100%; box-sizing: border-box; border: 0; border-bottom: 1px solid rgba(10, 18, 36, 0.22); border-radius: 0; background: transparent; padding: 0; font-family: 'Barlow', system-ui, sans-serif; font-size: 16px; color: #0A1224; outline: none;">
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <label style="font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(10, 18, 36, 0.6);">Email</label>
+      <input type="email" placeholder="tu@email.com" style="height: 44px; width: 100%; box-sizing: border-box; border: 0; border-bottom: 1px solid rgba(10, 18, 36, 0.22); border-radius: 0; background: transparent; padding: 0; font-family: 'Barlow', system-ui, sans-serif; font-size: 16px; color: #0A1224; outline: none;">
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <label style="font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(10, 18, 36, 0.6);">Contraseña</label>
+      <input type="password" placeholder="Mínimo 6 caracteres" style="height: 44px; width: 100%; box-sizing: border-box; border: 0; border-bottom: 1px solid rgba(10, 18, 36, 0.22); border-radius: 0; background: transparent; padding: 0; font-family: 'Barlow', system-ui, sans-serif; font-size: 16px; color: #0A1224; outline: none;">
+    </div>
+
+    <!-- El código del equipo, en su propio bloque: es lo que distingue a esta pantalla -->
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <label style="font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(10, 18, 36, 0.6);">Código del equipo <span style="font-weight: 500; letter-spacing: 0.08em; color: rgba(10, 18, 36, 0.4);">· opcional</span></label>
+      <input type="text" placeholder="HIER-RO24" style="height: 44px; width: 100%; box-sizing: border-box; border: 0; border-bottom: 1px solid rgba(10, 18, 36, 0.22); border-radius: 0; background: transparent; padding: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #0A1224; outline: none;">
+      <p style="margin: 2px 0 0; font-size: 12px; line-height: 1.4; color: rgba(10, 18, 36, 0.45);">Si no lo tienes, no pasa nada: puedes unirte después escaneando el QR de tu entrenador.</p>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: auto;">
+      <button type="button" style="height: 44px; width: 100%; border: 0; border-radius: 999px; background: #0B4BCC; color: #FFFFFF; font-family: 'Barlow', system-ui, sans-serif; font-size: 15px; font-weight: 600; cursor: pointer;">Crear cuenta</button>
+      <p style="margin: 0; display: flex; justify-content: center; align-items: center; min-height: 44px; font-size: 14px;"><a href="#" style="font-weight: 600; color: rgba(10, 18, 36, 0.55);">Entreno a gente</a></p>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
