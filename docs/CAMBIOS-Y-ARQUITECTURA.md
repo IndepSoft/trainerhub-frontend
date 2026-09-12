@@ -3182,3 +3182,73 @@ capacidad.
 es dentro de la aplicación. La activación de la suscripción no avisa al equipo
 porque la campana es de alumnos; el texto ya no lo promete. Ligas, eventos y
 patrocinios, sin fecha.
+
+---
+
+## 32. La puerta se parece al resto (12 sep 2026)
+
+Rama `feature/redesign-auth`. La petición: rediseñar el acceso y el alta «con
+la personalidad de la app, sin la tarjeta flotante clásica, con imágenes».
+Primero como propuesta en un lienzo de diseño —siete pantallas, en
+`docs/design/auth/`—, después aplicada.
+
+**Lo que había y por qué no valía.** Una `Card` de shadcn centrada con dos
+pestañas, el aspecto de fábrica de la librería. No se parecía a nada de lo que
+viene después: el onboarding, la celebración y las fichas hablan en Ink, Ember
+y Condensed enorme. La puerta es la pantalla justo anterior al onboarding, y
+hablaba otro idioma.
+
+**El bloque de imagen.** `AuthHero`: foto a sangre arriba, recortada con la
+cuña diagonal de las tarjetas —el mismo `polygon` que llevan la ficha del
+alumno y la sesión—, banda Ember apoyada en el filo, y el titular en Condensed
+de 52 px sobre la imagen, partido en líneas desde el diccionario como en el
+onboarding. Se recorta la IMAGEN y no el contenedor, para que la banda pueda
+asomar por debajo. El texto va en blanco y no en `bone`: el fondo es oscuro en
+los dos temas, y `bone` en modo oscuro es casi negro. La altura va en `dvh`
+con tope por arriba y por abajo, y se elige por lo que viene debajo: cuanto
+más largo el formulario, menos foto.
+
+**La foto que no hay.** `AuthHeroBackdrop` es una composición en SVG —foco
+Cobalt, sombras, viñeta, grano— en el sitio de una fotografía del equipo que
+no existe todavía. Lo que se decide y se queda es el tratamiento; las formas
+existen sólo para que el bloque no sea un degradado plano. Está documentado
+cómo se sustituye.
+
+**Campos de línea.** `FormInput` pasa a ser un `<input>` con sólo el borde
+inferior, no el `Input` de shadcn vestido: quitarle caja, radio, sombra y
+anillo uno a uno era pelear con el componente. `SelectField` conserva el
+`Select` de shadcn —panel, teclado, lector— y viste sólo el disparador con la
+misma clase. `FormField` marca lo OPCIONAL en vez de lo obligatorio: con casi
+todo obligatorio, un asterisco en cada campo no distinguía nada.
+
+**Sin pestañas: la vista viaja en la dirección.** `?vista=registro` abre el
+alta. Antes, cambiar de pestaña no dejaba rastro: un enlace de fuera no podía
+abrir el registro y el botón de atrás salía de la página entera. El estado de
+navegación —la ruta pretendida, con el código del QR— viaja con cada enlace.
+
+**El alta de entrenador, en dos pasos.** Quién eres —nombre, apellido, correo,
+contraseña— y a qué te dedicas —especialidad, experiencia, ubicación—. Es el
+patrón de referencia, y además resuelve lo que la auditoría midió: siete
+campos con cabecera y botón no cabían en 667 px. Cada paso valida lo suyo
+(`STEP_ONE_FIELDS`); Intro en el primero avanza en vez de enviar a medias. El
+estado sigue siendo uno, en `useRegisterForm`; lo único nuevo es en qué paso
+se está.
+
+**Lo que la regla decidió contra la propuesta.** El lienzo ponía nombre y
+apellido en la misma fila a 375 px. §1.6 no admite rejillas fijas, sin
+excepciones, así que en móvil se apilan y el alta desplaza un campo en un
+teléfono de 667 px. Desplaza, no recorta: la raíz es `overflow-y-auto`, que
+es lo que le faltaba a la pantalla anterior.
+
+**Las secundarias van con el mismo shell.** Recuperar la contraseña, «revisa
+tu correo» y la vuelta del enlace usan `AuthScreen` y `AuthHero` en su altura
+corta. `PasswordFields` conserva la caja de shadcn porque es el mismo
+formulario que Configuración, y un formulario que aparece en dos sitios se
+ve igual en los dos. «Revisa tu correo» gana enlace a identificarse: ya no
+hay pestaña a un toque.
+
+**Verificado con Chromium** a 390×844 y 375×667, claro y oscuro: cero
+desbordamiento horizontal, todo lo que no cabe desplaza, el botón de envío
+a la vista en 844 en las cinco pantallas. La suite de interfaz se actualizó
+—pestaña por enlace, titulares por encabezado, «Siguiente» entre los dos
+pasos— y diez claves del diccionario que ya nadie leía se fueron.

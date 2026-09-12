@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Barlow:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; background: #FAF8F5; font-family: 'Barlow', 'Arial Narrow', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #0B4BCC; text-decoration: none; }
+    a:hover { color: #0A3FAE; }
+    input::placeholder { color: rgba(10, 18, 36, 0.35); }
+  </style>
+</helmet>
+
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; background: #FAF8F5; display: flex; flex-direction: column;">
+
+  <!-- Paso 2: sin foto. La cuña queda como huella, en Ember al 10%, como en las tarjetas. -->
+  <div aria-hidden="true" style="position: absolute; left: -15%; right: -15%; top: 118px; height: 72px; background: rgba(255, 79, 26, 0.1); clip-path: polygon(0 42%, 100% 0, 100% 58%, 0 100%); pointer-events: none;"></div>
+
+  <div style="position: relative; display: flex; flex-direction: column; padding: 16px 24px 0; gap: 20px;">
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <a href="#" style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-left: -10px; color: #0A1224;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><path d="M11 18l-6-6 6-6"></path></svg>
+      </a>
+      <span style="font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 800; font-size: 18px; letter-spacing: -0.01em; text-transform: uppercase; color: #0A1224;">TrainerHub</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px;">
+      <span style="height: 3px; background: #FF4F1A;"></span>
+      <span style="height: 3px; background: #FF4F1A;"></span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px; padding-top: 8px;">
+      <p style="margin: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase; color: #FF4F1A;">Entrenador · Paso 2 de 2</p>
+      <h1 style="margin: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-size: 52px; font-weight: 800; line-height: 0.88; letter-spacing: -0.01em; text-transform: uppercase; color: #0A1224;">A qué<br>te dedicas.</h1>
+      <p style="margin: 6px 0 0; font-size: 14px; line-height: 1.45; color: rgba(10, 18, 36, 0.55); max-width: 30ch;">Para incorporar alumnos hará falta activar la suscripción.</p>
+    </div>
+  </div>
+
+  <div style="flex: 1; display: flex; flex-direction: column; padding: 28px 24px 24px; gap: 20px;">
+
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <label style="font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(10, 18, 36, 0.6);">Especialidad</label>
+      <div style="display: flex; align-items: center; justify-content: space-between; height: 44px; border-bottom: 1px solid rgba(10, 18, 36, 0.22);">
+        <span style="font-size: 16px; color: #0A1224;">Entrenamiento de fuerza</span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(10, 18, 36, 0.45)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;">
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <label style="font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(10, 18, 36, 0.6);">Experiencia</label>
+        <div style="display: flex; align-items: center; justify-content: space-between; height: 44px; border-bottom: 1px solid rgba(10, 18, 36, 0.22);">
+          <span style="font-size: 16px; color: rgba(10, 18, 36, 0.35);">Años</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(10, 18, 36, 0.45)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <label style="font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(10, 18, 36, 0.6);">Ubicación</label>
+        <input type="text" placeholder="Ciudad, País" style="height: 44px; width: 100%; box-sizing: border-box; border: 0; border-bottom: 1px solid rgba(10, 18, 36, 0.22); border-radius: 0; background: transparent; padding: 0; font-family: 'Barlow', system-ui, sans-serif; font-size: 16px; color: #0A1224; outline: none;">
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: auto;">
+      <button type="button" style="height: 44px; width: 100%; border: 0; border-radius: 999px; background: #0B4BCC; color: #FFFFFF; font-family: 'Barlow', system-ui, sans-serif; font-size: 15px; font-weight: 600; cursor: pointer;">Crear cuenta</button>
+      <p style="margin: 0; display: flex; justify-content: center; align-items: center; min-height: 44px; font-size: 14px;"><a href="#" style="font-weight: 600; color: rgba(10, 18, 36, 0.55);">Anterior</a></p>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

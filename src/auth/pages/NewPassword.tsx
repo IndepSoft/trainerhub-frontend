@@ -1,8 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Button } from '@/shared/ui/button'
 import { useAuthStore } from '@/app/stores/authStore'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { AuthHero } from '../components/AuthHero'
+import { AuthScreen } from '../components/AuthScreen'
 import { PasswordFields } from '../components/PasswordFields'
 
 /**
@@ -19,6 +20,10 @@ import { PasswordFields } from '../components/PasswordFields'
  * otro. Con ella, se cambia la contraseña y se entra: la sesión ya está
  * abierta, y obligar a teclear la contraseña recién puesta sería un paso de
  * más.
+ *
+ * Los campos son los mismos que en Configuración —`PasswordFields`— y llevan
+ * la caja de allí, no la línea del alta: un formulario que aparece en dos
+ * sitios se ve igual en los dos.
  */
 export default function NewPasswordPage() {
   const { t } = useTranslation()
@@ -26,33 +31,32 @@ export default function NewPasswordPage() {
   const user = useAuthStore((state) => state.user)
   const loading = useAuthStore((state) => state.loading)
 
-  const body =
-    loading ? null : user === null ? (
-      <CardContent className="space-y-4 text-center">
-        <p className="text-sm text-ink/70">{t('auth.newPassword.expired')}</p>
-        <Button asChild variant="outline" className="w-full">
-          <Link to="/authentication">{t('auth.reset.back')}</Link>
-        </Button>
-      </CardContent>
-    ) : (
-      <CardContent>
-        <PasswordFields idPrefix="recovery" onSaved={() => navigate('/', { replace: true })} />
-      </CardContent>
-    )
-
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="w-full max-w-lg p-4">
-        <Card>
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-semibold text-center">
-              {t('auth.newPassword.title')}
-            </CardTitle>
-            <CardDescription className="text-center">{t('auth.newPassword.hint')}</CardDescription>
-          </CardHeader>
-          {body}
-        </Card>
-      </div>
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-bone">
+      <AuthScreen
+        hero={
+          <AuthHero
+            eyebrow={t('auth.hero.enter')}
+            headlineLines={[t('auth.hero.newPassword.line1'), t('auth.hero.newPassword.line2')]}
+            height="short"
+          />
+        }
+      >
+        <p className="text-sm leading-relaxed text-ink/55">{t('auth.newPassword.hint')}</p>
+
+        {loading ? null : user === null ? (
+          <div className="flex flex-1 flex-col gap-5">
+            <p className="text-sm leading-relaxed text-ink/70">{t('auth.newPassword.expired')}</p>
+            <div className="mt-auto pt-3">
+              <Button asChild className="w-full rounded-action">
+                <Link to="/authentication">{t('auth.reset.back')}</Link>
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <PasswordFields idPrefix="recovery" onSaved={() => navigate('/', { replace: true })} />
+        )}
+      </AuthScreen>
     </div>
   )
 }

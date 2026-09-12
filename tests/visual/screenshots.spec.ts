@@ -589,7 +589,7 @@ test('placas de logro', async ({ page }) => {
    */
   await page.goto('/authentication')
   await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
-  await page.getByRole('tab', { name: 'Registrarme' }).click()
+  await page.getByRole('link', { name: 'Registrarme' }).click()
   await page.getByRole('button', { name: 'Entreno', exact: true }).click()
   await page.getByLabel('Nombre').fill('María')
   await page.getByLabel('Apellido').fill('Gómez')
@@ -3213,7 +3213,7 @@ test.describe('progreso', () => {
     // registrarse la reclama.
     await page.goto('/authentication')
     await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
-    await page.getByRole('tab', { name: 'Registrarme' }).click()
+    await page.getByRole('link', { name: 'Registrarme' }).click()
     await page.getByRole('button', { name: 'Entreno', exact: true }).click()
     await page.getByLabel('Nombre').fill('María')
     await page.getByLabel('Apellido').fill('Gómez')
@@ -3310,15 +3310,15 @@ test.describe('registro', () => {
   async function rellenarRegistro(page: Page, correo: string): Promise<void> {
     await page.goto('/authentication')
     await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
-    await page.getByRole('tab', { name: 'Registrarme' }).click()
+    await page.getByRole('link', { name: 'Registrarme' }).click()
     await page.getByRole('button', { name: 'Entreno a gente', exact: true }).click()
 
-    // Sin `exact`: la etiqueta de un campo obligatorio es «Nombre *», porque
-    // `FormField` le añade el asterisco dentro del propio <label>.
     await page.getByLabel('Nombre').fill('Ana')
     await page.getByLabel('Apellido').fill('Soto')
     await page.getByLabel('Email').fill(correo)
     await page.locator('input[type=password]').fill('secreto123')
+    // El alta de entrenador va en dos pasos: quien eres, y a que te dedicas.
+    await page.getByRole('button', { name: 'Siguiente' }).click()
     await elegirDelDesplegable(page, page.getByRole('combobox').first(), 'Pérdida de peso')
   }
 
@@ -3350,7 +3350,7 @@ test.describe('registro', () => {
 
     await page.goto('/authentication')
     await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
-    await page.getByRole('tab', { name: 'Registrarme' }).click()
+    await page.getByRole('link', { name: 'Registrarme' }).click()
     await page.getByRole('button', { name: 'Entreno', exact: true }).click()
 
     await page.getByLabel('Nombre').fill('María')
@@ -3527,7 +3527,7 @@ test.describe('registro separado', () => {
   async function abrirRegistro(page: Page): Promise<void> {
     await page.goto('/authentication')
     await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
-    await page.getByRole('tab', { name: 'Registrarme' }).click()
+    await page.getByRole('link', { name: 'Registrarme' }).click()
   }
 
   test('primero se elige con que se viene', async ({ page }) => {
@@ -3551,7 +3551,7 @@ test.describe('registro separado', () => {
 
     // Y el codigo del equipo es OPCIONAL: quien viene del QR no lo escribe, y
     // quien se apunta por su cuenta todavia no lo tiene.
-    await expect(page.getByLabel('Código del equipo (opcional)')).toBeVisible()
+    await expect(page.getByLabel('Código del equipo')).toBeVisible()
   })
 
   test('quien escanea el QR sin cuenta vuelve al QR despues de registrarse', async ({ page }) => {
@@ -3568,7 +3568,7 @@ test.describe('registro separado', () => {
     await page.goto('/crew/unirse?codigo=HIERRO24')
     await expect(page).toHaveURL(/\/authentication/)
 
-    await page.getByRole('tab', { name: 'Registrarme' }).click()
+    await page.getByRole('link', { name: 'Registrarme' }).click()
     await page.getByRole('button', { name: 'Entreno', exact: true }).click()
     await page.getByLabel('Nombre').fill('Sara')
     await page.getByLabel('Apellido').fill('Vidal')
@@ -3594,12 +3594,14 @@ test.describe('plataforma', () => {
   async function rellenarRegistroEntrenador(page: Page, correo: string): Promise<void> {
     await page.goto('/authentication')
     await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
-    await page.getByRole('tab', { name: 'Registrarme' }).click()
+    await page.getByRole('link', { name: 'Registrarme' }).click()
     await page.getByRole('button', { name: 'Entreno a gente', exact: true }).click()
     await page.getByLabel('Nombre').fill('Nuria')
     await page.getByLabel('Apellido').fill('Vega')
     await page.getByLabel('Email').fill(correo)
     await page.locator('input[type=password]').fill('secreto123')
+    // El alta de entrenador va en dos pasos: quien eres, y a que te dedicas.
+    await page.getByRole('button', { name: 'Siguiente' }).click()
     await elegirDelDesplegable(page, page.getByRole('combobox').first(), 'Pérdida de peso')
     await page.getByRole('button', { name: 'Crear cuenta' }).click()
   }
@@ -4318,7 +4320,7 @@ test.describe('cuotas', () => {
     // Maria ya tiene ficha en el equipo, asi que registrarse la reclama.
     await page.getByRole('button', { name: 'Menú de usuario' }).click()
     await page.getByRole('menuitem', { name: 'Cerrar sesión' }).click()
-    await page.getByRole('tab', { name: 'Registrarme' }).click()
+    await page.getByRole('link', { name: 'Registrarme' }).click()
     await page.getByRole('button', { name: 'Entreno', exact: true }).click()
     await page.getByLabel('Nombre').fill('María')
     await page.getByLabel('Apellido').fill('Gómez')
@@ -4799,10 +4801,10 @@ test.describe('cuenta', () => {
 
     // El correo tecleado viaja al desvio para no pedirlo dos veces.
     await page.getByPlaceholder('tu@email.com').fill('olvidadiza@correo.com')
-    await page.getByRole('button', { name: '¿Olvidaste tu contraseña?' }).click()
+    await page.getByRole('button', { name: '¿La olvidaste?' }).click()
 
-    // Los titulos de las tarjetas de acceso no son encabezados: se buscan por texto.
-    await expect(page.getByText('Recuperar la contraseña')).toBeVisible()
+    // El titular va partido en dos lineas: se busca el encabezado, no el texto seguido.
+    await expect(page.getByRole('heading', { name: /Recuperar/ })).toBeVisible()
     await expect(page.getByLabel('Email')).toHaveValue('olvidadiza@correo.com')
 
     await page.getByRole('button', { name: 'Enviar el enlace' }).click()
@@ -4810,8 +4812,10 @@ test.describe('cuenta', () => {
     // La misma respuesta exista o no la cuenta, y con la direccion a la vista.
     await expect(page.getByText(/Si hay una cuenta con olvidadiza@correo\.com/)).toBeVisible()
 
-    await page.getByRole('button', { name: 'Volver a iniciar sesión' }).click()
-    await expect(page.getByText('Bienvenido de vuelta')).toBeVisible()
+    // Dos salidas con el mismo nombre -la flecha de la cabecera y el boton-:
+    // cualquiera vale, y el ultimo es el boton.
+    await page.getByRole('button', { name: 'Volver a iniciar sesión' }).last().click()
+    await expect(page.getByRole('heading', { name: /Bienvenido/ })).toBeVisible()
   })
 
   test('cambiar la contraseña desde Configuracion exige que coincidan', async ({ page }) => {
@@ -4872,7 +4876,7 @@ test.describe('cuenta', () => {
     await page.getByRole('dialog').getByRole('button', { name: 'Sí, eliminar mi cuenta' }).click()
 
     await page.waitForURL(/\/authentication/)
-    await expect(page.getByText('Bienvenido de vuelta')).toBeVisible()
+    await expect(page.getByRole('heading', { name: /Bienvenido/ })).toBeVisible()
   })
 })
 
@@ -5070,14 +5074,26 @@ test.describe('fugas de secuencia', () => {
   test('el registro cabe en un movil de 667 px: se desplaza, no se corta', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 })
     await page.goto('/authentication')
-    await page.getByRole('tab', { name: 'Registrarme' }).click()
+    await page.getByRole('link', { name: 'Registrarme' }).click()
     await page.getByRole('button', { name: 'Entreno a gente', exact: true }).click()
 
-    // La pestaña no se sale por arriba -antes quedaba a -150 px- ...
-    const tabs = await page.getByRole('tablist').boundingBox()
-    expect(tabs?.y ?? -1).toBeGreaterThanOrEqual(0)
+    // El titular no se sale por arriba -antes quedaba a -150 px- ...
+    const titular = await page.getByRole('heading', { level: 1 }).boundingBox()
+    expect(titular?.y ?? -1).toBeGreaterThanOrEqual(0)
 
-    // ... y el boton de crear se alcanza desplazando, con sus 44 px enteros.
+    // ... y el boton de avanzar se alcanza desplazando, con sus 44 px enteros.
+    const siguiente = page.getByRole('button', { name: 'Siguiente' })
+    await siguiente.scrollIntoViewIfNeeded()
+    const cajaSiguiente = await siguiente.boundingBox()
+    expect(cajaSiguiente).not.toBeNull()
+    expect((cajaSiguiente?.y ?? 0) + (cajaSiguiente?.height ?? 0)).toBeLessThanOrEqual(667)
+
+    // El segundo paso, igual: «Crear cuenta» se alcanza sin recortes.
+    await page.getByLabel('Nombre').fill('Ana')
+    await page.getByLabel('Apellido').fill('Soto')
+    await page.getByLabel('Email').fill('asoto@correo.com')
+    await page.locator('input[type=password]').fill('secreto123')
+    await siguiente.click()
     const crear = page.getByRole('button', { name: 'Crear cuenta' })
     await crear.scrollIntoViewIfNeeded()
     const box = await crear.boundingBox()
@@ -5395,7 +5411,7 @@ test.describe('ciclos de vida y bandeja', () => {
     // con su correo reclama la ficha.
     await page.goto('/authentication')
     await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
-    await page.getByRole('tab', { name: 'Registrarme' }).click()
+    await page.getByRole('link', { name: 'Registrarme' }).click()
     await page.getByRole('button', { name: 'Entreno', exact: true }).click()
     await page.getByLabel('Nombre').fill('María')
     await page.getByLabel('Apellido').fill('Gómez')

@@ -1,0 +1,34 @@
+{
+  "pages": [
+    { "id": "propuesta", "name": "Propuesta · flujo completo" },
+    { "id": "direcciones", "name": "Direcciones alternativas" }
+  ],
+  "artboards": [
+    { "file": "Main.dc.html", "title": "Login", "x": 0, "y": 0, "w": 390, "h": 844, "page": "propuesta" },
+    { "file": "RegisterIntent.dc.html", "title": "Registro · ¿quién eres?", "x": 470, "y": 0, "w": 390, "h": 844, "page": "propuesta" },
+    { "file": "TrainerStep1.dc.html", "title": "Entrenador · paso 1", "x": 940, "y": 0, "w": 390, "h": 844, "page": "propuesta" },
+    { "file": "TrainerStep2.dc.html", "title": "Entrenador · paso 2", "x": 1410, "y": 0, "w": 390, "h": 844, "page": "propuesta" },
+    { "file": "Student.dc.html", "title": "Alumno", "x": 1880, "y": 0, "w": 390, "h": 844, "page": "propuesta" },
+    { "file": "DireccionInk.dc.html", "title": "B · Ink total", "x": 0, "y": 0, "w": 390, "h": 844, "page": "direcciones" },
+    { "file": "DireccionColumna.dc.html", "title": "C · Columna", "x": 470, "y": 0, "w": 390, "h": 844, "page": "direcciones" }
+  ],
+  "annotations": [
+    {
+      "id": "nota-propuesta",
+      "x": 0,
+      "y": -150,
+      "w": 560,
+      "page": "propuesta",
+      "text": "Dirección A · La cuña.\nFoto a sangre cortada con la diagonal de las tarjetas, filo Ember, Condensed enorme sobre la imagen. Inputs de línea, sin tarjeta. El registro de entrenador pasa a dos pasos (quién eres / a qué te dedicas): resuelve el desborde a 375×667 y sigue el patrón Nike. Los bloques de imagen son composición sustituible: ahí va una foto real del equipo."
+    },
+    {
+      "id": "nota-direcciones",
+      "x": 0,
+      "y": -130,
+      "w": 560,
+      "page": "direcciones",
+      "text": "Dos ejes distintos, sólo el login.\nB · Ink total: la hermana del onboarding. Todo oscuro, la banda Ember cruza, el CTA en Ember. Más agresivo; el contraste del formulario depende de la foto.\nC · Columna: la foto es una franja vertical y el titular corre girado por ella. El más editorial; la columna del formulario queda estrecha (228 px)."
+    }
+  ],
+  "launch": { "view": "canvas", "page": "propuesta" }
+}
