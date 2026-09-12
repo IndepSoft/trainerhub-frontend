@@ -1,7 +1,11 @@
-import { Dumbbell, UserRound } from 'lucide-react'
-import { CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
+import { ArrowRight } from 'lucide-react'
+import { Link, useLocation } from 'react-router-dom'
+import { cn } from '@/shared/lib/utils'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { authViewSearch } from '../libs/authView'
 import type { RegisterIntent } from '../types/register.types'
+import { AuthHero } from './AuthHero'
+import { AuthScreen } from './AuthScreen'
 
 interface RegisterIntentChooserProps {
   onChoose: (intent: RegisterIntent) => void
@@ -18,44 +22,68 @@ interface RegisterIntentChooserProps {
  *
  * Las dos opciones tienen el mismo peso visual a propósito: ninguna es la
  * «normal», y empujar hacia la de entrenador con un botón más grande haría que
- * los alumnos se registraran mal.
+ * los alumnos se registraran mal. Son dos bloques iguales, a escuadra —el radio
+ * de los bloques—, y lo único que cambia entre ellos es el relleno.
  */
 export function RegisterIntentChooser({ onChoose }: RegisterIntentChooserProps) {
   const { t } = useTranslation()
+  const location = useLocation()
 
   return (
-    <>
-      <CardHeader className="text-center">
-        <CardTitle className="text-xl font-semibold">{t('register.createAccount')}</CardTitle>
-        <CardDescription>{t('register.howWillYouUse')}</CardDescription>
-      </CardHeader>
-
-      <div className="grid grid-cols-1 gap-3 px-2 pb-2 sm:grid-cols-2">
-        <IntentCard
-          icon={<Dumbbell className="size-5" />}
+    <AuthScreen
+      hero={
+        <AuthHero
+          eyebrow={t('register.createAccount')}
+          headlineLines={[
+            t('register.hero.intent.line1'),
+            t('register.hero.intent.line2'),
+            t('register.hero.intent.line3'),
+          ]}
+          height="tall"
+        />
+      }
+    >
+      <div className="flex flex-col gap-3">
+        <IntentBlock
           title={t('register.intent.trainer')}
           description={t('register.intent.trainerHint')}
+          filled
           onClick={() => onChoose('trainer')}
         />
-        <IntentCard
-          icon={<UserRound className="size-5" />}
+        <IntentBlock
           title={t('register.intent.student')}
           description={t('register.intent.studentHint')}
           onClick={() => onChoose('student')}
         />
       </div>
-    </>
+
+      <p className="mt-auto flex min-h-11 items-center justify-center gap-1.5 text-sm text-ink/55">
+        {t('auth.haveAccount')}
+        <Link
+          to={{ search: authViewSearch('login') }}
+          state={location.state}
+          className="font-semibold text-cobalt underline-offset-4 hover:underline"
+        >
+          {t('auth.signIn')}
+        </Link>
+      </p>
+    </AuthScreen>
   )
 }
 
-interface IntentCardProps {
-  icon: React.ReactNode
+interface IntentBlockProps {
   title: string
   description: string
+  /**
+   * El bloque de arriba va en Ink sólido y el de abajo en contorno. No es una
+   * jerarquía —pesan lo mismo—, es alternancia: dos contornos seguidos se
+   * leían como una lista, no como dos puertas.
+   */
+  filled?: boolean
   onClick: () => void
 }
 
-function IntentCard({ icon, title, description, onClick }: IntentCardProps) {
+function IntentBlock({ title, description, filled = false, onClick }: IntentBlockProps) {
   return (
     <button
       type="button"
@@ -66,13 +94,26 @@ function IntentCard({ icon, title, description, onClick }: IntentCardProps) {
       */
       aria-label={title}
       onClick={onClick}
-      className="flex min-h-11 flex-col items-start gap-2 rounded-block border border-cobalt-tint-3 p-4 text-start transition-colors hover:border-cobalt/50 hover:bg-cobalt-tint"
+      className={cn(
+        'flex min-h-[108px] w-full items-center justify-between gap-4 rounded-block border px-5 py-5 text-start transition-colors',
+        filled
+          ? 'border-ink bg-ink text-bone hover:bg-ink/90'
+          : 'border-ink/25 bg-transparent text-ink hover:border-cobalt/50 hover:bg-cobalt-tint'
+      )}
     >
-      <span className="text-cobalt">{icon}</span>
-      <span className="font-display text-lg font-extrabold uppercase leading-none tracking-tight text-ink">
-        {title}
+      <span className="flex flex-col gap-1.5">
+        <span className="font-display text-[1.625rem] font-extrabold uppercase leading-none tracking-tight">
+          {title}
+        </span>
+        <span className={cn('text-sm leading-snug', filled ? 'text-bone/60' : 'text-ink/55')}>
+          {description}
+        </span>
       </span>
-      <span className="text-sm text-ink/55">{description}</span>
+      <ArrowRight
+        aria-hidden="true"
+        className={cn('size-6 shrink-0', filled ? 'text-ember' : 'text-ink/35')}
+        strokeWidth={2.25}
+      />
     </button>
   )
 }

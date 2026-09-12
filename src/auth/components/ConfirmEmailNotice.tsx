@@ -1,9 +1,11 @@
-import { MailCheck } from 'lucide-react'
-import { CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
+import { Link, useLocation } from 'react-router-dom'
 import { Button } from '@/shared/ui/button'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { useResendConfirmation } from '../hooks/useResendConfirmation'
+import { authViewSearch } from '../libs/authView'
+import { AuthHero } from './AuthHero'
+import { AuthScreen } from './AuthScreen'
 
 interface ConfirmEmailNoticeProps {
   /** La dirección a la que ha ido el enlace. Se enseña para poder detectar un error al teclearla. */
@@ -27,10 +29,9 @@ interface ConfirmEmailNoticeProps {
  * es haber tecleado mal el correo, y es la única forma de que quien espera un
  * mensaje que no llega pueda darse cuenta.
  *
- * No lleva botón para ir a identificarse: la pestaña «Iniciar sesión» está
- * justo encima y visible. Un botón obligaría a controlar las pestañas desde la
- * página y a pasar el manejador por tres componentes para un gesto que ya está
- * a un toque.
+ * LLEVA ENLACE A IDENTIFICARSE, porque ya no hay pestañas a la vista: la
+ * pantalla anterior tenía «Iniciar sesión» a un toque y ésta lo sustituye
+ * entera, así que sin el enlace quien ya confirmó no tendría por dónde entrar.
  *
  * SÍ LLEVA «volver a enviar», y una sola vez: era la salida que no existía
  * cuando el correo no llega. Una sola porque el proveedor limita los envíos por
@@ -38,42 +39,60 @@ interface ConfirmEmailNoticeProps {
  */
 export function ConfirmEmailNotice({ email }: ConfirmEmailNoticeProps) {
   const { t } = useTranslation()
+  const location = useLocation()
   const { loading, error, resent, resend } = useResendConfirmation()
 
   return (
-    <>
-      <CardHeader className="text-center">
-        <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-full bg-cobalt-tint-2">
-          <MailCheck aria-hidden="true" className="size-6 text-cobalt" />
-        </div>
-        <CardTitle className="text-xl font-semibold">{t('register.confirm.title')}</CardTitle>
-        <CardDescription>{t('register.confirm.sentTo', { email })}</CardDescription>
-      </CardHeader>
+    <AuthScreen
+      hero={
+        <AuthHero
+          eyebrow={t('register.createAccount')}
+          headlineLines={[t('register.confirm.line1'), t('register.confirm.line2')]}
+          height="short"
+        />
+      }
+    >
+      <div className="flex flex-col gap-3">
+        <p className="text-sm leading-relaxed text-ink/70">
+          {t('register.confirm.sentTo', { email })}
+        </p>
+        <p className="text-sm leading-relaxed text-ink/70">{t('register.confirm.body')}</p>
+        <p className="text-xs leading-relaxed text-ink/45">{t('register.confirm.spam')}</p>
+      </div>
 
-      <CardContent className="space-y-3 px-2 text-center">
-        <p className="text-sm text-ink/70">{t('register.confirm.body')}</p>
-        <p className="text-xs text-ink/45">{t('register.confirm.spam')}</p>
+      {error !== null && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
-        {error !== null && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
+      <div className="mt-auto flex flex-col gap-3 pt-3">
         {resent ? (
-          <p className="text-sm font-medium text-cobalt">{t('register.confirm.resent')}</p>
+          <p className="flex min-h-11 items-center justify-center text-sm font-semibold text-cobalt">
+            {t('register.confirm.resent')}
+          </p>
         ) : (
           <Button
             type="button"
             variant="outline"
-            className="w-full"
+            className="w-full rounded-action"
             onClick={() => resend(email)}
             disabled={loading}
           >
             {loading ? t('register.confirm.resending') : t('register.confirm.resend')}
           </Button>
         )}
-      </CardContent>
-    </>
+        <p className="flex min-h-11 items-center justify-center gap-1.5 text-sm text-ink/55">
+          {t('auth.haveAccount')}
+          <Link
+            to={{ search: authViewSearch('login') }}
+            state={location.state}
+            className="font-semibold text-cobalt underline-offset-4 hover:underline"
+          >
+            {t('auth.signIn')}
+          </Link>
+        </p>
+      </div>
+    </AuthScreen>
   )
 }

@@ -1,0 +1,85 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Barlow:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; background: #FAF8F5; font-family: 'Barlow', 'Arial Narrow', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #0B4BCC; text-decoration: none; }
+    a:hover { color: #0A3FAE; }
+    input::placeholder { color: rgba(10, 18, 36, 0.35); }
+  </style>
+</helmet>
+
+<!-- Dirección C · Columna. La foto es una franja vertical; el titular corre por ella, girado. Registro editorial. -->
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; background: #FAF8F5; display: flex; flex-direction: row;">
+
+  <!-- Franja de imagen, con el filo diagonal en vertical -->
+  <div style="position: relative; width: 136px; height: 844px; flex-shrink: 0; clip-path: polygon(0 0, 100% 0, 84% 100%, 0 100%); background: #0A1224;">
+    <svg viewBox="0 0 136 844" preserveAspectRatio="xMidYMid slice" style="position: absolute; inset: 0; width: 100%; height: 100%; display: block;">
+      <defs>
+        <radialGradient id="glow" cx="0.4" cy="0.28" r="0.9">
+          <stop offset="0" stop-color="#3B7BF0" stop-opacity="0.9"></stop>
+          <stop offset="0.5" stop-color="#0B4BCC" stop-opacity="0.35"></stop>
+          <stop offset="1" stop-color="#0A1224" stop-opacity="0"></stop>
+        </radialGradient>
+        <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0.4" stop-color="#0A1224" stop-opacity="0"></stop>
+          <stop offset="1" stop-color="#0A1224" stop-opacity="0.92"></stop>
+        </linearGradient>
+        <filter id="grain" x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"></feTurbulence>
+          <feColorMatrix type="saturate" values="0"></feColorMatrix>
+        </filter>
+      </defs>
+      <rect width="136" height="844" fill="#0A1224"></rect>
+      <rect width="136" height="844" fill="url(#glow)"></rect>
+      <ellipse cx="90" cy="520" rx="120" ry="200" fill="#060B16" opacity="0.92"></ellipse>
+      <rect width="136" height="844" fill="url(#shade)"></rect>
+      <rect width="136" height="844" filter="url(#grain)" opacity="0.14" style="mix-blend-mode: overlay;"></rect>
+    </svg>
+
+    <!-- Titular girado, de abajo arriba -->
+    <!-- Girado -90°: el texto corre de abajo arriba y las letras crecen hacia la izquierda del ancla, así que el ancla va a 60 px para que quepan. -->
+    <div style="position: absolute; left: 60px; bottom: 36px; transform-origin: left bottom; transform: rotate(-90deg); white-space: nowrap; display: flex; align-items: baseline; gap: 14px;">
+      <span style="font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase; color: #FF4F1A;">Entra</span>
+      <span style="font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-size: 44px; font-weight: 800; line-height: 1; letter-spacing: -0.01em; text-transform: uppercase; color: #FAF8F5;">Bienvenido de vuelta.</span>
+    </div>
+  </div>
+
+  <!-- Filo Ember vertical -->
+  <div aria-hidden="true" style="position: absolute; top: 0; bottom: 0; left: 108px; width: 30px; background: #FF4F1A; clip-path: polygon(52% 0, 68% 0, 22% 100%, 6% 100%); pointer-events: none;"></div>
+
+  <!-- Formulario en la columna derecha -->
+  <div style="flex: 1; display: flex; flex-direction: column; padding: 28px 24px 24px 26px; gap: 24px;">
+    <div style="font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 800; font-size: 18px; letter-spacing: -0.01em; text-transform: uppercase; color: #0A1224;">TrainerHub</div>
+
+    <span style="position: absolute; top: 20px; right: 20px; padding: 6px 10px; border-radius: 999px; background: rgba(10, 18, 36, 0.06); color: rgba(10, 18, 36, 0.45); font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;">Foto · sustituir</span>
+
+    <div style="display: flex; flex-direction: column; gap: 22px; margin-top: 112px;">
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <label style="font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(10, 18, 36, 0.6);">Email</label>
+        <input type="email" placeholder="tu@email.com" style="height: 44px; width: 100%; box-sizing: border-box; border: 0; border-bottom: 1px solid rgba(10, 18, 36, 0.22); border-radius: 0; background: transparent; padding: 0; font-family: 'Barlow', system-ui, sans-serif; font-size: 16px; color: #0A1224; outline: none;">
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <label style="font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(10, 18, 36, 0.6);">Contraseña</label>
+        <input type="password" value="••••••••••" style="height: 44px; width: 100%; box-sizing: border-box; border: 0; border-bottom: 1px solid rgba(10, 18, 36, 0.22); border-radius: 0; background: transparent; padding: 0; font-family: 'Barlow', system-ui, sans-serif; font-size: 16px; letter-spacing: 0.12em; color: #0A1224; outline: none;">
+        <a href="#" style="align-self: flex-start; display: inline-flex; align-items: center; min-height: 32px; font-size: 12px; font-weight: 600; color: #0B4BCC;">¿La olvidaste?</a>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: auto;">
+      <button type="button" style="height: 44px; width: 100%; border: 0; border-radius: 999px; background: #0B4BCC; color: #FFFFFF; font-family: 'Barlow', system-ui, sans-serif; font-size: 15px; font-weight: 600; cursor: pointer;">Iniciar sesión</button>
+      <p style="margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 44px; font-size: 13px; line-height: 1.4; text-align: center; color: rgba(10, 18, 36, 0.55);">¿No tienes cuenta? <a href="#" style="font-weight: 600; color: #0B4BCC;">Registrarme</a></p>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

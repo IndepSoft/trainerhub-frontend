@@ -1,12 +1,12 @@
 import { useState, type FormEvent } from 'react'
-import { MailCheck } from 'lucide-react'
-import { CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
-import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
 import { Button } from '@/shared/ui/button'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { useRequestPasswordReset } from '../hooks/useRequestPasswordReset'
+import { AuthHero } from './AuthHero'
+import { AuthScreen } from './AuthScreen'
+import { FormField } from './FormField'
+import { FormInput } from './FormInput'
 
 interface ForgotPasswordFormProps {
   /** Con qué correo se venía del formulario de acceso, para no teclearlo dos veces. */
@@ -17,7 +17,7 @@ interface ForgotPasswordFormProps {
 /**
  * Pedir el enlace para restablecer la contraseña.
  *
- * SUSTITUYE al formulario de acceso dentro de la misma pestaña, no abre otra
+ * SUSTITUYE al formulario de acceso dentro de la misma pantalla, no abre otra
  * ruta: es un desvío de un paso y se vuelve con un botón. Una ruta propia
  * habría que protegerla como invitado y aparecería en el historial.
  *
@@ -35,63 +35,75 @@ export function ForgotPasswordForm({ initialEmail, onBack }: ForgotPasswordFormP
     await request(email)
   }
 
+  const hero = (
+    <AuthHero
+      eyebrow={t('auth.hero.enter')}
+      headlineLines={[t('auth.hero.reset.line1'), t('auth.hero.reset.line2')]}
+      height="short"
+      back={{ label: t('auth.reset.back'), onClick: onBack }}
+    />
+  )
+
   if (sentTo !== null) {
     return (
-      <>
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-full bg-cobalt-tint-2">
-            <MailCheck aria-hidden="true" className="size-6 text-cobalt" />
-          </div>
-          <CardTitle className="text-xl font-semibold">{t('auth.reset.sentTitle')}</CardTitle>
-          <CardDescription>{t('auth.reset.sentTo', { email: sentTo })}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3 px-2 text-center">
-          <p className="text-xs text-ink/45">{t('register.confirm.spam')}</p>
-          <Button type="button" variant="outline" className="w-full" onClick={onBack}>
+      <AuthScreen hero={hero}>
+        <div className="flex flex-col gap-3">
+          <p className="font-display text-xl font-extrabold uppercase leading-none tracking-tight text-ink">
+            {t('auth.reset.sentTitle')}
+          </p>
+          <p className="text-sm leading-relaxed text-ink/70">
+            {t('auth.reset.sentTo', { email: sentTo })}
+          </p>
+          <p className="text-xs leading-relaxed text-ink/45">{t('register.confirm.spam')}</p>
+        </div>
+
+        <div className="mt-auto pt-3">
+          <Button type="button" className="w-full rounded-action" onClick={onBack}>
             {t('auth.reset.back')}
           </Button>
-        </CardContent>
-      </>
+        </div>
+      </AuthScreen>
     )
   }
 
   return (
-    <>
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-semibold text-center">{t('auth.reset.title')}</CardTitle>
-        <CardDescription className="text-center">{t('auth.reset.hint')}</CardDescription>
-      </CardHeader>
+    <AuthScreen hero={hero}>
+      <p className="text-sm leading-relaxed text-ink/55">{t('auth.reset.hint')}</p>
 
-      <CardContent className="space-y-4">
-        {error !== null && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+      {error !== null && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="reset-email">{t('auth.email')}</Label>
-            <Input
-              id="reset-email"
-              type="email"
-              placeholder="tu@email.com"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              disabled={loading}
-              required
-              autoComplete="email"
-            />
-          </div>
+      <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-5">
+        <FormField htmlFor="reset-email" label={t('auth.email')}>
+          <FormInput
+            id="reset-email"
+            type="email"
+            placeholder="tu@email.com"
+            value={email}
+            onChange={setEmail}
+            disabled={loading}
+            autoComplete="email"
+            required
+          />
+        </FormField>
 
-          <Button type="submit" className="w-full" disabled={loading}>
+        <div className="mt-auto flex flex-col gap-3 pt-3">
+          <Button type="submit" className="w-full rounded-action" disabled={loading}>
             {loading ? t('auth.reset.sending') : t('auth.reset.send')}
           </Button>
-          <Button type="button" variant="link" className="w-full font-normal" onClick={onBack}>
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full rounded-action text-ink/55"
+            onClick={onBack}
+          >
             {t('auth.reset.back')}
           </Button>
-        </form>
-      </CardContent>
-    </>
+        </div>
+      </form>
+    </AuthScreen>
   )
 }
