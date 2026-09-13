@@ -327,6 +327,15 @@ Entran `AuthScreen`, `AuthHero`, `AuthHeroBackdrop` y `StepIndicator`, y el alta
 de entrenador pasa a dos pasos. Los bocetos quedaron en `docs/design/auth`. Sin
 dependencias nuevas.
 
+**Y su composición de escritorio, el 13** (`CAMBIOS` §33). Aquel rediseño se
+compuso para el teléfono y en una ventana ancha se quedaba igual: una columna
+de 448 px centrada en 1440 px. Desde `lg` la pantalla se parte en dos mitades
+—imagen a la altura entera, formulario centrado en la otra—; por debajo no
+cambia nada. **Es la lección que deja**: las reglas de §1.6 de `CLAUDE.md`
+miden el móvil, y una pantalla puede cumplirlas todas y seguir siendo una
+pantalla de móvil estirada. Lo que se compone para el teléfono hay que abrirlo
+también en una ventana ancha antes de darlo por terminado.
+
 ---
 
 ## Trampas de este entorno

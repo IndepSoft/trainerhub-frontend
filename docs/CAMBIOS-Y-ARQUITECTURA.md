@@ -3252,3 +3252,54 @@ desbordamiento horizontal, todo lo que no cabe desplaza, el botón de envío
 a la vista en 844 en las cinco pantallas. La suite de interfaz se actualizó
 —pestaña por enlace, titulares por encabezado, «Siguiente» entre los dos
 pasos— y diez claves del diccionario que ya nadie leía se fueron.
+
+---
+
+## 33. La puerta también en escritorio (13 sep 2026)
+
+El rediseño de §32 se compuso para el teléfono, que es el caso base del
+proyecto, y en una ventana ancha se quedaba igual: **una sola composición, la
+de móvil, metida en una columna de 448 px centrada**. En 1440 px eso dejaba dos
+tercios de pantalla en blanco y una imagen de 420 px de alto encima de cuatro
+campos. La forma de un teléfono, dibujada en grande.
+
+No era un descuido de medida sino de composición, y por eso no lo detectó nada:
+a 375 px todo cumplía —sin desbordamiento, sin bloques por debajo de 280 px,
+objetivos de 44 px— y la suite comprueba justo eso. Una regla que mide el móvil
+no dice nada del escritorio.
+
+**Dos composiciones, no una escalada.** Desde `lg` la pantalla se parte en dos
+mitades: la imagen ocupa la altura entera de la suya y el formulario se centra
+en la otra. Por debajo de `lg` no cambia nada. El corte va en `lg` y no antes
+porque a 768 px las dos mitades salen a 384 px, por debajo del ancho mínimo
+útil que exige §1.6 de `CLAUDE.md`; hasta ahí la composición de móvil es la que
+funciona, y se comprobó que sigue intacta.
+
+**El corte diagonal cambia de borde con la composición.** Es la misma cuña de
+las tarjetas, aplicada al lado por el que se toca lo que viene después: abajo
+en móvil, porque el formulario va debajo; a la derecha en escritorio, porque va
+al lado. La banda Ember se apoya en el filo y asoma hacia el formulario en los
+dos casos. Los `clip-path` pasaron del atributo `style` a clases con
+`[clip-path:…]`, por un motivo mecánico: `style` no sabe de puntos de ruptura.
+
+**Quién desplaza también cambia.** En móvil desplaza la página entera, porque
+la imagen tiene que poder salir de la vista para que quepa el formulario. En
+escritorio la imagen se queda quieta y desplaza sólo la columna del formulario,
+que es la única que puede crecer —el alta de entrenador en una ventana baja—.
+Ese contenedor bajó de las dos rutas a `AuthScreen`: estaba repetido, y es una
+decisión de la composición, no de la ruta.
+
+**El segundo paso del alta de entrenador también lleva imagen en escritorio.**
+No tenerla era una decisión de móvil —siete campos, la cabecera y el botón no
+caben en 667 px— y en una ventana ancha esa razón no existe: sin ella, pasar
+del primer paso al segundo apagaba media pantalla. En móvil sigue sin foto, con
+su cabecera propia. El indicador de paso y el aviso de la suscripción se pintan
+en las dos composiciones: ese aviso es la condición que la pantalla no puede
+callarse.
+
+**Verificado en navegador**, que es lo que la regla exige: a 1440×900 y
+1024×768 —el punto exacto del corte— en claro y oscuro, con la rejilla
+resolviendo mitades iguales y sin desbordamiento; a 768 px, la composición de
+móvil intacta; a 375 px, sin desbordamiento. Tres pruebas nuevas lo fijan: las
+dos mitades en escritorio, la columna en móvil, y el segundo paso con su
+imagen y su aviso.

@@ -125,10 +125,28 @@ export function TrainerRegisterForm({ onBack }: TrainerRegisterFormProps) {
   }
 
   return (
-    <AuthScreen>
-      <div className="relative isolate flex flex-col gap-5">
-        {/* Sin foto en el segundo paso: la cuña queda como huella, en Ember al
-            10 %, igual que en las tarjetas. Detrás del titular, no del todo. */}
+    <AuthScreen
+      hero={
+        /*
+          EN ESCRITORIO EL SEGUNDO PASO TAMBIÉN LLEVA IMAGEN. No tenerla es una
+          decisión de móvil —siete campos, la cabecera y el botón no caben en
+          667 px—, y en una ventana ancha esa razón no existe: sin ella, pasar
+          del primer paso al segundo apagaba media pantalla. En móvil sigue sin
+          foto, con la cabecera de abajo.
+        */
+        <AuthHero
+          eyebrow={`${t('register.trainer.eyebrow')} · ${t('register.step', { step: 2, total: TOTAL_STEPS })}`}
+          headlineLines={[t('register.trainer.step2.line1'), t('register.trainer.step2.line2')]}
+          height="medium"
+          back={{ label: t('common.previous'), onClick: () => setStep(1) }}
+          className="hidden lg:block"
+        />
+      }
+    >
+      <div className="relative isolate flex flex-col gap-5 lg:hidden">
+        {/* La cabecera de MÓVIL, donde este paso no lleva foto: la cuña queda
+            como huella, en Ember al 10 %, igual que en las tarjetas. Detrás
+            del titular, no del todo. En escritorio la sustituye la imagen. */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-x-[-15%] top-[92px] -z-10 h-[72px] bg-ember/10"
@@ -163,6 +181,18 @@ export function TrainerRegisterForm({ onBack }: TrainerRegisterFormProps) {
             {t('register.trainer.subscriptionHint')}
           </p>
         </div>
+      </div>
+
+      {/*
+        Lo mismo para escritorio, donde el titular y el «atrás» los da la imagen
+        de la izquierda pero el paso y el aviso siguen haciendo falta: el aviso
+        de la suscripción es la condición que esta pantalla no puede callarse.
+      */}
+      <div className="hidden flex-col gap-4 lg:flex">
+        <StepIndicator current={2} total={TOTAL_STEPS} />
+        <p className="max-w-[34ch] text-sm leading-relaxed text-ink/55">
+          {t('register.trainer.subscriptionHint')}
+        </p>
       </div>
 
       {error && (
