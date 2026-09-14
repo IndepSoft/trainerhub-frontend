@@ -10,18 +10,14 @@ import { readAuthView } from '../libs/authView'
  * no se parecía a nada de lo que viene después: el onboarding, la celebración
  * y las fichas hablan en Ink, Ember y Condensed. Ahora la puerta también.
  *
- * DESPLAZA. La raíz es `overflow-y-auto` y no un centrado con `items-center`:
- * en un teléfono de 667 px el alta de entrenador medía más que la pantalla y
- * su parte de arriba quedaba por encima del borde, inalcanzable. `min-h-0`
- * deja que encoja dentro del layout, que es de altura fija.
+ * EL CONTENEDOR DE LA PÁGINA —el fondo y quién desplaza— vive en `AuthScreen`,
+ * no aquí. Estaba repetido entre esta página y la de contraseña nueva, y son
+ * decisiones de la composición: cambian con el punto de ruptura, y quien sabe
+ * de eso es la pantalla, no la ruta.
  */
 export default function AuthenticationPage() {
   const [searchParams] = useSearchParams()
   const view = readAuthView(searchParams)
 
-  return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-bone">
-      {view === 'login' ? <LoginForm /> : <RegisterForm />}
-    </div>
-  )
+  return view === 'login' ? <LoginForm /> : <RegisterForm />
 }

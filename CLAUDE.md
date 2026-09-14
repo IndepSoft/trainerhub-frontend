@@ -121,6 +121,14 @@ antes de darlo por terminado. Las clases de Tailwind no dicen la verdad sobre el
 resultado: `flex-1` no desborda nunca, simplemente aplasta el contenido hasta que
 deja de comunicar.
 
+**Y TAMBIÉN EN UNA VENTANA ANCHA.** Las cinco reglas de arriba miden el móvil, y
+una pantalla puede cumplirlas todas y seguir siendo una pantalla de móvil
+estirada. Pasó con el rediseño del acceso: a 375 px cumplía entero, y a 1440 era
+una columna de 448 px centrada con dos tercios de pantalla en blanco (`CAMBIOS`
+§33). El móvil es el caso base, no el único: lo que se compone para el teléfono
+se abre después a 1440 px, y si ahí la composición no cambia, es que no hay
+composición de escritorio.
+
 ---
 
 ## 2. Arquitectura: puertos y adaptadores

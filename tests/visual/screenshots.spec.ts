@@ -738,10 +738,23 @@ test.describe('calendario: iniciar una sesion', () => {
     await page.goto('/calendar')
     await page.waitForTimeout(1800)
 
-    // Por nombre accesible y no por estructura: `ol button` ataba la prueba al
-    // marcado, y dejo de casar en cuanto la vista de dia paso de lista de
-    // tramos a escala con sesiones posicionadas.
-    await page.getByRole('button', { name: /Entrenamiento Personal/ }).first().click()
+    /*
+     * Por nombre accesible y no por estructura: `ol button` ataba la prueba al
+     * marcado, y dejo de casar en cuanto la vista de dia paso de lista de
+     * tramos a escala con sesiones posicionadas.
+     *
+     * Y POR ESTADO, no por posicion. Hoy hay dos «Entrenamiento Personal»: la
+     * que el alumno ya cerro y la que queda por hacer. `.first()` cogia la
+     * cerrada, porque el orden del MARCADO no es el visual: la vista de dia
+     * coloca las sesiones sobre una escala de tiempo, asi que la de las 18:00
+     * va primera en el DOM aunque se pinte abajo. Lo que distingue a la sesion
+     * sobre la que se puede actuar es su ESTADO, no donde caiga en la lista.
+     */
+    await page
+      .getByRole('button', { name: /Entrenamiento Personal/ })
+      .filter({ hasText: 'Confirmada' })
+      .first()
+      .click()
 
     const dialogo = page.getByRole('dialog')
     await expect(dialogo).toBeVisible()
@@ -768,10 +781,23 @@ test.describe('calendario: iniciar una sesion', () => {
     await page.goto('/calendar')
     await page.waitForTimeout(1800)
 
-    // Por nombre accesible y no por estructura: `ol button` ataba la prueba al
-    // marcado, y dejo de casar en cuanto la vista de dia paso de lista de
-    // tramos a escala con sesiones posicionadas.
-    await page.getByRole('button', { name: /Entrenamiento Personal/ }).first().click()
+    /*
+     * Por nombre accesible y no por estructura: `ol button` ataba la prueba al
+     * marcado, y dejo de casar en cuanto la vista de dia paso de lista de
+     * tramos a escala con sesiones posicionadas.
+     *
+     * Y POR ESTADO, no por posicion. Hoy hay dos «Entrenamiento Personal»: la
+     * que el alumno ya cerro y la que queda por hacer. `.first()` cogia la
+     * cerrada, porque el orden del MARCADO no es el visual: la vista de dia
+     * coloca las sesiones sobre una escala de tiempo, asi que la de las 18:00
+     * va primera en el DOM aunque se pinte abajo. Lo que distingue a la sesion
+     * sobre la que se puede actuar es su ESTADO, no donde caiga en la lista.
+     */
+    await page
+      .getByRole('button', { name: /Entrenamiento Personal/ })
+      .filter({ hasText: 'Confirmada' })
+      .first()
+      .click()
     await page.getByRole('button', { name: /Recordatorio/ }).click()
 
     // El Toaster no estaba montado: `toast()` se llamaba y no aparecia nada.
@@ -3579,6 +3605,89 @@ test.describe('registro separado', () => {
     // Vuelve a donde iba, y el codigo se envia solo.
     await page.waitForURL(/codigo=HIERRO24/, { timeout: 20_000 })
     await expect(page.getByRole('heading', { name: 'Solicitud enviada' })).toBeVisible()
+  })
+})
+
+/**
+ * La puerta tiene DOS composiciones, no una escalada.
+ *
+ * El rediseño se compuso para el telefono y en escritorio se quedaba igual: una
+ * columna de 448 px centrada en una ventana de 1440, con la imagen de banda
+ * horizontal encima de cuatro campos. Esto fija que a partir de `lg` la imagen
+ * pasa a ocupar una mitad entera y el formulario la otra, y que por debajo la
+ * composicion de movil sigue intacta.
+ */
+test.describe('la puerta: movil y escritorio', () => {
+  test('en escritorio se parte en dos mitades y la imagen ocupa la altura entera', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.goto('/authentication')
+    /*
+     * Se espera al formulario ANTES de medir. La ruta es perezosa, asi que
+     * `goto` vuelve con el `Cargando…` puesto, y lo que hay entonces bajo
+     * `header` es el hueco de la suspension: medirlo daba el ancho de la
+     * ventana entera y la prueba fallaba por un motivo que no era el suyo.
+     */
+    await expect(page.getByRole('button', { name: 'Iniciar sesión' })).toBeVisible()
+
+    const imagen = await page.locator('header').first().boundingBox()
+    expect(imagen).not.toBeNull()
+
+    // La mitad de la ventana, y toda su altura.
+    expect(imagen!.width).toBeGreaterThan(650)
+    expect(imagen!.width).toBeLessThan(790)
+    expect(imagen!.height).toBeGreaterThan(850)
+
+    // Y el formulario a su derecha, no debajo: es lo que distingue las dos
+    // composiciones.
+    const boton = await page.getByRole('button', { name: 'Iniciar sesión' }).boundingBox()
+    expect(boton!.x).toBeGreaterThan(imagen!.x + imagen!.width - 120)
+  })
+
+  test('en movil sigue siendo una columna, con la imagen arriba', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.goto('/authentication')
+    await expect(page.getByRole('button', { name: 'Iniciar sesión' })).toBeVisible()
+
+    const imagen = await page.locator('header').first().boundingBox()
+    expect(imagen!.width).toBe(375)
+
+    const boton = await page.getByRole('button', { name: 'Iniciar sesión' }).boundingBox()
+    expect(boton!.y).toBeGreaterThan(imagen!.y + imagen!.height)
+  })
+
+  test('el segundo paso del alta de entrenador tampoco se queda a medias', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.goto('/authentication?vista=registro')
+    await page.evaluate(() => window.localStorage.setItem('trainerhub.onboarding.visto', 'true'))
+
+    await expect(page.getByRole('button', { name: 'Entreno a gente', exact: true })).toBeVisible()
+    await page.getByRole('button', { name: 'Entreno a gente', exact: true }).click()
+    await page.getByLabel('Nombre').fill('Lucia')
+    await page.getByLabel('Apellido').fill('Serra')
+    await page.getByLabel('Email').fill('lserra@correo.com')
+    await page.locator('input[type=password]').fill('secreto123')
+    await page.getByRole('button', { name: 'Siguiente' }).click()
+
+    /*
+     * En movil este paso no lleva imagen -siete campos no caben con ella-, y
+     * esa razon no existe en una ventana ancha: sin imagen, pasar de paso
+     * apagaba media pantalla.
+     */
+    const imagen = await page.locator('header').first().boundingBox()
+    expect(imagen!.height).toBeGreaterThan(850)
+    await expect(page.getByRole('heading', { name: /A qué/i })).toBeVisible()
+
+    /*
+     * Y el aviso de la suscripcion sigue estando: es la condicion que esta
+     * pantalla no puede callarse.
+     *
+     * Por `:visible` y no por texto a secas: el aviso esta dos veces en el
+     * marcado -una por composicion- y solo una se pinta. Buscarlo por texto
+     * devuelve las dos y Playwright se niega a elegir.
+     */
+    await expect(page.locator('p:visible', { hasText: /activar la suscripción/i })).toBeVisible()
   })
 })
 
