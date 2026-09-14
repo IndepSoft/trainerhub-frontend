@@ -738,10 +738,23 @@ test.describe('calendario: iniciar una sesion', () => {
     await page.goto('/calendar')
     await page.waitForTimeout(1800)
 
-    // Por nombre accesible y no por estructura: `ol button` ataba la prueba al
-    // marcado, y dejo de casar en cuanto la vista de dia paso de lista de
-    // tramos a escala con sesiones posicionadas.
-    await page.getByRole('button', { name: /Entrenamiento Personal/ }).first().click()
+    /*
+     * Por nombre accesible y no por estructura: `ol button` ataba la prueba al
+     * marcado, y dejo de casar en cuanto la vista de dia paso de lista de
+     * tramos a escala con sesiones posicionadas.
+     *
+     * Y POR ESTADO, no por posicion. Hoy hay dos «Entrenamiento Personal»: la
+     * que el alumno ya cerro y la que queda por hacer. `.first()` cogia la
+     * cerrada, porque el orden del MARCADO no es el visual: la vista de dia
+     * coloca las sesiones sobre una escala de tiempo, asi que la de las 18:00
+     * va primera en el DOM aunque se pinte abajo. Lo que distingue a la sesion
+     * sobre la que se puede actuar es su ESTADO, no donde caiga en la lista.
+     */
+    await page
+      .getByRole('button', { name: /Entrenamiento Personal/ })
+      .filter({ hasText: 'Confirmada' })
+      .first()
+      .click()
 
     const dialogo = page.getByRole('dialog')
     await expect(dialogo).toBeVisible()
@@ -768,10 +781,23 @@ test.describe('calendario: iniciar una sesion', () => {
     await page.goto('/calendar')
     await page.waitForTimeout(1800)
 
-    // Por nombre accesible y no por estructura: `ol button` ataba la prueba al
-    // marcado, y dejo de casar en cuanto la vista de dia paso de lista de
-    // tramos a escala con sesiones posicionadas.
-    await page.getByRole('button', { name: /Entrenamiento Personal/ }).first().click()
+    /*
+     * Por nombre accesible y no por estructura: `ol button` ataba la prueba al
+     * marcado, y dejo de casar en cuanto la vista de dia paso de lista de
+     * tramos a escala con sesiones posicionadas.
+     *
+     * Y POR ESTADO, no por posicion. Hoy hay dos «Entrenamiento Personal»: la
+     * que el alumno ya cerro y la que queda por hacer. `.first()` cogia la
+     * cerrada, porque el orden del MARCADO no es el visual: la vista de dia
+     * coloca las sesiones sobre una escala de tiempo, asi que la de las 18:00
+     * va primera en el DOM aunque se pinte abajo. Lo que distingue a la sesion
+     * sobre la que se puede actuar es su ESTADO, no donde caiga en la lista.
+     */
+    await page
+      .getByRole('button', { name: /Entrenamiento Personal/ })
+      .filter({ hasText: 'Confirmada' })
+      .first()
+      .click()
     await page.getByRole('button', { name: /Recordatorio/ }).click()
 
     // El Toaster no estaba montado: `toast()` se llamaba y no aparecia nada.

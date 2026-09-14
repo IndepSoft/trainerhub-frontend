@@ -37,26 +37,42 @@ function daysAgo(days: number): string {
  * nunca. Y sin datos no hay forma de comprobar que las reglas de progreso
  * calculan lo que dicen calcular.
  *
- * LA FORMA IMPORTA, no sólo la cantidad. Siete días seguidos hasta ayer, un
+ * LA FORMA IMPORTA, no sólo la cantidad. Siete días seguidos hasta hoy, un
  * hueco de dos, y tres días más antes: así el historial ejercita a la vez la
  * racha en curso, la racha máxima, un logro que se consigue —«Semana Perfecta»,
  * siete seguidos— y el corte que rompe una racha. Un historial sin agujeros no
  * probaría nunca el caso que de verdad importa.
  *
+ * LLEGA HASTA HOY Y NO HASTA AYER, y es lo que impide que la semilla dependa
+ * del día de la semana. La semana del ranking va de lunes a domingo, así que
+ * con la sesión más reciente en «ayer», un LUNES no quedaba ni una dentro de la
+ * ventana: el ranking de «esta semana» —que es el que se abre por defecto—
+ * nacía vacío, y con él las dos pruebas que lo leen. Medido: 0 filas un lunes,
+ * 1 un miércoles, con el mismo código. Se desplaza el bloque ENTERO un día,
+ * no sólo la primera: la forma —siete seguidos, hueco de dos, tres más— es lo
+ * que ejercita las rachas, y adelantar una sola habría abierto un agujero
+ * justo en medio de la racha en curso.
+ *
+ * El día 0 es lo que sostiene la regla, y vale para las dos ventanas: hoy cae
+ * siempre dentro de la semana en curso Y del mes en curso, así que ninguna de
+ * las dos nace vacía ni un lunes ni un día 1. Lo que sí cambia con el día es
+ * CUÁNTAS caen dentro —siete un domingo, una un lunes—, y por eso ninguna
+ * prueba afirma esa cifra: sólo que la ventana acotada difiere del total.
+ *
  * `completedSets` por debajo de `totalSets` en dos de ellas, porque también
  * ocurre: una sesión se puede cerrar sin terminarla entera.
  */
 const trainedDaysAgo: { days: number; sets: number; total: number; minutes: number }[] = [
-  { days: 1, sets: 12, total: 12, minutes: 52 },
-  { days: 2, sets: 10, total: 12, minutes: 44 },
-  { days: 3, sets: 12, total: 12, minutes: 58 },
-  { days: 4, sets: 9, total: 9, minutes: 41 },
-  { days: 5, sets: 12, total: 12, minutes: 55 },
-  { days: 6, sets: 12, total: 12, minutes: 61 },
-  { days: 7, sets: 9, total: 9, minutes: 38 },
-  { days: 10, sets: 12, total: 12, minutes: 57 },
-  { days: 11, sets: 8, total: 12, minutes: 39 },
-  { days: 12, sets: 9, total: 9, minutes: 43 },
+  { days: 0, sets: 12, total: 12, minutes: 52 },
+  { days: 1, sets: 10, total: 12, minutes: 44 },
+  { days: 2, sets: 12, total: 12, minutes: 58 },
+  { days: 3, sets: 9, total: 9, minutes: 41 },
+  { days: 4, sets: 12, total: 12, minutes: 55 },
+  { days: 5, sets: 12, total: 12, minutes: 61 },
+  { days: 6, sets: 9, total: 9, minutes: 38 },
+  { days: 9, sets: 12, total: 12, minutes: 57 },
+  { days: 10, sets: 8, total: 12, minutes: 39 },
+  { days: 11, sets: 9, total: 9, minutes: 43 },
 ]
 
 /**

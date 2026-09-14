@@ -3303,3 +3303,61 @@ resolviendo mitades iguales y sin desbordamiento; a 768 px, la composición de
 móvil intacta; a 375 px, sin desbordamiento. Tres pruebas nuevas lo fijan: las
 dos mitades en escritorio, la columna en móvil, y el segundo paso con su
 imagen y su aviso.
+
+---
+
+## 34. La semilla dejaba de existir los lunes (14 sep 2026)
+
+Rama `fix/ranking-semana-vacia`. La CI de `develop` falló al fusionar el PR
+#21 —dos pruebas del ranking, 213 en verde— con el mismo código que había
+pasado en verde en el PR el día anterior. El árbol del merge era idéntico al
+de la rama, comprobado con `git diff`: el código no era la variable.
+
+**Lo que pasaba.** El ranking abre por defecto en «Esta semana», y la semana
+va de lunes a domingo (`weekBounds`). El historial de `student-1` se sembraba
+con `daysAgo(1)` … `daysAgo(12)`: siempre en el pasado, nunca hoy. Un LUNES,
+la ventana era `[hoy, hoy+6]` y la sesión más reciente caía *ayer*, fuera. Las
+diez quedaban fuera, el ranking nacía vacío, y `getByRole('listitem').first()`
+esperaba sesenta segundos a una fila que no iba a existir.
+
+El PR corrió un domingo —`daysAgo(1)` caía dentro de esa semana— y el merge un
+lunes. De ahí que pasara en uno y fallara en el otro sin cambiar una línea.
+
+**Comprobado, no deducido.** Con el reloj del navegador fijado y la misma
+aplicación: 0 filas el lunes 14, 1 el miércoles 16.
+
+**El arreglo va en la semilla, no en las pruebas.** Fijar el reloj en los dos
+casos habría tapado el síntoma y dejado la aplicación igual de rara para una
+persona de verdad: un entrenador que abre su equipo un lunes por la mañana ve
+el ranking en blanco. Lo que se corrige es que la semilla no represente a
+alguien que lleva sin entrenar desde ayer.
+
+Se desplaza el bloque ENTERO un día —`0..6`, hueco, `9..11`— y no sólo la
+sesión más reciente: la forma es lo que ejercita las rachas —siete seguidos,
+el corte, la racha máxima— y adelantar una sola habría abierto un agujero en
+medio de la racha en curso. El día 0 es lo que sostiene la regla, y vale para
+las dos ventanas acotadas: hoy cae siempre dentro de la semana y del mes, así
+que ninguna nace vacía ni un lunes ni un día 1. Verificado por aritmética en
+cuatro días frontera —lunes, domingo, 1 de octubre, 1 de marzo—: nunca cero.
+
+Las cifras no se mueven: `scoreSession` mira una ventana de veintiocho días
+**relativa a cada sesión**, no a hoy, así que desplazar todas por igual
+conserva las distancias y el total sigue siendo 326 XP en diez sesiones.
+
+**Lo que el arreglo destapó en las pruebas.** Con una sesión cerrada hoy, la
+agenda pasa a tener DOS «Entrenamiento Personal» en el día, y dos pruebas del
+calendario cogían la suya con `.first()`. Una falló —la cerrada no se puede
+iniciar, y su botón está deshabilitado, que es lo correcto— y la otra siguió
+pasando apuntando ya a la que no era. El orden del MARCADO no es el visual: la
+vista de día coloca las sesiones sobre una escala de tiempo, así que la de las
+18:00 va primera en el DOM aunque se pinte abajo. Las dos eligen ahora por
+ESTADO —`filter({ hasText: 'Confirmada' })`—, que es lo que de verdad
+distingue a la sesión sobre la que se puede actuar.
+
+**La regla que sale de aquí**, hermana de la que ya había sobre no afirmar
+cifras absolutas de la semilla: una semilla anclada a «hoy» con sólo
+desplazamientos al pasado depende del día de la semana. Si algo la lee por una
+ventana de calendario —semana, mes—, tiene que incluir el día 0. Y su gemela,
+de las pruebas: `.first()` sobre una lista posicionada elige por marcado, no
+por pantalla; cuando lo que importa es cuál de varias, se elige por lo que las
+distingue.
