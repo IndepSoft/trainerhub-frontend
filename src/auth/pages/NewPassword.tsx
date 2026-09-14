@@ -32,31 +32,29 @@ export default function NewPasswordPage() {
   const loading = useAuthStore((state) => state.loading)
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-bone">
-      <AuthScreen
-        hero={
-          <AuthHero
-            eyebrow={t('auth.hero.enter')}
-            headlineLines={[t('auth.hero.newPassword.line1'), t('auth.hero.newPassword.line2')]}
-            height="short"
-          />
-        }
-      >
-        <p className="text-sm leading-relaxed text-ink/55">{t('auth.newPassword.hint')}</p>
+    <AuthScreen
+      hero={
+        <AuthHero
+          eyebrow={t('auth.hero.enter')}
+          headlineLines={[t('auth.hero.newPassword.line1'), t('auth.hero.newPassword.line2')]}
+          height="short"
+        />
+      }
+    >
+      <p className="text-sm leading-relaxed text-ink/55">{t('auth.newPassword.hint')}</p>
 
-        {loading ? null : user === null ? (
-          <div className="flex flex-1 flex-col gap-5">
-            <p className="text-sm leading-relaxed text-ink/70">{t('auth.newPassword.expired')}</p>
-            <div className="mt-auto pt-3">
-              <Button asChild className="w-full rounded-action">
-                <Link to="/authentication">{t('auth.reset.back')}</Link>
-              </Button>
-            </div>
+      {loading ? null : user === null ? (
+        <div className="flex flex-1 flex-col gap-5">
+          <p className="text-sm leading-relaxed text-ink/70">{t('auth.newPassword.expired')}</p>
+          <div className="mt-auto pt-3">
+            <Button asChild className="w-full rounded-action">
+              <Link to="/authentication">{t('auth.reset.back')}</Link>
+            </Button>
           </div>
-        ) : (
-          <PasswordFields idPrefix="recovery" onSaved={() => navigate('/', { replace: true })} />
-        )}
-      </AuthScreen>
-    </div>
+        </div>
+      ) : (
+        <PasswordFields idPrefix="recovery" onSaved={() => navigate('/', { replace: true })} />
+      )}
+    </AuthScreen>
   )
 }
