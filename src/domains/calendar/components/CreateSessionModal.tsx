@@ -6,7 +6,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/shared/ui/dialog'
 import { Label } from '@/shared/ui/label'
 import {
@@ -16,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
-import { CalendarCheck, Plus, User, Users } from 'lucide-react'
+import { CalendarCheck, User, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/shared/lib/utils'
 import { describeError } from '@/shared/i18n/errorMessages'
@@ -106,8 +105,8 @@ interface CreateSessionModalProps {
    * que era el motivo de materializar las sesiones de un plan.
    */
   editing?: Session
-  open?: boolean
-  onOpenChange?: (open: boolean) => void
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
 /** Con qué arranca el tronco: vacío, con la rutina traída, o con la sesión que se edita. */
@@ -126,27 +125,21 @@ function initialValue(editing: Session | undefined, preselectedRoutineId: string
 }
 
 /**
- * `open`/`onOpenChange` son opcionales: el diálogo se gobierna solo cuando nadie
- * se lo pide, y lo cede cuando la página necesita abrirlo —al llegar con una
- * rutina en la URL—. Obligar siempre al control externo habría hecho que la
- * página cargara con estado que no le importa.
+ * Lo gobierna la página, siempre: el diálogo no pinta disparador propio. Lo
+ * pintaba —«Nueva sesión» dentro de la cabecera de la agenda—, pero el botón
+ * de la cabecera es ahora una acción de `PageHeader` como en el resto de
+ * páginas, y la agenda ya tenía que abrir esto por su cuenta al llegar con una
+ * rutina en la URL. Dos dueños del mismo estado era uno de más.
  */
 export function CreateSessionModal({
   preselectedRoutineId,
   editing,
   open,
   onOpenChange,
-}: CreateSessionModalProps = {}) {
+}: CreateSessionModalProps) {
   const { t, plural } = useTranslation()
   const { students } = useSchedulableStudents()
   const { routines } = useSchedulableRoutines()
-
-  const [isSelfOpen, setIsSelfOpen] = useState(false)
-  const isOpen = open ?? isSelfOpen
-  const setIsOpen = (next: boolean) => {
-    setIsSelfOpen(next)
-    onOpenChange?.(next)
-  }
 
   /*
    * Al editar, todo arranca de la sesion. El tipo se recupera por su etiqueta
@@ -309,7 +302,7 @@ export function CreateSessionModal({
         return
       }
       toast.success(t('newSession.updated'))
-      setIsOpen(false)
+      onOpenChange(false)
       return
     }
 
@@ -336,7 +329,7 @@ export function CreateSessionModal({
     )
 
     resetForm()
-    setIsOpen(false)
+    onOpenChange(false)
   }
 
   /** Marca de campo pendiente. Se muestra junto al campo, no sólo en un aviso. */
@@ -347,23 +340,12 @@ export function CreateSessionModal({
 
   return (
     <Dialog
-      open={isOpen}
-      onOpenChange={(open) => {
-        setIsOpen(open)
-        if (!open) setMissing([])
+      open={open}
+      onOpenChange={(next) => {
+        onOpenChange(next)
+        if (!next) setMissing([])
       }}
     >
-      {/* Sin disparador al editar: se abre desde la ficha de la sesion, y un
-          segundo boton «Nueva sesion» en la cabecera seria mentira. */}
-      {editing === undefined && (
-        <DialogTrigger asChild>
-          <Button className="h-11 gap-2 sm:h-9">
-            <Plus className="size-4" />
-            {t('newSession.open')}
-          </Button>
-        </DialogTrigger>
-      )}
-
       <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto p-0">
         <DialogHeader className="px-5 pt-5 text-left">
           <DialogTitle className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">

@@ -31,8 +31,10 @@ export function StudentFilters({ filters, onChange }: StudentFiltersProps) {
   const { t } = useTranslation()
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="w-full sm:max-w-sm">
+    // Buscador y filtro en UNA fila tambien en movil. Apilados se llevaban
+    // 100 px antes de la primera tarjeta; el filtro es corto y cabe al lado.
+    <div className="flex items-center gap-2 sm:justify-between sm:gap-3">
+      <div className="min-w-0 flex-1 sm:max-w-sm">
         <InputWithIcon
           icon={<Search className="w-4 h-4" />}
           iconPosition="left"
@@ -48,7 +50,7 @@ export function StudentFilters({ filters, onChange }: StudentFiltersProps) {
           if (level === 'all' || isStudentLevel(level)) onChange({ ...filters, level })
         }}
       >
-        <SelectTrigger className="w-full sm:w-48" aria-label={t('students.filters')}>
+        <SelectTrigger className="w-auto shrink-0 sm:w-48" aria-label={t('students.filters')}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

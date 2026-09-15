@@ -75,41 +75,44 @@ export default function RoutineDetail() {
         </Link>
 
         <PageHeader.Content>
-          <div className="min-w-0">
-            <PageHeader.Eyebrow>{routine.description}</PageHeader.Eyebrow>
-            <PageHeader.Title className="text-3xl">{routine.title}</PageHeader.Title>
-          </div>
+          <PageHeader.Eyebrow>{t('routine.title')}</PageHeader.Eyebrow>
+          <PageHeader.Title className="text-3xl">{routine.title}</PageHeader.Title>
 
-          {manages && <PageHeader.Actions>
-            {/* «Usar en una sesion» navega a la agenda con la rutina en la
-                URL: esta ficha no puede abrir el dialogo de la agenda, que vive
-                en otro dominio, pero si decirle con que llegar. */}
-            <Button
-              type="button"
-              variant="outline"
-              className="gap-2 text-danger"
-              onClick={() => {
-                setBlockedReason(routineDeletionBlocker(routine.id))
-                setIsDeleteOpen(true)
-              }}
-            >
-              <Trash2 className="size-4" />
-              {t('common.delete')}
-            </Button>
-            <Button asChild variant="outline" className="gap-2">
-              <Link to={`/trainings/${routine.id}/edit`}>
-                <Pencil className="size-4" />
-                {t('common.edit')}
-              </Link>
-            </Button>
-            <Button asChild className="gap-2">
-              <Link to={`/calendar?routine=${routine.id}`}>
-                <Copy className="size-4" />
-                {t('routine.useInSession')}
-              </Link>
-            </Button>
-          </PageHeader.Actions>}
+          {manages && (
+            <PageHeader.Actions>
+              <PageHeader.SecondaryAction
+                icon={Trash2}
+                label={t('common.delete')}
+                tone="danger"
+                onClick={() => {
+                  setBlockedReason(routineDeletionBlocker(routine.id))
+                  setIsDeleteOpen(true)
+                }}
+              />
+              <PageHeader.SecondaryAction
+                icon={Pencil}
+                label={t('common.edit')}
+                to={`/trainings/${routine.id}/edit`}
+              />
+              {/* «Usar en una sesion» navega a la agenda con la rutina en la
+                  URL: esta ficha no puede abrir el dialogo de la agenda, que vive
+                  en otro dominio, pero si decirle con que llegar. */}
+              <PageHeader.PrimaryAction
+                icon={Copy}
+                label={t('routine.useInSession')}
+                shortLabel={t('routine.useInSessionShort')}
+                to={`/calendar?routine=${routine.id}`}
+              />
+            </PageHeader.Actions>
+          )}
         </PageHeader.Content>
+
+        {/* La descripcion era el eyebrow, y una descripcion de dos lineas en
+            once pixeles pesaba mas que el titulo. Ahora va debajo, a todo el
+            ancho, y solo si la hay. */}
+        {routine.description !== '' && (
+          <PageHeader.Description>{routine.description}</PageHeader.Description>
+        )}
       </PageHeader>
 
       <div className="flex-1 overflow-auto">

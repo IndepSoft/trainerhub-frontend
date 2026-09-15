@@ -1,4 +1,6 @@
 import { MetricBlock } from '@/shared/components/MetricBlock'
+import { MetricStrip } from '@/shared/components/MetricStrip'
+import { closesRowAlone } from '@/shared/lib/metricRows'
 import type { DashboardIndicator } from '../types/dashboard.types'
 
 interface IndicatorListProps {
@@ -6,16 +8,14 @@ interface IndicatorListProps {
 }
 
 /**
- * Rejilla de metricas separadas por reglas de 1 px, no por bordes de tarjeta.
- *
- * El truco es `-mx-px` sobre `divide-*`: la rejilla dibuja una sola linea
- * compartida entre celdas contiguas en vez de dos bordes pegados, que es lo que
- * produce el aspecto de «cajas apiladas».
+ * Las cifras del panel, en la franja de dos columnas de `MetricStrip`. Con un
+ * número impar la última queda sola en su fila, y en móvil se tiende a lo
+ * ancho en vez de dejar medio hueco vacío al lado.
  */
 export function IndicatorList({ indicators }: IndicatorListProps) {
   return (
-    <div className="grid grid-cols-1 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3 sm:grid-cols-2 sm:divide-x lg:grid-cols-4">
-      {indicators.map((indicator) => (
+    <MetricStrip columns={3}>
+      {indicators.map((indicator, index) => (
         <MetricBlock
           key={indicator.id}
           title={indicator.title}
@@ -25,8 +25,9 @@ export function IndicatorList({ indicators }: IndicatorListProps) {
           delta={indicator.delta}
           deltaType={indicator.deltaType}
           prefix={indicator.prefix}
+          mobileLayout={closesRowAlone(index, indicators.length) ? 'wide' : 'stacked'}
         />
       ))}
-    </div>
+    </MetricStrip>
   )
 }

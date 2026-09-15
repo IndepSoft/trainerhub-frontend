@@ -13,7 +13,6 @@ import {
   filterStudents,
   type StudentFilterState,
 } from '../libs/filterStudents'
-import { Button } from '@/shared/ui/button'
 import type { NewStudent } from '@/shared/domain/ports/StudentRepository'
 import { canEnrollMembers } from '@/shared/domain/entities/crew'
 import { useViewerContext } from '@/app/ViewerContext'
@@ -67,26 +66,27 @@ export default function Students() {
     <div className="flex flex-col flex-1 overflow-hidden bg-bone">
       <PageHeader>
         <PageHeader.Content>
-          <div>
-            {/* Sin el contador mientras carga: con el hook asincrono, «Tu equipo · 0»
-                aparecia un instante en cada visita y se leia como que no hay
-                nadie. */}
-            <PageHeader.Eyebrow>
-              {loading
-                ? t('students.eyebrow')
-                : t('students.eyebrowCount', { count: students.length })}
-            </PageHeader.Eyebrow>
-            <PageHeader.Title>{t('students.title')}</PageHeader.Title>
-          </div>
+          {/* Sin el contador mientras carga: con el hook asincrono, «Tu equipo · 0»
+              aparecia un instante en cada visita y se leia como que no hay
+              nadie. */}
+          <PageHeader.Eyebrow>
+            {loading
+              ? t('students.eyebrow')
+              : t('students.eyebrowCount', { count: students.length })}
+          </PageHeader.Eyebrow>
+          <PageHeader.Title>{t('students.title')}</PageHeader.Title>
           <PageHeader.Actions>
             {/* Un solo boton. «Invitar» y «Agregar» eran dos y hacian lo mismo
                 -nada, los dos eran `console.log`-; ahora que el alumno se
                 enlaza con su cuenta por el correo que se escribe aqui, dar de
                 alta ES invitar. */}
-            <Button onClick={openForNew} disabled={!canEnroll}>
-              <Plus className="w-4 h-4" />
-              <span>{t('students.add')}</span>
-            </Button>
+            <PageHeader.PrimaryAction
+              icon={Plus}
+              label={t('students.add')}
+              shortLabel={t('students.addShort')}
+              onClick={openForNew}
+              disabled={!canEnroll}
+            />
           </PageHeader.Actions>
         </PageHeader.Content>
       </PageHeader>

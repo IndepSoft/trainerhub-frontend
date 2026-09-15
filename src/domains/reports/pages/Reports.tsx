@@ -1,5 +1,6 @@
 import { AlertTriangle, CalendarDays, UserMinus, Users } from 'lucide-react'
 import { MetricBlock } from '@/shared/components/MetricBlock'
+import { MetricStrip } from '@/shared/components/MetricStrip'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { useViewerContext } from '@/app/ViewerContext'
@@ -43,7 +44,7 @@ export default function Reports() {
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden bg-bone">
-      <PageHeader className="pb-4">
+      <PageHeader className="md:pb-4">
         <PageHeader.Eyebrow>{active?.crew.name ?? t('reports.eyebrow')}</PageHeader.Eyebrow>
         <PageHeader.Title>{t('reports.title')}</PageHeader.Title>
       </PageHeader>
@@ -60,7 +61,7 @@ export default function Reports() {
           no hay, y `MetricBlock` ya sabe omitir esa linea —«en vez de pintar un
           cero engañoso», dice su propio comentario—.
         */}
-        <div className="grid grid-cols-1 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3 sm:grid-cols-2 sm:divide-x lg:grid-cols-4">
+        <MetricStrip columns={4}>
           <MetricBlock
             title={t('reports.metric.overdue')}
             indicator={overdueCount}
@@ -73,7 +74,7 @@ export default function Reports() {
           />
           <MetricBlock title={t('reports.metric.atRisk')} indicator={atRiskCount} icon={UserMinus} />
           <MetricBlock title={t('reports.metric.students')} indicator={entries.length} icon={Users} />
-        </div>
+        </MetricStrip>
 
         <div className="mx-auto max-w-4xl px-5 py-6">
           <Tabs defaultValue="cobros">

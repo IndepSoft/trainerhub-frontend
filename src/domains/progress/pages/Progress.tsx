@@ -1,4 +1,6 @@
 import { MetricBlock } from '@/shared/components/MetricBlock'
+import { MetricStrip } from '@/shared/components/MetricStrip'
+import { closesRowAlone } from '@/shared/lib/metricRows'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { GamificationHeader } from '../components/GamificationHeader'
 import { RoutePath } from '../components/RoutePath'
@@ -51,7 +53,7 @@ export default function Progress() {
       {/* La cabecera de verdad de esta seccion es la racha y el nivel, que el
           brief exige visibles siempre; va `sticky` dentro del contenedor de
           desplazamiento, mas abajo. Esta solo nombra la pagina. */}
-      <PageHeader className="pb-4">
+      <PageHeader className="md:pb-4">
         <PageHeader.Eyebrow>{t('progress.eyebrow')}</PageHeader.Eyebrow>
         <PageHeader.Title>{t('progress.title')}</PageHeader.Title>
       </PageHeader>
@@ -90,11 +92,17 @@ export default function Progress() {
             tarjetas. Los tres salen ahora de sesiones reales: antes eran
             tres cifras escritas a mano —12 logros, 5 desafios, 87 % de
             participacion— que no cambiaban nunca. */}
-        <div className="grid grid-cols-1 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-          {overview.stats.map((stat) => (
-            <MetricBlock key={stat.id} title={stat.label} indicator={stat.value} icon={stat.icon} />
+        <MetricStrip columns={3}>
+          {overview.stats.map((stat, index) => (
+            <MetricBlock
+              key={stat.id}
+              title={stat.label}
+              indicator={stat.value}
+              icon={stat.icon}
+              mobileLayout={closesRowAlone(index, overview.stats.length) ? 'wide' : 'stacked'}
+            />
           ))}
-        </div>
+        </MetricStrip>
 
         <div className="ps-4 pe-4 pb-4 pt-6 max-w-8xl mx-auto space-y-6">
           {/* Sin envoltura <Card>, por el mismo motivo que en Reportes: su

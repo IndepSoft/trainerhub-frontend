@@ -73,7 +73,7 @@ export default function NewCrew() {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
-      <PageHeader className="pb-4">
+      <PageHeader className="md:pb-4">
         <PageHeader.Eyebrow>{t('crew.eyebrow')}</PageHeader.Eyebrow>
         <PageHeader.Title>{t('crew.createTitle')}</PageHeader.Title>
         {/* Las salidas. Se llega aqui desde la raiz sin equipo, y sin esto no
