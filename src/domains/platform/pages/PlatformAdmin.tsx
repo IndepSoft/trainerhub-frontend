@@ -33,7 +33,7 @@ export default function PlatformAdmin() {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
-      <PageHeader className="pb-4">
+      <PageHeader className="md:pb-4">
         <PageHeader.Eyebrow>{t('platform.eyebrow')}</PageHeader.Eyebrow>
         <PageHeader.Title>{t('platform.title')}</PageHeader.Title>
       </PageHeader>

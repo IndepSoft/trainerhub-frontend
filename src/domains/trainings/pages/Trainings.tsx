@@ -1,12 +1,11 @@
 import { useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { Library, Plus } from 'lucide-react'
 import {
   EMPTY_ROUTINE_FILTERS,
   filterRoutines,
   type RoutineFilterState,
 } from '../libs/filterRoutines'
-import { Button } from '@/shared/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { useSwipe } from '@/shared/hooks/useSwipe'
@@ -47,6 +46,8 @@ function isTabValue(value: string | null): value is TabValue {
 
 interface PrimaryAction {
   labelKey: TranslationKey
+  /** La palabra que se ve en móvil; el nombre completo sigue en `labelKey`. */
+  shortLabelKey: TranslationKey
   to: string
 }
 
@@ -56,8 +57,16 @@ interface PrimaryAction {
  *
  */
 const PRIMARY_ACTION: Record<TabValue, PrimaryAction> = {
-  rutinas: { labelKey: 'trainings.newRoutine', to: '/trainings/new' },
-  planes: { labelKey: 'trainings.newPlan', to: '/trainings/plans/new' },
+  rutinas: {
+    labelKey: 'trainings.newRoutine',
+    shortLabelKey: 'trainings.newRoutineShort',
+    to: '/trainings/new',
+  },
+  planes: {
+    labelKey: 'trainings.newPlan',
+    shortLabelKey: 'trainings.newPlanShort',
+    to: '/trainings/plans/new',
+  },
 }
 
 /**
@@ -98,26 +107,23 @@ export default function Trainings() {
     <div className="flex flex-col flex-1 overflow-hidden bg-bone">
       <PageHeader>
         <PageHeader.Content>
-          <div>
-            <PageHeader.Eyebrow>{t('trainings.eyebrow')}</PageHeader.Eyebrow>
-            <PageHeader.Title>{t('trainings.title')}</PageHeader.Title>
-          </div>
+          <PageHeader.Eyebrow>{t('trainings.eyebrow')}</PageHeader.Eyebrow>
+          <PageHeader.Title>{t('trainings.title')}</PageHeader.Title>
           <PageHeader.Actions>
-            {/* El catalogo es secundario y va en `outline`: se entra a el de vez
-                en cuando -para dar de alta un ejercicio que falta-, mientras que
-                crear una rutina es lo que se hace a diario. */}
-            <Button asChild variant="outline" className="gap-2">
-              <Link to="/trainings/catalog">
-                <Library className="h-4 w-4" />
-                {t('trainings.catalog')}
-              </Link>
-            </Button>
-            <Button asChild className="gap-2">
-              <Link to={PRIMARY_ACTION[activeTab].to}>
-                <Plus className="h-4 w-4" />
-                {t(PRIMARY_ACTION[activeTab].labelKey)}
-              </Link>
-            </Button>
+            {/* El catalogo es secundario: se entra a el de vez en cuando -para
+                dar de alta un ejercicio que falta-, mientras que crear una
+                rutina es lo que se hace a diario. */}
+            <PageHeader.SecondaryAction
+              icon={Library}
+              label={t('trainings.catalog')}
+              to="/trainings/catalog"
+            />
+            <PageHeader.PrimaryAction
+              icon={Plus}
+              label={t(PRIMARY_ACTION[activeTab].labelKey)}
+              shortLabel={t(PRIMARY_ACTION[activeTab].shortLabelKey)}
+              to={PRIMARY_ACTION[activeTab].to}
+            />
           </PageHeader.Actions>
         </PageHeader.Content>
       </PageHeader>

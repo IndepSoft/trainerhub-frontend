@@ -3361,3 +3361,103 @@ ventana de calendario —semana, mes—, tiene que incluir el día 0. Y su gemel
 de las pruebas: `.first()` sobre una lista posicionada elige por marcado, no
 por pantalla; cuando lo que importa es cuál de varias, se elige por lo que las
 distingue.
+
+## 35. La cabecera deja de apilar (15 sep 2026)
+
+Rama `feature/cabeceras-moviles`. Propuesta en `docs/design/cabeceras/`
+—seis artboards y el lienzo publicado— y aquí lo que se implementó de ella.
+
+**Lo medido, a 390 × 844, píxel donde empieza el contenido con la barra de
+64 px incluida.** Antes: Dashboard 177, Estudiantes 237, Entrenamientos 289,
+Agenda 261, Equipo 341 —el 40 % del viewport en cromo antes de enseñar
+nada—. Después: 159, 192, 192, 200 y 192. La causa era una sola:
+`PageHeader.Actions` era `flex-col` en móvil, así que cada botón de la
+cabecera se cobraba una fila entera de 44 px, y una página con tres accesos
+—el equipo— dedicaba 148 px a botones antes de decir para qué está.
+
+**La cabecera, en dos cambios y ninguno de tamaño.** El título sigue a 36 px
+en Condensed: la identidad no se toca, sólo lo que la rodeaba.
+
+1. `PageHeader.Content` es una rejilla con áreas con nombre. En móvil el
+   eyebrow y las acciones comparten la primera fila —la de 44 px que las
+   acciones necesitan de todos modos— y el título va debajo a todo el ancho;
+   desde `md` las acciones abarcan las dos filas alineadas con la base del
+   título, que es la composición de escritorio que ya había. Las áreas
+   permiten que el DOM vaya en orden de lectura —eyebrow, título, acciones—
+   mientras en móvil las acciones se pintan ARRIBA. Con `flex` había que
+   elegir entre un orden de lectura raro o dos filas apiladas. Las páginas
+   ya no envuelven eyebrow y título en un `<div>`: cada pieza va suelta y la
+   rejilla la coloca. El avatar de la ficha del alumno entra por `leading`,
+   que añade su columna sólo cuando existe: una columna vacía seguiría
+   cobrando su `gap`.
+2. Las páginas eligen UNA acción primaria y las demás secundarias, con dos
+   piezas nuevas de `PageHeader` para no repetir el patrón nueve veces.
+   `PrimaryAction` es una píldora Cobalt con icono y UNA palabra en móvil
+   —«Alumno», «Rutina», «Sesión», «Agendar», «Usar», «Guardar»— y el nombre
+   completo desde `md`. `SecondaryAction` es un círculo de 44 px con sólo el
+   icono en móvil e icono y texto desde `md`. Las dos llevan el nombre
+   completo en `aria-label` en todos los tamaños, y la palabra corta está
+   contenida en él —WCAG 2.5.3, «Label in Name»—, así que quien dicta por
+   voz lo que ve da con el control, y las pruebas que buscan «Nueva Sesión»
+   o «Usar en una sesión» no cambiaron. Las claves cortas son seis, con sus
+   tres traducciones (`students.addShort`, `newSession.openShort`,
+   `trainings.newRoutineShort`, `trainings.newPlanShort`,
+   `studentCard.scheduleSessionShort`, `routine.useInSessionShort`).
+
+Relleno de 12/14 en móvil y el de siempre desde `md`. Las páginas que
+pedían `pb-4` para ir más ajustadas lo piden ahora sólo desde `md`: en
+móvil el nuevo suelo ya es más bajo.
+
+**Lo que se movió de sitio al pasar por ahí.** La descripción de una rutina
+o de un plan hacía de eyebrow; a once píxeles y tres líneas pesaba más que
+el título, y en la fila compartida no habría cabido. Baja a
+`PageHeader.Description`, a todo el ancho y sólo si la hay; el eyebrow dice
+«Rutina» o «Plan». `Description` va como hermana de `Content`, no dentro:
+la rejilla no le reserva fila porque una fila vacía cobra su `gap`. Y el
+eyebrow se trunca a una línea, que es lo que cabe junto a las acciones.
+
+**La agenda: la fecha ES el título.** «Agenda» encima y «sábado, 29 de
+agosto de 2026» debajo en su propia fila era decir dos veces dónde se está.
+Ahora «Agenda» es el eyebrow, la fecha es el `h1` —corta hasta `md`—, y el
+par atrás/adelante va junto a la fecha corta, en el sitio que ella deja
+libre; «Hoy», el selector de vista y «Sesión» van en la fila del eyebrow.
+La agenda no necesita fila de mandos aparte y su cabecera mide lo que la de
+cualquier página. El par se pinta DOS veces —junto a la fecha en móvil, con
+el resto desde `md`— y el CSS elige, como ya hacía la fecha corta y la
+completa: decidirlo con JavaScript obligaría a un hook de tamaño para algo
+que el navegador resuelve solo. `CalendarNavigation` se parte en
+`CalendarDirectionControls` y `CalendarTodayButton`, y `CreateSessionModal`
+deja de pintar su propio disparador: lo gobierna la página, siempre —ya
+tenía que abrirlo por su cuenta al llegar con `?routine=`—, y dos dueños del
+mismo estado era uno de más. `open`/`onOpenChange` pasan a obligatorios.
+
+**Lo que da énfasis al contenido, además de la cabecera.**
+
+- *Las cifras en franja.* `MetricStrip` sustituye a los tres `grid-cols-1`
+  que apilaban métricas en Dashboard, Progreso y Reportes: dos columnas en
+  móvil —tres apiladas se llevaban 330 px, cuatro 440—, y con un número
+  impar la última se tiende a lo ancho (`MetricBlock` `mobileLayout="wide"`:
+  icono y etiqueta a la izquierda, cifra a la derecha) en vez de dejar medio
+  hueco vacío al lado. Quién es esa última lo decide `closesRowAlone` en
+  quien recorre la lista: la franja no sabe cuántas hay y la celda no sabe
+  cuál es. Las reglas de 1 px las dibuja `gap-px` sobre un fondo del color
+  de la línea, que sale bien con celdas que abarcan dos columnas, donde
+  `divide-x` se rompía. Es la excepción medida a «toda rejilla arranca en
+  una columna» (§1.6): cada celda es una etiqueta corta y un número, no un
+  bloque de texto, y es la misma `<dl>` de dos columnas que ya usaban las
+  tarjetas de alumno y de rutina —una `<dl>` de verdad, con `dt` y `dd`—.
+  Las dos pruebas que cuentan contenedores bajo 280 px en el panel y en
+  progreso excluyen las celdas de una `<dl>` por lo mismo. «Pendientes» del
+  panel empieza en 374 en vez de en 600.
+- *Buscador y filtro en una fila* en Estudiantes y Entrenamientos: el
+  filtro es corto y cabe al lado. Apilados costaban 100 px.
+- *Componer y publicar en una fila* en el muro: el botón cabe junto al
+  cuadro, en móvil sin texto y con su nombre en `aria-label`. El contador de
+  caracteres sólo se pinta cuando aparece, en vez de reservar su fila vacía.
+
+**Comprobado en dispositivo, no leyendo clases.** Diez rutas a 390 × 844 y a
+375 × 667: cero desbordamiento horizontal en todas y ningún control de la
+cabecera por debajo de 44 × 44. Y a 1440: las acciones vuelven a la base del
+título como antes, ahora en píldora —que es el radio que `--radius-action`
+siempre dijo que tenían las acciones—. Las dos pruebas que esperaban «Agenda»
+como `h1` esperan ahora un `h1` visible y el eyebrow.

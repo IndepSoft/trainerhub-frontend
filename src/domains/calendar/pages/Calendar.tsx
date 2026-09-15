@@ -7,10 +7,11 @@ import {
 } from '@/shared/ui/select'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { Plus } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { CreateSessionModal } from '../components/CreateSessionModal'
 import { SessionDetailsModal, type SessionDetailsChanges } from '../components/SessionDetailsModal'
-import { CalendarNavigation } from '../components/CalendarNavigation'
+import { CalendarDirectionControls, CalendarTodayButton } from '../components/CalendarNavigation'
 import { WeekView } from '../components/WeekView'
 import { DayView } from '../components/DayView'
 import { SessionSummary } from '../components/SessionSummary'
@@ -19,7 +20,13 @@ import { useSchedulableStudents } from '../hooks/useSchedulableStudents'
 import { container } from '@/app/container'
 import { useViewerContext } from '@/app/ViewerContext'
 import { activeLocale } from '@/shared/i18n/activeLocale'
-import { parseLocalDateKey } from '../libs/calendar.utils'
+import {
+  formatCompactDate,
+  formatCompactWeekRange,
+  formatFullDate,
+  formatWeekRange,
+  parseLocalDateKey,
+} from '../libs/calendar.utils'
 import type { CalendarViewMode, Session } from '../types/calendar.types'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 
@@ -79,6 +86,12 @@ export default function Calendar() {
     selectSession,
     getSessionsOfDay,
   } = useCalendar()
+
+  const isWeek = viewMode === 'week'
+  const compactPeriodLabel = isWeek
+    ? formatCompactWeekRange(weekDates)
+    : formatCompactDate(currentDate)
+  const fullPeriodLabel = isWeek ? formatWeekRange(weekDates) : formatFullDate(currentDate)
 
   /*
    * Ahora cambia de verdad. Antes lanzaba un aviso y no tocaba nada: la sesion
@@ -140,12 +153,34 @@ export default function Calendar() {
       {/* Cabecera mas ajustada que en el resto de paginas: aqui el contenido es
           una rejilla temporal, y cada pixel de cromo sale del campo de vision de
           las celdas, que es lo unico que se mira. */}
-      <PageHeader className="pt-4 pb-3">
-        <PageHeader.Content className="gap-3">
-          <div className="min-w-0">
-            <PageHeader.Title>{t('calendar.title')}</PageHeader.Title>
+      <PageHeader className="md:pt-4 md:pb-3">
+        <PageHeader.Content>
+          <PageHeader.Eyebrow>{t('calendar.title')}</PageHeader.Eyebrow>
+
+          {/* La fecha es el titulo: es lo que se esta mirando. «Agenda» ya lo
+              dice la pestana de abajo y el eyebrow. Corta hasta `md` —«sáb 29
+              ago»— y con el par atras/adelante a su lado, en el sitio que la
+              fecha corta deja libre: asi la agenda no necesita una fila de
+              mandos aparte y su cabecera mide lo que la de cualquier pagina. */}
+          <div className="[grid-area:title] flex items-center justify-between gap-3">
+            <PageHeader.Title className="truncate">
+              <span className="md:hidden">{compactPeriodLabel}</span>
+              <span className="hidden md:inline">{fullPeriodLabel}</span>
+            </PageHeader.Title>
+            <CalendarDirectionControls
+              onPrevious={goToPrevious}
+              onNext={goToNext}
+              className="shrink-0 md:hidden"
+            />
           </div>
+
           <PageHeader.Actions>
+            <CalendarDirectionControls
+              onPrevious={goToPrevious}
+              onNext={goToNext}
+              className="hidden md:flex"
+            />
+            <CalendarTodayButton onToday={goToToday} />
             {/* El selector solo aparece cuando hay algo que elegir: en movil el
                 modo esta forzado a dia, asi que ofrecerlo mentiria. */}
             {canChooseViewMode && (
@@ -162,39 +197,33 @@ export default function Calendar() {
                 </SelectContent>
               </Select>
             )}
-            {/*
-              Agendar es del entrenador. Un alumno abre la agenda para VER lo
-              que tiene, no para ponerse sesiones: quien decide cuando entrena
-              es quien le entrena.
-
-              `key` para que el formulario se monte de nuevo con la rutina ya
-              elegida: su estado inicial se toma una sola vez.
-            */}
+            {/* Agendar es del entrenador. Un alumno abre la agenda para VER lo
+                que tiene, no para ponerse sesiones: quien decide cuando entrena
+                es quien le entrena. */}
             {can('schedule.manage') && (
-              <CreateSessionModal
-                key={preselectedRoutineId ?? 'sin-rutina'}
-                preselectedRoutineId={preselectedRoutineId}
-                open={isCreateOpen}
-                onOpenChange={setIsCreateOpen}
+              <PageHeader.PrimaryAction
+                icon={Plus}
+                label={t('newSession.open')}
+                shortLabel={t('newSession.openShort')}
+                onClick={() => setIsCreateOpen(true)}
               />
             )}
           </PageHeader.Actions>
         </PageHeader.Content>
-
-        {/* Fuera del contenedor de scroll: la navegacion temporal no debe irse
-            con la rejilla. Antes vivia dentro y desaparecia al desplazarse, que
-            es justo cuando hace falta saber que dia se esta mirando. */}
-        <div className="mt-3 border-t border-cobalt-tint-3 pt-1">
-          <CalendarNavigation
-            viewMode={viewMode}
-            currentDate={currentDate}
-            weekDates={weekDates}
-            onPrevious={goToPrevious}
-            onNext={goToNext}
-            onToday={goToToday}
-          />
-        </div>
       </PageHeader>
+
+      {/* El formulario del alta. `key` para que se monte de nuevo con la
+          rutina ya elegida: su estado inicial se toma una sola vez. Vive fuera
+          de la cabecera porque ya no pinta boton: lo abre la accion de arriba
+          o la URL con `?routine=`. */}
+      {can('schedule.manage') && (
+        <CreateSessionModal
+          key={preselectedRoutineId ?? 'sin-rutina'}
+          preselectedRoutineId={preselectedRoutineId}
+          open={isCreateOpen}
+          onOpenChange={setIsCreateOpen}
+        />
+      )}
 
       {/* Contenedor de scroll de la pagina. Es un div y no un <main> a
           proposito: el landmark <main> ya lo pinta SidebarInset desde

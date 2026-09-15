@@ -59,31 +59,38 @@ export function CrewWall({ isStaff, canPublish, authorName }: CrewWallProps) {
           <label htmlFor="muro-anuncio" className="sr-only">
             {t('crew.wallCompose')}
           </label>
-          <Textarea
-            id="muro-anuncio"
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            maxLength={CREW_POST_MAX_LENGTH}
-            rows={3}
-            placeholder={t('crew.wallPlaceholder')}
-            className="resize-none"
-          />
-
-          <div className="flex items-center justify-between gap-3">
-            {/* El contador aparece cerca del final, no siempre: un número
-                permanente junto a un campo de texto invita a escribir corto en
-                vez de a escribir lo que hace falta. */}
-            <span className="text-xs text-ink/40">
-              {draft.length > CREW_POST_MAX_LENGTH - 80
-                ? t('crew.wallRemaining', { count: CREW_POST_MAX_LENGTH - draft.length })
-                : ''}
-            </span>
-
-            <Button type="submit" className="gap-2" disabled={draft.trim() === ''}>
-              <Megaphone className="size-4" />
-              {t('crew.wallPublish')}
+          {/* Cuadro y boton en UNA fila: el boton cabe junto al cuadro y no
+              hace falta una fila entera para el. En movil va sin texto, con
+              su nombre en `aria-label`; el megafono ya dice lo que hace. */}
+          <div className="flex items-end gap-2">
+            <Textarea
+              id="muro-anuncio"
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              maxLength={CREW_POST_MAX_LENGTH}
+              rows={2}
+              placeholder={t('crew.wallPlaceholder')}
+              className="min-w-0 flex-1 resize-none"
+            />
+            <Button
+              type="submit"
+              className="w-11 shrink-0 rounded-action px-0 md:w-auto md:px-4"
+              aria-label={t('crew.wallPublish')}
+              disabled={draft.trim() === ''}
+            >
+              <Megaphone />
+              <span className="hidden md:inline">{t('crew.wallPublish')}</span>
             </Button>
           </div>
+
+          {/* El contador aparece cerca del final, no siempre: un número
+              permanente junto a un campo de texto invita a escribir corto en
+              vez de a escribir lo que hace falta. */}
+          {draft.length > CREW_POST_MAX_LENGTH - 80 && (
+            <p className="text-xs text-ink/40">
+              {t('crew.wallRemaining', { count: CREW_POST_MAX_LENGTH - draft.length })}
+            </p>
+          )}
         </form>
       )}
 

@@ -489,13 +489,22 @@ test.describe('gestos', () => {
      * `TabsTrigger` cambiaria de pestana antes de que el deslizamiento exista.
      */
     const panel = page.getByRole('tabpanel').first()
-    const caja = await panel.boundingBox()
-    expect(caja).not.toBeNull()
 
-    const y = caja!.y + 30
-    await page.mouse.move(caja!.x + caja!.width - 20, y)
+    /*
+     * El gesto recorre el BUSCADOR, de su borde derecho al izquierdo. Antes
+     * recorria el panel entero por su primera fila, que era el buscador a
+     * todo el ancho; ahora comparte fila con el filtro -un `Select` de
+     * Radix, que se abre en `pointerdown`- y empezar encima de el abriria el
+     * desplegable en vez de deslizar. Las tarjetas tampoco valen: llevan la
+     * pulsacion larga, que se queda con el puntero.
+     */
+    const buscador = await panel.getByRole('textbox').first().boundingBox()
+    expect(buscador).not.toBeNull()
+
+    const y = buscador!.y + buscador!.height / 2
+    await page.mouse.move(buscador!.x + buscador!.width - 10, y)
     await page.mouse.down()
-    await page.mouse.move(caja!.x + 20, y + 5, { steps: 8 })
+    await page.mouse.move(buscador!.x + 10, y + 5, { steps: 8 })
     await page.mouse.up()
     await page.waitForTimeout(400)
 
@@ -633,7 +642,9 @@ test('la navegacion con transicion llega a su destino', async ({ page }) => {
   await page.getByRole('link', { name: /Calendario/ }).click()
   await page.waitForURL(/\/calendar/, { timeout: 15_000 })
   await page.waitForTimeout(600)
-  await expect(page.getByRole('heading', { name: 'Agenda', level: 1 })).toBeVisible()
+  // La fecha es el titulo de la agenda; «Agenda» es el eyebrow que la precede.
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  await expect(page.getByText('Agenda', { exact: true }).first()).toBeVisible()
 })
 
 /**
@@ -2961,7 +2972,8 @@ test.describe('sesion en vivo', () => {
     await page.waitForURL(/celebracion/, { timeout: 20_000 })
     await page.getByRole('button', { name: 'Seguir' }).click()
     await page.waitForURL(/\/calendar/, { timeout: 20_000 })
-    await expect(page.getByRole('heading', { name: 'Agenda', level: 1 })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    await expect(page.getByText('Agenda', { exact: true }).first()).toBeVisible()
   })
 
   test('una sesion que no existe no revienta', async ({ page }) => {
@@ -3087,7 +3099,10 @@ test.describe('panel', () => {
 
       return {
         desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        contenedoresEstrechos: [...document.querySelectorAll('main section, main .grid > div')]
+        // Las celdas de una <dl> -etiqueta y cifra- no son contenedores: la
+        // franja de metricas va a dos columnas en movil a proposito (§1.6
+        // mide tarjetas, paneles y columnas, no cada dato suelto).
+        contenedoresEstrechos: [...document.querySelectorAll('main section, main .grid:not(dl) > div')]
           .map((elemento) => caja(elemento).width)
           .filter((ancho) => ancho > 0 && ancho < 280).length,
       }
@@ -3302,7 +3317,9 @@ test.describe('progreso', () => {
     const medidas = await page.evaluate(() => {
       return {
         desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        contenedoresEstrechos: [...document.querySelectorAll('main section, main .grid > div')]
+        // Las celdas de la <dl> de metricas no cuentan: ver la misma prueba
+        // del panel.
+        contenedoresEstrechos: [...document.querySelectorAll('main section, main .grid:not(dl) > div')]
           .map((elemento) => elemento.getBoundingClientRect().width)
           .filter((ancho) => ancho > 0 && ancho < 280).length,
         // El selector de alumno es el control nuevo de esta pantalla.
