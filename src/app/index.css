@@ -227,6 +227,24 @@
     font-feature-settings: 'cv11';
   }
 
+  /*
+   * Sin rebote del documento. La aplicacion ya desplaza cada lista DENTRO de
+   * su contenedor -la raiz es `h-dvh overflow-hidden`-, asi que el documento
+   * nunca tiene nada que desplazar; y aun asi, instalada como PWA, el
+   * navegador tiraba del viewport entero -cabecera y barra de pestanas
+   * incluidas- cuando el gesto empezaba sobre algo que no desplaza o cuando
+   * una lista llegaba a su tope y el gesto encadenaba hacia arriba. En
+   * Android ese tiron es ademas el «tirar para recargar» nativo, que
+   * reinicia la aplicacion. `none` en la raiz corta las dos cosas; el
+   * rebote de cada lista sigue vivo dentro de la lista, que es donde se
+   * espera. El tirar-para-actualizar del panel es propio (`usePullToRefresh`)
+   * y no depende de esto.
+   */
+  html,
+  body {
+    overscroll-behavior: none;
+  }
+
   /* Cifras tabulares para toda metrica animada. Sin ancho fijo, un contador
      tipo odometro salta en cada incremento. */
   .metric-figures {
