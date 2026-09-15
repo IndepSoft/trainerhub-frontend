@@ -1,0 +1,164 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Barlow:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; background: #FAF8F5; font-family: 'Barlow', system-ui, sans-serif; -webkit-font-smoothing: antialiased; color: #0A1224; }
+    a { color: #0B4BCC; text-decoration: none; }
+    a:hover { color: #0A3FAE; }
+    input::placeholder { color: rgba(10,18,36,0.35); }
+  </style>
+</helmet>
+<div style="width: 390px; height: 844px; display: flex; flex-direction: column; background: #FAF8F5; overflow: hidden;">
+  <header style="height: 64px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 16px; border-bottom: 1px solid rgba(11,75,204,0.24); background: #FAF8F5;">
+    <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;">
+      <span style="position: relative; width: 40px; height: 40px; border-radius: 999px; background: #0B4BCC; color: #fff; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 800; font-size: 15px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">HY<span style="position: absolute; top: -4px; right: -6px; min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 999px; background: #FF4F1A; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;">5</span></span>
+      <span style="display: flex; flex-direction: column; min-width: 0;">
+        <span style="font-size: 15px; font-weight: 600; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Hierro y Asfalto</span>
+        <span style="font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(10,18,36,0.45); line-height: 1.4;">Crew · Administrador</span>
+      </span>
+      <span style="color: rgba(10,18,36,0.45); display: flex;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="m7 15 5 5 5-5"></path><path d="m7 9 5-5 5 5"></path></svg></span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+      <button type="button" aria-label="Avisos" style="width: 44px; height: 44px; border: 0; background: transparent; color: #0A1224; display: flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg></button>
+      <span style="width: 40px; height: 40px; border-radius: 999px; background: rgba(11,75,204,0.12); color: #0B4BCC; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center;">MS</span>
+    </div>
+  </header><main style="flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column;">
+    <header style="flex-shrink: 0; padding: 4px 20px 12px; display: flex; flex-direction: column; gap: 6px;">
+      <a href="#" style="display: inline-flex; align-items: center; gap: 6px; height: 44px; margin: 0 0 0 -8px; padding: 0 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(10,18,36,0.45);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="m15 18-6-6 6-6"></path></svg>Planes</a>
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px;">
+        <p style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(10,18,36,0.45);">Plan</p>
+        <div style="display: flex; align-items: center; gap: 8px;"><button type="button" aria-label="Eliminar" title="Eliminar" style="width: 44px; height: 44px; border: 1px solid rgba(11,75,204,0.24); border-radius: 999px; background: transparent; color: #0A1224; display: flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg></button><button type="button" style="height: 44px; padding: 0 16px 0 12px; border: 0; border-radius: 999px; background: #0B4BCC; color: #fff; font-family: 'Barlow', system-ui, sans-serif; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path><path d="m15 5 4 4"></path></svg>Editar</button></div>
+      </div>
+      <h1 style="margin: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-size: 36px; font-weight: 800; line-height: 1; letter-spacing: -0.01em; text-transform: uppercase; color: #0A1224;">Base de fuerza · 4 semanas</h1>
+      <p style="margin: 4px 0 0; font-size: 14px; color: rgba(10,18,36,0.6);">Adaptación anatómica y técnica antes de subir cargas.</p>
+    </header>
+    <dl style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: rgba(11,75,204,0.24); border-top: 1px solid rgba(11,75,204,0.24); border-bottom: 1px solid rgba(11,75,204,0.24);">
+          <div style="padding: 10px 14px; background: #FAF8F5;">
+            <dt style="font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(10,18,36,0.6);">Semanas</dt>
+            <dd style="margin: 4px 0 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-size: 26px; font-weight: 800; line-height: 1;">4<span style="font-family: 'Barlow', system-ui, sans-serif; font-size: 12px; font-weight: 500; color: rgba(10,18,36,0.45);"> 1 de descarga</span></dd>
+          </div>
+          <div style="padding: 10px 14px; background: #FAF8F5;">
+            <dt style="font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(10,18,36,0.6);">Sesiones</dt>
+            <dd style="margin: 4px 0 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-size: 26px; font-weight: 800; line-height: 1;">11</dd>
+          </div>
+          <div style="padding: 10px 14px; background: #FAF8F5;">
+            <dt style="font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(10,18,36,0.6);">Frecuencia</dt>
+            <dd style="margin: 4px 0 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-size: 26px; font-weight: 800; line-height: 1;">3<span style="font-family: 'Barlow', system-ui, sans-serif; font-size: 12px; font-weight: 500; color: rgba(10,18,36,0.45);"> /sem</span></dd>
+          </div>
+          <div style="padding: 10px 14px; background: #FAF8F5;">
+            <dt style="font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(10,18,36,0.6);">Nivel</dt>
+            <dd style="margin: 4px 0 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-size: 26px; font-weight: 800; line-height: 1;">Principiante</dd>
+          </div></dl>
+    <div style="flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 16px; padding: 0 20px 20px;">
+      <section style="padding-top: 14px; display: flex; flex-direction: column; gap: 4px;">
+        <ul style="margin: 0; padding: 0; list-style: none;">
+          <li style="display: flex; justify-content: space-between; gap: 12px; min-height: 40px; align-items: center; border-bottom: 1px solid rgba(11,75,204,0.24); font-size: 14px;"><span style="color: rgba(10,18,36,0.6);">Objetivo</span><span style="font-weight: 600;">Acondicionamiento general</span></li>
+          <li style="display: flex; justify-content: space-between; gap: 12px; min-height: 40px; align-items: center; border-bottom: 1px solid rgba(11,75,204,0.24); font-size: 14px;"><span style="color: rgba(10,18,36,0.6);">División</span><span style="font-weight: 600;">Full body</span></li>
+        </ul>
+      </section>
+
+      <!-- Las cuatro semanas eran 28 filas de días seguidas, descansos
+           incluidos: 1.700 px para decir «lunes, miércoles y viernes». Cada
+           semana es un pliegue con su resumen, abierta la que se mira, y los
+           descansos se cuentan en vez de listarse. -->
+      <section style="display: flex; flex-direction: column; gap: 0;">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 0 0 8px; border-bottom: 1px solid rgba(11,75,204,0.24);"><span style="font-size: 11px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(10,18,36,0.6);">Microciclos</span><span style="font-size: 13px; font-weight: 600; color: #0B4BCC;">4 semanas</span></div>
+        
+      <div style="border-bottom: 1px solid rgba(11,75,204,0.24);">
+        <button type="button" style="width: 100%; min-height: 56px; padding: 8px 0; border: 0; background: transparent; display: flex; align-items: center; gap: 12px; cursor: pointer; font-family: 'Barlow', system-ui, sans-serif; text-align: left; color: #0A1224;">
+          <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+            <span style="font-size: 15px; font-weight: 600;">Semana 01</span>
+            <span style="font-size: 12px; color: rgba(10,18,36,0.6);">3 sesiones · lunes, miércoles y viernes</span>
+          </span>
+          
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(10,18,36,0.45)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="m18 15-6-6-6 6"></path></svg>
+        </button>
+        <div style="padding: 0 0 12px;">
+        <ul style="margin: 0; padding: 0 0 0 4px; list-style: none;">
+          <li style="display: flex; justify-content: space-between; gap: 8px; min-height: 36px; align-items: center; font-size: 14px;"><span style="color: rgba(10,18,36,0.6); width: 80px;">Lunes</span><span style="flex: 1; color: #0A1224;">Full body · Principiante</span><span style="font-size: 12px; color: rgba(10,18,36,0.45);">25 min</span></li>
+          <li style="display: flex; justify-content: space-between; gap: 8px; min-height: 36px; align-items: center; font-size: 14px;"><span style="color: rgba(10,18,36,0.6); width: 80px;">Miércoles</span><span style="flex: 1; color: #0A1224;">Full body · Principiante</span><span style="font-size: 12px; color: rgba(10,18,36,0.45);">25 min</span></li>
+          <li style="display: flex; justify-content: space-between; gap: 8px; min-height: 36px; align-items: center; font-size: 14px;"><span style="color: rgba(10,18,36,0.6); width: 80px;">Viernes</span><span style="flex: 1; color: #0A1224;">Full body · Principiante</span><span style="font-size: 12px; color: rgba(10,18,36,0.45);">25 min</span></li>
+          <li style="display: flex; justify-content: space-between; gap: 8px; min-height: 36px; align-items: center; font-size: 14px;"><span style="color: rgba(10,18,36,0.6); width: 80px;">Resto</span><span style="flex: 1; color: rgba(10,18,36,0.45);">Descanso</span><span style="font-size: 12px; color: rgba(10,18,36,0.45);">4 días</span></li>
+        </ul></div>
+      </div>
+        
+      <div style="border-bottom: 1px solid rgba(11,75,204,0.24);">
+        <button type="button" style="width: 100%; min-height: 56px; padding: 8px 0; border: 0; background: transparent; display: flex; align-items: center; gap: 12px; cursor: pointer; font-family: 'Barlow', system-ui, sans-serif; text-align: left; color: #0A1224;">
+          <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+            <span style="font-size: 15px; font-weight: 600;">Semana 02</span>
+            <span style="font-size: 12px; color: rgba(10,18,36,0.6);">3 sesiones · lunes, miércoles y viernes</span>
+          </span>
+          
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(10,18,36,0.45)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="m6 9 6 6 6-6"></path></svg>
+        </button>
+        
+      </div>
+        
+      <div style="border-bottom: 1px solid rgba(11,75,204,0.24);">
+        <button type="button" style="width: 100%; min-height: 56px; padding: 8px 0; border: 0; background: transparent; display: flex; align-items: center; gap: 12px; cursor: pointer; font-family: 'Barlow', system-ui, sans-serif; text-align: left; color: #0A1224;">
+          <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+            <span style="font-size: 15px; font-weight: 600;">Semana 03</span>
+            <span style="font-size: 12px; color: rgba(10,18,36,0.6);">3 sesiones · lunes, miércoles y viernes</span>
+          </span>
+          
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(10,18,36,0.45)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="m6 9 6 6 6-6"></path></svg>
+        </button>
+        
+      </div>
+        
+      <div style="border-bottom: 1px solid rgba(11,75,204,0.24);">
+        <button type="button" style="width: 100%; min-height: 56px; padding: 8px 0; border: 0; background: transparent; display: flex; align-items: center; gap: 12px; cursor: pointer; font-family: 'Barlow', system-ui, sans-serif; text-align: left; color: #0A1224;">
+          <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+            <span style="font-size: 15px; font-weight: 600;">Semana 04</span>
+            <span style="font-size: 12px; color: rgba(10,18,36,0.6);">3 sesiones · carga al 60 %</span>
+          </span>
+          <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border: 1px solid #FF4F1A; border-radius: 999px; background: transparent; color: #FF4F1A; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap;">Descarga</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(10,18,36,0.45)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="m6 9 6 6 6-6"></path></svg>
+        </button>
+        
+      </div>
+      </section>
+      <p style="margin: 0; font-size: 13px; color: rgba(10,18,36,0.45);">Un plan se asigna desde la ficha de cada alumno.</p></div></main>
+  <nav style="flex-shrink: 0; border-top: 1px solid rgba(11,75,204,0.24); background: #FAF8F5;">
+    <ul style="display: flex; margin: 0; padding: 0; list-style: none;">
+      <li style="flex: 1; position: relative;">
+        <a href="#" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 58px; padding: 6px 2px; color: rgba(10,18,36,0.6);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path><path d="M10 21v-6h4v6"></path></svg>
+          <span style="font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap;">Dashboard</span>
+        </a>
+      </li>
+      <li style="flex: 1; position: relative;">
+        <a href="#" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 58px; padding: 6px 2px; color: rgba(10,18,36,0.6);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          <span style="font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap;">Estudiantes</span>
+        </a>
+      </li>
+      <li style="flex: 1; position: relative;"><span style="position: absolute; top: -1px; left: 12px; right: 12px; height: 2px; background: #0B4BCC;"></span>
+        <a href="#" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 58px; padding: 6px 2px; color: #0B4BCC;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6.5 6.5 17.5 17.5"></path><path d="m21 21-1-1"></path><path d="m3 3 1 1"></path><path d="m18 22 4-4"></path><path d="m2 6 4-4"></path><path d="m3 10 7-7"></path><path d="m14 21 7-7"></path></svg>
+          <span style="font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap;">Entrenamientos</span>
+        </a>
+      </li>
+      <li style="flex: 1; position: relative;">
+        <a href="#" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 58px; padding: 6px 2px; color: rgba(10,18,36,0.6);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4"></path><path d="M8 2v4"></path><path d="M3 10h18"></path></svg>
+          <span style="font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap;">Calendario</span>
+        </a>
+      </li>
+      <li style="flex: 1; position: relative;">
+        <a href="#" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 58px; padding: 6px 2px; color: rgba(10,18,36,0.6);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          <span style="font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap;">Equipo</span>
+        </a>
+      </li>
+    </ul>
+  </nav></div></x-dc>
+</body>
+</html>
