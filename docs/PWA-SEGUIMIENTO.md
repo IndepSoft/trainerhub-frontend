@@ -297,6 +297,17 @@ cobraba una fila de 44 px. Detalle en `CAMBIOS` §35.
 | Agenda | 261 | **200** |
 | Equipo | 341 | **192** |
 
+### ☐ 10 · La barra inferior como píldora flotante
+
+Decidido (`CAMBIOS` §36), sin implementar. La barra pasa a flotar sobre el
+contenido con un degradado; el relleno inferior se resuelve una vez en el
+layout, no página a página.
+
+- [ ] `BottomTabBar` en `absolute`, píldora de 56 px, etiqueta sólo en el activo
+- [ ] Relleno y `scroll-padding` inferiores en el contenedor de `RootLayout`, sólo bajo `md`
+- [ ] `aria-label` en los cinco enlaces; suite de interfaz en verde
+- [ ] Verificado a 390 × 844 y 375 × 667: 0 desborde, ≥ 44 px, última fila legible
+
 ---
 
 ## Deuda anotada de paso

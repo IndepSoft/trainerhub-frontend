@@ -11,8 +11,9 @@ la lista es para buscar, y lo excepcional plegado o detrás de un botón.
 Se ejecuta desde esta carpeta: `python build.py`.
 """
 import io, sys, os, importlib.util
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 HERE = os.path.dirname(os.path.abspath(__file__))
+if __name__ == '__main__':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 spec = importlib.util.spec_from_file_location('cabeceras', os.path.join(HERE, '..', 'cabeceras', 'build.py'))
 cab = importlib.util.module_from_spec(spec)

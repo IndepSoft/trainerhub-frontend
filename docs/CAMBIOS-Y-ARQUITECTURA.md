@@ -3461,3 +3461,46 @@ cabecera por debajo de 44 × 44. Y a 1440: las acciones vuelven a la base del
 título como antes, ahora en píldora —que es el radio que `--radius-action`
 siempre dijo que tenían las acciones—. Las dos pruebas que esperaban «Agenda»
 como `h1` esperan ahora un `h1` visible y el eyebrow.
+
+## 36. Decisión: la barra inferior será una píldora flotante (15 sep 2026)
+
+Rama `feature/cabeceras-moviles`. Exploración en `docs/design/barra/`
+—cinco variantes de la misma barra sobre la misma pantalla— y lienzo en
+https://claude.ai/artifact/WWqY29JEw4Gk9RVNkVFpE9. **Decidida la C**: la
+píldora flotando sobre el contenido. Todavía NO está implementada; esto es
+la decisión y lo que implica, para que quien la haga no la reabra.
+
+**Lo que se comparó.** A, la barra pegada de hoy (56 px, cinco etiquetas).
+B, la misma píldora dentro del flujo flex (un archivo, pero cuesta 76 px y
+el contenido no pasa por debajo: es C a medias). C, la píldora `absolute`
+sobre el contenido con un degradado a Bone. D, píldora más la acción
+primaria de la pantalla como botón redondo al lado: libera la cabecera pero
+reabre §35 —la primaria va en la fila del eyebrow— y el botón cambiaría de
+significado por pantalla. E, la píldora en tinta: pieza de marca, pero
+compite con el título en Condensed y el activo queda en 3,5:1.
+
+**Lo que se midió antes de decidir.** Cinco etiquetas en versalitas no caben
+en una píldora de 366 px («ENTRENAMIENTOS» mide 86; «EQUIPO» quedaba
+cortado): la píldora lleva iconos y la etiqueta SÓLO en el activo, dentro
+de su cápsula. Se probó en local con `BottomTabBar` y se revirtió.
+
+**Lo que implica implementarla.**
+
+- `BottomTabBar` pasa a `absolute` sobre el contenido —12 px de margen a los
+  lados y abajo más `env(safe-area-inset-bottom)`—, 56 px de alto, radio
+  `rounded-action`, fondo `surface`, borde `cobalt-tint-3`, sombra
+  `0 8 24` de tinta al 12 %. Cápsula del activo de 36 px en `cobalt-tint-2`
+  con icono y palabra; iconos de 20 px, trazo 2 (2,5 en el activo).
+- El relleno inferior de las listas se pone UNA vez, en el contenedor de
+  desplazamiento de `RootLayout`, con `calc(84px + env(safe-area-inset-bottom))`
+  sólo bajo `md`. Es justo lo que el comentario actual de `BottomTabBar`
+  advertía —«cualquiera que se olvidara dejaría contenido tapado»— y por eso
+  se resuelve en el layout y no página a página.
+- Degradado a Bone de 120 px bajo la píldora con `pointer-events: none`,
+  para que la última fila se lea entera al llegar al final.
+- `scroll-padding-bottom` en ese contenedor: un enlace enfocado con teclado
+  no puede quedar debajo de la píldora.
+- `aria-label` en los cinco enlaces y la etiqueta del inactivo en `sr-only`,
+  así las pruebas que buscan `link "Calendario"` siguen encontrándolo.
+- Se mide en dispositivo: cero desbordamiento, objetivos ≥ 44 px y la última
+  fila de cada lista legible con la píldora encima, a 390 y a 375 × 667.
