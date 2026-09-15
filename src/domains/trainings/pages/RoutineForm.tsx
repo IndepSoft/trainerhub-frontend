@@ -1,6 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { AlertCircle, ArrowLeft, Library, Plus } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Check, Library, Plus, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/shared/ui/button'
 import { PageHeader } from '@/shared/components/PageHeader'
@@ -182,20 +182,19 @@ function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
         </Link>
 
         <PageHeader.Content>
-          <div className="min-w-0">
-            <PageHeader.Eyebrow>{t('trainings.eyebrow')}</PageHeader.Eyebrow>
-            <PageHeader.Title>
-              {isEditing ? t('routine.editTitle') : t('routine.newTitle')}
-            </PageHeader.Title>
-          </div>
+          <PageHeader.Eyebrow>{t('trainings.eyebrow')}</PageHeader.Eyebrow>
+          <PageHeader.Title>
+            {isEditing ? t('routine.editTitle') : t('routine.newTitle')}
+          </PageHeader.Title>
 
           <PageHeader.Actions>
-            <Button type="button" variant="outline" onClick={handleCancel}>
-              {t('common.cancel')}
-            </Button>
-            <Button type="submit">
-              {isEditing ? t('exercise.saveChanges') : t('routine.save')}
-            </Button>
+            <PageHeader.SecondaryAction icon={X} label={t('common.cancel')} onClick={handleCancel} />
+            <PageHeader.PrimaryAction
+              icon={Check}
+              type="submit"
+              label={isEditing ? t('exercise.saveChanges') : t('routine.save')}
+              shortLabel={t('common.save')}
+            />
           </PageHeader.Actions>
         </PageHeader.Content>
       </PageHeader>

@@ -47,7 +47,7 @@ export default function CrewStaffPage() {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
-      <PageHeader className="pb-4">
+      <PageHeader className="md:pb-4">
         <PageHeader.Eyebrow>{active.crew.name}</PageHeader.Eyebrow>
         <PageHeader.Title>{t('crew.staff')}</PageHeader.Title>
       </PageHeader>

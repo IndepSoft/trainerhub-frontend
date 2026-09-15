@@ -96,28 +96,29 @@ export default function StudentDetail() {
           {t('students.title')}
         </Link>
 
-        <PageHeader.Content>
-          <div className="flex items-center gap-4">
-            <Avatar className="size-14 shrink-0">
+        <PageHeader.Content
+          leading={
+            <Avatar className="size-14">
               <AvatarImage src={student.photoUrl} alt={fullName} />
               <AvatarFallback className="bg-cobalt-tint-2 text-cobalt">
                 {initials}
               </AvatarFallback>
             </Avatar>
-            <div className="min-w-0">
-              <PageHeader.Eyebrow>{student.email}</PageHeader.Eyebrow>
-              <PageHeader.Title className="text-3xl">{fullName}</PageHeader.Title>
-            </div>
-          </div>
+          }
+        >
+          <PageHeader.Eyebrow>{student.email}</PageHeader.Eyebrow>
+          <PageHeader.Title className="text-3xl">{fullName}</PageHeader.Title>
 
           <PageHeader.Actions>
             {/* «Ver progreso» ya no lleva a ninguna parte: el progreso esta en
                 esta misma pagina, mas abajo. Un boton que baja la pagina no es
                 un destino, es ruido. */}
-            <Button className="gap-2" onClick={() => setIsScheduleOpen(true)}>
-              <Calendar className="size-4" />
-              {t('studentCard.scheduleSession')}
-            </Button>
+            <PageHeader.PrimaryAction
+              icon={Calendar}
+              label={t('studentCard.scheduleSession')}
+              shortLabel={t('studentCard.scheduleSessionShort')}
+              onClick={() => setIsScheduleOpen(true)}
+            />
           </PageHeader.Actions>
         </PageHeader.Content>
       </PageHeader>

@@ -272,6 +272,31 @@ Matiz de medición: en la pestaña «Logros» hay elementos de 64 y 96 px, pero 
 **insignias de logro**, que la propia §1.6 exime del umbral. El criterio se
 aplica a contenedores, no a insignias.
 
+### ✅ 9 · La cabecera deja de apilar las acciones
+
+Los pasos 3 y 8 miraban anchos: nada bajo 280, nada bajo 44. Medida en
+ALTO, la cabecera se llevaba hasta el 40 % del viewport antes de enseñar
+contenido, porque `PageHeader.Actions` era `flex-col` en móvil y cada botón
+cobraba una fila de 44 px. Detalle en `CAMBIOS` §35.
+
+- [x] `PageHeader.Content` en rejilla por áreas: eyebrow y acciones en una
+      fila, título debajo a todo el ancho; desde `md`, la composición de antes
+- [x] `PrimaryAction` (píldora, icono y una palabra) y `SecondaryAction`
+      (círculo de 44 px, sólo icono), con el nombre completo en `aria-label`
+- [x] Métricas en franja de dos columnas (`MetricStrip`) en dashboard,
+      progreso y reportes; buscador y filtro en una fila; muro en una fila
+- [x] Verificado a 390 × 844 y 375 × 667 en diez rutas: **0 desborde, 0
+      controles de cabecera bajo 44**
+- [x] Verificado a 1440: las acciones vuelven a la base del título
+
+| Contenido empieza en (px, barra incluida) | Antes | Después |
+|---|---|---|
+| Dashboard | 177 | **159** («Pendientes» 600 → 374) |
+| Estudiantes | 237 | **192** |
+| Entrenamientos | 289 | **192** |
+| Agenda | 261 | **200** |
+| Equipo | 341 | **192** |
+
 ---
 
 ## Deuda anotada de paso

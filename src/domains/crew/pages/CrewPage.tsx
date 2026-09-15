@@ -74,45 +74,39 @@ export default function CrewPage() {
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
       <PageHeader>
         <PageHeader.Content>
-          <div className="min-w-0">
-            <PageHeader.Eyebrow>
-              {crew.denomination} ·{' '}
-              {plural('crew.memberCount.one', 'crew.memberCount.other', members.length, {
-                count: members.length,
-              })}
-            </PageHeader.Eyebrow>
-            <PageHeader.Title>{crew.name}</PageHeader.Title>
-          </div>
+          <PageHeader.Eyebrow>
+            {crew.denomination} ·{' '}
+            {plural('crew.memberCount.one', 'crew.memberCount.other', members.length, {
+              count: members.length,
+            })}
+          </PageHeader.Eyebrow>
+          <PageHeader.Title>{crew.name}</PageHeader.Title>
 
+          {/* Los tres accesos son secundarios y ninguno primario: esta pagina
+              no tiene UNA cosa que se haga a diario, se mira. En movil van en
+              icono; con texto, los tres apilados se llevaban 148 px. */}
           {isStaff && (
             <PageHeader.Actions>
               {/* Cada acceso pregunta por SU capacidad, no por el rol: es lo que
                   permite prestarle una llave a alguien sin ascenderlo. */}
               {can('crew.staff') && (
-                <Button asChild variant="outline" className="gap-2">
-                  <Link to="/crew/equipo">
-                    <Users className="size-4" />
-                    {t('crew.staff')}
-                  </Link>
-                </Button>
+                <PageHeader.SecondaryAction icon={Users} label={t('crew.staff')} to="/crew/equipo" />
               )}
 
               {can('crew.settings') && (
-                <Button asChild variant="outline" className="gap-2">
-                  <Link to="/crew/ajustes">
-                    <Settings className="size-4" />
-                    {t('crew.settings')}
-                  </Link>
-                </Button>
+                <PageHeader.SecondaryAction
+                  icon={Settings}
+                  label={t('crew.settings')}
+                  to="/crew/ajustes"
+                />
               )}
 
               {can('students.manage') && (
-                <Button asChild variant="outline" className="gap-2">
-                  <Link to="/students">
-                    <UserPlus className="size-4" />
-                    {t('crew.manageStudents')}
-                  </Link>
-                </Button>
+                <PageHeader.SecondaryAction
+                  icon={UserPlus}
+                  label={t('crew.manageStudents')}
+                  to="/students"
+                />
               )}
             </PageHeader.Actions>
           )}

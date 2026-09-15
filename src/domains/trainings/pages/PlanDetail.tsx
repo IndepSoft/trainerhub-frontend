@@ -87,31 +87,31 @@ export default function PlanDetail() {
         </Link>
 
         <PageHeader.Content>
-          <div className="min-w-0">
-            <PageHeader.Eyebrow>{plan.description}</PageHeader.Eyebrow>
-            <PageHeader.Title className="text-3xl">
-              {plan.title}
-            </PageHeader.Title>
-          </div>
+          <PageHeader.Eyebrow>{t('plan.title')}</PageHeader.Eyebrow>
+          <PageHeader.Title className="text-3xl">{plan.title}</PageHeader.Title>
 
-          {manages && <PageHeader.Actions>
-            <Button
-              type="button"
-              variant="outline"
-              className="gap-2 text-danger"
-              onClick={() => setIsDeleteOpen(true)}
-            >
-              <Trash2 className="size-4" />
-              {t('common.delete')}
-            </Button>
-            <Button asChild className="gap-2">
-              <Link to={`/trainings/plans/${plan.id}/edit`}>
-                <Pencil className="size-4" />
-                {t('common.edit')}
-              </Link>
-            </Button>
-          </PageHeader.Actions>}
+          {manages && (
+            <PageHeader.Actions>
+              <PageHeader.SecondaryAction
+                icon={Trash2}
+                label={t('common.delete')}
+                tone="danger"
+                onClick={() => setIsDeleteOpen(true)}
+              />
+              <PageHeader.PrimaryAction
+                icon={Pencil}
+                label={t('common.edit')}
+                to={`/trainings/plans/${plan.id}/edit`}
+              />
+            </PageHeader.Actions>
+          )}
         </PageHeader.Content>
+
+        {/* Igual que en la ficha de la rutina: la descripcion deja el eyebrow
+            y baja a su sitio, a todo el ancho y solo si la hay. */}
+        {plan.description !== '' && (
+          <PageHeader.Description>{plan.description}</PageHeader.Description>
+        )}
       </PageHeader>
 
       <div className="flex-1 overflow-auto">

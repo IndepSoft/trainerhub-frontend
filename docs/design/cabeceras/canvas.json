@@ -1,0 +1,49 @@
+{
+  "pages": [
+    { "id": "pantallas", "name": "Pantallas · antes → después" },
+    { "id": "anatomia", "name": "Anatomía de la cabecera" }
+  ],
+  "artboards": [
+    { "file": "Main.dc.html", "title": "Dashboard", "x": 0, "y": 0, "w": 390, "h": 844, "page": "pantallas" },
+    { "file": "Estudiantes.dc.html", "title": "Estudiantes", "x": 470, "y": 0, "w": 390, "h": 844, "page": "pantallas" },
+    { "file": "Entrenamientos.dc.html", "title": "Entrenamientos", "x": 940, "y": 0, "w": 390, "h": 844, "page": "pantallas" },
+    { "file": "Equipo.dc.html", "title": "Equipo", "x": 1410, "y": 0, "w": 390, "h": 844, "page": "pantallas" },
+    { "file": "Agenda.dc.html", "title": "Agenda", "x": 1880, "y": 0, "w": 390, "h": 844, "page": "pantallas" },
+    { "file": "Anatomia.dc.html", "title": "La cabecera compacta", "x": 0, "y": 0, "w": 390, "h": 1180, "print": "flow", "page": "anatomia" }
+  ],
+  "annotations": [
+    {
+      "id": "medido",
+      "x": 0,
+      "y": -190,
+      "w": 620,
+      "page": "pantallas",
+      "text": "Medido en la app real a 390×844, píxel donde empieza el contenido (barra de 64 px incluida):\n\nDashboard      177 → 146   y «Pendientes» de 600 → 300\nEstudiantes    237 → 177   (−60)\nEntrenamientos 289 → 177   (−112)\nEquipo         341 → 177   (−164 · antes se perdía el 40 % del viewport)\nAgenda         261 → 177   (−84)\n\nLa regla: las acciones nunca apilan. Una fila para el eyebrow y las acciones —primaria en píldora corta, secundarias en icono de 44 px— y el título debajo a todo el ancho. El título sigue a 36 px Condensed: la identidad no se toca, solo lo que la rodeaba."
+    },
+    {
+      "id": "densidad",
+      "x": 700,
+      "y": -190,
+      "w": 560,
+      "page": "pantallas",
+      "text": "Además de la cabecera, lo que da énfasis al contenido:\n\n· Dashboard: las tres cifras en una franja de dos columnas con reglas —la misma <dl> que ya usan las tarjetas de alumno y rutina— en vez de tres bloques apilados. «Pendientes» y «Próximas sesiones» entran en la primera pantalla.\n· Estudiantes y Entrenamientos: buscador y filtro en UNA fila. El filtro es corto y cabe al lado.\n· Equipo: componer y publicar en una fila; el botón cabe junto al cuadro.\n· Agenda: la fecha ES el título de la pantalla; la fila de mandos queda solo con < > y «Hoy»."
+    },
+    {
+      "id": "alternativa",
+      "x": 1300,
+      "y": -190,
+      "w": 480,
+      "page": "pantallas",
+      "text": "Alternativa considerada y descartada: un botón flotante (FAB) sobre la barra inferior para la acción primaria. Libera la cabecera del todo, pero tapa contenido al desplazar y compite con la barra de pestañas. La píldora en la fila del eyebrow consigue casi lo mismo sin flotar nada."
+    },
+    {
+      "id": "nota-anatomia",
+      "x": 470,
+      "y": 0,
+      "w": 440,
+      "page": "anatomia",
+      "text": "Para implementar: es `PageHeader` con dos cambios.\n\n1. `PageHeader.Actions` deja de ser `flex-col` en móvil: siempre en fila, alineadas a la derecha del eyebrow.\n2. Las páginas eligen: una acción primaria (píldora, icono + una palabra) y las demás secundarias (icono de 44 px con `aria-label`). Hoy todas son botones con texto.\n\nRelleno de 12/14 en móvil, el de siempre desde `md`. El título no cambia de tamaño."
+    }
+  ],
+  "launch": { "view": "canvas", "page": "pantallas" }
+}
