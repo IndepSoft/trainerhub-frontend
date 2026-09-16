@@ -1,4 +1,4 @@
-import { useMemo, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { AlertCircle, ArrowLeft, CalendarPlus, Check, X } from 'lucide-react'
 import { toast } from 'sonner'
@@ -88,6 +88,15 @@ function PlanFormFields({ plan }: PlanFormFieldsProps) {
     setDayRoutine,
     submit,
   } = usePlanDraft(plan)
+
+  /*
+   * Las semanas que había al abrir arrancan plegadas, salvo la primera; las
+   * que se añaden, abiertas, porque son las que se están programando. Se toma
+   * una vez: añadir una semana no debe replegar las que se abrieron a mano.
+   */
+  const [initialWeekIds] = useState<ReadonlySet<string>>(
+    () => new Set(draft.weeks.map((week) => week.id))
+  )
 
   // Alfabético, para que elegir la rutina de un día no sea buscar en el orden
   // en que se crearon.
@@ -202,14 +211,16 @@ function PlanFormFields({ plan }: PlanFormFieldsProps) {
                 </Link>
               </p>
             ) : (
-              <ul className="space-y-4">
+              <ul className="border-t border-cobalt-tint-3">
                 {draft.weeks.map((week, index) => (
                   <li key={week.id}>
                     <PlanWeekEditor
                       week={week}
+                      preview={preview.weeks[index]}
                       position={index + 1}
                       routines={sortedRoutines}
                       canRemove={canRemoveWeek}
+                      defaultOpen={index === 0 || !initialWeekIds.has(week.id)}
                       onRemove={() => removeWeek(week.id)}
                       onToggleDeload={() => toggleDeload(week.id)}
                       onChangeDay={(dayOfWeek, routineId) =>

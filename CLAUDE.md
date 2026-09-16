@@ -388,7 +388,12 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   `replace`): ver `StudentDetail` y `CAMBIOS` §40. Lo LARGO Y REPETIDO
   —semanas de un plan— se pliega con `CollapsibleRow`, y la fila cerrada
   resume lo que hay dentro (§41). Las cifras de un objeto van en
-  `MetricStrip` con `MetricFigure`, no apiladas.
+  `MetricStrip` con `MetricFigure`, no apiladas. Un FORMULARIO LARGO va en
+  pasos, con los errores visibles desde todos; en cada elemento repetido, lo
+  que se decide siempre a la vista y lo de a veces detrás de «Más ajustes»,
+  abierto si ya tiene valor (§42). El valor de un desplegable se estrecha con
+  la guarda de su entidad (`isTrainingLevel`, `isBlockMethod`…), nunca con
+  `as`.
 - TIEMPO REAL en **todo lo que la aplicación escucha**, por `postgres_changes`
   con `subscribeToTable` / `subscribeToTables`. Quince tablas publicadas: las
   de pertenencia e identidad —`crews`, `crew_staff`, `students`, `profiles`—

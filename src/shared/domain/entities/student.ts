@@ -14,6 +14,17 @@ import type { Capability } from '../permissions'
  */
 export type StudentLevel = 'Principiante' | 'Intermedio' | 'Avanzado'
 
+/** De menos a más exigente, que es como se lee una escala. */
+export const STUDENT_LEVELS: StudentLevel[] = ['Principiante', 'Intermedio', 'Avanzado']
+
+/**
+ * Para estrechar lo que devuelve un desplegable, que siempre es `string`, sin
+ * un `as` que callaría al compilador si el valor no fuera uno de los tres.
+ */
+export function isStudentLevel(value: string): value is StudentLevel {
+  return STUDENT_LEVELS.some((level) => level === value)
+}
+
 export interface Student {
   id: string
   /**

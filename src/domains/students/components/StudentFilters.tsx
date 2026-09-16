@@ -8,10 +8,8 @@ import {
 import { Search } from 'lucide-react'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { STUDENT_LEVEL_LABEL_KEY } from '@/shared/i18n/domainLabels'
-import type { StudentLevel } from '@/shared/domain/entities/student'
+import { STUDENT_LEVELS, isStudentLevel } from '@/shared/domain/entities/student'
 import type { StudentFilterState } from '../libs/filterStudents'
-
-const LEVELS: StudentLevel[] = ['Principiante', 'Intermedio', 'Avanzado']
 
 interface StudentFiltersProps {
   filters: StudentFilterState
@@ -74,7 +72,7 @@ export function StudentFilters({ filters, onChange }: StudentFiltersProps) {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">{t('filters.level.all')}</SelectItem>
-          {LEVELS.map((level) => (
+          {STUDENT_LEVELS.map((level) => (
             <SelectItem key={level} value={level}>
               {t(STUDENT_LEVEL_LABEL_KEY[level])}
             </SelectItem>
@@ -83,8 +81,4 @@ export function StudentFilters({ filters, onChange }: StudentFiltersProps) {
       </Select>
     </div>
   )
-}
-
-function isStudentLevel(value: string): value is StudentLevel {
-  return LEVELS.some((level) => level === value)
 }

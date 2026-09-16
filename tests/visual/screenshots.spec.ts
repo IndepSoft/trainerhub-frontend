@@ -46,6 +46,20 @@ async function abrirSeccion(
 }
 
 /**
+ * Cambia de paso en el formulario de rutina (`CAMBIOS` §42): el nombre está en
+ * el primero y los bloques en el segundo, y sólo se pinta el abierto.
+ */
+async function pasoDelFormulario(page: Page, nombre: 'La rutina' | 'Bloques'): Promise<void> {
+  await page.getByRole('tab', { name: new RegExp(nombre) }).click()
+  await expect(page.getByRole('tab', { name: new RegExp(nombre), selected: true })).toBeVisible()
+}
+
+/** La línea viva del formulario de rutina, de donde se leen los minutos. */
+function resumenDeRutina(page: Page): Locator {
+  return page.getByRole('status', { name: 'Resumen de la rutina' })
+}
+
+/**
  * Los disparadores de un desplegable, por el nombre de su etiqueta.
  *
  * NO se usa `getByLabel`. Radix renderiza, junto al boton visible, un `<select>`
@@ -1174,12 +1188,13 @@ test.describe('creacion de rutinas', () => {
     await page.goto('/trainings/new')
 
     await page.getByLabel('Nombre').fill('Torso · Empuje pesado')
+    await pasoDelFormulario(page, 'Bloques')
     await elegirEjercicio(page, 0, 'Press de banca con barra')
     await page.getByRole('button', { name: /Añadir ejercicio al bloque 1/ }).click()
     await expect(desplegables(page, 'Ejercicio')).toHaveCount(2)
     await elegirEjercicio(page, 1, 'Remo con barra')
 
-    const resumen = page.locator('dl').first()
+    const resumen = resumenDeRutina(page)
     const enSerieSimple = extraerMinutos(await resumen.innerText())
 
     await elegirDelDesplegable(page, desplegables(page, 'Método'), 'Superserie')
@@ -1209,9 +1224,10 @@ test.describe('creacion de rutinas', () => {
 
     await page.getByLabel('Nombre').fill('Torso · Empuje pesado')
     await page.getByLabel('Descripción').fill('Sesión de empuje con superserie final.')
+    await pasoDelFormulario(page, 'Bloques')
     await elegirEjercicio(page, 0, 'Press de banca con barra')
 
-    const minutosEnFormulario = extraerMinutos(await page.locator('dl').first().innerText())
+    const minutosEnFormulario = extraerMinutos(await resumenDeRutina(page).innerText())
 
     await page.getByRole('button', { name: 'Guardar rutina' }).click()
 
@@ -1240,34 +1256,48 @@ test.describe('creacion de rutinas', () => {
     await page.goto('/trainings/new')
     await page.waitForTimeout(1200)
 
-    const medidas = await page.evaluate(() => {
-      const ancho = (elemento: Element) => elemento.getBoundingClientRect().width
-      const caja = (elemento: Element) => elemento.getBoundingClientRect()
-
-      return {
-        desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        contenedoresEstrechos: [
-          ...document.querySelectorAll('section, article, [class*="rounded-block"]'),
-        ]
-          .map(ancho)
-          .filter((medida) => medida > 0 && medida < 280).length,
-        controlesPequenos: [
-          ...document.querySelectorAll('button, [role=tab], input, textarea'),
-        ]
-          .map(caja)
-          .filter((rect) => rect.height > 0 && rect.height < 44).length,
-        // Toda etiqueta tiene que apuntar a un control que exista: es un fallo
-        // que este proyecto ya tuvo en el formulario de registro.
-        etiquetasHuerfanas: [...document.querySelectorAll('label[for]')].filter(
-          (etiqueta) => document.getElementById(etiqueta.getAttribute('for') ?? '') === null
-        ).length,
+    // Los DOS pasos, y en el de bloques con «Más ajustes» abierto: son los
+    // campos que más aprietan la fila.
+    for (const paso of ['La rutina', 'Bloques'] as const) {
+      await pasoDelFormulario(page, paso)
+      if (paso === 'Bloques') {
+        await page.getByRole('button', { name: /Más ajustes/ }).first().click()
       }
-    })
 
-    expect(medidas.desborde, 'desbordamiento horizontal').toBe(0)
-    expect(medidas.contenedoresEstrechos, 'contenedores por debajo de 280 px').toBe(0)
-    expect(medidas.controlesPequenos, 'controles por debajo de 44 px').toBe(0)
-    expect(medidas.etiquetasHuerfanas, 'etiquetas sin control').toBe(0)
+      const medidas = await page.evaluate(() => {
+        const ancho = (elemento: Element) => elemento.getBoundingClientRect().width
+        const caja = (elemento: Element) => elemento.getBoundingClientRect()
+
+        return {
+          desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          contenedoresEstrechos: [
+            ...document.querySelectorAll('section, article, [class*="rounded-block"]'),
+          ]
+            .map(ancho)
+            .filter((medida) => medida > 0 && medida < 280).length,
+          controlesPequenos: [
+            ...document.querySelectorAll('button, [role=tab], input, textarea'),
+          ]
+            .map(caja)
+            .filter((rect) => rect.height > 0 && rect.height < 44).length,
+          // Toda etiqueta tiene que apuntar a un control que exista: es un
+          // fallo que este proyecto ya tuvo en el formulario de registro.
+          etiquetasHuerfanas: [...document.querySelectorAll('label[for]')].filter(
+            (etiqueta) => document.getElementById(etiqueta.getAttribute('for') ?? '') === null
+          ).length,
+          // Y ninguna etiqueta se sale de su casilla: «REPETICIONES» no cabía.
+          etiquetasDesbordadas: [...document.querySelectorAll('label')].filter(
+            (etiqueta) => etiqueta.scrollWidth > etiqueta.clientWidth + 1
+          ).length,
+        }
+      })
+
+      expect(medidas.desborde, `desbordamiento horizontal en ${paso}`).toBe(0)
+      expect(medidas.contenedoresEstrechos, `contenedores bajo 280 px en ${paso}`).toBe(0)
+      expect(medidas.controlesPequenos, `controles bajo 44 px en ${paso}`).toBe(0)
+      expect(medidas.etiquetasHuerfanas, `etiquetas sin control en ${paso}`).toBe(0)
+      expect(medidas.etiquetasDesbordadas, `etiquetas desbordadas en ${paso}`).toBe(0)
+    }
   })
 })
 
@@ -1376,6 +1406,7 @@ test.describe('catalogo del entrenamiento', () => {
     await page.getByRole('link', { name: 'Nueva Rutina' }).click()
     await expect(page.getByRole('heading', { name: 'Nueva rutina' })).toBeVisible()
 
+    await pasoDelFormulario(page, 'Bloques')
     await desplegables(page, 'Ejercicio').first().click()
     await expect(
       page.getByRole('listbox').getByRole('option', { name: EJERCICIO_NUEVO, exact: true })
@@ -1483,6 +1514,7 @@ test.describe('biblioteca de bloques', () => {
   async function componerBloque(page: Page, ejercicio: string): Promise<void> {
     await page.goto('/trainings/new')
     await page.getByLabel('Nombre').fill('Torso · Empuje pesado')
+    await pasoDelFormulario(page, 'Bloques')
     await elegirDelDesplegable(page, desplegables(page, 'Ejercicio').first(), ejercicio)
   }
 
@@ -1576,18 +1608,29 @@ test.describe('edicion de rutinas', () => {
     await page.goto('/trainings/routine-2/edit')
 
     await expect(page.getByRole('heading', { name: 'Editar rutina' })).toBeVisible()
-    await expect(page.getByLabel('Nombre')).toHaveValue('Empuje · Intermedio')
-    // Tres bloques y cuatro ejercicios, ya elegidos.
+
+    /*
+     * Editar abre en los BLOQUES, que es lo que se viene a cambiar: tres, con
+     * sus cuatro ejercicios plegados y con nombre y dosis a la vista. La dosis
+     * lleva «×», que es lo que distingue esas filas de los demás botones.
+     */
+    await expect(page.getByRole('tab', { name: /Bloques/, selected: true })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Bloque', level: 3 })).toHaveCount(3)
-    await expect(desplegables(page, 'Ejercicio')).toHaveCount(4)
-    await expect(desplegables(page, 'Ejercicio').first()).toContainText('Press de banca con barra')
+    const ejercicios = page.getByRole('button', { name: /×/ })
+    await expect(ejercicios).toHaveCount(4)
+    await expect(ejercicios.first()).toContainText('Press de banca con barra')
 
-    const minutosAntes = extraerMinutos(await page.locator('dl').first().innerText())
+    const minutosAntes = extraerMinutos(await resumenDeRutina(page).innerText())
 
+    await pasoDelFormulario(page, 'La rutina')
+    await expect(page.getByLabel('Nombre')).toHaveValue('Empuje · Intermedio')
     await page.getByLabel('Nombre').fill('Empuje · Intermedio (revisado)')
+
     // Mas series: la duracion estimada tiene que subir.
+    await pasoDelFormulario(page, 'Bloques')
+    await ejercicios.first().click()
     await page.getByLabel('Series').first().fill('6')
-    const minutosDespues = extraerMinutos(await page.locator('dl').first().innerText())
+    const minutosDespues = extraerMinutos(await resumenDeRutina(page).innerText())
     expect(minutosDespues).toBeGreaterThan(minutosAntes)
 
     await page.getByRole('button', { name: 'Guardar cambios' }).click()
@@ -1623,7 +1666,45 @@ test.describe('edicion de rutinas', () => {
 
     await page.getByRole('link', { name: 'Editar' }).click()
     await expect(page.getByRole('heading', { name: 'Editar rutina' })).toBeVisible()
+
+    // Abre en los bloques; el nombre cargado está en el primer paso.
+    await pasoDelFormulario(page, 'La rutina')
     await expect(page.getByLabel('Nombre')).toHaveValue('Full body · Principiante')
+  })
+
+  test('guardar con un error en los bloques lleva a ellos', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/trainings/new')
+
+    // El nombre está; lo que falta es el ejercicio, que está en el otro paso.
+    await page.getByLabel('Nombre').fill('Pierna · Fuerza')
+    await page.getByRole('button', { name: 'Guardar rutina' }).click()
+
+    await expect(page.getByRole('tab', { name: /Bloques/, selected: true })).toBeVisible()
+    await expect(page.getByRole('alert')).toContainText('Falta elegir un ejercicio')
+    expect(page.url()).toContain('/trainings/new')
+  })
+
+  test('los ajustes que ya tienen valor no se esconden', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/trainings/routine-2/edit')
+
+    /*
+     * El press de banca de la semilla lleva peso y tempo: al abrirlo, «Más
+     * ajustes» ya está abierto, porque esconder un dato escrito sería
+     * esconder una decisión. El press militar no lleva ninguno.
+     */
+    await page.getByRole('button', { name: /Press de banca con barra/ }).first().click()
+    const masAjustes = page.getByRole('button', { name: /Más ajustes/ })
+    await expect(masAjustes).toHaveCount(1)
+    await expect(masAjustes).toHaveAttribute('aria-expanded', 'true')
+    await expect(page.getByLabel('Tempo')).toHaveValue('3-1-1-0')
+
+    await page.getByRole('button', { name: /Press militar con barra/ }).click()
+    await expect(masAjustes).toHaveCount(2)
+    await expect(masAjustes.nth(1)).toHaveAttribute('aria-expanded', 'false')
   })
 })
 
@@ -1716,8 +1797,14 @@ test.describe('planes', () => {
     await expect(page.getByRole('heading', { name: 'Semana', level: 3 })).toHaveCount(4)
     await expect(desplegables(page, 'Objetivo')).toContainText('Acondicionamiento general')
 
-    // La cuarta semana viene marcada como descarga, y el formulario dice la
-    // verdad sobre lo que eso hace hoy.
+    // Plegadas salvo la primera; la cuarta lo dice en su fila.
+    const cuarta = page.getByRole('button', { name: /^Semana 04/ })
+    await expect(cuarta).toHaveAttribute('aria-expanded', 'false')
+    await expect(cuarta).toContainText('Descarga')
+
+    // Abierta, viene marcada como descarga, y el formulario dice la verdad
+    // sobre lo que eso hace hoy.
+    await cuarta.click()
     await expect(page.getByRole('button', { name: 'Descarga', pressed: true })).toHaveCount(1)
     await expect(page.getByText('no reduce el volumen por sí solo')).toBeVisible()
   })
@@ -5247,6 +5334,9 @@ test.describe('huecos cerrados', () => {
     await page.getByRole('menuitem', { name: 'Editar' }).click()
     await page.waitForURL(/\/trainings\/[\w-]+\/edit/)
 
+    // El primer ejercicio, y detrás de «Más ajustes», el tempo y las notas.
+    await page.getByRole('button', { name: /×/ }).first().click()
+    await page.getByRole('button', { name: /Más ajustes/ }).first().click()
     await page.getByLabel('Tempo').first().fill('3-1-1-0')
     await page.getByLabel('Indicaciones').first().fill('Sin rebote abajo')
     // Al editar, el boton dice «Guardar cambios»; «Guardar rutina» es el del alta.

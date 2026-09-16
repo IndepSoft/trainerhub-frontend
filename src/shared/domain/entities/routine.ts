@@ -16,6 +16,17 @@
 
 export type TrainingLevel = 'Principiante' | 'Intermedio' | 'Avanzado'
 
+/** De menos a más exigente, que es como se lee una escala. */
+export const TRAINING_LEVELS: TrainingLevel[] = ['Principiante', 'Intermedio', 'Avanzado']
+
+/**
+ * Para estrechar lo que devuelve un desplegable, que siempre es `string`, sin
+ * un `as` que callaría al compilador si el valor no fuera uno de los tres.
+ */
+export function isTrainingLevel(value: string): value is TrainingLevel {
+  return TRAINING_LEVELS.some((level) => level === value)
+}
+
 /**
  * Un ejercicio con su prescripción dentro de un bloque.
  *
@@ -62,6 +73,14 @@ export interface PrescribedExercise {
  * por otro de otra forma.
  */
 export type BlockMethod = 'simple' | 'superserie' | 'triserie' | 'circuito'
+
+/** Los métodos, en el orden en que crece la complejidad. */
+export const BLOCK_METHODS: BlockMethod[] = ['simple', 'superserie', 'triserie', 'circuito']
+
+/** Mismo motivo que `isTrainingLevel`. */
+export function isBlockMethod(value: string): value is BlockMethod {
+  return BLOCK_METHODS.some((method) => method === value)
+}
 
 export interface Block {
   id: string

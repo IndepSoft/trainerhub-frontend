@@ -9,6 +9,12 @@ interface CollapsibleRowProps {
   /** A la derecha, antes de la flecha: una insignia, una cifra. */
   trailing?: ReactNode
   defaultOpen?: boolean
+  /**
+   * Envuelve la fila en un encabezado de ese nivel, que es el patrón de
+   * acordeón de WAI-ARIA: quien recorre la página por encabezados encuentra
+   * cada pliegue. Sin él, la fila es un botón suelto.
+   */
+  headingLevel?: 2 | 3
   children: ReactNode
   className?: string
 }
@@ -32,31 +38,42 @@ export function CollapsibleRow({
   meta,
   trailing,
   defaultOpen = false,
+  headingLevel,
   children,
   className,
 }: CollapsibleRowProps) {
   const [open, setOpen] = useState(defaultOpen)
   const contentId = useId()
 
+  const toggle = (
+    <button
+      type="button"
+      aria-expanded={open}
+      aria-controls={contentId}
+      onClick={() => setOpen((current) => !current)}
+      className="flex min-h-14 w-full items-center gap-3 py-2 text-start outline-none focus-visible:ring-2 focus-visible:ring-cobalt/40"
+    >
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="truncate text-[15px] font-semibold text-ink">{title}</span>
+        {meta !== undefined && <span className="truncate text-xs text-ink/60">{meta}</span>}
+      </span>
+      {trailing}
+      <ChevronDown
+        aria-hidden="true"
+        className={cn('size-5 shrink-0 text-ink/45 transition-transform', open && 'rotate-180')}
+      />
+    </button>
+  )
+
   return (
     <div className={cn('border-b border-cobalt-tint-3', className)}>
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-controls={contentId}
-        onClick={() => setOpen((current) => !current)}
-        className="flex min-h-14 w-full items-center gap-3 py-2 text-start outline-none focus-visible:ring-2 focus-visible:ring-cobalt/40"
-      >
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="truncate text-[15px] font-semibold text-ink">{title}</span>
-          {meta !== undefined && <span className="truncate text-xs text-ink/60">{meta}</span>}
-        </span>
-        {trailing}
-        <ChevronDown
-          aria-hidden="true"
-          className={cn('size-5 shrink-0 text-ink/45 transition-transform', open && 'rotate-180')}
-        />
-      </button>
+      {headingLevel === 2 ? (
+        <h2>{toggle}</h2>
+      ) : headingLevel === 3 ? (
+        <h3>{toggle}</h3>
+      ) : (
+        toggle
+      )}
 
       <div id={contentId} hidden={!open} className="pb-3">
         {open && children}

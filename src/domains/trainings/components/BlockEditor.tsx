@@ -11,9 +11,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
-
+import { BLOCK_METHODS, isBlockMethod } from '@/shared/domain/entities/routine'
 import { PrescribedExerciseFields } from './PrescribedExerciseFields'
-import type { BlockMethod, Exercise } from '../types/training.types'
+import type { Exercise } from '../types/training.types'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type {
   BlockDraft,
@@ -25,9 +25,6 @@ import { BLOCK_METHOD_LABEL_KEY } from '@/shared/i18n/domainLabels'
 /** Registro de etiqueta del formulario, igual que el de las métricas. */
 const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50'
 
-/** Los métodos, en el orden en que crece la complejidad. */
-const BLOCK_METHODS: BlockMethod[] = ['simple', 'superserie', 'triserie', 'circuito']
-
 interface BlockEditorProps {
   block: BlockDraft
   /** Número del bloque, empezando en 1. */
@@ -36,6 +33,12 @@ interface BlockEditorProps {
   canRemove: boolean
   /** Falso mientras el bloque no tenga todos sus ejercicios elegidos. */
   canSaveToLibrary: boolean
+  /**
+   * Los ejercicios que ya estaban al abrir el formulario. Ésos arrancan
+   * plegados; los que se añaden después, y los que no tienen ejercicio
+   * elegido, abiertos: son los que se están escribiendo.
+   */
+  initialExerciseIds: ReadonlySet<string>
   onChange: (changes: BlockDraftChanges) => void
   onRemove: () => void
   onSaveToLibrary: () => void
@@ -52,6 +55,9 @@ interface BlockEditorProps {
  * encadenan los ejercicios y, con ello, la duración estimada de la sesión
  * entera. Un formulario que sólo pidiera ejercicios sueltos no tendría dónde
  * expresar esa decisión.
+ *
+ * El método y el descanso de la vuelta van EN UNA FILA: son las dos decisiones
+ * del bloque, y apiladas se llevaban 150 px antes del primer ejercicio.
  */
 export function BlockEditor({
   block,
@@ -59,6 +65,7 @@ export function BlockEditor({
   catalog,
   canRemove,
   canSaveToLibrary,
+  initialExerciseIds,
   onChange,
   onRemove,
   onSaveToLibrary,
@@ -77,11 +84,11 @@ export function BlockEditor({
 
   return (
     <section className="rounded-block border border-cobalt-tint-3 bg-surface p-4 sm:p-5">
-      <header className="flex items-center gap-3 border-b border-cobalt-tint-3 pb-4">
+      <header className="flex items-center gap-2">
         <span className="metric-figures font-display text-2xl font-extrabold leading-none text-cobalt">
           {String(position).padStart(2, '0')}
         </span>
-        <h3 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
+        <h3 className="font-display text-xl font-extrabold uppercase leading-none text-ink">
           {t('block.title')}
         </h3>
 
@@ -96,7 +103,7 @@ export function BlockEditor({
             type="button"
             onClick={onSaveToLibrary}
             disabled={!canSaveToLibrary}
-            aria-label={`Guardar el bloque ${position} en la biblioteca`}
+            aria-label={t('block.saveToLibraryLabel', { position })}
             className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-cobalt-tint hover:text-cobalt disabled:pointer-events-none disabled:opacity-40"
           >
             <BookmarkPlus className="size-4" />
@@ -115,14 +122,16 @@ export function BlockEditor({
         </div>
       </header>
 
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div>
+      <div className="mt-3 flex items-end gap-2">
+        <div className="min-w-0 flex-1">
           <Label htmlFor={methodFieldId} className={FIELD_LABEL}>
             {t('block.method')}
           </Label>
           <Select
             value={block.method}
-            onValueChange={(method) => onChange({ method: method as BlockMethod })}
+            onValueChange={(method) => {
+              if (isBlockMethod(method)) onChange({ method })
+            }}
           >
             <SelectTrigger id={methodFieldId} className="mt-1.5 w-full">
               <SelectValue />
@@ -137,7 +146,10 @@ export function BlockEditor({
           </Select>
         </div>
 
-        <div>
+        {/* La etiqueta PARTE LÍNEA en vez de acortarse: «descanso» a secas se
+            confundiría con el de cada ejercicio. La fila alinea por abajo, así
+            que las dos casillas quedan a la misma altura. */}
+        <div className="w-32 shrink-0">
           <Label htmlFor={restFieldId} className={FIELD_LABEL}>
             {t('block.restAfterRound')}
           </Label>
@@ -156,9 +168,8 @@ export function BlockEditor({
         </div>
       </div>
 
-      {/* Reglas de 1 px entre ejercicios en vez de una tarjeta por ejercicio:
-          ver el motivo en `PrescribedExerciseFields`. */}
-      <ul className="mt-2 divide-y divide-cobalt-tint-3 border-t border-cobalt-tint-3">
+      {/* La regla la pone cada ejercicio plegado: ver `CollapsibleRow`. */}
+      <ul className="mt-2 border-t border-cobalt-tint-3">
         {block.exercises.map((exercise, index) => (
           <li key={exercise.id}>
             <PrescribedExerciseFields
@@ -166,6 +177,7 @@ export function BlockEditor({
               catalog={catalog}
               position={index + 1}
               canRemove={canRemoveExercise}
+              defaultOpen={!initialExerciseIds.has(exercise.id) || exercise.exerciseId === ''}
               onChange={(changes) => onChangeExercise(exercise.id, changes)}
               onRemove={() => onRemoveExercise(exercise.id)}
             />
@@ -173,14 +185,17 @@ export function BlockEditor({
         ))}
       </ul>
 
+      {/* Visible «Añadir ejercicio»; el nombre accesible dice a qué bloque, y
+          contiene el texto visible para que se pueda dictar. */}
       <Button
         type="button"
         variant="outline"
-        className="mt-3 w-full gap-2"
+        className="mt-3 w-full gap-2 rounded-action"
+        aria-label={t('block.addExerciseLabel', { position })}
         onClick={onAddExercise}
       >
         <Plus className="size-4" />
-        Añadir ejercicio al bloque {position}
+        {t('block.addExercise')}
       </Button>
 
       <div className="mt-4">

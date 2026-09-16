@@ -1,4 +1,5 @@
 import { useId } from 'react'
+import { TRAINING_LEVELS, isTrainingLevel } from '@/shared/domain/entities/routine'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Textarea } from '@/shared/ui/textarea'
@@ -17,9 +18,6 @@ import { STUDENT_LEVEL_LABEL_KEY } from '@/shared/i18n/domainLabels'
 
 /** Registro de etiqueta del formulario, igual que en el resto del dominio. */
 const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50'
-
-/** De menos a más exigente, que es como se lee una escala. */
-const TRAINING_LEVELS: TrainingLevel[] = ['Principiante', 'Intermedio', 'Avanzado']
 
 interface PlanIdentityFieldsProps {
   draft: PlanDraft
@@ -182,7 +180,12 @@ export function PlanIdentityFields({
           <Label htmlFor={`${fieldId}-level`} className={FIELD_LABEL}>
             {t('routine.level')}
           </Label>
-          <Select value={draft.level} onValueChange={(value) => onLevelChange(value as TrainingLevel)}>
+          <Select
+            value={draft.level}
+            onValueChange={(value) => {
+              if (isTrainingLevel(value)) onLevelChange(value)
+            }}
+          >
             <SelectTrigger id={`${fieldId}-level`} className="mt-1.5 w-full">
               <SelectValue />
             </SelectTrigger>

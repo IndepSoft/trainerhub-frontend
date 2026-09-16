@@ -19,7 +19,12 @@ import {
 import { cn } from '@/shared/lib/utils'
 import { STUDENT_GOALS } from '../data/studentGoals'
 import type { NewStudent } from '@/shared/domain/ports/StudentRepository'
-import type { Student, StudentLevel } from '@/shared/domain/entities/student'
+import {
+  STUDENT_LEVELS,
+  isStudentLevel,
+  type Student,
+  type StudentLevel,
+} from '@/shared/domain/entities/student'
 import { toLocalDateKey } from '@/shared/lib/dateKey'
 
 /** Hoy, para que el selector no ofrezca nacer mañana. */
@@ -32,8 +37,6 @@ import { STUDENT_LEVEL_LABEL_KEY, goalLabel } from '@/shared/i18n/domainLabels'
 /** Registro de etiqueta del formulario, igual que en el resto de la aplicación. */
 const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
 
-/** De menos a más exigente, que es como se lee una escala. */
-const STUDENT_LEVELS: StudentLevel[] = ['Principiante', 'Intermedio', 'Avanzado']
 
 /** Campos que la validación puede marcar. */
 type FieldName = 'firstName' | 'lastName' | 'email'
@@ -215,7 +218,12 @@ function StudentFields({ student, onSave, onCancel }: StudentFieldsProps) {
           <Label htmlFor={`${fieldId}-level`} className={FIELD_LABEL}>
             {t('studentDetail.level')}
           </Label>
-          <Select value={level} onValueChange={(value) => setLevel(value as StudentLevel)}>
+          <Select
+            value={level}
+            onValueChange={(value) => {
+              if (isStudentLevel(value)) setLevel(value)
+            }}
+          >
             <SelectTrigger id={`${fieldId}-level`} className="mt-1.5 w-full">
               <SelectValue />
             </SelectTrigger>

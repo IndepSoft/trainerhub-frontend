@@ -17,12 +17,11 @@ interface RoutineSummaryProps {
 /**
  * Lo que mide una rutina. Sólo presentación.
  *
- * LA USAN LA FICHA Y EL FORMULARIO, como `PlanSummary`, y por eso dejó de
- * llamarse `RoutineDraftSummary`: le da igual si la rutina está guardada o a
- * medio escribir. Las cifras son DERIVADAS, con las mismas funciones que usa la
- * tarjeta: la duración que el entrenador ve mientras escribe es exactamente la
- * que verá después en la lista. Si cada pantalla calculara por su cuenta,
- * serían dos fórmulas que empiezan iguales y se separan al primer cambio.
+ * Las cifras son DERIVADAS, con las mismas funciones que usan la tarjeta y la
+ * línea del formulario (`RoutineDraftLine`): la duración que el entrenador ve
+ * mientras escribe es exactamente la que verá después aquí. Si cada pantalla
+ * calculara por su cuenta, serían dos fórmulas que empiezan iguales y se
+ * separan al primer cambio.
  *
  * EN FRANJA DE DOS POR DOS. Apiladas, las cifras eran tres filas de 70 px y
  * los ejercicios —que son la rutina— quedaban debajo del pliegue.

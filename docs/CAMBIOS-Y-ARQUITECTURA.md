@@ -3760,3 +3760,67 @@ usaba —dos de ellas desde antes de este trabajo—.
 **Verificado en navegador.** A 375 y a 1440, las tres rutinas de la semilla y
 el plan: cero desbordamiento, ningún nombre truncado, ningún control bajo
 44 px en móvil, y las semanas se abren y se cierran con `aria-expanded`.
+
+## 42. Los formularios de rutina y de plan (16 sep 2026)
+
+Segunda mitad de la tercera tanda (artboard `NuevaRutina` y los patrones 3 y 4
+de `Patrones`). El formulario de rutina era una página de más de dos mil
+píxeles con cada ejercicio abierto en ocho campos.
+
+**La rutina, en dos pasos**: «1 · La rutina» —nombre, descripción, nivel— y
+«2 · Bloques». Crear abre en el primero; editar, en los bloques, que es lo que
+se viene a cambiar. Se guarda desde cualquiera, y por eso:
+
+- el error de los bloques va **por encima de los pasos**, visible desde los
+  dos, y cada paso con un error lleva un punto (con su nombre para quien no lo
+  ve);
+- al intentar guardar se abre **el primer paso que falla**. Para saberlo,
+  `submit` deja de devolver `null` y devuelve los datos o los errores
+  (`RoutineSubmission`);
+- las cifras van en **una línea** —«25 min · 12 series»— en vez de la franja
+  de la ficha (`RoutineDraftLine`), con las mismas funciones. Sólo las cifras
+  son región viva: el nombre, que cambia con cada tecla, se anunciaría letra a
+  letra.
+
+**Cada ejercicio, plegado con su dosis** (patrón 3): «Press de banca con barra
+· 4 × 6-8». Los que había al abrir arrancan plegados; los que se añaden, los
+insertados desde la biblioteca y los que no tienen ejercicio elegido,
+abiertos, porque son los que se están escribiendo. La lista de «los que había»
+se toma una vez: añadir uno no repliega los que se abrieron a mano.
+
+**Lo de siempre a la vista, lo de a veces detrás** (patrón 4). Abierto, un
+ejercicio enseña el ejercicio, y series, repeticiones y RIR en una fila; peso,
+descanso propio, tempo e indicaciones, detrás de «Más ajustes», que se abre
+por ejercicio y **arranca abierto si alguno ya tiene valor**: esconder un dato
+escrito sería esconder una decisión. Hay prueba de las dos cosas.
+
+**El bloque**: método y descanso de la vuelta en una fila —apilados eran
+150 px antes del primer ejercicio—. La etiqueta del descanso parte línea en
+vez de acortarse: «descanso» a secas se confundiría con el de cada ejercicio.
+
+**El plan**: cada semana, plegada con el mismo resumen que en la ficha
+(«3 sesiones · lunes, miércoles y viernes», la descarga en su insignia).
+Abierta, la marca de descarga, el borrado y los siete días: al programar sí
+hay que ver los huecos, porque cada uno es una elección. Abierta al entrar
+sólo la primera; las que se añaden, abiertas.
+
+**De paso, lo que la revisión encontró en estos ficheros:**
+
+- cuatro `as` de conveniencia sobre el valor de un desplegable —nivel de
+  rutina, de plan y de alumno, y método de bloque—. Las listas cerradas y sus
+  guardas (`TRAINING_LEVELS`/`isTrainingLevel`, `BLOCK_METHODS`/
+  `isBlockMethod`, `STUDENT_LEVELS`/`isStudentLevel`) pasan a la entidad, y
+  desaparecen **cuatro copias** de la lista de niveles;
+- tres nombres accesibles y la nota de descarga escritos en castellano a
+  mano, que pasan a los diccionarios;
+- dos claves sin uso.
+
+Quedan dos `as` iguales fuera de estos ficheros —el filtro de logros y las
+pestañas del catálogo—, para sus tandas.
+
+**Verificado en navegador.** A 375 y a 1440: alta vacía, guardar con errores,
+el paso de bloques con «Más ajustes» abierto, la edición de una rutina y la de
+un plan. Cero desbordamiento, ningún control bajo 44 px en móvil y ninguna
+etiqueta que no quepa —«REPETICIONES» no cabía con el espaciado de siempre, y
+el marcador «No aplica» del RIR tampoco—. La auditoría de 375 px del
+formulario recorre ahora los dos pasos y comprueba también las etiquetas.
