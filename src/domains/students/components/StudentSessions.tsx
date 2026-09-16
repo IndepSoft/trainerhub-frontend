@@ -1,16 +1,16 @@
+import { useMemo, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { Clock, MapPin } from 'lucide-react'
+import { ArrowUpRight } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import { useStudentSessions } from '../hooks/useStudentSessions'
-import { formatDateKey } from '../libs/dateKey'
-import type { SessionStatus } from '@/shared/domain/entities/session'
+import { groupSessions } from '../libs/groupSessions'
+import type { Session, SessionStatus } from '@/shared/domain/entities/session'
 import type { Student } from '@/shared/domain/entities/student'
 import { isMissedSession } from '@/shared/domain/sessionLifecycle'
-import { todayKey } from '@/shared/lib/dateKey'
+import { formatMonthOfDateKey, formatShortDateKey, todayKey } from '@/shared/lib/dateKey'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { SESSION_STATUS_LABEL_KEY } from '@/shared/i18n/domainLabels'
 
-/** Presentación de cada estado. Los mismos tres que usa la agenda. */
 /* Solo el COLOR: el rotulo sale de `SESSION_STATUS_LABEL_KEY`, que es el mismo
    para las cuatro pantallas que lo enseñan. */
 const STATUS_CLASS: Record<SessionStatus, string> = {
@@ -27,78 +27,132 @@ interface StudentSessionsProps {
   student: Student
 }
 
+interface SessionGroupProps {
+  title: string
+  /** Lo que se dice a la derecha del título: cuántas, o cuántas hechas. */
+  aside: string
+  children: ReactNode
+}
+
+function SessionGroup({ title, aside, children }: SessionGroupProps) {
+  return (
+    <section className="flex flex-col">
+      <div className="flex items-baseline justify-between gap-2 border-b border-cobalt-tint-3 pb-2">
+        <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
+          {title}
+        </h2>
+        <span className="metric-figures text-[13px] font-semibold text-cobalt">{aside}</span>
+      </div>
+      <ul>{children}</ul>
+    </section>
+  )
+}
+
+interface SessionItemProps {
+  session: Session
+  today: string
+}
+
 /**
- * Las sesiones de un alumno.
+ * Una sesión en una fila de 56 px: día, qué y cuándo, y su estado.
  *
- * Es lo que faltaba para que la asignación existiera: hasta ahora una sesión
- * guardaba el NOMBRE del alumno en texto, así que no había forma de preguntar
- * «qué tiene María esta semana» sin comparar cadenas. Con `studentId` la
- * pregunta se le hace al puerto.
+ * Eran filas de tres líneas y 90 px; doce hacían 1.100 px. Lo hecho y lo
+ * cancelado va atenuado —ya no pide nada—, y lo que no ocurrió no: es lo único
+ * del pasado que el entrenador querría mirar dos veces.
+ */
+function SessionItem({ session, today }: SessionItemProps) {
+  const { t } = useTranslation()
+  const missed = isMissedSession(session, today)
+  const settled = session.status === 'completed' || session.status === 'cancelled'
+
+  return (
+    <li
+      className={cn(
+        'grid min-h-14 grid-cols-[3.5rem_minmax(0,1fr)_auto] items-center gap-2.5 border-b border-cobalt-tint-3 py-2',
+        settled && 'opacity-60'
+      )}
+    >
+      <span className="text-xs font-semibold uppercase tracking-[0.08em] text-ink/60">
+        {formatShortDateKey(session.date)}
+      </span>
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="truncate text-[15px] font-semibold text-ink">{session.title}</span>
+        <span className="metric-figures truncate text-xs text-ink/60">
+          {session.time} · {session.durationMinutes} min
+          {session.location !== '' && ` · ${session.location}`}
+        </span>
+      </span>
+      <span
+        className={cn(
+          'shrink-0 rounded-action border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]',
+          missed ? MISSED_CLASS : STATUS_CLASS[session.status]
+        )}
+      >
+        {missed ? t('session.status.missed') : t(SESSION_STATUS_LABEL_KEY[session.status])}
+      </span>
+    </li>
+  )
+}
+
+/**
+ * Las sesiones de un alumno: lo próximo, y lo hecho por meses.
  *
  * Lo que se agenda aquí aparece en el calendario, y al revés, porque los dos
  * leen del mismo puerto y están suscritos a sus cambios. Ninguno de los dos
  * dominios importa nada del otro.
  */
 export function StudentSessions({ student }: StudentSessionsProps) {
-  const { t } = useTranslation()
+  const { t, plural } = useTranslation()
   const { sessions, loading } = useStudentSessions(student.id)
   const today = todayKey()
+  const { upcoming, months } = useMemo(() => groupSessions(sessions, today), [sessions, today])
 
   return (
-    <section className="px-5 py-8">
+    <div className="flex flex-col gap-6 px-5 pb-8 pt-2">
       {/* Sin boton propio de agendar: la cabecera de la ficha ya tiene esa
-          accion, y duplicarla dejaba dos botones identicos en la misma pagina
-          -uno de ellos, ademas, el que llevaba meses sin conectar-. */}
-      <h2 className="mb-4 border-b border-cobalt-tint-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-        {t('studentSessions.title')}
-      </h2>
-
+          accion, y duplicarla dejaba dos botones identicos en la misma pagina. */}
       {loading ? null : sessions.length === 0 ? (
         <p className="py-8 text-center text-sm text-ink/40">
           {t('studentSessions.empty', { name: student.firstName })}
         </p>
       ) : (
-        <ul className="divide-y divide-cobalt-tint-3">
-          {sessions.map((session) => (
-            <li key={session.id} className="flex items-start gap-4 py-4">
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold text-ink">{session.title}</p>
-                <p className="metric-figures mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink/45">
-                  <span>{formatDateKey(session.date)}</span>
-                  <span className="flex items-center gap-1.5">
-                    <Clock className="size-3.5" />
-                    {session.time} · {session.durationMinutes} min
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <MapPin className="size-3.5" />
-                    {session.location}
-                  </span>
-                </p>
-              </div>
+        <>
+          {upcoming.length > 0 && (
+            <SessionGroup title={t('studentSessions.upcoming')} aside={String(upcoming.length)}>
+              {upcoming.map((session) => (
+                <SessionItem key={session.id} session={session} today={today} />
+              ))}
+            </SessionGroup>
+          )}
 
-              <span
-                className={cn(
-                  'shrink-0 rounded-action border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]',
-                  isMissedSession(session, today) ? MISSED_CLASS : STATUS_CLASS[session.status]
-                )}
-              >
-                {isMissedSession(session, today)
-                  ? t('session.status.missed')
-                  : t(SESSION_STATUS_LABEL_KEY[session.status])}
-              </span>
-            </li>
+          {months.map((month) => (
+            <SessionGroup
+              key={month.monthKey}
+              title={formatMonthOfDateKey(`${month.monthKey}-01`, today)}
+              aside={plural(
+                'studentSessions.doneCount.one',
+                'studentSessions.doneCount.other',
+                month.completedCount,
+                { count: month.completedCount }
+              )}
+            >
+              {month.sessions.map((session) => (
+                <SessionItem key={session.id} session={session} today={today} />
+              ))}
+            </SessionGroup>
           ))}
-        </ul>
+        </>
       )}
 
       {/* Un enlace y no una copia de la agenda: desde aqui se ve lo de este
           alumno, y para ver el hueco que queda libre se va al calendario. */}
       <Link
         to="/calendar"
-        className="mt-4 inline-flex h-11 items-center text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/45 transition-colors hover:text-cobalt"
+        className="inline-flex min-h-11 w-fit items-center gap-1 text-[13px] font-semibold text-cobalt underline-offset-4 hover:underline"
       >
         {t('studentSessions.viewCalendar')}
+        <ArrowUpRight aria-hidden="true" className="size-4" />
       </Link>
-    </section>
+    </div>
   )
 }

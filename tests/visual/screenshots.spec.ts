@@ -28,6 +28,24 @@ async function signIn(page: Page): Promise<void> {
 }
 
 /**
+ * Abre una sección de la ficha del alumno y devuelve su panel.
+ *
+ * La ficha va en secciones (`CAMBIOS` §40): lo que no es del resumen no se
+ * pinta hasta que se abre su pestaña. Por la pestaña y no por la dirección,
+ * para no recargar y perder lo que los adaptadores simulados guardan en
+ * memoria.
+ */
+async function abrirSeccion(
+  page: Page,
+  nombre: 'Resumen' | 'Progreso' | 'Sesiones' | 'Cuota'
+): Promise<Locator> {
+  await page.getByRole('tab', { name: nombre }).click()
+  const panel = page.getByRole('tabpanel', { name: nombre })
+  await expect(panel).toBeVisible()
+  return panel
+}
+
+/**
  * Los disparadores de un desplegable, por el nombre de su etiqueta.
  *
  * NO se usa `getByLabel`. Radix renderiza, junto al boton visible, un `<select>`
@@ -364,7 +382,12 @@ for (const viewport of [
       await new Promise((listo) => setTimeout(listo, 300))
 
       const pildora = bar.getBoundingClientRect()
-      const ultimo = scroller.lastElementChild?.getBoundingClientRect() ?? null
+      // Lo último que se VE: las secciones cerradas de la ficha siguen en el
+      // árbol, vacías y ocultas, y medirlas daría cero.
+      const visibles = [...scroller.children].filter(
+        (hijo) => hijo.getBoundingClientRect().height > 0
+      )
+      const ultimo = visibles[visibles.length - 1]?.getBoundingClientRect() ?? null
 
       return {
         desborda: scroller.scrollHeight > scroller.clientHeight,
@@ -785,6 +808,54 @@ test.describe('fila de estudiante', () => {
     await page.getByRole('button', { name: 'Acciones para Carla López' }).click()
     await expect(page.getByRole('menuitem', { name: 'Editar' })).toBeVisible()
     await expect(page.getByRole('menuitem', { name: 'Dar de baja' })).toHaveCount(0)
+  })
+})
+
+/**
+ * La ficha en secciones (`CAMBIOS` §40). El resumen dice lo que le toca a cada
+ * alumno y cada fila lleva a donde se resuelve; la sección vive en la
+ * dirección, y el diálogo de agendar también.
+ */
+test.describe('ficha en secciones', () => {
+  test('el resumen dice lo que le toca, y cada fila lleva a donde se resuelve', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/students/student-1')
+
+    // Juan: la cuota vencida, sin cuenta todavia y nada agendado.
+    const leToca = page.getByRole('region', { name: 'Le toca' })
+    await expect(leToca.getByRole('link', { name: /Cuota · Venció hace 5 días/ })).toBeVisible()
+    await expect(leToca.getByRole('button', { name: 'Copiar invitación' })).toBeVisible()
+    await expect(leToca.getByRole('link', { name: /Nada agendado/ })).toBeVisible()
+
+    // La cuota lleva a su seccion, y la direccion lo dice.
+    await leToca.getByRole('link', { name: /Cuota · Venció/ }).click()
+    await expect(page.getByRole('tab', { name: 'Cuota', selected: true })).toBeVisible()
+    await expect(page).toHaveURL(/seccion=cuota/)
+    await expect(page.getByRole('button', { name: 'Registrar pago' })).toBeVisible()
+
+    // «Nada agendado» abre el dialogo de agendar, y cerrarlo limpia la direccion.
+    await abrirSeccion(page, 'Resumen')
+    await page
+      .getByRole('region', { name: 'Le toca' })
+      .getByRole('link', { name: /Nada agendado/ })
+      .click()
+    await expect(page.getByRole('dialog')).toBeVisible()
+    await expect(page).toHaveURL(/agendar/)
+    await page.keyboard.press('Escape')
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(page).not.toHaveURL(/agendar/)
+  })
+
+  test('la seccion abierta sobrevive a recargar', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students/student-1?seccion=sesiones')
+    await expect(page.getByRole('tab', { name: 'Sesiones', selected: true })).toBeVisible()
+
+    await page.reload()
+    await expect(page.getByRole('tab', { name: 'Sesiones', selected: true })).toBeVisible()
+    await expect(page.getByRole('tabpanel', { name: 'Sesiones' })).toContainText('Entrenamiento Personal')
   })
 })
 
@@ -1949,9 +2020,9 @@ test.describe('sesiones del alumno', () => {
     await signIn(page)
     await page.goto('/students/student-2')
 
-    await expect(page.getByRole('heading', { name: 'Sesiones' })).toBeVisible()
-    await expect(page.getByText('Entrenamiento Personal')).toBeVisible()
-    await expect(page.getByText('Gimnasio Principal')).toBeVisible()
+    const sesiones = await abrirSeccion(page, 'Sesiones')
+    await expect(sesiones.getByText('Entrenamiento Personal')).toBeVisible()
+    await expect(sesiones.getByText('Gimnasio Principal')).toBeVisible()
 
     /*
      * Y NO las de otros. La semilla decia «María García» donde el padron dice
@@ -1999,7 +2070,8 @@ test.describe('sesiones del alumno', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0)
 
     // Aparece en la lista del alumno sin recargar.
-    await expect(page.getByText('Sala Grupal')).toBeVisible()
+    const sesiones = await abrirSeccion(page, 'Sesiones')
+    await expect(sesiones.getByText('Sala Grupal')).toBeVisible()
 
     /*
      * Y EN EL CALENDARIO, que es lo que se pedia. No comparten estado: comparten
@@ -2024,29 +2096,35 @@ test.describe('sesiones del alumno', () => {
     await page.goto('/students/student-2')
     await page.waitForTimeout(1200)
 
-    const medidas = await page.evaluate(() => {
-      const caja = (elemento: Element) => elemento.getBoundingClientRect()
+    // Las CUATRO secciones: cada una pinta lo suyo, y la regla es de la ficha.
+    for (const seccion of ['Resumen', 'Progreso', 'Sesiones', 'Cuota'] as const) {
+      await abrirSeccion(page, seccion)
+      await page.waitForTimeout(400)
 
-      return {
-        desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        contenedoresEstrechos: [
-          ...document.querySelectorAll('section, article, [class*="rounded-block"]'),
-        ]
-          .map((elemento) => caja(elemento).width)
-          .filter((ancho) => ancho > 0 && ancho < 280).length,
-        controlesPequenos: [...document.querySelectorAll('button, a, input, textarea')]
-          .map(caja)
-          .filter((rect) => rect.height > 0 && rect.height < 44).length,
-        etiquetasHuerfanas: [...document.querySelectorAll('label[for]')].filter(
-          (etiqueta) => document.getElementById(etiqueta.getAttribute('for') ?? '') === null
-        ).length,
-      }
-    })
+      const medidas = await page.evaluate(() => {
+        const caja = (elemento: Element) => elemento.getBoundingClientRect()
 
-    expect(medidas.desborde, 'desbordamiento horizontal').toBe(0)
-    expect(medidas.contenedoresEstrechos, 'contenedores bajo 280 px').toBe(0)
-    expect(medidas.controlesPequenos, 'controles bajo 44 px').toBe(0)
-    expect(medidas.etiquetasHuerfanas, 'etiquetas sin control').toBe(0)
+        return {
+          desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          contenedoresEstrechos: [
+            ...document.querySelectorAll('section, article, [class*="rounded-block"]'),
+          ]
+            .map((elemento) => caja(elemento).width)
+            .filter((ancho) => ancho > 0 && ancho < 280).length,
+          controlesPequenos: [...document.querySelectorAll('button, a, input, textarea')]
+            .map(caja)
+            .filter((rect) => rect.height > 0 && rect.height < 44).length,
+          etiquetasHuerfanas: [...document.querySelectorAll('label[for]')].filter(
+            (etiqueta) => document.getElementById(etiqueta.getAttribute('for') ?? '') === null
+          ).length,
+        }
+      })
+
+      expect(medidas.desborde, `desbordamiento horizontal en ${seccion}`).toBe(0)
+      expect(medidas.contenedoresEstrechos, `contenedores bajo 280 px en ${seccion}`).toBe(0)
+      expect(medidas.controlesPequenos, `controles bajo 44 px en ${seccion}`).toBe(0)
+      expect(medidas.etiquetasHuerfanas, `etiquetas sin control en ${seccion}`).toBe(0)
+    }
 
     await page.screenshot({ path: 'tests/visual/salida/alumno-sesiones-mobile.png' })
   })
@@ -2238,13 +2316,11 @@ test.describe('asignaciones del alumno', () => {
      * llegan del puerto, asi que leer el texto nada mas cargar capturaba la
      * seccion todavia vacia y luego «cambiaba» sola.
      */
-    const filasDeSesion = page
-      .locator('section')
-      .filter({ hasText: 'Sesiones' })
-      .locator('ul > li')
+    const filasDeSesion = (await abrirSeccion(page, 'Sesiones')).locator('li')
     // Ana tiene dos en la semilla: la de mañana y la que quedo sin cerrar.
     await expect(filasDeSesion).toHaveCount(2)
 
+    await abrirSeccion(page, 'Resumen')
     await page.getByRole('button', { name: 'Asignar' }).first().click()
     const dialogo = page.getByRole('dialog')
     await expect(dialogo).toContainText('Asignar no agenda nada')
@@ -2262,6 +2338,7 @@ test.describe('asignaciones del alumno', () => {
      * son dos compromisos distintos, y mezclarlos obligaria a fijar horarios
      * para poder asignar.
      */
+    await abrirSeccion(page, 'Sesiones')
     await expect(filasDeSesion).toHaveCount(2)
   })
 
@@ -2291,12 +2368,10 @@ test.describe('asignaciones del alumno', () => {
     await signIn(page)
     await page.goto('/students/student-2')
 
-    const filasDeSesion = page
-      .locator('section')
-      .filter({ hasText: 'Sesiones' })
-      .locator('ul > li')
+    const filasDeSesion = (await abrirSeccion(page, 'Sesiones')).locator('li')
     await expect(filasDeSesion).toHaveCount(1)
 
+    await abrirSeccion(page, 'Resumen')
     await page.getByRole('button', { name: /Quitar la asignación de Empuje/ }).click()
     await expect(page.getByRole('link', { name: 'Empuje · Intermedio' })).toHaveCount(0)
 
@@ -2305,6 +2380,7 @@ test.describe('asignaciones del alumno', () => {
      * haber comunicado ya: desasignar dice «esto deja de ser tuyo de aqui en
      * adelante», no «nunca ocurrio».
      */
+    await abrirSeccion(page, 'Sesiones')
     await expect(filasDeSesion).toHaveCount(1)
   })
 
@@ -2453,32 +2529,29 @@ test.describe('volcar un plan a la agenda', () => {
 
     await page.goto('/students/student-2')
 
-    // Por el texto con el que EMPIEZA la seccion -su encabezado-: desde que la
-    // lista de asignaciones dice «11 sesiones en la agenda», un `hasText`
-    // suelto la contaba tambien. No por rol, porque con el dialogo abierto el
-    // resto de la pagina queda oculto para la accesibilidad.
-    const filasDeSesion = page
-      .locator('section')
-      .filter({ hasText: /^\s*Sesiones/ })
-      .locator('ul > li')
+    // Las filas de su seccion, contadas antes de volcar y despues. El volcado
+    // se abre desde «Asignado», que esta en el resumen.
+    const sesiones = await abrirSeccion(page, 'Sesiones')
+    const filasDeSesion = sesiones.locator('li')
+    await expect(filasDeSesion).toHaveCount(1)
+    await abrirSeccion(page, 'Resumen')
 
     const dialogo = await abrirVolcado(page)
-    await expect(filasDeSesion).toHaveCount(1)
-
     await ponerHoras(page, '08:00')
     await dialogo.getByRole('button', { name: 'Agendar 11 sesiones' }).click()
     await expect(page.getByRole('dialog')).toHaveCount(0)
 
     // Una que ya habia mas las once volcadas.
+    await abrirSeccion(page, 'Sesiones')
     await expect(filasDeSesion).toHaveCount(12)
 
     /*
      * La duracion sale de la rutina, no de un valor fijo: es el motivo de que
      * `estimateRoutineMinutes` subiera a `shared/domain`. Full body estima 25.
      */
-    await expect(page.getByText('08:00 · 25 min').first()).toBeVisible()
+    await expect(sesiones.getByText('08:00 · 25 min').first()).toBeVisible()
     // Y nacen pendientes: confirmarlas es un acto aparte.
-    await expect(page.getByText('PENDIENTE').first()).toBeVisible()
+    await expect(sesiones.getByText('PENDIENTE').first()).toBeVisible()
   })
 
   test('volcar dos veces avisa de las once colisiones, y no lo impide', async ({ page }) => {
@@ -3032,7 +3105,8 @@ test.describe('sesion en vivo', () => {
     // espejo, y la fila y la ficha salen del mismo agregado.
     await fila.getByRole('link', { name: 'María Gómez' }).click()
     await page.waitForURL(/\/students\/student-2/, { timeout: 15_000 })
-    await expect(page.getByText('17 / 100 XP')).toBeVisible()
+    const progreso = await abrirSeccion(page, 'Progreso')
+    await expect(progreso.getByText('17 / 100 XP')).toBeVisible()
   })
 
   test('terminar una sesion no lleva al entrenador a progreso', async ({ page }) => {
@@ -3306,15 +3380,15 @@ test.describe('progreso', () => {
     await signIn(page)
     await page.goto('/students/student-1')
 
-    await expect(page.getByRole('heading', { name: 'Progreso' })).toBeVisible()
-    await expect(page.getByText('Nivel 3')).toBeVisible()
-    await expect(page.getByText('76 / 200 XP')).toBeVisible()
+    const progreso = await abrirSeccion(page, 'Progreso')
+    await expect(progreso.getByText('Nivel 3')).toBeVisible()
+    await expect(progreso.getByText('76 / 200 XP')).toBeVisible()
 
     /*
-     * SIN «TU CAMINO» NI RACHA. Llegaron aqui reutilizando la cabecera de la
-     * pantalla del alumno, y son suyas: el sendero es el registro que empuja a
-     * seguir, escrito para quien lo recorre. Al entrenador le sirve la medida, y
-     * la tiene en la misma forma que en la lista.
+     * SIN «TU CAMINO» NI RACHA MOTIVACIONAL. Llegaron aqui reutilizando la
+     * cabecera de la pantalla del alumno, y son suyas: el sendero es el
+     * registro que empuja a seguir, escrito para quien lo recorre. Al
+     * entrenador le sirve la medida.
      */
     await expect(page.getByText('Tu camino')).toHaveCount(0)
     await expect(page.getByText('días de racha')).toHaveCount(0)
@@ -4476,7 +4550,7 @@ test.describe('cuotas', () => {
   test('la ficha dice hasta cuando tiene pagado, y en palabras', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
-    await page.goto('/students/student-1')
+    await page.goto('/students/student-1?seccion=cuota')
 
     /*
      * La semilla deja a Juan vencido hace cinco dias. Se comprueba contra la
@@ -4484,7 +4558,7 @@ test.describe('cuotas', () => {
      * desde `paidThrough`, y la semilla los pone relativos a hoy justo para que
      * la prueba no caduque.
      */
-    await expect(page.getByRole('heading', { name: 'Cuota' })).toBeVisible()
+    await expect(page.getByRole('region', { name: 'Cuota' })).toBeVisible()
     await expect(page.getByText('Venció hace 5 días')).toBeVisible()
 
     // Los dias dicen si corre prisa; la fecha dice que dia es. Las dos cosas.
@@ -4494,7 +4568,7 @@ test.describe('cuotas', () => {
   test('registrar un pago mueve la fecha, y cambiar el periodo no cobra', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
-    await page.goto('/students/student-1')
+    await page.goto('/students/student-1?seccion=cuota')
 
     /*
      * Juan esta vencido, asi que renovar cuenta DESDE HOY y no desde la fecha
@@ -4516,7 +4590,7 @@ test.describe('cuotas', () => {
   test('el aviso llega a la campana del alumno, no al muro', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
-    await page.goto('/students/student-2')
+    await page.goto('/students/student-2?seccion=cuota')
 
     /*
      * TODO EN LA MISMA CARGA: los adaptadores falsos viven en memoria, y un
@@ -4569,7 +4643,7 @@ test.describe('progresion de cargas', () => {
   test('lo levantado en la sesion aparece en la ficha del alumno', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
-    await page.goto('/students/student-2')
+    await page.goto('/students/student-2?seccion=progreso')
 
     // De partida no hay nada: `student-2` no tiene historial en la semilla.
     await expect(page.getByText(/Todavía no hay pesos anotados/)).toBeVisible()
@@ -4620,6 +4694,7 @@ test.describe('progresion de cargas', () => {
     await page.waitForURL(/\/students$/, { timeout: 15_000 })
     await page.getByRole('link', { name: 'María Gómez' }).click()
     await page.waitForURL(/\/students\/student-2/, { timeout: 15_000 })
+    await abrirSeccion(page, 'Progreso')
 
     const cargas = page.locator('section').filter({ hasText: 'Cargas' })
     await expect(cargas.getByText('Press de banca con barra')).toBeVisible()
@@ -4678,7 +4753,7 @@ test.describe('grafica de cargas', () => {
   test('el detalle de un ejercicio dibuja la linea y estima el maximo', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await signIn(page)
-    await page.goto('/students/student-1')
+    await page.goto('/students/student-1?seccion=progreso')
 
     const cargas = page.locator('section[aria-labelledby="cargas-titulo"]')
     const sentadilla = cargas.getByRole('button', { name: /Sentadilla con barra/ })
@@ -5502,7 +5577,7 @@ test.describe('rutas de desarrollo', () => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
     // `student-2` tiene asignado `plan-1`, de acondicionamiento: Vitality.
-    await page.goto('/students/student-2')
+    await page.goto('/students/student-2?seccion=progreso')
 
     const ruta = page.locator('section').filter({ hasText: 'Ruta de desarrollo' })
     await expect(ruta.getByRole('combobox', { name: 'Ruta' })).toContainText('Vitality')
@@ -5519,7 +5594,7 @@ test.describe('rutas de desarrollo', () => {
   test('cambiar la ruta a mano se refleja en el progreso del alumno', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
-    await page.goto('/students/student-2')
+    await page.goto('/students/student-2?seccion=progreso')
 
     const ruta = page.locator('section').filter({ hasText: 'Ruta de desarrollo' })
     await elegirDelDesplegable(page, ruta.getByRole('combobox', { name: 'Ruta' }), 'Apex')
@@ -5534,7 +5609,7 @@ test.describe('rachas protegidas', () => {
   test('el entrenador pausa la racha desde la ficha, y la pausa queda escrita', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
-    await page.goto('/students/student-1')
+    await page.goto('/students/student-1?seccion=progreso')
 
     const ruta = page.locator('section').filter({ hasText: 'Ruta de desarrollo' })
     await ruta.getByLabel('Desde').fill('2026-09-01')
@@ -5616,7 +5691,7 @@ test.describe('ciclos de vida y bandeja', () => {
     expect(await leerCifra(noOcurrieron)).toBeGreaterThanOrEqual(1)
 
     // Y en la ficha de su alumna, la insignia lo dice en vez de «pendiente».
-    await page.goto('/students/student-4')
+    await page.goto('/students/student-4?seccion=sesiones')
     await expect(page.getByText('No ocurrió').first()).toBeVisible()
   })
 

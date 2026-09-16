@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { useStudentRoute } from '../hooks/useStudentRoute'
-import { ROUTE_NAME_KEY } from '@/domains/progress/libs/routePath'
+import { NODE_TITLE_KEY, ROUTE_NAME_KEY } from '@/domains/progress/libs/routePath'
 import { badgeCatalog } from '@/domains/progress/data/badgeCatalog'
 import {
   PROGRESS_ROUTES,
@@ -28,13 +28,6 @@ const PAUSE_REASON_KEY: Record<'injury' | 'travel' | 'wildcard', TranslationKey>
   injury: 'studentRoute.reason.injury',
   travel: 'studentRoute.reason.travel',
   wildcard: 'studentRoute.reason.wildcard',
-}
-
-const NODE_TITLE_KEY: Record<number, TranslationKey> = {
-  1: 'route.node.initiation',
-  2: 'route.node.consolidation',
-  3: 'route.node.mastery',
-  4: 'route.node.master',
 }
 
 /**

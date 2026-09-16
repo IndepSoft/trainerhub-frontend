@@ -25,6 +25,11 @@ interface SubscriptionBadgeProps {
    * insignia le quita el sitio al nombre. Ver `describeStandingBriefly`.
    */
   brief?: boolean
+  /**
+   * El texto, cuando el contexto pide otro: en la cabecera de la ficha la
+   * insignia va sola y tiene que decir de qué habla —«Cuota vencida»—.
+   */
+  label?: string
   className?: string
 }
 
@@ -38,7 +43,12 @@ interface SubscriptionBadgeProps {
  * calendario para saber si eso es pronto; «faltan 3 días» no. La fecha exacta se
  * enseña al lado, para quien la necesite.
  */
-export function SubscriptionBadge({ standing, brief = false, className }: SubscriptionBadgeProps) {
+export function SubscriptionBadge({
+  standing,
+  brief = false,
+  label,
+  className,
+}: SubscriptionBadgeProps) {
   const { t } = useTranslation()
   return (
     <span
@@ -48,7 +58,7 @@ export function SubscriptionBadge({ standing, brief = false, className }: Subscr
         className
       )}
     >
-      {brief ? describeStandingBriefly(standing, t) : describeStanding(standing, t)}
+      {label ?? (brief ? describeStandingBriefly(standing, t) : describeStanding(standing, t))}
     </span>
   )
 }

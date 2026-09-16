@@ -18,7 +18,8 @@ export const ROUTE_DESCRIPTION_KEY: Record<ProgressRouteCode, TranslationKey> = 
   hybrid: 'route.hybrid.description',
 }
 
-const NODE_TITLE_KEY: Record<number, TranslationKey> = {
+/** El nombre de cada nodo. Lo usan el sendero del alumno y la ficha. */
+export const NODE_TITLE_KEY: Record<number, TranslationKey> = {
   1: 'route.node.initiation',
   2: 'route.node.consolidation',
   3: 'route.node.mastery',

@@ -383,7 +383,9 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   decide sobre el objeto —editar, dar de baja, borrar— vive en su ficha, en
   `PageHeader.OverflowMenu`; si una entrada abre un diálogo, el menú se
   controla y se cierra a mano (ver `StudentActions`). La tarjeta se queda
-  para donde el objeto ES el contenido.
+  para donde el objeto ES el contenido. Una FICHA LARGA va en secciones fijas
+  bajo la cabecera, con la sección en la dirección (`?seccion=`, siempre con
+  `replace`): ver `StudentDetail` y `CAMBIOS` §40.
 - TIEMPO REAL en **todo lo que la aplicación escucha**, por `postgres_changes`
   con `subscribeToTable` / `subscribeToTables`. Quince tablas publicadas: las
   de pertenencia e identidad —`crews`, `crew_staff`, `students`, `profiles`—

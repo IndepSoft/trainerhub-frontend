@@ -28,14 +28,10 @@ export function StudentProgressSection({ studentId }: StudentProgressSectionProp
   const { progressById, loading } = useStudentsProgress()
 
   return (
-    <section className="px-5 py-8" aria-labelledby="progreso-titulo">
-      <h2
-        id="progreso-titulo"
-        className="mb-4 border-b border-cobalt-tint-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60"
-      >
-        {t('studentProgress.title')}
-      </h2>
-
+    /* Sin título propio: va dentro de la sección «Progreso» de la ficha, y un
+       «PROGRESO» bajo la pestaña que ya lo dice se lee como un error. El nombre
+       sigue en `aria-label` para quien recorre la página por regiones. */
+    <section className="px-5 pb-6 pt-2" aria-label={t('studentProgress.title')}>
       {/* Sin el relleno lateral propio de la franja: aquí la sección ya lo pone,
           y duplicarlo dejaría la barra más estrecha que el resto de la ficha. */}
       <div className="[&>*]:px-0 [&>*]:pt-0">

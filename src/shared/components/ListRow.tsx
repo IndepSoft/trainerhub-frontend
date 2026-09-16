@@ -4,8 +4,18 @@ import { ChevronRight } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 
 interface ListRowProps {
-  /** A dónde lleva la fila entera. */
-  to: string
+  /**
+   * A dónde lleva la fila entera. Sin destino, la fila no es un enlace ni
+   * lleva flecha, y lo de `trailing` puede ser un control: es la fila de un
+   * pendiente que se resuelve ahí mismo, como copiar una invitación.
+   */
+  to?: string
+  /**
+   * Sustituye la entrada del historial en vez de añadir una. Para las filas que
+   * cambian de sección dentro de la misma pantalla: volver tiene que salir de
+   * ella, no recorrer sus secciones.
+   */
+  replace?: boolean
   /** La línea que se busca al escanear: un nombre, un título. */
   primary: string
   /** Lo que ayuda a distinguir uno de otro. Una línea, y se trunca. */
@@ -13,11 +23,31 @@ interface ListRowProps {
   /** Avatar, inicial o icono a la izquierda. */
   leading?: ReactNode
   /**
-   * Estado a la derecha, antes de la flecha: una insignia. Queda DEBAJO del
-   * enlace estirado, así que no puede ser un control: tocarlo abre la ficha.
+   * Estado a la derecha, antes de la flecha: una insignia. Con destino queda
+   * DEBAJO del enlace estirado, así que no puede ser un control: tocarlo
+   * abre el destino.
    */
   trailing?: ReactNode
   className?: string
+}
+
+interface RowTextProps {
+  primary: string
+  secondary?: string
+}
+
+/** Las dos líneas de la fila. El subrayado marca el foco del teclado. */
+function RowText({ primary, secondary }: RowTextProps) {
+  return (
+    <>
+      <span className="truncate text-[15px] font-semibold leading-tight text-ink group-focus-visible:underline">
+        {primary}
+      </span>
+      {secondary !== undefined && (
+        <span className="truncate text-[13px] text-ink/60">{secondary}</span>
+      )}
+    </>
+  )
 }
 
 /**
@@ -35,15 +65,21 @@ interface ListRowProps {
  *
  * TODA LA FILA ES EL ENLACE, con el enlace estirado sobre ella —`after:inset-0`,
  * el mismo patrón que la tarjeta de rutina y la ficha del plan—. Así el
- * objetivo táctil es la fila de 64 px y no las letras del nombre, y el nombre
- * accesible del enlace sigue siendo el texto principal.
+ * objetivo táctil es la fila de 64 px y no las letras del nombre.
  *
- * SIN MENÚ POR FILA, a propósito: una fila lleva a su ficha y nada más. Un
+ * Y EL ENLACE ENVUELVE LAS DOS LÍNEAS, con 44 px de alto propios. Envolvía
+ * sólo el nombre y su caja medía 19 px: el área de pulsación era la de la fila,
+ * pero la auditoría de 375 px —y cualquier otra— lo contaba como un destino de
+ * 19 px. De paso, el nombre accesible es la fila entera, nombre y apoyo, que es
+ * lo que un lector de pantalla debe decir al pasar por ella.
+ *
+ * SIN MENÚ POR FILA, a propósito: una fila con destino lleva a él y nada más. Un
  * control por fila multiplica los destinos táctiles de una pantalla que se
  * recorre con el pulgar, y obliga a subirlo por encima del enlace estirado.
  */
 export function ListRow({
   to,
+  replace = false,
   primary,
   secondary,
   leading,
@@ -59,21 +95,25 @@ export function ListRow({
     >
       {leading}
 
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+      {to === undefined ? (
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <RowText primary={primary} secondary={secondary} />
+        </span>
+      ) : (
         <Link
           to={to}
-          className="truncate text-[15px] font-semibold leading-tight text-ink outline-none after:absolute after:inset-0 focus-visible:underline"
+          replace={replace}
+          className="group flex min-h-11 min-w-0 flex-1 flex-col justify-center gap-0.5 outline-none after:absolute after:inset-0"
         >
-          {primary}
+          <RowText primary={primary} secondary={secondary} />
         </Link>
-        {secondary !== undefined && (
-          <span className="truncate text-[13px] text-ink/60">{secondary}</span>
-        )}
-      </span>
+      )}
 
       {trailing}
 
-      <ChevronRight aria-hidden="true" className="size-5 shrink-0 text-ink/35" />
+      {to !== undefined && (
+        <ChevronRight aria-hidden="true" className="size-5 shrink-0 text-ink/35" />
+      )}
     </li>
   )
 }

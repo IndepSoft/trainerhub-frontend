@@ -3615,7 +3615,8 @@ operable. A 1440: cero desbordamiento.
   las páginas.
 - `?agendar` abre el diálogo de agendar al entrar en la ficha, pero ya nadie
   enlaza con él: su puerta era el menú de la tarjeta. Tiene `TODO:` en
-  `StudentDetail`; su sitio es la sección «Le toca» de la ficha por secciones.
+  `StudentDetail`; su sitio es la sección «Le toca» de la ficha por secciones
+  (resuelto en §40).
 - En escritorio el padrón es una columna de 864 px; la composición de
   `EscritorioEstudiantes` es la tanda de escritorio.
 
@@ -3652,3 +3653,64 @@ después, a 20, salvo lo que se ajustó:
 ahí y está dentro de un contenedor que desplaza en horizontal: las pestañas del
 catálogo, el carrusel de logros y los textos truncados de la cola de avisos.
 En el padrón, «Avanzado · sin sesiones» se lee entera.
+
+## 40. La ficha del alumno, en secciones (16 sep 2026)
+
+Segunda tanda del rediseño de vistas (artboards `FichaAlumno*`). La ficha era
+una sola columna de más de cuatro mil píxeles con todo abierto —cifras,
+objetivos, cuota, progreso, ruta, cargas, asignaciones y sesiones— y lo que se
+venía a mirar había que encontrarlo desplazando.
+
+**La cabecera dice quién es y en qué estado está.** Nivel, edad y, sólo si
+reclama algo, la cuota («Cuota vencida», «Cuota por vencer»), en una línea.
+«Sin cuenta» y su invitación salieron de aquí: partían la línea en dos y
+bajaban el contenido 50 px en todas las secciones, y son un pendiente, así que
+van en «Le toca».
+
+**Cuatro secciones fijas bajo la cabecera**: Resumen, Progreso, Sesiones y
+Cuota. Quedan fuera del contenedor que desplaza, la sección vive en la
+dirección (`?seccion=cuota`), se cambia también deslizando —como en
+Entrenamientos— y cada una empieza por arriba. Todos los cambios usan
+`replace`: volver sale de la ficha, no recorre sus secciones.
+
+- **Resumen**: la franja de cifras —edad, grasa, sesiones hechas y racha—,
+  objetivos, lo asignado y **«Le toca»**, que es la bandeja del panel para una
+  persona: la cuota que reclama, el hito que espera validación, las insignias
+  por confirmar, las cargas por revisar, si no tiene cuenta —con el botón de
+  copiar la invitación ahí mismo— y la próxima sesión o su ausencia. Cada fila
+  lleva a la sección donde se resuelve. **Compone, no calcula reglas**
+  (`useStudentSummary`): las sesiones hechas salen del mismo agregado que la
+  fila del padrón, la racha de `streakFrom` con las pausas, y el hito
+  pendiente lo dice el servidor (`pendingMilestones`), no una tercera copia de
+  los umbrales.
+- **Progreso**: nivel, ruta y cargas, como estaban. Sin su título propio,
+  que repetía la pestaña.
+- **Sesiones**: lo próximo arriba y en orden de llegada; lo pasado debajo,
+  por meses y con cuántas se hicieron (`groupSessions`, con prueba unitaria).
+  Filas de 56 px en vez de 90: día, qué y cuándo, y el estado; lo hecho y lo
+  cancelado, atenuado; lo que no ocurrió, no.
+- **Cuota**: primero la tarjeta de estado —la insignia, la periodicidad y
+  hasta qué día está pagado—, después Registrar pago y Avisar juntos, y al
+  final la periodicidad.
+
+**`?agendar` recupera su puerta**, que perdió con la tarjeta del padrón
+(§38): la fila «Nada agendado» del resumen lleva a ella. El diálogo lee su
+estado de la dirección, y cerrarlo la limpia.
+
+**`ListRow` cambia en dos cosas.** El enlace envuelve las dos líneas y mide
+44 px propios: envolvía sólo el nombre, y aunque el área de pulsación era la
+fila, la auditoría de 375 px contaba un destino de 19 px —y el nombre
+accesible pasa a ser la fila entera, que es lo que debe leerse—. Y la fila
+puede no tener destino: entonces no es enlace ni lleva flecha, y lo de la
+derecha puede ser un control.
+
+**Verificado en navegador.** A 375 y a 1440, las cuatro secciones de dos
+alumnos: cero desbordamiento, pestañas de 82 × 44 sin desplazamiento, el
+contenido arranca a 316 px (366 con la cabecera en dos líneas). `?agendar`
+abre el diálogo y cerrarlo limpia la dirección; una fila de «Le toca» abre
+su sección y volver sale de la ficha. La auditoría de 375 px recorre ahora
+las cuatro secciones, no sólo la primera.
+
+**Queda para las tandas siguientes:** los dos formularios que siguen abiertos
+en Progreso —validar el hito y pausar la racha— pasan a hojas en la tanda de
+hojas, y la ficha de escritorio a su composición de 1440 en la de escritorio.
