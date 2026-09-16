@@ -14,7 +14,7 @@ import { canSaveBlockDraft } from '../libs/blockLibrary'
 import { clearRoutineDraft } from '../libs/draftStorage'
 import { BlockEditor } from '../components/BlockEditor'
 import { SavedBlockPicker } from '../components/SavedBlockPicker'
-import { RoutineDraftSummary } from '../components/RoutineDraftSummary'
+import { RoutineSummary } from '../components/RoutineSummary'
 import { RoutineIdentityFields } from '../components/RoutineIdentityFields'
 import type { BlockDraft } from '../types/routineDraft.types'
 import type { Routine } from '@/shared/domain/entities/routine'
@@ -201,7 +201,7 @@ function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
       </PageHeader>
 
       <div className={PAGE_SCROLL}>
-        <RoutineDraftSummary routine={preview} />
+        <RoutineSummary routine={preview} />
 
         <div className="space-y-6 px-5 py-6">
           {/* Se dice que lo que se ve es un borrador recuperado, con la

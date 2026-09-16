@@ -3714,3 +3714,49 @@ las cuatro secciones, no sólo la primera.
 **Queda para las tandas siguientes:** los dos formularios que siguen abiertos
 en Progreso —validar el hito y pausar la racha— pasan a hojas en la tanda de
 hojas, y la ficha de escritorio a su composición de 1440 en la de escritorio.
+
+## 41. Las fichas de rutina y de plan (16 sep 2026)
+
+Primera mitad de la tercera tanda del rediseño de vistas (artboards `Rutina`,
+`Plan` y los patrones 3 y 4 de `Patrones`). La segunda mitad son los
+formularios, en su propio commit.
+
+**Las cifras, en franja de dos por dos.** En las dos fichas iban apiladas
+—filas de 70 a 90 px cada una— y lo que es la rutina o el plan quedaba debajo
+del pliegue. Ahora son cuatro celdas arriba, y el nivel entra como una más en
+vez de ocupar un bloque. La celda es una pieza compartida, `MetricFigure`, que
+ya usaba el resumen de la ficha del alumno con otro nombre; más pequeña que
+`MetricBlock` a propósito: son los datos de un objeto, no los indicadores de
+una pantalla. `RoutineDraftSummary` pasa a `RoutineSummary` y, como
+`PlanSummary`, la usan la ficha y el formulario: lo que se ve al escribir es lo
+que se verá después.
+
+**La rutina, por bloques y en filas.** El rótulo dice el bloque y su método
+—«Bloque 03 · Superserie»— y, si tiene más de uno, cuántos ejercicios. Cada
+ejercicio es una fila con su número —sigue a lo largo de la rutina, que es el
+orden en que se hacen—, su nombre, su dosis y, debajo, el descanso, el tempo y
+las indicaciones. El descanso de cada ejercicio sólo se dice en una serie
+simple; en una superserie o un circuito cuenta el de la vuelta, que va al pie
+del bloque. **El nombre parte línea y no se trunca**: medido a 375, la dosis
+con peso y RIR se llevaba la mitad de la fila y tres nombres salían cortados.
+
+**El plan, con las semanas plegadas** (`CollapsibleRow`, el patrón 3). Las
+cuatro semanas eran 28 filas de días seguidas, 1.700 px para decir «lunes,
+miércoles y viernes». La fila cerrada dice cuántas sesiones y **qué días**
+—«3 sesiones · lunes, miércoles y viernes», con `Intl.ListFormat` para la
+conjunción de cada idioma—, que es precisamente lo que distingue días alternos
+de días seguidos, el motivo por el que antes se listaban los siete. Abierta
+sólo la primera; dentro, los días con rutina y los descansos contados
+(`summarizeWeek`, con prueba unitaria). Objetivo y división pasan a pares
+clave-valor.
+
+**La nota de cómo se asigna baja al pie** en las dos fichas: se lee una vez, y
+arriba empujaba lo que se viene a mirar.
+
+**De paso**: las cadenas «de descarga» y «/sem», escritas a mano en
+`PlanSummary`, pasan a los diccionarios, y salen seis claves que ya nadie
+usaba —dos de ellas desde antes de este trabajo—.
+
+**Verificado en navegador.** A 375 y a 1440, las tres rutinas de la semilla y
+el plan: cero desbordamiento, ningún nombre truncado, ningún control bajo
+44 px en móvil, y las semanas se abren y se cierran con `aria-expanded`.

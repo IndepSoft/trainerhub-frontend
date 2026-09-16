@@ -875,13 +875,14 @@ test('la tarjeta de rutina abre su ficha', async ({ page }) => {
   await page.waitForURL(/\/trainings\/.+/, { timeout: 15_000 })
   await expect(page.getByRole('heading', { level: 1 })).toContainText(titulo!.trim())
 
-  // La ficha se captura DESPLAZADA: los bloques, que son lo que la estructura
-  // aporta, viven por debajo del pliegue.
+  // Se captura desplazada, para ver el pie: la nota de como se asigna.
   await scrollInnerContainerToBottom(page)
   await page.screenshot({ path: 'tests/visual/salida/rutina-detalle-mobile.png' })
 
-  // La duracion es derivada: no existe campo que la almacene.
-  await expect(page.getByText('min estimados')).toBeVisible()
+  // La duracion es derivada: no existe campo que la almacene. Va en la franja.
+  const cifras = page.locator('dl').first()
+  await expect(cifras).toContainText('Duración')
+  await expect(cifras).toContainText(/\d+\s*min/)
   expect(enlace).toBeDefined()
 })
 
@@ -1774,15 +1775,24 @@ test.describe('ficha de plan', () => {
     const resumen = page.locator('dl').first()
     await expect(resumen).toContainText('11')
 
-    // Las cuatro semanas, con sus siete dias cada una y los descansos a la
-    // vista: ocultar los huecos haria que «lunes, miercoles y viernes» y «tres
-    // dias seguidos» se vieran igual.
-    await expect(page.locator('ol > li')).toHaveCount(4)
-    await expect(page.locator('ol > li').first().locator('ul > li')).toHaveCount(7)
-    await expect(page.getByText('Descanso').first()).toBeVisible()
+    /*
+     * Las cuatro semanas, PLEGADAS Y CON SU RESUMEN. La fila cerrada nombra los
+     * dias: es lo que distingue «lunes, miercoles y viernes» de «tres dias
+     * seguidos», el motivo por el que antes se listaban los siete.
+     */
+    const microciclos = page.getByRole('region', { name: 'Microciclos' })
+    const semanas = microciclos.getByRole('button', { name: /^Semana \d\d/ })
+    await expect(semanas).toHaveCount(4)
+    await expect(semanas.first()).toContainText('3 sesiones · lunes, miércoles y viernes')
 
-    // La cuarta semana esta marcada como descarga.
-    await expect(page.getByText('Descarga').first()).toBeVisible()
+    // Abierta la primera: sus dias con rutina, y los descansos contados.
+    await expect(semanas.first()).toHaveAttribute('aria-expanded', 'true')
+    await expect(microciclos.getByText('Descanso')).toBeVisible()
+    await expect(microciclos.getByText('4 días')).toBeVisible()
+
+    // La cuarta semana esta marcada como descarga, y se ve cerrada.
+    await expect(semanas.nth(3)).toHaveAttribute('aria-expanded', 'false')
+    await expect(semanas.nth(3)).toContainText('Descarga')
 
     // Y cada dia con rutina lleva a su ficha.
     await page.getByRole('link', { name: 'Full body · Principiante' }).first().click()
@@ -1813,7 +1823,9 @@ test.describe('ficha de plan', () => {
          * leer. Con el sangrado de escritorio se quedaba en 99 px cuando
          * necesita 136.
          */
-        nombresTruncados: [...document.querySelectorAll('ol li ul li a')].filter(
+        nombresTruncados: [
+          ...document.querySelectorAll('section[aria-labelledby="microciclos-titulo"] li a'),
+        ].filter(
           (enlace) => enlace.scrollWidth > enlace.clientWidth + 1
         ).length,
       }

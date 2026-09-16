@@ -1,29 +1,128 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Clock, Copy, Dumbbell, Pencil, Trash2 } from 'lucide-react'
+import { ArrowLeft, Copy, Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { PageHeader } from '@/shared/components/PageHeader'
-import { cn } from '@/shared/lib/utils'
 import { useRoutine } from '../hooks/useRoutines'
-import { LEVEL_BADGE } from '../libs/levelBadge'
-import {
-  countExercises,
-  countTotalSets,
-  estimateRoutineMinutes,
-  formatPrescription,
-  formatRest,
-} from '../libs/routine.utils'
+import { formatPrescription, formatRest } from '../libs/routine.utils'
 import { useTrainingCatalog } from '../hooks/useTrainingCatalog'
 import { useTrainingDeletion } from '../hooks/useTrainingDeletion'
+import { RoutineSummary } from '../components/RoutineSummary'
 import { ConfirmDeleteDialog } from '@/shared/components/ConfirmDeleteDialog'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { useViewerContext } from '@/app/ViewerContext'
-import { STUDENT_LEVEL_LABEL_KEY } from '@/shared/i18n/domainLabels'
 import { BLOCK_METHOD_LABEL_KEY } from '@/shared/i18n/domainLabels'
 import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
+import type { Block } from '@/shared/domain/entities/routine'
+import type { Exercise } from '../types/training.types'
+
+interface BlockSectionProps {
+  block: Block
+  /** Número del bloque, empezando en 1. */
+  position: number
+  /** Número del primer ejercicio del bloque dentro de la rutina. */
+  firstExerciseNumber: number
+  exercisesById: Map<string, Exercise>
+}
+
+/**
+ * Un bloque de la rutina: su método en el rótulo y sus ejercicios en filas.
+ *
+ * SE LISTAN BLOQUES y no ejercicios sueltos. El bloque es lo que se ejecuta
+ * como unidad: una superserie encadena sus ejercicios sin descanso, y aplanarla
+ * en una lista numerada diría que van uno detrás de otro con su pausa, que es
+ * lo contrario. Por eso la numeración de los ejercicios sigue a lo largo de la
+ * rutina —es el orden en que se hacen— pero el método va en el rótulo.
+ */
+function BlockSection({ block, position, firstExerciseNumber, exercisesById }: BlockSectionProps) {
+  const { t, plural } = useTranslation()
+  const isSimple = block.method === 'simple'
+
+  return (
+    <section aria-labelledby={`bloque-${block.id}`} className="flex flex-col">
+      <div className="flex items-baseline justify-between gap-2 border-b border-cobalt-tint-3 pb-2">
+        <h2
+          id={`bloque-${block.id}`}
+          className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60"
+        >
+          {t('routine.blockLabel', {
+            position: String(position).padStart(2, '0'),
+            method: t(BLOCK_METHOD_LABEL_KEY[block.method]),
+          })}
+        </h2>
+        {/* La cuenta sólo cuando dice algo: un bloque de un ejercicio es la
+            mayoría, y «1 ejercicio» repetido en cada rótulo es ruido. */}
+        {block.exercises.length > 1 && (
+          <span className="metric-figures shrink-0 text-[13px] font-semibold text-cobalt">
+            {plural('routine.exerciseCount.one', 'routine.exerciseCount.other', block.exercises.length, {
+              count: block.exercises.length,
+            })}
+          </span>
+        )}
+      </div>
+
+      <ol>
+        {block.exercises.map((item, index) => {
+          /*
+           * El descanso de CADA EJERCICIO sólo tiene sentido en una serie
+           * simple: en una superserie o un circuito se encadenan sin pausa, y
+           * el que cuenta es el de la vuelta, que va al pie del bloque.
+           */
+          const details = [
+            isSimple && item.restSeconds > 0
+              ? t('routine.restLabel', { rest: formatRest(item.restSeconds) })
+              : null,
+            item.tempo ?? null,
+            item.notes ?? null,
+          ].filter((detail): detail is string => detail !== null && detail !== '')
+
+          return (
+            <li
+              key={item.id}
+              className="grid min-h-[3.25rem] grid-cols-[1.75rem_minmax(0,1fr)_auto] items-center gap-2.5 border-b border-cobalt-tint-3 py-2"
+            >
+              <span className="metric-figures font-display text-base font-extrabold text-cobalt">
+                {String(firstExerciseNumber + index).padStart(2, '0')}
+              </span>
+              <span className="flex min-w-0 flex-col gap-0.5">
+                {/* El nombre PARTE LÍNEA, no se trunca: es lo que se viene a
+                    leer, y a 375 px la dosis con peso y RIR se lleva la mitad
+                    de la fila. */}
+                <span className="break-words text-[15px] font-semibold leading-snug text-ink">
+                  {exercisesById.get(item.exerciseId)?.name ?? t('exercise.fallback')}
+                </span>
+                {/* Tempo e indicaciones, si los hay: se editan desde que tienen
+                    campo, y lo que se escribe se tiene que poder leer donde se
+                    prescribe. */}
+                {details.length > 0 && (
+                  <span className="text-xs text-ink/60">{details.join(' · ')}</span>
+                )}
+              </span>
+              <span className="metric-figures whitespace-nowrap font-display text-base font-bold text-ink">
+                {formatPrescription(item)}
+              </span>
+            </li>
+          )
+        })}
+      </ol>
+
+      {(!isSimple || block.notes) && (
+        <p className="pt-2 text-xs text-ink/50">
+          {!isSimple && t('routine.roundRest', { rest: formatRest(block.restAfterSeconds) })}
+          {!isSimple && block.notes ? ' · ' : null}
+          {block.notes}
+        </p>
+      )}
+    </section>
+  )
+}
 
 /**
  * Ficha de una rutina. Sólo composición.
+ *
+ * LAS CIFRAS ARRIBA, EN FRANJA, Y LOS EJERCICIOS A LA VISTA. Las cifras iban
+ * apiladas —una fila de 70 px cada una— y los bloques debajo del pliegue, así
+ * que lo que es la rutina se veía lo último.
  */
 export default function RoutineDetail() {
   const { t } = useTranslation()
@@ -54,14 +153,20 @@ export default function RoutineDetail() {
         <p className="font-display text-2xl font-extrabold uppercase text-ink">
           {t('routine.notFound')}
         </p>
-        <p className="text-sm text-ink/50">
-          {t('routine.notFoundHint')}
-        </p>
+        <p className="text-sm text-ink/50">{t('routine.notFoundHint')}</p>
         <Button asChild variant="outline">
           <Link to="/trainings">{t('routine.back')}</Link>
         </Button>
       </div>
     )
+  }
+
+  // Dónde empieza cada bloque en la numeración de la rutina.
+  const firstNumbers: number[] = []
+  let nextNumber = 1
+  for (const block of routine.blocks) {
+    firstNumbers.push(nextNumber)
+    nextNumber += block.exercises.length
   }
 
   return (
@@ -108,142 +213,40 @@ export default function RoutineDetail() {
           )}
         </PageHeader.Content>
 
-        {/* La descripcion era el eyebrow, y una descripcion de dos lineas en
-            once pixeles pesaba mas que el titulo. Ahora va debajo, a todo el
-            ancho, y solo si la hay. */}
+        {/* La descripcion, debajo y a todo el ancho, y solo si la hay. */}
         {routine.description !== '' && (
           <PageHeader.Description>{routine.description}</PageHeader.Description>
         )}
       </PageHeader>
 
       <div className={PAGE_SCROLL}>
-        {/* La puerta a asignarla, como la tiene la ficha del plan: la rutina
-            se veia y no se sabia que hacer con ella mas alla de agendarla. */}
-        {manages && <p className="border-b border-cobalt-tint-3 px-5 py-3 text-sm text-ink/60">
-          {t('routine.assignHint')}{' '}
-          <Link
-            to="/students"
-            className="inline-flex min-h-11 items-center font-semibold text-cobalt underline-offset-4 hover:underline"
-          >
-            {t('plan.goToStudents')}
-          </Link>
-        </p>}
+        <RoutineSummary routine={routine} />
 
-        <div className="grid grid-cols-1 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-          <div className="flex flex-col gap-2 px-5 py-6">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
-              {t('routine.exercises')}
-            </span>
-            <p className="metric-figures font-display text-4xl font-extrabold leading-none text-ink">
-              {countExercises(routine)}
+        <div className="flex flex-col gap-6 px-5 pb-8 pt-6">
+          {routine.blocks.map((block, index) => (
+            <BlockSection
+              key={block.id}
+              block={block}
+              position={index + 1}
+              firstExerciseNumber={firstNumbers[index]}
+              exercisesById={exercisesById}
+            />
+          ))}
+
+          {/* Qué se hace con ella, al pie: se lee una vez, y arriba empujaba
+              los ejercicios, que son lo que se viene a mirar. */}
+          {manages && (
+            <p className="text-[13px] text-ink/50">
+              {t('routine.assignHint')}{' '}
+              <Link
+                to="/students"
+                className="inline-flex min-h-11 items-center font-semibold text-cobalt underline-offset-4 hover:underline"
+              >
+                {t('plan.goToStudents')}
+              </Link>
             </p>
-          </div>
-
-          <div className="flex flex-col gap-2 px-5 py-6">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
-              {t('routine.duration')}
-            </span>
-            <p className="metric-figures font-display text-4xl font-extrabold leading-none text-ink">
-              {estimateRoutineMinutes(routine)}
-              <span className="ml-1 text-xl font-bold text-ink/45">{t('routine.minutes')}</span>
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-2 px-5 py-6">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
-              {t('routine.level')}
-            </span>
-            <span
-              className={cn(
-                'w-fit rounded-action border px-2.5 py-0.5 text-sm font-semibold uppercase tracking-wider',
-                LEVEL_BADGE[routine.level]
-              )}
-            >
-              {t(STUDENT_LEVEL_LABEL_KEY[routine.level])}
-            </span>
-          </div>
+          )}
         </div>
-
-        <section className="px-5 py-8">
-          <h2 className="mb-1 flex items-center justify-between border-b border-cobalt-tint-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-            {t('routine.blocks')}
-            <Dumbbell className="size-4 text-cobalt" />
-          </h2>
-
-          {/*
-            Se listan BLOQUES y no ejercicios sueltos. El bloque es lo que se
-            ejecuta como unidad: una superserie encadena sus ejercicios sin
-            descanso, y aplanarla en una lista numerada dice que van uno detras
-            de otro con su pausa, que es lo contrario.
-          */}
-          <ol className="divide-y divide-cobalt-tint-3">
-            {routine.blocks.map((block, index) => (
-              <li key={block.id} className="py-5">
-                <div className="flex items-baseline gap-3">
-                  <span className="metric-figures w-6 shrink-0 text-sm font-bold text-cobalt">
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-
-                  <span
-                    className={cn(
-                      'rounded-action border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]',
-                      block.method === 'simple'
-                        ? 'border-cobalt-tint-3 text-ink/45'
-                        : 'border-ember/40 text-ember-deep'
-                    )}
-                  >
-                    {t(BLOCK_METHOD_LABEL_KEY[block.method])}
-                  </span>
-
-                  <span className="metric-figures ms-auto shrink-0 text-xs text-ink/40">
-                    {t('routine.restLabel', { rest: formatRest(block.restAfterSeconds) })}
-                  </span>
-                </div>
-
-                <ul className="mt-3 space-y-2 ps-9">
-                  {block.exercises.map((item) => (
-                    <li key={item.id} className="text-sm">
-                      <div className="flex items-baseline justify-between gap-4">
-                        <span className="min-w-0 flex-1 truncate text-ink">
-                          {exercisesById.get(item.exerciseId)?.name ?? t('exercise.fallback')}
-                        </span>
-                        <span className="metric-figures shrink-0 font-semibold text-ink/55">
-                          {formatPrescription(item)}
-                        </span>
-                      </div>
-                      {/* Tempo e indicaciones, si los hay: se editan desde
-                          que tienen campo, y lo que se escribe se tiene que
-                          poder leer donde se prescribe. */}
-                      {(item.tempo !== undefined || item.notes !== undefined) && (
-                        <p className="mt-0.5 text-xs text-ink/45">
-                          {item.tempo !== undefined && (
-                            <span className="metric-figures me-2">{item.tempo}</span>
-                          )}
-                          {item.notes}
-                        </p>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-
-                {block.notes && (
-                  <p className="mt-2 ps-9 text-xs text-ink/40">{block.notes}</p>
-                )}
-              </li>
-            ))}
-          </ol>
-
-          {/* Volumen y duracion, ambos derivados. Las series totales son la
-              medida que se programa: «cuantas series de pecho llevo esta
-              semana» es la pregunta real, no cuantos ejercicios hay. */}
-          <p className="metric-figures mt-5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink/40">
-            <span className="flex items-center gap-1.5">
-              <Clock className="size-3.5" />
-              {t('routine.estimatedMinutes', { minutes: estimateRoutineMinutes(routine) })}
-            </span>
-            <span>{t('routine.totalSetsCount', { count: countTotalSets(routine) })}</span>
-          </p>
-        </section>
       </div>
 
       <ConfirmDeleteDialog

@@ -1,4 +1,4 @@
-import type { TrainingPlan } from '../types/training.types'
+import type { PlanWeek, TrainingPlan } from '../types/training.types'
 
 /**
  * Cálculos derivados de un plan. Funciones puras, sin React.
@@ -14,6 +14,28 @@ export function countPlanSessions(plan: TrainingPlan): number {
     (total, week) => total + week.days.filter((day) => day.routineId !== null).length,
     0
   )
+}
+
+export interface WeekSummary {
+  /** Los días con rutina, del 1 (lunes) al 7, en orden. */
+  trainingDays: number[]
+  /** Los días sin rutina. Se cuentan, no se listan. */
+  restDays: number
+}
+
+/**
+ * Lo que dice una semana cerrada: qué días se entrena y cuántos se descansa.
+ *
+ * Es lo que permite PLEGAR las semanas de un plan: la fila cerrada tiene que
+ * decir «lunes, miércoles y viernes» para que no haga falta abrirla, y los
+ * descansos, que eran cuatro filas de «Descanso», se cuentan.
+ */
+export function summarizeWeek(week: PlanWeek): WeekSummary {
+  const trainingDays = week.days
+    .filter((day) => day.routineId !== null)
+    .map((day) => day.dayOfWeek)
+    .sort((first, second) => first - second)
+  return { trainingDays, restDays: week.days.length - trainingDays.length }
 }
 
 /** Semanas de descarga, que es información de programación, no un detalle. */

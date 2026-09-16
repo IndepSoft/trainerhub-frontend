@@ -385,7 +385,10 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   controla y se cierra a mano (ver `StudentActions`). La tarjeta se queda
   para donde el objeto ES el contenido. Una FICHA LARGA va en secciones fijas
   bajo la cabecera, con la sección en la dirección (`?seccion=`, siempre con
-  `replace`): ver `StudentDetail` y `CAMBIOS` §40.
+  `replace`): ver `StudentDetail` y `CAMBIOS` §40. Lo LARGO Y REPETIDO
+  —semanas de un plan— se pliega con `CollapsibleRow`, y la fila cerrada
+  resume lo que hay dentro (§41). Las cifras de un objeto van en
+  `MetricStrip` con `MetricFigure`, no apiladas.
 - TIEMPO REAL en **todo lo que la aplicación escucha**, por `postgres_changes`
   con `subscribeToTable` / `subscribeToTables`. Quince tablas publicadas: las
   de pertenencia e identidad —`crews`, `crew_staff`, `students`, `profiles`—

@@ -3,24 +3,116 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { PageHeader } from '@/shared/components/PageHeader'
-import { cn } from '@/shared/lib/utils'
+import { CollapsibleRow } from '@/shared/components/CollapsibleRow'
 import { usePlan } from '../hooks/usePlans'
 import { useRoutines } from '../hooks/useRoutines'
 import { useTrainingDeletion } from '../hooks/useTrainingDeletion'
 import { useTrainingCatalog } from '../hooks/useTrainingCatalog'
-import { weekdayName } from '../libs/planDraft'
+import { formatWeekdayList, weekdayName } from '../libs/planDraft'
+import { summarizeWeek } from '../libs/plan.utils'
 import { estimateRoutineMinutes } from '../libs/routine.utils'
-import { LEVEL_BADGE } from '../libs/levelBadge'
 import { PlanSummary } from '../components/PlanSummary'
 import { ConfirmDeleteDialog } from '@/shared/components/ConfirmDeleteDialog'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { useViewerContext } from '@/app/ViewerContext'
 import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
-import {
-  catalogLabel,
-  STUDENT_LEVEL_LABEL_KEY,
-} from '@/shared/i18n/domainLabels'
+import { catalogLabel } from '@/shared/i18n/domainLabels'
 import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
+import type { PlanWeek, Routine } from '../types/training.types'
+
+interface PlanWeekRowProps {
+  week: PlanWeek
+  routinesById: Map<string, Routine>
+  defaultOpen: boolean
+}
+
+/**
+ * Una semana del mesociclo, plegada con su resumen.
+ *
+ * Las cuatro semanas eran 28 filas de días seguidas, descansos incluidos:
+ * 1.700 px para decir «lunes, miércoles y viernes». La fila cerrada dice
+ * cuántas sesiones y QUÉ DÍAS —que es lo que distingue «lunes, miércoles y
+ * viernes» de «tres días seguidos», el motivo por el que antes se listaban los
+ * siete—, y abierta enseña sólo los días con rutina. Los descansos se cuentan.
+ */
+function PlanWeekRow({ week, routinesById, defaultOpen }: PlanWeekRowProps) {
+  const { t, plural } = useTranslation()
+  const { trainingDays, restDays } = summarizeWeek(week)
+  const sessions = plural('plan.sessionCount.one', 'plan.sessionCount.other', trainingDays.length, {
+    count: trainingDays.length,
+  })
+
+  return (
+    <CollapsibleRow
+      title={t('plan.weekLabel', { number: String(week.number).padStart(2, '0') })}
+      meta={
+        trainingDays.length === 0
+          ? t('plan.noSessionsWeek')
+          : `${sessions} · ${formatWeekdayList(trainingDays)}`
+      }
+      trailing={
+        week.isDeload ? (
+          <span className="shrink-0 rounded-action border border-ember/40 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-ember-deep">
+            {t('plan.deload')}
+          </span>
+        ) : undefined
+      }
+      defaultOpen={defaultOpen}
+    >
+      <ul>
+        {week.days
+          .filter((day) => day.routineId !== null)
+          // En el orden de la semana, el mismo que dice el resumen: el dato no
+          // garantiza que lleguen ordenados.
+          .sort((first, second) => first.dayOfWeek - second.dayOfWeek)
+          .map((day) => {
+            const routine = day.routineId === null ? undefined : routinesById.get(day.routineId)
+            return (
+              <li
+                key={day.dayOfWeek}
+                className="relative flex min-h-11 items-center justify-between gap-4 text-sm"
+              >
+                <span className="w-24 shrink-0 capitalize text-ink/60">
+                  {weekdayName(day.dayOfWeek)}
+                </span>
+                {routine === undefined ? (
+                  // La rutina se borró o no se ha cargado: se dice, sin enlace
+                  // a una ficha que no existe.
+                  <span className="min-w-0 flex-1 text-ink/40">{t('exercise.fallback')}</span>
+                ) : (
+                  <>
+                    {/* Mide 44 px por sí mismo ADEMÁS de estirarse: la caja de
+                        un enlace estirado sigue midiendo lo que el texto, y
+                        la auditoría de 375 px lo cuenta como un destino de
+                        20 px. */}
+                    <Link
+                      to={`/trainings/${routine.id}`}
+                      className="flex min-h-11 min-w-0 flex-1 items-center text-ink underline-offset-4 outline-none after:absolute after:inset-0 hover:text-cobalt hover:underline focus-visible:underline"
+                    >
+                      {routine.title}
+                    </Link>
+                    <span className="metric-figures shrink-0 text-xs text-ink/45">
+                      {estimateRoutineMinutes(routine)} {t('routine.minutes')}
+                    </span>
+                  </>
+                )}
+              </li>
+            )
+          })}
+
+        {restDays > 0 && (
+          <li className="flex min-h-11 items-center justify-between gap-4 text-sm">
+            <span className="w-24 shrink-0 text-ink/60">{t('plan.restOfWeek')}</span>
+            <span className="min-w-0 flex-1 text-ink/40">{t('plan.rest')}</span>
+            <span className="metric-figures shrink-0 text-xs text-ink/45">
+              {plural('plan.restDays.one', 'plan.restDays.other', restDays, { count: restDays })}
+            </span>
+          </li>
+        )}
+      </ul>
+    </CollapsibleRow>
+  )
+}
 
 /**
  * Ficha de un plan. Sólo composición.
@@ -31,14 +123,13 @@ import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
  * Aterrizar en el formulario obligaba a leer entre desplegables.
  */
 export default function PlanDetail() {
-  const { t } = useTranslation()
+  const { t, plural } = useTranslation()
 
   /* La entrada de catalogo, traducida, o el aviso de que no hay ninguna. */
   const catalogEntry = (
     entry: { id: string; name: string } | undefined,
     emptyKey: TranslationKey
-  ) =>
-    entry === undefined ? t(emptyKey) : catalogLabel(entry.id, entry.name, t)
+  ) => (entry === undefined ? t(emptyKey) : catalogLabel(entry.id, entry.name, t))
   const navigate = useNavigate()
   const { can } = useViewerContext()
   // La ficha la lee cualquier miembro; lo que la cambia, quien gestiona.
@@ -50,9 +141,7 @@ export default function PlanDetail() {
   const { deletePlan } = useTrainingDeletion()
 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
-  const [blockedReason, setBlockedReason] = useState<string | undefined>(
-    undefined
-  )
+  const [blockedReason, setBlockedReason] = useState<string | undefined>(undefined)
 
   const routinesById = useMemo(
     () => new Map(routines.map((routine) => [routine.id, routine])),
@@ -108,8 +197,8 @@ export default function PlanDetail() {
           )}
         </PageHeader.Content>
 
-        {/* Igual que en la ficha de la rutina: la descripcion deja el eyebrow
-            y baja a su sitio, a todo el ancho y solo si la hay. */}
+        {/* Igual que en la ficha de la rutina: la descripcion va debajo, a
+            todo el ancho y solo si la hay. */}
         {plan.description !== '' && (
           <PageHeader.Description>{plan.description}</PageHeader.Description>
         )}
@@ -118,137 +207,66 @@ export default function PlanDetail() {
       <div className={PAGE_SCROLL}>
         <PlanSummary plan={plan} />
 
-        {/* La puerta a asignarlo. Se asigna desde la ficha del alumno -es a
-            una persona a quien se asigna-, y desde aqui no habia forma de
-            llegar: el plan se veia y no se sabia que hacer con el. */}
-        {manages && <p className="border-b border-cobalt-tint-3 px-5 py-3 text-sm text-ink/60">
-          {t('plan.assignHint')}{' '}
-          <Link
-            to="/students"
-            className="inline-flex min-h-11 items-center font-semibold text-cobalt underline-offset-4 hover:underline"
-          >
-            {t('plan.goToStudents')}
-          </Link>
-        </p>}
+        <div className="flex flex-col gap-6 px-5 pb-8 pt-4">
+          {/* Objetivo y división, como pares y no como tres cifras gigantes:
+              son rótulos, no medidas. El nivel ya va en la franja. */}
+          <dl>
+            <div className="flex min-h-10 items-center justify-between gap-3 border-b border-cobalt-tint-3 text-sm">
+              <dt className="text-ink/60">{t('plan.objective')}</dt>
+              <dd className="text-end font-semibold text-ink">
+                {catalogEntry(objectivesById.get(plan.objectiveId), 'plan.noObjective')}
+              </dd>
+            </div>
+            <div className="flex min-h-10 items-center justify-between gap-3 border-b border-cobalt-tint-3 text-sm">
+              <dt className="text-ink/60">{t('plan.split')}</dt>
+              <dd className="text-end font-semibold text-ink">
+                {catalogEntry(splitsById.get(plan.splitId), 'plan.noSplit')}
+              </dd>
+            </div>
+          </dl>
 
-        <dl className="grid grid-cols-1 gap-x-6 gap-y-3 px-5 py-6 sm:grid-cols-3">
-          <div>
-            <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
-              {t('plan.objective')}
-            </dt>
-            <dd className="mt-1 text-sm text-ink">
-              {catalogEntry(
-                objectivesById.get(plan.objectiveId),
-                'plan.noObjective'
-              )}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
-              {t('plan.split')}
-            </dt>
-            <dd className="mt-1 text-sm text-ink">
-              {catalogEntry(splitsById.get(plan.splitId), 'plan.noSplit')}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
-              {t('routine.level')}
-            </dt>
-            <dd className="mt-1">
-              <span
-                className={cn(
-                  'inline-block rounded-action border px-2.5 py-0.5 text-sm font-semibold uppercase tracking-wider',
-                  LEVEL_BADGE[plan.level]
-                )}
+          <section aria-labelledby="microciclos-titulo" className="flex flex-col">
+            <div className="flex items-baseline justify-between gap-2 border-b border-cobalt-tint-3 pb-2">
+              <h2
+                id="microciclos-titulo"
+                className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60"
               >
-                {t(STUDENT_LEVEL_LABEL_KEY[plan.level])}
+                {t('plan.microcycles')}
+              </h2>
+              <span className="metric-figures text-[13px] font-semibold text-cobalt">
+                {plural('plan.weekCount.one', 'plan.weekCount.other', plan.weeks.length, {
+                  count: plan.weeks.length,
+                })}
               </span>
-            </dd>
-          </div>
-        </dl>
+            </div>
 
-        <section className="px-5 pb-8">
-          <h2 className="mb-1 border-b border-cobalt-tint-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-            {t('plan.microcycles')}
-          </h2>
-
-          <ol className="divide-y divide-cobalt-tint-3">
-            {plan.weeks.map((week) => (
-              <li key={week.number} className="py-5">
-                <div className="flex items-center gap-3">
-                  <span className="metric-figures w-6 shrink-0 text-sm font-bold text-cobalt">
-                    {String(week.number).padStart(2, '0')}
-                  </span>
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
-                    {t('plan.week')}
-                  </span>
-                  {week.isDeload && (
-                    <span className="rounded-action border border-ember/40 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-ember-deep">
-                      {t('plan.deload')}
-                    </span>
-                  )}
-                </div>
-
-                {/*
-                  Los SIETE dias, descansos incluidos: ver los huecos es parte de
-                  leer un microciclo, y ocultarlos haria que «lunes, miercoles y
-                  viernes» y «tres dias seguidos» se vieran igual.
-
-                  Dos medidas tomadas en el navegador y no de oido: cada fila es
-                  de 44 px porque el enlace suelto medía 20 y son once destinos
-                  que se tocan con el pulgar; y en movil no se sangra porque los
-                  36 px del indentado dejaban el nombre de la rutina en 99 px
-                  cuando necesita 136, o sea truncando justo el dato que se viene
-                  a leer. Desde `sm` sobra sitio y el sangrado vuelve, que es lo
-                  que alinea los dias bajo el numero de semana.
-                */}
-                <ul className="mt-2 sm:ps-9">
-                  {week.days.map((day) => {
-                    const routine =
-                      day.routineId === null
-                        ? undefined
-                        : routinesById.get(day.routineId)
-
-                    return (
-                      <li
-                        key={day.dayOfWeek}
-                        className="relative flex min-h-11 items-center justify-between gap-4 text-sm"
-                      >
-                        <span className="w-20 shrink-0 capitalize text-ink/45 sm:w-24">
-                          {weekdayName(day.dayOfWeek)}
-                        </span>
-
-                        {routine === undefined ? (
-                          <span className="min-w-0 flex-1 text-ink/30">
-                            {t('plan.rest')}
-                          </span>
-                        ) : (
-                          <>
-                            {/* Mide 44 px por si mismo ADEMAS de estirarse: un
-                                enlace estirado tiene el area de pulsacion de la
-                                fila, pero su caja sigue midiendo lo que el
-                                texto, y cualquier auditoria lo cuenta como un
-                                destino de 20 px. */}
-                            <Link
-                              to={`/trainings/${routine.id}`}
-                              className="flex min-h-11 min-w-0 flex-1 items-center truncate text-ink underline-offset-4 outline-none after:absolute after:inset-0 hover:text-cobalt hover:underline focus-visible:underline"
-                            >
-                              {routine.title}
-                            </Link>
-                            <span className="metric-figures shrink-0 text-ink/40">
-                              {estimateRoutineMinutes(routine)} min
-                            </span>
-                          </>
-                        )}
-                      </li>
-                    )
-                  })}
-                </ul>
-              </li>
+            {/* Abierta sólo la primera: es la que se mira al abrir la ficha,
+                y en un mesociclo las demás repiten su forma. */}
+            {plan.weeks.map((week, index) => (
+              <PlanWeekRow
+                key={week.number}
+                week={week}
+                routinesById={routinesById}
+                defaultOpen={index === 0}
+              />
             ))}
-          </ol>
-        </section>
+          </section>
+
+          {/* La puerta a asignarlo, al pie. Se asigna desde la ficha del alumno
+              —es a una persona a quien se asigna—, y desde aquí no había forma
+              de llegar: el plan se veía y no se sabía qué hacer con él. */}
+          {manages && (
+            <p className="text-[13px] text-ink/50">
+              {t('plan.assignHint')}{' '}
+              <Link
+                to="/students"
+                className="inline-flex min-h-11 items-center font-semibold text-cobalt underline-offset-4 hover:underline"
+              >
+                {t('plan.goToStudents')}
+              </Link>
+            </p>
+          )}
+        </div>
       </div>
 
       <ConfirmDeleteDialog

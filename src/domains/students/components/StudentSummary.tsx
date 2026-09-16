@@ -1,4 +1,5 @@
 import { MetricStrip } from '@/shared/components/MetricStrip'
+import { MetricFigure } from '@/shared/components/MetricFigure'
 import { ageOf, type Student } from '@/shared/domain/entities/student'
 import { goalLabel } from '@/shared/i18n/domainLabels'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
@@ -8,30 +9,6 @@ import { StudentUpNext } from './StudentUpNext'
 
 interface StudentSummaryProps {
   student: Student
-}
-
-interface SummaryFigureProps {
-  label: string
-  /** `null` mientras carga: se pinta un guion, no un cero que se lee y se cree. */
-  value: number | null
-  unit: string
-}
-
-/**
- * Una cifra de la franja. Más pequeña que `MetricBlock` a propósito: son
- * cuatro datos de la persona, no los indicadores de una pantalla, y sin icono
- * porque la etiqueta ya dice lo que es.
- */
-function SummaryFigure({ label, value, unit }: SummaryFigureProps) {
-  return (
-    <div className="flex flex-col gap-1 bg-bone px-4 py-3 sm:px-5 sm:py-4">
-      <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/60">{label}</dt>
-      <dd className="metric-figures font-display text-[1.625rem] font-extrabold leading-none text-ink">
-        {value ?? '—'}
-        <span className="ml-1 font-sans text-xs font-medium text-ink/45">{unit}</span>
-      </dd>
-    </div>
-  )
 }
 
 /**
@@ -51,22 +28,22 @@ export function StudentSummary({ student }: StudentSummaryProps) {
     <div>
       <MetricStrip columns={4} className="mx-5 mt-2">
         {/* Sin fecha se dice «—», no cero: nadie tiene cero años. */}
-        <SummaryFigure
+        <MetricFigure
           label={t('studentCard.age')}
           value={ageOf(student.birthDate)}
           unit={t('studentCard.years')}
         />
-        <SummaryFigure
+        <MetricFigure
           label={t('studentDetail.bodyFat')}
           value={student.bodyFatPercentage}
           unit="%"
         />
-        <SummaryFigure
+        <MetricFigure
           label={t('studentSummary.sessions')}
           value={summary.completedSessions}
           unit={t('studentSummary.sessionsUnit')}
         />
-        <SummaryFigure
+        <MetricFigure
           label={t('studentSummary.streak')}
           value={summary.streakDays}
           unit={t('studentSummary.streakUnit')}
