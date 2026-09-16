@@ -3556,3 +3556,65 @@ al llegar al final. A 375 × 667 en oscuro, con la etiqueta más larga activa:
 cero desbordamiento y sin recorte. Desde `md`: píldora no pintada y relleno a
 cero. Dos pruebas nuevas fijan lo que la forma anterior no podía romper: que el
 contenido pasa por debajo, y que aun así la última fila queda por encima.
+
+## 38. El padrón de alumnos, en filas (16 sep 2026)
+
+Primera tanda del rediseño de vistas (`docs/design/vistas/`, artboards
+`Estudiantes` y `Patrones`). Las tandas van en commits separados y cada una se
+revisa antes de entrar.
+
+**Filas y no tarjetas, porque la lista es para encontrar.** Cada alumno
+ocupaba una tarjeta de 320 px —edad, grasa, nivel, objetivos y la franja de
+progreso— y en un teléfono cabía una y media. Ahora es una fila de 64 px:
+avatar, nombre, una línea de apoyo y, a la derecha, un solo estado. Lo que
+enseñaba la tarjeta sigue en la ficha, a un toque. La fila es un patrón
+compartido, `ListRow`, con el enlace estirado sobre toda ella; el objetivo
+táctil es la fila y no las letras del nombre.
+
+**La línea de apoyo se compone por importancia**: nivel, cuántas sesiones
+lleva —«sin sesiones» en palabras, nunca una barra a cero— y «cuota vencida»
+sólo si lo está. **A la derecha manda el dinero**: la cuota vencida o por
+vencer gana a «sin cuenta», y en forma breve —«Vencida», «Por vencer»—,
+porque «Venció hace 5 días» son 135 px de los 303 de la fila y dejaban la
+línea en «Intermedio · …». Los días exactos siguen en la ficha y en la cola de
+cobros (`describeStandingBriefly`, `SubscriptionBadge brief`).
+
+**Las acciones se mudan a la ficha.** La fila no lleva menú a propósito:
+editar, dar de baja y eliminar están en la cabecera de la ficha, en un menú de
+tres puntos —`PageHeader.OverflowMenu`, una tercera categoría junto a la
+primaria y las secundarias—. Allí se decide sobre una persona, y un menú por
+fila multiplicaba los destinos táctiles de una pantalla que se recorre con el
+pulgar. El menú sólo se pinta con `students.manage`, que es lo que exige la
+base; la tarjeta lo ofrecía a cualquiera. «Sin cuenta» y «Copiar invitación»
+también pasan a la ficha, que es adonde manda la bandeja del panel.
+
+**Mudar las acciones destapó un fallo.** `useStudent` leía una vez y no
+escuchaba: con las acciones en la lista daba igual, porque la lista sí
+escucha, pero editar desde la ficha dejaba la ficha con los datos de antes, y
+tras una baja el menú seguía ofreciéndola. Ahora se suscribe, sin volver a
+encender `loading` —eso pintaría el esqueleto y desmontaría el diálogo que
+acaba de guardar—, y el menú no ofrece la baja a quien ya la tiene. Hay prueba,
+y se comprobó que falla sin el arreglo.
+
+**El filtro dice «Nivel».** Con `SelectValue`, el disparador medía lo que la
+opción elegida —«Todos los niveles»—. Ahora nombra qué filtra y, puesto,
+enseña el nivel. Su `aria-label` contiene siempre el texto visible («Nivel»,
+«Nivel: Intermedio»): `combobox` no toma el nombre de su contenido.
+
+**Verificado en navegador.** A 375: cero desbordamiento, filas de 64 px, la
+lista alineada con el título (36 px) y 303 px de ancho, filtro de 80 × 44, menú
+de 44 × 44; los tres diálogos del menú abren y cierran dejando la página
+operable. A 1440: cero desbordamiento.
+
+**Queda pendiente, y va en tandas siguientes:**
+
+- A 375 la línea de apoyo se trunca en las cuatro filas: la columna del nombre
+  se queda en 116–137 px. La causa no es la fila sino el margen de página:
+  `RootLayout` pone 16 px por lado y cada página otros 20, 72 px de 375; los
+  artboards usan 20. Se corrige en su propia tanda, porque toca todas las
+  páginas.
+- `?agendar` abre el diálogo de agendar al entrar en la ficha, pero ya nadie
+  enlaza con él: su puerta era el menú de la tarjeta. Tiene `TODO:` en
+  `StudentDetail`; su sitio es la sección «Le toca» de la ficha por secciones.
+- En escritorio el padrón es una columna de 864 px; la composición de
+  `EscritorioEstudiantes` es la tanda de escritorio.

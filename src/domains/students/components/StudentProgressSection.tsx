@@ -17,12 +17,11 @@ interface StudentProgressSectionProps {
  * camino»— y la racha, reutilizando la cabecera de la pantalla del alumno. Eran
  * de él, no de quien le entrena: el sendero es el registro motivacional que
  * empuja a seguir, y está escrito para quien lo recorre. Al entrenador le sirve
- * la medida, y la tiene aquí en la misma forma que en la lista.
+ * la medida, y la tiene aquí.
  *
- * Y ES LA MISMA FRANJA QUE LA TARJETA, no una copia con otro tamaño: si las dos
- * pintaran el nivel por su cuenta acabarían discrepando el día que cambie la
- * regla. Sale además del mismo agregado, así que abrir una ficha no cuesta una
- * consulta más.
+ * Sale del MISMO AGREGADO que la lista —`useStudentsProgress`—, así que abrir
+ * una ficha no cuesta una consulta más: el padrón ya lo ha pedido para escribir
+ * cuántas sesiones lleva cada uno.
  */
 export function StudentProgressSection({ studentId }: StudentProgressSectionProps) {
   const { t } = useTranslation()
@@ -37,8 +36,8 @@ export function StudentProgressSection({ studentId }: StudentProgressSectionProp
         {t('studentProgress.title')}
       </h2>
 
-      {/* Sin el relleno lateral de la tarjeta: aquí la sección ya lo pone, y
-          duplicarlo dejaría la barra más estrecha que el resto de la ficha. */}
+      {/* Sin el relleno lateral propio de la franja: aquí la sección ya lo pone,
+          y duplicarlo dejaría la barra más estrecha que el resto de la ficha. */}
       <div className="[&>*]:px-0 [&>*]:pt-0">
         <StudentProgressStrip
           progress={loading ? undefined : (progressById.get(studentId) ?? null)}

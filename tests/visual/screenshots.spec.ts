@@ -347,8 +347,13 @@ for (const viewport of [
   test(`la pildora flota sin tapar la ultima fila en ${viewport.nombre} px`, async ({ page }) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height })
     await signIn(page)
-    await page.goto('/students')
-    await expect(page.getByRole('heading', { name: 'Estudiantes' })).toBeVisible()
+    /*
+     * Sobre la FICHA y no sobre el padron: desde que el padron son filas, los
+     * cuatro alumnos de la semilla caben sin desplazar y la prueba no probaria
+     * nada. La ficha desborda de sobra, y se comprueba que desborda.
+     */
+    await page.goto('/students/student-1')
+    await expect(page.getByRole('heading', { name: 'Juan Pérez' })).toBeVisible()
 
     const medidas = await page.evaluate(async () => {
       const bar = document.querySelector('nav[aria-label="Navegación principal"] ul')
@@ -359,24 +364,25 @@ for (const viewport of [
       await new Promise((listo) => setTimeout(listo, 300))
 
       const pildora = bar.getBoundingClientRect()
-      const tarjetas = [...scroller.querySelectorAll('article')]
-      const ultima = tarjetas[tarjetas.length - 1]?.getBoundingClientRect() ?? null
+      const ultimo = scroller.lastElementChild?.getBoundingClientRect() ?? null
 
       return {
+        desborda: scroller.scrollHeight > scroller.clientHeight,
         desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         pildoraTop: pildora.top,
         scrollerBottom: scroller.getBoundingClientRect().bottom,
-        ultimaBottom: ultima === null ? null : ultima.bottom,
+        ultimoBottom: ultimo === null ? null : ultimo.bottom,
       }
     })
 
     expect(medidas).not.toBeNull()
+    expect(medidas!.desborda).toBe(true)
     expect(medidas!.desborde).toBe(0)
     // El contenido pasa por debajo: el contenedor llega mas abajo que la pildora.
     expect(medidas!.scrollerBottom).toBeGreaterThan(medidas!.pildoraTop)
-    // Y aun asi la ultima tarjeta se lee entera, por encima de ella.
-    expect(medidas!.ultimaBottom).not.toBeNull()
-    expect(medidas!.ultimaBottom!).toBeLessThanOrEqual(medidas!.pildoraTop)
+    // Y aun asi lo ultimo de la pagina se lee entero, por encima de ella.
+    expect(medidas!.ultimoBottom).not.toBeNull()
+    expect(medidas!.ultimoBottom!).toBeLessThanOrEqual(medidas!.pildoraTop)
   })
 }
 
@@ -704,52 +710,81 @@ test('la navegacion con transicion llega a su destino', async ({ page }) => {
 })
 
 /**
- * Tarjetas navegables.
+ * Filas navegables.
  *
- * El patron de enlace estirado tiene un fallo caracteristico: el enlace cubre la
- * tarjeta entera y se come el boton del menu. Estas pruebas comprueban las dos
- * mitades, porque arreglar una suele romper la otra.
+ * El enlace estirado tiene que cubrir la fila ENTERA: el objetivo tactil es la
+ * fila de 64 px, no las letras del nombre. Y la fila no lleva menu: lo que se
+ * decide sobre un alumno esta en su ficha.
  */
-test.describe('tarjeta de estudiante', () => {
-  test('tocar la tarjeta abre la ficha', async ({ page }) => {
+test.describe('fila de estudiante', () => {
+  test('tocar la fila lejos del nombre abre la ficha', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await signIn(page)
     await page.goto('/students')
-    await page.waitForTimeout(1500)
 
-    const tarjeta = page.getByRole('link', { name: 'Juan Pérez' })
-    await tarjeta.scrollIntoViewIfNeeded()
+    const fila = page
+      .getByRole('list', { name: 'Estudiantes' })
+      .getByRole('listitem')
+      .filter({ hasText: 'Juan Pérez' })
+    await expect(fila).toBeVisible()
 
-    // Se pulsa lejos del nombre, abajo a la derecha de la tarjeta: si el enlace
-    // no estuviera estirado, ahi no habria nada que pulsar.
-    // Se busca el <article> contenedor y no una clase: la clase cambia con
-    // cada iteracion de diseno -paso de `rounded-xl` a `rounded-block`- y la
-    // prueba se rompia sin que la funcionalidad hubiera cambiado.
-    // Con el pie de la tarjeta a la vista: desde que la tarjeta dice si el
-    // alumno tiene cuenta es mas alta que el hueco, y el punto de abajo caia
-    // sobre la barra inferior.
-    const articulo = tarjeta.locator('xpath=ancestor::article[1]')
-    await articulo.evaluate((element) => element.scrollIntoView({ block: 'end' }))
-    const caja = await articulo.boundingBox()
+    // Se pulsa en el extremo derecho, sobre la flecha: si el enlace no
+    // estuviera estirado, ahi no habria nada que pulsar.
+    const caja = await fila.boundingBox()
     expect(caja).not.toBeNull()
-    await page.mouse.click(caja!.x + caja!.width - 60, caja!.y + caja!.height - 30)
+    expect(caja!.height).toBeGreaterThanOrEqual(64)
+    await page.mouse.click(caja!.x + caja!.width - 10, caja!.y + caja!.height / 2)
 
     await page.waitForURL(/\/students\/.+/, { timeout: 15_000 })
     await expect(page.getByRole('heading', { name: 'Juan Pérez' })).toBeVisible()
   })
 
-  test('el menu de acciones sigue siendo pulsable', async ({ page }) => {
+  test('las acciones sobre un alumno estan en su ficha', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await signIn(page)
     await page.goto('/students')
-    await page.waitForTimeout(1500)
 
+    const lista = page.getByRole('list', { name: 'Estudiantes' })
+    await expect(lista.getByRole('listitem').first()).toBeVisible()
+    await expect(lista.getByRole('button')).toHaveCount(0)
+
+    await lista.getByRole('link', { name: 'Juan Pérez' }).click()
     await page.getByRole('button', { name: 'Acciones para Juan Pérez' }).click()
-    await expect(page.getByRole('menuitem', { name: 'Ver ficha' })).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: 'Editar' })).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: 'Dar de baja' })).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: 'Eliminar' })).toBeVisible()
 
-    // Y no ha navegado: el enlace estirado no se ha tragado el toque.
-    expect(page.url()).toContain('/students')
-    expect(page.url()).not.toMatch(/\/students\/.+/)
+    // Y el menu no ha navegado: se sigue en la ficha.
+    expect(page.url()).toMatch(/\/students\/student-1$/)
+  })
+
+  test('lo que se cambia desde la ficha se ve en la ficha', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/students/student-3')
+    await expect(page.getByRole('heading', { name: 'Carlos López' })).toBeVisible()
+
+    /*
+     * La ficha leia una vez y no escuchaba. Con las acciones en la tarjeta daba
+     * igual, porque la lista si escucha; desde que se editan AQUI, guardar
+     * dejaba la ficha enseñando lo de antes.
+     */
+    await page.getByRole('button', { name: 'Acciones para Carlos López' }).click()
+    await page.getByRole('menuitem', { name: 'Editar' }).click()
+    const dialogo = page.getByRole('dialog')
+    await dialogo.getByLabel('Nombre').fill('Carla')
+    await dialogo.getByRole('button', { name: 'Guardar cambios' }).click()
+    await expect(page.getByRole('heading', { name: 'Carla López' })).toBeVisible()
+
+    // Y una baja deja de ofrecerse en cuanto se ha dado.
+    await page.getByRole('button', { name: 'Acciones para Carla López' }).click()
+    await page.getByRole('menuitem', { name: 'Dar de baja' }).click()
+    await page.getByRole('alertdialog').or(page.getByRole('dialog'))
+      .getByRole('button', { name: 'Dar de baja' }).click()
+    await expect(page.getByText('Carla López ha causado baja')).toBeVisible()
+    await page.getByRole('button', { name: 'Acciones para Carla López' }).click()
+    await expect(page.getByRole('menuitem', { name: 'Editar' })).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: 'Dar de baja' })).toHaveCount(0)
   })
 })
 
@@ -784,7 +819,7 @@ test('capturas de las fichas nuevas', async ({ page }) => {
   await signIn(page)
   await page.goto('/students')
   await page.waitForTimeout(1200)
-  await page.locator('h3 a[href^="/students/"]').first().click()
+  await page.getByRole('list', { name: 'Estudiantes' }).getByRole('link').first().click()
   await page.waitForURL(/\/students\/.+/, { timeout: 15_000 })
   await page.waitForTimeout(800)
   await page.screenshot({ path: 'tests/visual/salida/estudiante-detalle-mobile.png' })
@@ -2984,17 +3019,18 @@ test.describe('sesion en vivo', () => {
     await page.getByRole('link', { name: /Estudiantes/ }).first().click()
     await page.waitForURL(/\/students$/, { timeout: 15_000 })
 
-    // En la TARJETA, de un vistazo: base 20 + 5 series = 25, por la adherencia
-    // al suelo -5 de 14 series- 0,80, y por la cohorte de una adulta de nivel
-    // avanzado, 0,85: 17 puntos. La formula es del servidor; aqui la aplica su
-    // espejo.
-    const tarjeta = page.getByRole('article').filter({ hasText: 'María Gómez' })
-    await expect(tarjeta).toContainText('17 / 100 XP')
-    await expect(tarjeta).toContainText('1 sesión')
+    // En la FILA, de un vistazo: la sesion ya cuenta.
+    const fila = page
+      .getByRole('list', { name: 'Estudiantes' })
+      .getByRole('listitem')
+      .filter({ hasText: 'María Gómez' })
+    await expect(fila).toContainText('1 sesión')
 
-    // Y en su ficha, con la misma cifra: sale del mismo agregado, asi que las
-    // dos no pueden discrepar.
-    await tarjeta.getByRole('link', { name: 'María Gómez' }).click()
+    // Y en su ficha, los puntos: base 20 + 5 series = 25, por la adherencia al
+    // suelo -5 de 14 series- 0,80, y por la cohorte de una adulta de nivel
+    // avanzado, 0,85: 17 puntos. La formula es del servidor; aqui la aplica su
+    // espejo, y la fila y la ficha salen del mismo agregado.
+    await fila.getByRole('link', { name: 'María Gómez' }).click()
     await page.waitForURL(/\/students\/student-2/, { timeout: 15_000 })
     await expect(page.getByText('17 / 100 XP')).toBeVisible()
   })
@@ -3217,10 +3253,9 @@ test.describe('alumnos', () => {
   test('un alumno con sesiones agendadas no se puede borrar', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
-    await page.goto('/students')
+    await page.goto('/students/student-1')
 
-    const tarjeta = page.locator('article').filter({ hasText: 'Juan Pérez' })
-    await tarjeta.getByRole('button').first().click()
+    await page.getByRole('button', { name: 'Acciones para Juan Pérez' }).click()
     await page.getByRole('menuitem', { name: 'Eliminar' }).click()
 
     /*
@@ -3242,31 +3277,28 @@ test.describe('alumnos', () => {
  * y era el mismo para cualquier alumno.
  */
 test.describe('progreso', () => {
-  test('la tarjeta de cada alumno lleva su progreso', async ({ page }) => {
+  test('la fila de cada alumno dice cuanto ha entrenado', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
     await page.goto('/students')
 
     /*
-     * EN LA TARJETA, no en un modulo aparte. Es la pregunta que un entrenador se
-     * hace mirando la lista -quien esta entrenando y quien se ha caido- y hasta
-     * ahora exigia abrir otra pantalla y elegir a la persona en un desplegable.
+     * EN LA FILA, en palabras: cuantas sesiones lleva. Es lo que distingue a
+     * quien entrena de quien se ha caido, que es la pregunta que se hace
+     * mirando la lista. El nivel y los puntos estan a un toque, en la ficha, y
+     * los comprueba la prueba siguiente.
      *
-     * Las cifras se comprueban contra la regla, no contra un numero copiado: la
-     * semilla de `student-1` son diez sesiones cerradas que el espejo de la regla
-     * del servidor puntua en 326; descontando 100 del nivel 1 y 150 del 2,
-     * quedan 76 dentro del nivel 3, que cuesta 200.
+     * La semilla de `student-1` son diez sesiones cerradas.
      */
-    const juan = page.getByRole('article').filter({ hasText: 'Juan Pérez' })
-    await expect(juan).toContainText('Nivel 3')
-    await expect(juan).toContainText('76 / 200 XP')
-    await expect(juan).toContainText('10 sesiones')
+    const filas = page.getByRole('list', { name: 'Estudiantes' }).getByRole('listitem')
+    const juan = filas.filter({ hasText: 'Juan Pérez' })
+    await expect(juan).toContainText('Intermedio · 10 sesiones')
+    await expect(juan).not.toContainText('XP')
 
-    // Quien no ha entrenado no lleva una barra a cero -se lee como un mal
-    // resultado- sino lo que de verdad significa.
-    const maria = page.getByRole('article').filter({ hasText: 'María Gómez' })
-    await expect(maria).toContainText('Todavía no ha completado ninguna sesión')
-    await expect(maria).not.toContainText('XP')
+    // Quien no ha entrenado no lleva un cero, que se lee como un mal
+    // resultado: lleva lo que significa.
+    const maria = filas.filter({ hasText: 'María Gómez' })
+    await expect(maria).toContainText('Avanzado · sin sesiones')
   })
 
   test('la ficha lleva la medida, no el registro motivacional', async ({ page }) => {
@@ -5071,27 +5103,31 @@ test.describe('huecos cerrados', () => {
     await page.setViewportSize({ width: 375, height: 812 })
     await signIn(page)
     await page.goto('/students')
-    await page.waitForTimeout(1200)
 
-    const tarjetas = page.locator('article')
-    const antes = await tarjetas.count()
+    const filas = page.getByRole('list', { name: 'Estudiantes' }).getByRole('listitem')
+    await expect(filas.first()).toBeVisible()
+    const antes = await filas.count()
     expect(antes).toBeGreaterThan(1)
 
     // Sin tilde a proposito: la busqueda no distingue acentos ni mayusculas.
     await page.getByLabel('Buscar estudiante...').fill('ana')
-    await expect(tarjetas).not.toHaveCount(antes)
-    await expect(tarjetas.first()).toContainText(/ana/i)
+    await expect(filas).not.toHaveCount(antes)
+    await expect(filas.first()).toContainText(/ana/i)
 
     await page.getByLabel('Buscar estudiante...').fill('nadie-con-este-nombre')
     await expect(page.getByText('Ningún alumno coincide con la búsqueda.')).toBeVisible()
     await page.getByLabel('Buscar estudiante...').fill('')
 
-    await elegirDelDesplegable(page, page.getByRole('combobox', { name: 'Filtros' }), 'Avanzado')
-    const avanzados = await tarjetas.count()
+    const nivel = page.getByRole('combobox', { name: 'Nivel' })
+    await elegirDelDesplegable(page, nivel, 'Avanzado')
+    // El disparador dice que filtra y por que valor, en pantalla y al lector.
+    await expect(nivel).toHaveText('Avanzado')
+    await expect(nivel).toHaveAccessibleName('Nivel: Avanzado')
+    await expect(filas).not.toHaveCount(antes)
+    const avanzados = await filas.count()
     expect(avanzados).toBeGreaterThan(0)
-    expect(avanzados).toBeLessThan(antes)
-    for (const tarjeta of await tarjetas.all()) {
-      await expect(tarjeta).toContainText('Avanzado')
+    for (const fila of await filas.all()) {
+      await expect(fila).toContainText('Avanzado')
     }
   })
 
@@ -5542,20 +5578,31 @@ test.describe('ciclos de vida y bandeja', () => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
     await page.goto('/students')
+    const padron = page.getByRole('list', { name: 'Estudiantes' })
+    const ana = padron.getByRole('listitem').filter({ hasText: 'Ana Torres' })
+    await expect(ana).toBeVisible()
 
+    // La baja se da desde la ficha, que es donde se decide sobre una persona.
+    await ana.getByRole('link', { name: 'Ana Torres' }).click()
     await page.getByRole('button', { name: 'Acciones para Ana Torres' }).click()
     await page.getByRole('menuitem', { name: 'Dar de baja' }).click()
     const dialogo = page.getByRole('dialog')
     await expect(dialogo.getByText('¿Dar de baja a Ana Torres?')).toBeVisible()
     await dialogo.getByRole('button', { name: 'Dar de baja' }).click()
+    await expect(dialogo).toHaveCount(0)
 
-    await expect(page.getByRole('heading', { name: 'Ana Torres' })).toHaveCount(0)
+    // De vuelta por la interfaz y no con `goto`: los datos simulados viven en
+    // memoria, y recargar devolveria la semilla.
+    await page.getByRole('link', { name: 'Estudiantes' }).first().click()
+    await page.waitForURL(/\/students$/)
+    await expect(padron.getByRole('listitem').first()).toBeVisible()
+    await expect(ana).toHaveCount(0)
 
     // Las bajas, plegadas bajo el padron; reactivar la devuelve.
     await page.getByRole('button', { name: 'Ver bajas (1)' }).click()
     await expect(page.getByText('Bajas · 1')).toBeVisible()
     await page.getByRole('button', { name: 'Reactivar' }).click()
-    await expect(page.getByRole('heading', { name: 'Ana Torres' })).toBeVisible()
+    await expect(ana).toBeVisible()
   })
 
   test('una sesion abierta con el dia pasado se enseña como «no ocurrio» y se cuenta aparte', async ({ page }) => {

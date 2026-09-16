@@ -7,11 +7,14 @@ import { PageHeader } from '@/shared/components/PageHeader'
 import { PageSkeleton } from '@/shared/components/PageSkeleton'
 import { getInitials, getShortName } from '@/shared/lib/personName'
 import { useStudent } from '../hooks/useStudent'
+import { StudentActions } from '../components/StudentActions'
 import { StudentAssignments } from '../components/StudentAssignments'
 import { StudentLoadProgression } from '../components/StudentLoadProgression'
 import { StudentProgressSection } from '../components/StudentProgressSection'
 import { StudentRouteSection } from '../components/StudentRouteSection'
 import { useViewerContext } from '@/app/ViewerContext'
+import { CopyInviteButton } from '@/shared/components/CopyInviteButton'
+import { canEnrollMembers } from '@/shared/domain/entities/crew'
 import { StudentSubscriptionSection } from '../components/StudentSubscriptionSection'
 import { StudentSessions } from '../components/StudentSessions'
 import { ScheduleSessionDialog } from '../components/ScheduleSessionDialog'
@@ -27,18 +30,18 @@ import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
  */
 export default function StudentDetail() {
   const { t } = useTranslation()
-  const { can } = useViewerContext()
+  const { active, can } = useViewerContext()
   const { studentId } = useParams<{ studentId: string }>()
   const { student, loading } = useStudent(studentId)
 
   /*
-   * `?agendar` abre el dialogo al entrar. Lo usa «Agendar sesion» del menu de
-   * la tarjeta, en la lista: sin esto, esa entrada del menu llevaba a la ficha
-   * y dejaba al entrenador buscando el boton, que es exactamente el paso que
-   * pedia evitar.
+   * `?agendar` abre el dialogo al entrar. En la URL y no en el estado del
+   * enrutador porque asi el enlace se puede compartir y sobrevive a una recarga.
    *
-   * En la URL y no en el estado del enrutador porque asi el enlace se puede
-   * compartir y sobrevive a una recarga.
+   * TODO: volver a darle una puerta. La tenia en el menu de la tarjeta del
+   * padron —«Agendar sesion» llevaba aqui con el dialogo ya abierto— y las filas
+   * no llevan menu a proposito. El sitio natural es la seccion «Le toca» de la
+   * ficha por secciones, que es la siguiente tanda del rediseño.
    */
   const [searchParams, setSearchParams] = useSearchParams()
   const [isScheduleOpen, setIsScheduleOpen] = useState(searchParams.has('agendar'))
@@ -83,6 +86,8 @@ export default function StudentDetail() {
 
   const fullName = getShortName(student.firstName, student.lastName)
   const initials = getInitials(student.firstName, student.lastName)
+  const canInvite = can('crew.invite') && active !== null && canEnrollMembers(active.crew)
+  const joinToken = active?.crew.joinToken ?? null
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
@@ -111,6 +116,10 @@ export default function StudentDetail() {
           <PageHeader.Title className="text-3xl">{fullName}</PageHeader.Title>
 
           <PageHeader.Actions>
+            {/* Editar, dar de baja y eliminar llegan aqui desde el menu de la
+                tarjeta del padron, que ya no existe. Ver `StudentActions`. */}
+            <StudentActions student={student} />
+
             {/* «Ver progreso» ya no lleva a ninguna parte: el progreso esta en
                 esta misma pagina, mas abajo. Un boton que baja la pagina no es
                 un destino, es ruido. */}
@@ -122,6 +131,21 @@ export default function StudentDetail() {
             />
           </PageHeader.Actions>
         </PageHeader.Content>
+
+        {/*
+          SI TIENE CUENTA O NO, y el enlace que lo arregla. Lo decia la tarjeta
+          del padron; al pasar a filas ya no cabe, y la bandeja del panel manda
+          precisamente aqui —«Enviales la invitacion desde su ficha»—. Sin
+          cuenta no le llegan avisos ni ve su progreso.
+        */}
+        {student.profileId === null && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="rounded-action border border-cobalt-tint-3 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-ink/55">
+              {t('crew.noAccount')}
+            </span>
+            {canInvite && joinToken !== null && <CopyInviteButton joinToken={joinToken} />}
+          </div>
+        )}
       </PageHeader>
 
       <div className={PAGE_SCROLL}>

@@ -375,6 +375,12 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   `PAGE_SCROLL`, que es también el único sitio donde vive `flex-1
   overflow-auto`. Una página nueva usa `PAGE_SCROLL` y no se entera de la
   barra; si escribe las clases a mano, su última fila quedará tapada.
+- Una lista para ENCONTRAR algo son FILAS, no tarjetas (`CAMBIOS` §38):
+  `ListRow`, 64 px, toda la fila es el enlace y no lleva menú. Lo que se
+  decide sobre el objeto —editar, dar de baja, borrar— vive en su ficha, en
+  `PageHeader.OverflowMenu`; si una entrada abre un diálogo, el menú se
+  controla y se cierra a mano (ver `StudentActions`). La tarjeta se queda
+  para donde el objeto ES el contenido.
 - TIEMPO REAL en **todo lo que la aplicación escucha**, por `postgres_changes`
   con `subscribeToTable` / `subscribeToTables`. Quince tablas publicadas: las
   de pertenencia e identidad —`crews`, `crew_staff`, `students`, `profiles`—

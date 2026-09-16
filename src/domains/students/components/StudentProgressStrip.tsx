@@ -11,10 +11,12 @@ interface StudentProgressStripProps {
 /**
  * Cuánto ha entrenado un alumno, en una franja.
  *
- * VA EN LA TARJETA porque es la pregunta que un entrenador se hace mirando la
- * lista —quién está entrenando y quién se ha caído—, y hasta ahora exigía abrir
- * una pantalla aparte y elegir a la persona en un desplegable. Un dato que se
- * consulta de un vistazo no puede vivir a dos clics.
+ * VA EN LA FICHA, a la altura del pulgar. Estuvo en la tarjeta del padrón, y de
+ * ahí salió con ella: el padrón se recorre para ENCONTRAR a alguien, y una
+ * franja con nivel, XP y barra por cada alumno era la mitad de los 320 px que
+ * hacían falta desplazar para dar con el siguiente. La fila dice cuántas
+ * sesiones lleva, que es lo que distingue a quien entrena de quien se ha caído;
+ * el nivel y los puntos están a un toque.
  *
  * SIN ENTRENAR NO SE PINTA UNA BARRA A CERO. Una barra vacía con «Nivel 1» se
  * lee como un mal resultado, y lo que dice es que todavía no ha pasado nada. Se

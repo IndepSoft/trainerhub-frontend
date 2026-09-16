@@ -1,22 +1,21 @@
 import { useState } from 'react'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { Plus } from 'lucide-react'
-import { StudentCard } from '../components/StudentCard'
+import { StudentRow } from '../components/StudentRow'
 import { StudentFilters } from '../components/StudentFilters'
 import { StudentFormDialog } from '../components/StudentFormDialog'
 import { InactiveStudents } from '../components/InactiveStudents'
 import { useStudents } from '../hooks/useStudents'
 import { useStudentEditor } from '../hooks/useStudentEditor'
 import { useStudentsProgress } from '../hooks/useStudentsProgress'
+import { useSubscriptions } from '../hooks/useSubscriptions'
 import {
   EMPTY_STUDENT_FILTERS,
   filterStudents,
   type StudentFilterState,
 } from '../libs/filterStudents'
-import type { NewStudent } from '@/shared/domain/ports/StudentRepository'
 import { canEnrollMembers } from '@/shared/domain/entities/crew'
 import { useViewerContext } from '@/app/ViewerContext'
-import type { Student } from '@/shared/domain/entities/student'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
@@ -27,8 +26,9 @@ export default function Students() {
   // En memoria: son decenas de fichas ya cargadas. Ver `filterStudents`.
   const visibleStudents = filterStudents(students, filters)
   const isFiltering = filters.query.trim() !== '' || filters.level !== 'all'
-  const { createStudent, updateStudent } = useStudentEditor()
+  const { createStudent } = useStudentEditor()
   const { progressById, loading: loadingProgress } = useStudentsProgress()
+  const { standingOf } = useSubscriptions()
   const { active, can } = useViewerContext()
 
   /*
@@ -43,25 +43,6 @@ export default function Students() {
   const canEnroll = can('students.manage') && active !== null && canEnrollMembers(active.crew)
 
   const [isFormOpen, setIsFormOpen] = useState(false)
-  const [editing, setEditing] = useState<Student | null>(null)
-
-  const openForNew = () => {
-    setEditing(null)
-    setIsFormOpen(true)
-  }
-
-  const openForEdit = (student: Student) => {
-    setEditing(student)
-    setIsFormOpen(true)
-  }
-
-  const handleSave = async (data: NewStudent) => {
-    if (editing === null) {
-      await createStudent(data)
-      return
-    }
-    await updateStudent(editing.id, data)
-  }
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden bg-bone">
@@ -85,7 +66,7 @@ export default function Students() {
               icon={Plus}
               label={t('students.add')}
               shortLabel={t('students.addShort')}
-              onClick={openForNew}
+              onClick={() => setIsFormOpen(true)}
               disabled={!canEnroll}
             />
           </PageHeader.Actions>
@@ -111,7 +92,9 @@ export default function Students() {
         </p>
       )}
 
-      <section className="pt-4 ps-4 pe-4 mb-6 space-y-6">
+      {/* `px-5`, el mismo margen que la cabecera: con `px-4` la lista
+          arrancaba cuatro pixeles a la izquierda del titulo. */}
+      <section className="px-5 pt-4">
         <StudentFilters filters={filters} onChange={setFilters} />
       </section>
 
@@ -121,43 +104,60 @@ export default function Students() {
           admite uno por documento- ademas de confundir a los lectores de
           pantalla. */}
       <div className={PAGE_SCROLL}>
-        <div className="ps-4 pe-4 pb-4 max-w-8xl mx-auto">
-          <div className="space-y-6">
-            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
-              {visibleStudents.map((student) => (
-                <StudentCard
-                  key={student.id}
-                  student={student}
-                  /* `undefined` mientras carga y `null` cuando no ha entrenado:
-                     la tarjeta pinta cosas distintas, y confundirlos enseñaria
-                     «sin sesiones» durante un instante a quien si las tiene. */
-                  progress={loadingProgress ? undefined : (progressById.get(student.id) ?? null)}
-                  onEdit={openForEdit}
-                />
-              ))}
+        <div className="mx-auto max-w-4xl px-5 pb-4">
+          {/*
+            FILAS Y NO TARJETAS. Esta lista es para ENCONTRAR a alguien, no para
+            leer su ficha: cada tarjeta ocupaba 320 px y en un telefono cabia una
+            y media, asi que dar con un alumno era desplazar. Lo que la tarjeta
+            enseñaba —edad, grasa, objetivos, la franja de progreso— esta a un
+            toque. Ver `ListRow`.
+          */}
+          <ul aria-label={t('students.title')} className="mt-3">
+            {visibleStudents.map((student) => (
+              <StudentRow
+                key={student.id}
+                student={student}
+                /* `undefined` mientras carga y `null` cuando no ha entrenado:
+                   la fila pinta cosas distintas, y confundirlos enseñaria
+                   «sin sesiones» durante un instante a quien si las tiene. */
+                progress={loadingProgress ? undefined : (progressById.get(student.id) ?? null)}
+                standing={standingOf(student.id)}
+              />
+            ))}
+          </ul>
+
+          {/* Que se hace con la lista, dicho una vez. Una fila que no enseña un
+              menu tiene que decir a donde lleva. */}
+          {visibleStudents.length > 0 && (
+            <p className="pt-3 text-[13px] text-ink/45">{t('students.rowHint')}</p>
+          )}
+
+          {/* Dos vacíos distintos: no tener alumnos y no encontrar ninguno
+              con estos filtros. Decir lo primero cuando pasa lo segundo
+              manda a dar de alta a alguien que ya existe. */}
+          {!loading && students.length === 0 ? (
+            <p className="py-12 text-center text-sm text-ink/45">{t('students.empty')}</p>
+          ) : null}
+          {!loading && students.length > 0 && visibleStudents.length === 0 && isFiltering ? (
+            <p className="py-12 text-center text-sm text-ink/45">{t('students.noMatches')}</p>
+          ) : null}
+
+          {/* Las bajas, plegadas: quien puede reactivarlas las encuentra aqui. */}
+          {can('crew.members') && (
+            <div className="pt-6">
+              <InactiveStudents />
             </div>
-
-            {/* Dos vacíos distintos: no tener alumnos y no encontrar ninguno
-                con estos filtros. Decir lo primero cuando pasa lo segundo
-                manda a dar de alta a alguien que ya existe. */}
-            {!loading && students.length === 0 ? (
-              <p className="py-12 text-center text-sm text-ink/45">{t('students.empty')}</p>
-            ) : null}
-            {!loading && students.length > 0 && visibleStudents.length === 0 && isFiltering ? (
-              <p className="py-12 text-center text-sm text-ink/45">{t('students.noMatches')}</p>
-            ) : null}
-
-            {/* Las bajas, plegadas: quien puede reactivarlas las encuentra aqui. */}
-            {can('crew.members') && <InactiveStudents />}
-          </div>
+          )}
         </div>
       </div>
 
       <StudentFormDialog
         open={isFormOpen}
-        student={editing}
+        student={null}
         onOpenChange={setIsFormOpen}
-        onSave={handleSave}
+        onSave={async (data) => {
+          await createStudent(data)
+        }}
       />
     </div>
   )
