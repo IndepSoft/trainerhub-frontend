@@ -1,7 +1,6 @@
 import { useId, useState, type FormEvent } from 'react'
 import { Check, LogOut, Upload, Users } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
-import { container } from '@/app/container'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { describeError } from '@/shared/i18n/errorMessages'
 import { useViewerContext } from '@/app/ViewerContext'
@@ -18,6 +17,7 @@ import { useLogout } from '@/auth/hooks/useLogout'
 import { PasswordFields } from '@/auth/components/PasswordFields'
 import { useProfileEditor, type ProfileDraft } from '../hooks/useProfileEditor'
 import { usePhotoUpload } from '../hooks/usePhotoUpload'
+import { useLeaveCrew } from '../hooks/useLeaveCrew'
 import { ThemeSelector } from '../components/ThemeSelector'
 import { LanguageSelector } from '../components/LanguageSelector'
 import { SoundToggle } from '../components/SoundToggle'
@@ -67,9 +67,9 @@ export default function Settings() {
 
   /*
    * SALIR DEL EQUIPO, que no existia: un alumno activo solo podia irse
-   * eliminando la cuenta entera. Es la misma baja que da el entrenador,
-   * sobre la propia ficha; la base lo permite solo a quien esta dentro.
+   * eliminando la cuenta entera. Ver `useLeaveCrew`.
    */
+  const { leaveCrew } = useLeaveCrew()
   const [isLeaveOpen, setIsLeaveOpen] = useState(false)
   const [leaving, setLeaving] = useState(false)
   const [leaveError, setLeaveError] = useState<string | null>(null)
@@ -80,7 +80,7 @@ export default function Settings() {
     setLeaving(true)
     setLeaveError(null)
     try {
-      await container.students.deactivate(ownStudentId)
+      await leaveCrew(ownStudentId)
     } catch (caught) {
       setLeaveError(describeError(caught, t, 'settings.leaveCrewError'))
       setLeaving(false)

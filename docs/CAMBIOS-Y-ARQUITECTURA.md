@@ -3461,3 +3461,57 @@ cabecera por debajo de 44 × 44. Y a 1440: las acciones vuelven a la base del
 título como antes, ahora en píldora —que es el radio que `--radius-action`
 siempre dijo que tenían las acciones—. Las dos pruebas que esperaban «Agenda»
 como `h1` esperan ahora un `h1` visible y el eyebrow.
+
+## 36. La presentación deja de tocar datos (16 sep 2026)
+
+Rama `refactor/presentacion-tras-hooks`. §2.2 dice que un componente o una
+página sólo pinta, y que al puerto se llega por un hook. Nueve ficheros no lo
+cumplían: importaban `container` y llamaban al puerto desde el cuerpo del
+componente —ocho de dominio y la campana de la navegación—. Compilaban y
+pasaban el lint, porque nada lo impedía.
+
+**Dónde va cada operación.** Lo que piden dos dominios va a `shared/hooks`,
+como `usePendingWork`: la agenda no importa de `students`, y es lo que
+`useSchedulableStudents` dejó escrito.
+
+- `useSendNotice`, el aviso privado. Lo mandaban tres sitios: el recordatorio
+  de la agenda, la cola de cobros y la cuota de la ficha.
+- `useSessionsOfDay` y `useSessionScheduling`, para los dos formularios que
+  agendan. La comprobación del choque estaba escrita dos veces —releer el día,
+  quitar la propia sesión, `findOverlappingSessions`— y ahora es una sola,
+  `findConflicts`, que usa `ignoreSessionId` en vez de filtrar a mano.
+- `useNoticeInbox`, la bandeja de la campana, que es de `shared` y no puede
+  importar de un dominio.
+
+Lo que es de uno solo se queda en su dominio: `useSessionDetailsActions`
+(agenda: estado, notas y borrar), `usePlanDump` (el intervalo del plan y el
+lote), `useCompleteSession` (cerrar la sesión en vivo) y `useLeaveCrew`
+(Configuración).
+
+**Lo que se reutilizó y lo que no.** El recuento de «ya volcado» lo da
+`useDumpedSessions`, que hacía la misma pregunta para las acciones en bloque;
+`usePlanDump` lo compone en vez de leerlo otra vez. Es el único cambio que se
+nota: el recuento queda suscrito, como el resto de lecturas. Salir del equipo,
+en cambio, NO toma `useStudentEditor.deactivateStudent` aunque escriba lo
+mismo: es la herramienta de quien gestiona el padrón, vive en `students`, y
+Configuración no importa de ningún otro dominio.
+
+**El comportamiento no cambia.** Los hooks de escritura no atrapan nada:
+devuelven la promesa del puerto, y el componente sigue diciendo el fallo donde
+se pulsó y avisando del éxito después de que resuelva (§29.3).
+`SessionDetailsChanges` pasa de `SessionDetailsModal` a `calendar.types.ts`: lo
+necesita el hook que lo escribe, y un hook no importa de un componente.
+
+**Y ahora falla el lint.** `eslint.config.js` prohíbe importar el contenedor
+en `components/`, `pages/`, `app/layouts/` y `shared/ui/`, con el mismo
+mecanismo que ya cerraba el SDK de Supabase. Ese bloque repite el patrón de
+Supabase porque en la configuración plana un bloque posterior REEMPLAZA las
+opciones de la regla, no las suma: sin repetirlo, las páginas habrían podido
+volver a importar el SDK.
+
+**Comprobado.** Build, lint y unitarias en verde; la suite de interfaz, 214 de
+215 a la primera. La que falló —la sesión de cardio a 375 px— midió con la
+ruta todavía en «Cargando…» sobre un servidor recién arrancado, sin caché de
+Vite, y pasó tres de tres al repetirla. Salir del equipo no tiene prueba en la
+suite y se recorrió aparte a 375 px: el diálogo confirma, la cabecera pasa a
+«Sin equipo» y Progreso invita a unirse a uno.
