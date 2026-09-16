@@ -297,16 +297,21 @@ cobraba una fila de 44 px. Detalle en `CAMBIOS` §35.
 | Agenda | 261 | **200** |
 | Equipo | 341 | **192** |
 
-### ☐ 10 · La barra inferior como píldora flotante
+### ✅ 10 · La barra inferior como píldora flotante
 
-Decidido (`CAMBIOS` §36), sin implementar. La barra pasa a flotar sobre el
-contenido con un degradado; el relleno inferior se resuelve una vez en el
-layout, no página a página.
+Decidido en `CAMBIOS` §36, hecho en §37. La barra flota sobre el contenido con
+un degradado; el relleno inferior se resuelve una vez en el layout, no página a
+página.
 
-- [ ] `BottomTabBar` en `absolute`, píldora de 56 px, etiqueta sólo en el activo
-- [ ] Relleno y `scroll-padding` inferiores en el contenedor de `RootLayout`, sólo bajo `md`
-- [ ] `aria-label` en los cinco enlaces; suite de interfaz en verde
-- [ ] Verificado a 390 × 844 y 375 × 667: 0 desborde, ≥ 44 px, última fila legible
+- [x] `BottomTabBar` en `absolute`, píldora de 56 px, etiqueta sólo en el activo
+- [x] Relleno y `scroll-padding` inferiores heredados de `--bottom-bar-space`, sólo bajo `md`
+- [x] `aria-label` en los cinco enlaces; suite de interfaz en verde
+- [x] Verificado a 390 × 844 y 375 × 667: 0 desborde, ≥ 44 px, última fila legible
+
+Medido en el navegador: a 390, píldora de 366 × 58 con 46 px libres entre la
+última tarjeta y su borde; a 375 × 667 con la etiqueta más larga activa
+—«Entrenamientos»—, las cinco pestañas suman 337 px en 343 de interior. Desde
+`md` la píldora no se pinta y el relleno vuelve a cero.
 
 ---
 

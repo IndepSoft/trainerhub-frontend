@@ -11,6 +11,7 @@ import { useGamificationProfile } from '../hooks/useGamificationProfile'
 import { useProgressOverview } from '../hooks/useProgressOverview'
 import { useViewerContext } from '@/app/ViewerContext'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
 /**
  * El progreso de quien lo mira. Sólo composición.
@@ -63,7 +64,7 @@ export default function Progress() {
           RootLayout, y anidar uno dentro de otro es HTML invalido -solo se
           admite uno por documento- ademas de confundir a los lectores de
           pantalla. */}
-      <div className="flex-1 overflow-auto">
+      <div className={PAGE_SCROLL}>
         {/*
           SIN EQUIPO SE PINTA TODO, A CERO.
           Es la decision de producto: el alumno navega, ve el registro entero

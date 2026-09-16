@@ -11,6 +11,7 @@ import { useCrewEditor } from '../hooks/useCrewEditor'
 import { NotAllowedHere } from '@/shared/components/NotAllowedHere'
 import { CREW_DENOMINATIONS, type CrewDenomination } from '@/shared/domain/entities/crew'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
 const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
 
@@ -72,7 +73,7 @@ export default function CrewSettings() {
         <PageHeader.Title>{t('crew.settings')}</PageHeader.Title>
       </PageHeader>
 
-      <div className="flex-1 overflow-auto">
+      <div className={PAGE_SCROLL}>
         <div className="mx-auto max-w-md space-y-6 px-5 py-6">
           {error !== null && (
             <Alert variant="destructive">

@@ -20,6 +20,7 @@ import type { BlockDraft } from '../types/routineDraft.types'
 import type { Routine } from '@/shared/domain/entities/routine'
 import { activeLocale } from '@/shared/i18n/activeLocale'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
 /**
  * Crear y editar una rutina. Sólo composición.
@@ -199,7 +200,7 @@ function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
         </PageHeader.Content>
       </PageHeader>
 
-      <div className="flex-1 overflow-auto">
+      <div className={PAGE_SCROLL}>
         <RoutineDraftSummary routine={preview} />
 
         <div className="space-y-6 px-5 py-6">

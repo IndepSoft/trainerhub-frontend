@@ -20,6 +20,7 @@ import {
   catalogLabel,
   STUDENT_LEVEL_LABEL_KEY,
 } from '@/shared/i18n/domainLabels'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
 /**
  * Ficha de un plan. Sólo composición.
@@ -114,7 +115,7 @@ export default function PlanDetail() {
         )}
       </PageHeader>
 
-      <div className="flex-1 overflow-auto">
+      <div className={PAGE_SCROLL}>
         <PlanSummary plan={plan} />
 
         {/* La puerta a asignarlo. Se asigna desde la ficha del alumno -es a

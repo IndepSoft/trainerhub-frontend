@@ -22,6 +22,7 @@ import { ThemeSelector } from '../components/ThemeSelector'
 import { LanguageSelector } from '../components/LanguageSelector'
 import { SoundToggle } from '../components/SoundToggle'
 import { DeleteAccountSection } from '../components/DeleteAccountSection'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
 const FIELD_LABEL =
   'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
@@ -99,7 +100,7 @@ export default function Settings() {
         <PageHeader.Title>{t('settings.title')}</PageHeader.Title>
       </PageHeader>
 
-      <div className="flex-1 overflow-auto">
+      <div className={PAGE_SCROLL}>
         <div className="mx-auto max-w-md space-y-8 px-5 py-6">
           <section aria-labelledby="perfil-titulo" className="space-y-4">
             <h2 id="perfil-titulo" className={SECTION_TITLE}>

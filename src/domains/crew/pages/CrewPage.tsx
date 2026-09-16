@@ -19,6 +19,7 @@ import { cohortOf } from '@/shared/domain/entities/progress'
 import type { Student } from '@/shared/domain/entities/student'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { STUDENT_LEVEL_LABEL_KEY } from '@/shared/i18n/domainLabels'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
 /**
  * La página del equipo. Sólo composición.
@@ -113,7 +114,7 @@ export default function CrewPage() {
         </PageHeader.Content>
       </PageHeader>
 
-      <div className="flex-1 overflow-auto">
+      <div className={PAGE_SCROLL}>
         <div className="mx-auto max-w-3xl space-y-8 px-5 py-6">
           {/* Lo que pide una decisión va primero: es lo único de esta pantalla
               que se queda parado esperando al entrenador. */}

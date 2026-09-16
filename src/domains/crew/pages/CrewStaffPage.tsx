@@ -12,6 +12,7 @@ import { useViewerContext } from '@/app/ViewerContext'
 import { useCrewStaff } from '../hooks/useCrewStaff'
 import { NotAllowedHere } from '@/shared/components/NotAllowedHere'
 import type { CrewRole, CrewStaff } from '@/shared/domain/entities/crew'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
 const ROLE_BADGE: Record<CrewRole, string> = {
   admin: 'border-cobalt/40 bg-cobalt-tint text-cobalt',
@@ -52,7 +53,7 @@ export default function CrewStaffPage() {
         <PageHeader.Title>{t('crew.staff')}</PageHeader.Title>
       </PageHeader>
 
-      <div className="flex-1 overflow-auto">
+      <div className={PAGE_SCROLL}>
         <div className="mx-auto max-w-2xl space-y-4 px-5 py-6">
           <p className="text-sm text-ink/60">
             {/* La diferencia, dicha donde se decide: es lo único que separa a un

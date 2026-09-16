@@ -3504,3 +3504,55 @@ de su cápsula. Se probó en local con `BottomTabBar` y se revirtió.
   así las pruebas que buscan `link "Calendario"` siguen encontrándolo.
 - Se mide en dispositivo: cero desbordamiento, objetivos ≥ 44 px y la última
   fila de cada lista legible con la píldora encima, a 390 y a 375 × 667.
+
+---
+
+## 37. La píldora flotante, hecha (15 sep 2026)
+
+Lo que §36 dejó decidido y sin implementar. La barra inferior deja de ser una
+franja pegada al borde y pasa a ser una **píldora que flota sobre el
+contenido**: la variante C de `docs/design/barra/`.
+
+**Lo que se gana.** Pegada, la barra se comía 56 px de todas las pantallas y
+partía la página con una línea de lado a lado. Flotando, el contenido pasa por
+debajo y la aplicación se lee de borde a borde; el degradado a Bone bajo la
+píldora hace que la última fila se desvanezca en vez de cortarse, que es lo que
+dice si hay más o se acabó la lista.
+
+**La etiqueta sólo la lleva la activa, y está medido.** Cinco en versalitas no
+caben: «ENTRENAMIENTOS» mide 86 px y la píldora tiene 343 de interior a 375. La
+activa se dimensiona por su contenido —`flex: 1 0 auto`— y las otras cuatro se
+reparten el resto; con todas a `flex-1`, la etiqueta de la activa no cabría en
+su quinto. Comprobado con la etiqueta más larga activa: las cinco pestañas
+suman 337 px.
+
+**El nombre no se pierde para quien no ve la pantalla.** Cada enlace lleva su
+`aria-label`, que además es como lo encuentran las pruebas; la activa marca
+`aria-current="page"`. Y se dejó de usar `NavLink`: el ancho de la pestaña
+depende de si está activa, y eso se decide en el `<li>`, fuera del alcance de
+su render. La regla de «activa» —la ruta exacta o cualquiera por debajo— está
+escrita una vez, en `isCurrent`.
+
+**EL HUECO SE DECLARA UNA VEZ, Y ÉSE ERA EL RIESGO.** El comentario de la
+versión anterior lo advertía: con la barra fuera del reparto flex «habría que
+compensar con relleno inferior en cada página, y cualquiera que se olvidara
+dejaría contenido tapado». Así que no se compensa página a página: `RootLayout`
+declara `--bottom-bar-space` —`calc(84px + env(safe-area-inset-bottom))` bajo
+`md`, cero desde ahí— y cada contenedor de desplazamiento lo hereda como
+relleno y como `scroll-padding-bottom`. Lo segundo resuelve otra cosa: al
+recorrer con el teclado, sin ello «la vista» incluiría lo que hay bajo la
+píldora.
+
+**Y para heredarlo hubo que dejar de repetirse.** `flex-1 overflow-auto` estaba
+copiado **veintiuna veces** con su comentario al lado. Ahora es `PAGE_SCROLL`,
+una constante con el comentario una sola vez. La variable vale `0px` en la
+raíz, así que la sesión en vivo —que va a pantalla completa y sin barras— no se
+come un hueco que nadie ocupa, sin tener que saber nada de esto.
+
+**Verificado en navegador**, que es lo que la regla exige. A 390 × 844: cero
+desbordamiento, píldora de 366 × 58 a 12 px del borde, pestañas de 56 px de
+alto y 48 de ancho mínimo, y 46 px libres entre la última tarjeta y la píldora
+al llegar al final. A 375 × 667 en oscuro, con la etiqueta más larga activa:
+cero desbordamiento y sin recorte. Desde `md`: píldora no pintada y relleno a
+cero. Dos pruebas nuevas fijan lo que la forma anterior no podía romper: que el
+contenido pasa por debajo, y que aun así la última fila queda por encima.

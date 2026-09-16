@@ -17,6 +17,7 @@ import { usePlans } from '../hooks/usePlans'
 import type { Routine } from '../types/training.types'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
 /**
  * Orden de las pestañas, junto a los `TabsTrigger` para que añadir una no
@@ -128,7 +129,7 @@ export default function Trainings() {
         </PageHeader.Content>
       </PageHeader>
 
-      <div className="flex-1 overflow-auto">
+      <div className={PAGE_SCROLL}>
         <Tabs
           value={activeTab}
           onValueChange={(value) => {

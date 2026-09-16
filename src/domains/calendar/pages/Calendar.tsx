@@ -29,6 +29,7 @@ import {
 } from '../libs/calendar.utils'
 import type { CalendarViewMode, Session } from '../types/calendar.types'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
 export default function Calendar() {
   const { t } = useTranslation()
@@ -230,7 +231,7 @@ export default function Calendar() {
           RootLayout, y anidar uno dentro de otro es HTML invalido -solo se
           admite uno por documento- ademas de confundir a los lectores de
           pantalla. */}
-      <div className="flex-1 overflow-auto">
+      <div className={PAGE_SCROLL}>
         <div className="max-w-8xl mx-auto pb-4">
           {/* Sin envoltura <Card>, por el mismo motivo que en Reportes y
               Progreso: su relleno se sumaba al de la pagina y al de cada tramo

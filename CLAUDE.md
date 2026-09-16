@@ -366,6 +366,15 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
 - El muro cuenta lo no leído sobre la insignia del equipo —`countUnread` y
   `markAllRead` en el puerto, `crew_wall_reads` detrás— y abrir el muro lo da
   por leído. Las notificaciones push son otro trabajo.
+- La NAVEGACIÓN DE MÓVIL es una **píldora que flota sobre el contenido**
+  (`CAMBIOS` §36 la decide, §37 la hace). La etiqueta la lleva SÓLO la pestaña
+  activa —cinco en versalitas no caben, está medido— y el nombre de las demás
+  viaja en `aria-label`. Como la píldora ya no ocupa sitio en el reparto flex,
+  **el hueco para que no tape nada se declara una vez**: `RootLayout` fija
+  `--bottom-bar-space` y cada contenedor de desplazamiento lo hereda por
+  `PAGE_SCROLL`, que es también el único sitio donde vive `flex-1
+  overflow-auto`. Una página nueva usa `PAGE_SCROLL` y no se entera de la
+  barra; si escribe las clases a mano, su última fila quedará tapada.
 - TIEMPO REAL en **todo lo que la aplicación escucha**, por `postgres_changes`
   con `subscribeToTable` / `subscribeToTables`. Quince tablas publicadas: las
   de pertenencia e identidad —`crews`, `crew_staff`, `students`, `profiles`—

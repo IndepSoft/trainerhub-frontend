@@ -11,6 +11,7 @@ import { formatDuration } from '../libs/session.utils'
 import type { Routine } from '@/shared/domain/entities/routine'
 import type { Session, SessionResult } from '@/shared/domain/entities/session'
 import { useLastWeights } from '../hooks/useLastWeights'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
 interface StrengthSessionProps {
   session: Session
@@ -192,7 +193,7 @@ export function StrengthSession({
             />
           )}
 
-          <div className="flex-1 overflow-auto">
+          <div className={PAGE_SCROLL}>
             <SessionPlanList
               steps={steps}
               currentIndex={currentIndex}
@@ -204,7 +205,7 @@ export function StrengthSession({
       ) : (
         <>
           <SessionDuration elapsedSeconds={elapsedSeconds} state={state} />
-          <div className="flex-1 overflow-auto">
+          <div className={PAGE_SCROLL}>
             <p className="px-5 py-12 text-center text-sm text-ink/40">
               {t('liveSession.noRoutine')}
             </p>

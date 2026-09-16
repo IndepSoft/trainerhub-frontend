@@ -11,6 +11,7 @@ import { useJoinCrew, type JoinOutcome } from '../hooks/useJoinCrew'
 import { JOIN_CODE_PARAM } from '@/shared/lib/joinLink'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
 /**
  * Unirse a un equipo con el código del QR.
@@ -76,7 +77,7 @@ export default function JoinCrew() {
         <PageHeader.Title>{t('join.title')}</PageHeader.Title>
       </PageHeader>
 
-      <div className="flex-1 overflow-auto">
+      <div className={PAGE_SCROLL}>
         <div className="mx-auto max-w-md space-y-6 px-5 py-6">
           <p className="text-sm text-ink/60">{t('join.intro')}</p>
 

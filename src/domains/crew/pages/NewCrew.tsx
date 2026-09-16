@@ -14,6 +14,7 @@ import {
   type CrewDenomination,
 } from '@/shared/domain/entities/crew'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
 const FIELD_LABEL =
   'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
@@ -100,7 +101,7 @@ export default function NewCrew() {
         </PageHeader.Description>
       </PageHeader>
 
-      <div className="flex-1 overflow-auto">
+      <div className={PAGE_SCROLL}>
         <div className="mx-auto max-w-md space-y-6 px-5 py-6">
           <p className="text-sm text-ink/60">{t('crew.createIntro')}</p>
 

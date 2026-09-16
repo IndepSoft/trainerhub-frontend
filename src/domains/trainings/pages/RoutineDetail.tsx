@@ -20,6 +20,7 @@ import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { useViewerContext } from '@/app/ViewerContext'
 import { STUDENT_LEVEL_LABEL_KEY } from '@/shared/i18n/domainLabels'
 import { BLOCK_METHOD_LABEL_KEY } from '@/shared/i18n/domainLabels'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
 /**
  * Ficha de una rutina. Sólo composición.
@@ -115,7 +116,7 @@ export default function RoutineDetail() {
         )}
       </PageHeader>
 
-      <div className="flex-1 overflow-auto">
+      <div className={PAGE_SCROLL}>
         {/* La puerta a asignarla, como la tiene la ficha del plan: la rutina
             se veia y no se sabia que hacer con ella mas alla de agendarla. */}
         {manages && <p className="border-b border-cobalt-tint-3 px-5 py-3 text-sm text-ink/60">

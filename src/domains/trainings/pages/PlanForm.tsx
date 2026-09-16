@@ -15,6 +15,7 @@ import { PlanSummary } from '../components/PlanSummary'
 import type { TrainingPlan } from '@/shared/domain/entities/plan'
 import { activeLocale } from '@/shared/i18n/activeLocale'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
 /**
  * Crear y editar un plan. Sólo composición.
@@ -164,7 +165,7 @@ function PlanFormFields({ plan }: PlanFormFieldsProps) {
         </PageHeader.Content>
       </PageHeader>
 
-      <div className="flex-1 overflow-auto">
+      <div className={PAGE_SCROLL}>
         <PlanSummary plan={preview} />
 
         <div className="space-y-6 px-5 py-6">

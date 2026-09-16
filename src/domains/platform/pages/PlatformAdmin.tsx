@@ -6,6 +6,7 @@ import { useViewerContext } from '@/app/ViewerContext'
 import { PlatformCrews } from '../components/PlatformCrews'
 import { PlatformUsers } from '../components/PlatformUsers'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
 /**
  * El panel de la plataforma. Sólo composición.
@@ -38,7 +39,7 @@ export default function PlatformAdmin() {
         <PageHeader.Title>{t('platform.title')}</PageHeader.Title>
       </PageHeader>
 
-      <div className="flex-1 overflow-auto">
+      <div className={PAGE_SCROLL}>
         <div className="mx-auto max-w-3xl px-5 py-6">
           <Tabs defaultValue="equipos">
             {/* Dos columnas y no `inline-flex`: a 375 px, dos pestañas en línea

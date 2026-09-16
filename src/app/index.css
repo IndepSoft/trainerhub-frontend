@@ -228,6 +228,19 @@
   }
 
   /*
+   * El hueco que la pildora flotante deja libre abajo, en CERO por defecto.
+   *
+   * Lo sube `RootLayout` solo donde la pildora existe -bajo `md`, y en las
+   * rutas que llevan barras-, y lo consume `PAGE_SCROLL` como relleno y como
+   * `scroll-padding` del contenedor que desplaza. Declararlo aqui es lo que
+   * permite que una pagina no sepa nada de la barra: hereda cero y no pasa
+   * nada, que es justo el caso de la sesion en vivo.
+   */
+  :root {
+    --bottom-bar-space: 0px;
+  }
+
+  /*
    * Sin rebote del documento. La aplicacion ya desplaza cada lista DENTRO de
    * su contenedor -la raiz es `h-dvh overflow-hidden`-, asi que el documento
    * nunca tiene nada que desplazar; y aun asi, instalada como PWA, el

@@ -280,10 +280,13 @@ for (const viewport of VIEWPORTS) {
 /**
  * Objetivo tactil y encaje de las etiquetas en la barra inferior.
  *
- * A 375 px, cinco destinos dejan 75 px por pestana. «Entrenamientos» tiene
- * catorce caracteres y es la que va justa: si la etiqueta desborda su caja, se
- * recorta o pisa a la vecina, y eso no se ve leyendo clases de Tailwind. La
- * regla 1.6 exige ademas 44 px de objetivo tactil.
+ * Desde que la barra es una PILDORA FLOTANTE (`CAMBIOS` §37) la etiqueta la
+ * lleva solo la pestana activa: cinco no caben -«ENTRENAMIENTOS» mide 86 px y
+ * la pildora tiene 343 de interior a 375-. La activa se dimensiona por su
+ * contenido y las demas se reparten el resto, asi que lo que hay que
+ * comprobar es que la suma cabe y que la etiqueta no se recorta. Eso no se ve
+ * leyendo clases de Tailwind. La regla 1.6 exige ademas 44 px de objetivo
+ * tactil.
  */
 test('la barra inferior encaja a 375 px', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 })
@@ -320,9 +323,62 @@ test('la barra inferior encaja a 375 px', async ({ page }) => {
 
   for (const pestana of medidas!.pestanas) {
     expect(pestana.alto, `alto de «${pestana.texto}»`).toBeGreaterThanOrEqual(44)
+    expect(pestana.ancho, `ancho de «${pestana.texto}»`).toBeGreaterThanOrEqual(44)
     expect(pestana.etiquetaDesborda, `«${pestana.texto}» desborda su pestana`).toBe(false)
   }
 })
+
+/**
+ * La pildora FLOTA, y eso cambia dos cosas que se miden, no se miran.
+ *
+ * Una: el contenido pasa por debajo, asi que el contenedor que desplaza llega
+ * mas abajo que la pildora. Si no, seria la barra de antes con otra forma
+ * -la variante B que §36 descarto-.
+ *
+ * Y dos: precisamente por eso, la ultima fila de una lista tiene que poder
+ * quedar POR ENCIMA de la pildora al llegar al final. Es lo que hace el
+ * relleno que `RootLayout` declara una vez; sin el, el contenido se lee tapado
+ * y nadie sabe si hay mas.
+ */
+for (const viewport of [
+  { nombre: '390', width: 390, height: 844 },
+  { nombre: '375', width: 375, height: 667 },
+] as const) {
+  test(`la pildora flota sin tapar la ultima fila en ${viewport.nombre} px`, async ({ page }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height })
+    await signIn(page)
+    await page.goto('/students')
+    await expect(page.getByRole('heading', { name: 'Estudiantes' })).toBeVisible()
+
+    const medidas = await page.evaluate(async () => {
+      const bar = document.querySelector('nav[aria-label="Navegación principal"] ul')
+      const scroller = document.querySelector('main .overflow-auto')
+      if (!bar || !(scroller instanceof HTMLElement)) return null
+
+      scroller.scrollTop = scroller.scrollHeight
+      await new Promise((listo) => setTimeout(listo, 300))
+
+      const pildora = bar.getBoundingClientRect()
+      const tarjetas = [...scroller.querySelectorAll('article')]
+      const ultima = tarjetas[tarjetas.length - 1]?.getBoundingClientRect() ?? null
+
+      return {
+        desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        pildoraTop: pildora.top,
+        scrollerBottom: scroller.getBoundingClientRect().bottom,
+        ultimaBottom: ultima === null ? null : ultima.bottom,
+      }
+    })
+
+    expect(medidas).not.toBeNull()
+    expect(medidas!.desborde).toBe(0)
+    // El contenido pasa por debajo: el contenedor llega mas abajo que la pildora.
+    expect(medidas!.scrollerBottom).toBeGreaterThan(medidas!.pildoraTop)
+    // Y aun asi la ultima tarjeta se lee entera, por encima de ella.
+    expect(medidas!.ultimaBottom).not.toBeNull()
+    expect(medidas!.ultimaBottom!).toBeLessThanOrEqual(medidas!.pildoraTop)
+  })
+}
 
 /**
  * Capturas del pie de las pantallas que se revisaron antes de que existiera el

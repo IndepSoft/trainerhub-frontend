@@ -9,6 +9,7 @@ import { PageHeader } from '@/shared/components/PageHeader'
 import { PendingWorkSection } from '../components/PendingWorkSection'
 import { FirstSteps } from '../components/FirstSteps'
 import { useViewerContext } from '@/app/ViewerContext'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
 export default function Dashboard() {
   const { t } = useTranslation()
@@ -32,7 +33,7 @@ export default function Dashboard() {
       {/* Los manejadores van en el contenedor de desplazamiento, no en la
           pagina: el hook necesita leer su `scrollTop` para saber si esta arriba
           del todo, y solo entonces activar el gesto. */}
-      <div className="flex-1 overflow-auto" {...handlers}>
+      <div className={PAGE_SCROLL} {...handlers}>
         <PullToRefreshIndicator
           pullDistance={pullDistance}
           isRefreshing={isRefreshing}

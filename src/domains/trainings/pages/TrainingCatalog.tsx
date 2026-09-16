@@ -9,6 +9,7 @@ import { EquipmentCatalog } from '../components/EquipmentCatalog'
 import { BlockLibrary } from '../components/BlockLibrary'
 import { ReferenceCatalog } from '../components/ReferenceCatalog'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
 const TAB_ORDER = ['ejercicios', 'equipamiento', 'bloques', 'referencia'] as const
 type TabValue = (typeof TAB_ORDER)[number]
@@ -56,7 +57,7 @@ export default function TrainingCatalog() {
         <PageHeader.Title>{t('trainings.catalog')}</PageHeader.Title>
       </PageHeader>
 
-      <div className="flex-1 overflow-auto">
+      <div className={PAGE_SCROLL}>
         <Tabs
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as TabValue)}

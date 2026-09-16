@@ -20,6 +20,7 @@ import { cn } from '@/shared/lib/utils'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { ageOf } from '@/shared/domain/entities/student'
 import { STUDENT_LEVEL_LABEL_KEY, goalLabel } from '@/shared/i18n/domainLabels'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
 /**
  * Ficha de un estudiante. Sólo composición.
@@ -123,7 +124,7 @@ export default function StudentDetail() {
         </PageHeader.Content>
       </PageHeader>
 
-      <div className="flex-1 overflow-auto">
+      <div className={PAGE_SCROLL}>
         <div className="grid grid-cols-1 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           <Metric
             label={t('studentCard.age')}

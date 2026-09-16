@@ -18,6 +18,7 @@ import { canEnrollMembers } from '@/shared/domain/entities/crew'
 import { useViewerContext } from '@/app/ViewerContext'
 import type { Student } from '@/shared/domain/entities/student'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
 export default function Students() {
   const { t } = useTranslation()
@@ -119,7 +120,7 @@ export default function Students() {
           RootLayout, y anidar uno dentro de otro es HTML invalido -solo se
           admite uno por documento- ademas de confundir a los lectores de
           pantalla. */}
-      <div className="flex-1 overflow-auto">
+      <div className={PAGE_SCROLL}>
         <div className="ps-4 pe-4 pb-4 max-w-8xl mx-auto">
           <div className="space-y-6">
             <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
