@@ -10,14 +10,15 @@ import { useSearchParams } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { CreateSessionModal } from '../components/CreateSessionModal'
-import { SessionDetailsModal, type SessionDetailsChanges } from '../components/SessionDetailsModal'
+import { SessionDetailsModal } from '../components/SessionDetailsModal'
 import { CalendarDirectionControls, CalendarTodayButton } from '../components/CalendarNavigation'
 import { WeekView } from '../components/WeekView'
 import { DayView } from '../components/DayView'
 import { SessionSummary } from '../components/SessionSummary'
 import { useCalendar } from '../hooks/useCalendar'
 import { useSchedulableStudents } from '../hooks/useSchedulableStudents'
-import { container } from '@/app/container'
+import { useSessionDetailsActions } from '../hooks/useSessionDetailsActions'
+import { useSendNotice } from '@/shared/hooks/useSendNotice'
 import { useViewerContext } from '@/app/ViewerContext'
 import { activeLocale } from '@/shared/i18n/activeLocale'
 import {
@@ -27,7 +28,7 @@ import {
   formatWeekRange,
   parseLocalDateKey,
 } from '../libs/calendar.utils'
-import type { CalendarViewMode, Session } from '../types/calendar.types'
+import type { CalendarViewMode, Session, SessionDetailsChanges } from '../types/calendar.types'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
@@ -94,6 +95,9 @@ export default function Calendar() {
     : formatCompactDate(currentDate)
   const fullPeriodLabel = isWeek ? formatWeekRange(weekDates) : formatFullDate(currentDate)
 
+  const { saveDetails, removeSession } = useSessionDetailsActions()
+  const { sendNotice } = useSendNotice()
+
   /*
    * Ahora cambia de verdad. Antes lanzaba un aviso y no tocaba nada: la sesion
    * nacia pendiente y moria pendiente, asi que los contadores de la agenda solo
@@ -102,17 +106,7 @@ export default function Calendar() {
    */
   const handleSave = async (sessionId: string, changes: SessionDetailsChanges) => {
     if (selectedSession === null || selectedSession.id !== sessionId) return
-    /*
-     * Una sola escritura con la sesion entera y lo cambiado encima. `update`
-     * pide la sesion completa -es lo que el formulario de edicion manda-, y
-     * reutilizarlo evita un metodo del puerto solo para las notas.
-     */
-    const { id: _sessionId, crewId: _crewId, ...current } = selectedSession
-    await container.sessions.update(sessionId, { ...current, ...changes })
-  }
-
-  const handleDelete = async (sessionId: string) => {
-    await container.sessions.remove(sessionId)
+    await saveDetails(selectedSession, changes)
   }
 
   /*
@@ -122,7 +116,7 @@ export default function Calendar() {
    */
   const handleSendReminder = async (session: Session) => {
     if (session.studentId === null) return
-    await container.notices.send({
+    await sendNotice({
       studentId: session.studentId,
       kind: 'general',
       body: t('sessionDetails.reminderBody', {
@@ -266,7 +260,7 @@ export default function Calendar() {
           onOpenChange={(open) => !open && selectSession(null)}
           onSave={handleSave}
           onEdit={setEditingSession}
-          onDelete={handleDelete}
+          onDelete={removeSession}
           onSendReminder={handleSendReminder}
         />
       )}

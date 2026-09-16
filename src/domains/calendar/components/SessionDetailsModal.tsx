@@ -39,14 +39,8 @@ import { SESSION_STATUS, SESSION_STATUS_ENTRIES, presentationOf } from '../libs/
 import { isMissedSession } from '@/shared/domain/sessionLifecycle'
 import { todayKey } from '@/shared/lib/dateKey'
 import { getStudentInitials, parseLocalDateKey } from '../libs/calendar.utils'
-import type { Session, SessionStatus } from '../types/calendar.types'
+import type { Session, SessionDetailsChanges, SessionStatus } from '../types/calendar.types'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
-
-/** Lo que esta ficha puede cambiar sin abrir el formulario entero. */
-export interface SessionDetailsChanges {
-  status: SessionStatus
-  notes: string
-}
 
 interface SessionDetailsModalProps {
   session: Session

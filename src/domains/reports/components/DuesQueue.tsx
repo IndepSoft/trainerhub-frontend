@@ -4,7 +4,7 @@ import { BellRing } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { SubscriptionBadge } from '@/shared/components/SubscriptionBadge'
 import { getShortName } from '@/shared/lib/personName'
-import { container } from '@/app/container'
+import { useSendNotice } from '@/shared/hooks/useSendNotice'
 import { useViewerContext } from '@/app/ViewerContext'
 import { formatDateKey } from '@/domains/students/libs/dateKey'
 import { duesReminderDraft } from '@/domains/students/libs/duesReminder'
@@ -28,6 +28,7 @@ export function DuesQueue() {
   const { t } = useTranslation()
   const { queue, loading } = useDuesQueue()
   const { can } = useViewerContext()
+  const { sendNotice } = useSendNotice()
   const [reminding, setReminding] = useState<DuesEntry | null>(null)
 
   const canManage = can('students.manage')
@@ -99,7 +100,7 @@ export function DuesQueue() {
         }}
         onSend={async (body: string, kind: NoticeKind) => {
           if (reminding === null) return
-          await container.notices.send({ studentId: reminding.student.id, kind, body })
+          await sendNotice({ studentId: reminding.student.id, kind, body })
         }}
       />
     </>

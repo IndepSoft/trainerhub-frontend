@@ -3,7 +3,7 @@ import { BellRing, Check, CreditCard } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { SubscriptionBadge } from '@/shared/components/SubscriptionBadge'
 import { cn } from '@/shared/lib/utils'
-import { container } from '@/app/container'
+import { useSendNotice } from '@/shared/hooks/useSendNotice'
 import { useViewerContext } from '@/app/ViewerContext'
 import { describeError } from '@/shared/i18n/errorMessages'
 import {
@@ -58,6 +58,7 @@ export function StudentSubscriptionSection({ student }: StudentSubscriptionSecti
   const { t } = useTranslation()
   const { can } = useViewerContext()
   const { byStudent, standingOf, renew, setPeriod, loading } = useSubscriptions()
+  const { sendNotice } = useSendNotice()
 
   const [noticeOpen, setNoticeOpen] = useState(false)
   const [justRenewed, setJustRenewed] = useState(false)
@@ -80,7 +81,7 @@ export function StudentSubscriptionSection({ student }: StudentSubscriptionSecti
   const hasAccount = student.profileId !== null
 
   const handleSend = async (body: string, kind: NoticeKind) => {
-    await container.notices.send({ studentId: student.id, kind, body })
+    await sendNotice({ studentId: student.id, kind, body })
   }
 
   // Cobrar y cambiar el periodo se esperan y se dicen: eran promesas sueltas.
