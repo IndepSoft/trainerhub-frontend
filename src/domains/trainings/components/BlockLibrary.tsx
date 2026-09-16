@@ -59,7 +59,7 @@ export function BlockLibrary() {
   }
 
   return (
-    <section className="px-4 pb-6">
+    <section className="px-5 pb-6">
       <p className="rounded-block border border-cobalt-tint-3 bg-cobalt-tint px-4 py-3 text-sm text-ink/60">
         {t('block.libraryHint')}
         Editarla allí no toca esta entrada, y borrar esta entrada no rompe ninguna rutina.

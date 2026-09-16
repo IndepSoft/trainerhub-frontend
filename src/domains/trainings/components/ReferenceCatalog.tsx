@@ -30,7 +30,7 @@ export function ReferenceCatalog() {
   const regions = [...new Set(muscleGroups.map((muscleGroup) => muscleGroup.region))]
 
   return (
-    <section className="space-y-8 px-4 pb-6">
+    <section className="space-y-8 px-5 pb-6">
       <p className="flex items-start gap-2 rounded-block border border-cobalt-tint-3 bg-cobalt-tint px-4 py-3 text-sm text-ink/60">
         <Lock aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-cobalt" />
         {t('reference.locked')}

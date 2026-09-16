@@ -3611,10 +3611,44 @@ operable. A 1440: cero desbordamiento.
 - A 375 la línea de apoyo se trunca en las cuatro filas: la columna del nombre
   se queda en 116–137 px. La causa no es la fila sino el margen de página:
   `RootLayout` pone 16 px por lado y cada página otros 20, 72 px de 375; los
-  artboards usan 20. Se corrige en su propia tanda, porque toca todas las
-  páginas.
+  artboards usan 20. Se corrige en su propia tanda (§39), porque toca todas
+  las páginas.
 - `?agendar` abre el diálogo de agendar al entrar en la ficha, pero ya nadie
   enlaza con él: su puerta era el menú de la tarjeta. Tiene `TODO:` en
   `StudentDetail`; su sitio es la sección «Le toca» de la ficha por secciones.
 - En escritorio el padrón es una columna de 864 px; la composición de
   `EscritorioEstudiantes` es la tanda de escritorio.
+
+## 39. Un solo margen de página en móvil (16 sep 2026)
+
+Lo que §38 dejó pendiente. A 375 la línea de apoyo de las filas del padrón se
+truncaba en las cuatro, y la causa no era la fila: `RootLayout` ponía 16 px
+por lado y cada página sumaba los suyos. Eran 36 px de margen —72 de 375—
+cuando los artboards de `docs/design/vistas/` usan 20.
+
+**El layout deja de poner relleno bajo `md`**, y cada página pone el suyo una
+sola vez: 20 px, el de la cabecera. Desde `md` el relleno del layout vuelve y
+el escritorio no cambia, salvo que ahora el contenido y la cabecera coinciden
+también allí (antes, 32 y 36).
+
+**Lo que había que tocar** salió de un barrido medido, no de leer clases: las
+21 rutas de gestión a 375, marcando todo texto a menos de 14 px de un borde y
+contando dónde empieza cada bloque. Antes del cambio todo arrancaba a 32 o 36;
+después, a 20, salvo lo que se ajustó:
+
+- Las páginas que ponían 16 px propios —Entrenamientos, el catálogo y sus
+  cuatro secciones, Progreso y su repertorio, el aviso de suscripción del
+  padrón— pasan a 20, alineadas con su cabecera.
+- La agenda se quedaba con las sesiones pegadas al borde derecho. La rejilla
+  sigue de borde a borde; la franja de sesiones lleva `pe-4` en móvil, y en la
+  vista semanal lo llevan las dos filas para que las columnas coincidan. Las
+  tarjetas se colocan en absoluto sobre la franja, así que el relleno tiene
+  que ir en la fila que la contiene, no en la franja.
+- Las franjas de cifras del panel y de Reportes quedan a 16, como en el
+  artboard.
+
+**Resultado.** Cero desbordamiento y ningún texto nuevo contra un borde en las
+21 rutas, ni en las tres del alumno. Lo que el barrido sigue marcando ya estaba
+ahí y está dentro de un contenedor que desplaza en horizontal: las pestañas del
+catálogo, el carrusel de logros y los textos truncados de la cola de avisos.
+En el padrón, «Avanzado · sin sesiones» se lee entera.

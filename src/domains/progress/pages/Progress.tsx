@@ -105,7 +105,7 @@ export default function Progress() {
           ))}
         </MetricStrip>
 
-        <div className="ps-4 pe-4 pb-4 pt-6 max-w-8xl mx-auto space-y-6">
+        <div className="px-5 pb-4 pt-6 max-w-8xl mx-auto space-y-6">
           {/* Sin envoltura <Card>, por el mismo motivo que en Reportes: su
               contenido son a su vez tarjetas, que pagaban el relleno dos veces y
               caian a 277 px, bajo el minimo util de 280 de la regla 1.6. Un

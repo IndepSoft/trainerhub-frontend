@@ -35,7 +35,11 @@ export function DayView({
 }: DayViewProps) {
   const { t } = useTranslation()
   return (
-    <div className="flex border-y border-cobalt-tint-3">
+    /* `pe-4` en movil: la rejilla va de borde a borde, pero las sesiones se
+       quedaban pegadas al derecho desde que el layout dejo de poner margen. La
+       franja se estrecha y las tarjetas —que se colocan en absoluto sobre
+       ella— con la franja. Desde `md`, el margen lo pone el layout. */
+    <div className="flex border-y border-cobalt-tint-3 pe-4 md:pe-0">
       <div className="w-14 shrink-0 border-e border-cobalt-tint-3">
         {TIME_SLOTS.map((time) => (
           <div

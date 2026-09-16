@@ -137,7 +137,7 @@ export default function Trainings() {
           }}
           {...swipeHandlers}
         >
-          <div className="px-4 pt-1">
+          <div className="px-5 pt-1">
             <TabsList className="w-full md:grid md:grid-cols-2">
               {/* Los contadores salen del dato: antes estaban escritos a mano y
                   mentian. */}
@@ -165,11 +165,11 @@ export default function Trainings() {
           */}
           <TabsContent value="planes" className="mt-4">
             {plans.length === 0 ? (
-              <p className="px-4 py-10 text-center text-sm text-ink/40">
+              <p className="px-5 py-10 text-center text-sm text-ink/40">
                 {t('trainings.noPlans')}
               </p>
             ) : (
-              <div className="grid grid-cols-1 gap-4 px-4 pb-4 lg:grid-cols-2 xl:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 px-5 pb-4 lg:grid-cols-2 xl:grid-cols-3">
                 {plans.map((plan) => (
                   <PlanCard key={plan.id} plan={plan} />
                 ))}
@@ -207,23 +207,23 @@ function RoutineList({ routines, emptyLabel }: RoutineListProps) {
   const visibleRoutines = filterRoutines(routines, filters)
 
   if (routines.length === 0) {
-    return <p className="px-4 py-10 text-center text-sm text-ink/40">{emptyLabel}</p>
+    return <p className="px-5 py-10 text-center text-sm text-ink/40">{emptyLabel}</p>
   }
 
   return (
     <>
-      <div className="px-4 pb-4">
+      <div className="px-5 pb-4">
         <TrainingFilters filters={filters} onChange={setFilters} />
       </div>
       {/* Rejilla y no <ul>: `RoutineCard` es un <article>, y `<ul><article>` es
           HTML invalido -los hijos de una lista tienen que ser <li>-. */}
-      <div className="grid grid-cols-1 gap-4 px-4 pb-4 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 px-5 pb-4 lg:grid-cols-2 xl:grid-cols-3">
         {visibleRoutines.map((routine) => (
           <RoutineCard key={routine.id} routine={routine} />
         ))}
       </div>
       {visibleRoutines.length === 0 && (
-        <p className="px-4 py-10 text-center text-sm text-ink/40">{t('trainings.noMatches')}</p>
+        <p className="px-5 py-10 text-center text-sm text-ink/40">{t('trainings.noMatches')}</p>
       )}
     </>
   )

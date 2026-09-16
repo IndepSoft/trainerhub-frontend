@@ -45,7 +45,10 @@ export function WeekView({
           en que columna cae cada dia es imprescindible, y sin esto la fila de
           dias se iba con el contenido. Fondo opaco obligatorio, o la rejilla se
           transparenta por debajo al pasar. */}
-      <div className="sticky top-0 z-10 flex border-b border-cobalt-tint-3 bg-bone">
+      {/* `pe-4` en movil en las DOS filas, la de los dias y la de las
+          sesiones: con el margen solo en una, las columnas dejarian de
+          coincidir. Es el mismo motivo que en `DayView`. */}
+      <div className="sticky top-0 z-10 flex border-b border-cobalt-tint-3 bg-bone pe-4 md:pe-0">
         <div className="w-14 shrink-0" />
         {weekDates.map((date, index) => (
           <div key={toLocalDateKey(date)} className="min-w-0 flex-1 py-2 text-center">
@@ -64,7 +67,7 @@ export function WeekView({
         ))}
       </div>
 
-      <div className="flex">
+      <div className="flex pe-4 md:pe-0">
         <div className="w-14 shrink-0 border-e border-cobalt-tint-3">
           {TIME_SLOTS.map((time) => (
             <div

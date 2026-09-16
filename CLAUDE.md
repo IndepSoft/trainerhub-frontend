@@ -375,6 +375,9 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   `PAGE_SCROLL`, que es también el único sitio donde vive `flex-1
   overflow-auto`. Una página nueva usa `PAGE_SCROLL` y no se entera de la
   barra; si escribe las clases a mano, su última fila quedará tapada.
+- El MARGEN DE PÁGINA en móvil lo pone la página, UNA vez: `px-5`, el de
+  `PageHeader` (`CAMBIOS` §39). `RootLayout` no pone relleno bajo `md`;
+  una página que no ponga el suyo pega el texto al borde.
 - Una lista para ENCONTRAR algo son FILAS, no tarjetas (`CAMBIOS` §38):
   `ListRow`, 64 px, toda la fila es el enlace y no lleva menú. Lo que se
   decide sobre el objeto —editar, dar de baja, borrar— vive en su ficha, en

@@ -91,7 +91,7 @@ export function ExerciseCatalog() {
   }
 
   return (
-    <section className="px-4 pb-6">
+    <section className="px-5 pb-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0 flex-1 sm:max-w-xs">
           <Label htmlFor="busqueda-ejercicios" className="sr-only">

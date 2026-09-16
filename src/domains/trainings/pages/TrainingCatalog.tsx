@@ -63,7 +63,7 @@ export default function TrainingCatalog() {
           onValueChange={(value) => setActiveTab(value as TabValue)}
           {...swipeHandlers}
         >
-          <div className="px-4 pt-1">
+          <div className="px-5 pt-1">
             <TabsList className="w-full md:grid md:grid-cols-4">
               <TabsTrigger value="ejercicios">{t('trainings.tab.exercises')}</TabsTrigger>
               <TabsTrigger value="equipamiento">{t('trainings.tab.equipment')}</TabsTrigger>

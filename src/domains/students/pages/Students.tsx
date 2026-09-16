@@ -83,7 +83,7 @@ export default function Students() {
         explica la cinta de arriba.
       */}
       {can('students.manage') && !canEnroll && active !== null && (
-        <p className="ps-4 pe-4 pt-3 text-sm text-ink/55">
+        <p className="px-5 pt-3 text-sm text-ink/55">
           {/* Pendiente y suspendida no se explican igual: a una le falta la
               activacion, a la otra se le retiro. */}
           {active.crew.subscriptionStatus === 'suspended'
@@ -92,8 +92,7 @@ export default function Students() {
         </p>
       )}
 
-      {/* `px-5`, el mismo margen que la cabecera: con `px-4` la lista
-          arrancaba cuatro pixeles a la izquierda del titulo. */}
+      {/* `px-5`, el mismo margen que la cabecera. */}
       <section className="px-5 pt-4">
         <StudentFilters filters={filters} onChange={setFilters} />
       </section>

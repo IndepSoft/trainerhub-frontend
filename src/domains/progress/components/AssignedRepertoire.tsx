@@ -23,7 +23,7 @@ export function AssignedRepertoire({ studentId }: AssignedRepertoireProps) {
   if (loading) return null
 
   return (
-    <section className="space-y-4 px-4 pt-6">
+    <section className="space-y-4 px-5 pt-6">
       <div>
         <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
           {t('progress.assigned')}

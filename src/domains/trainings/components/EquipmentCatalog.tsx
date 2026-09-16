@@ -96,7 +96,7 @@ export function EquipmentCatalog() {
   }
 
   return (
-    <section className="px-4 pb-6">
+    <section className="px-5 pb-6">
       <form onSubmit={handleCreate} className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="min-w-0 flex-1">
           <Label htmlFor={`${fieldId}-name`} className={FIELD_LABEL}>
