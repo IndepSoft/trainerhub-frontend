@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { AlertTriangle, CalendarCheck } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import {
@@ -18,7 +18,6 @@ import {
 } from '@/shared/ui/select'
 import { toast } from 'sonner'
 import { cn } from '@/shared/lib/utils'
-import { container } from '@/app/container'
 import { describeError } from '@/shared/i18n/errorMessages'
 import { SESSION_LOCATIONS, SESSION_TIME_SLOTS } from '@/shared/domain/entities/session'
 import {
@@ -29,8 +28,8 @@ import {
   type TimesByWeekday,
 } from '@/shared/domain/planScheduling'
 import { useAssignableRoutines } from '../hooks/useAssignableRoutines'
+import { usePlanDump } from '../hooks/usePlanDump'
 import { formatDateKey } from '../libs/dateKey'
-import type { Session } from '@/shared/domain/entities/session'
 import type { TrainingPlan } from '@/shared/domain/entities/plan'
 import type { Student } from '@/shared/domain/entities/student'
 import { activeLocale } from '@/shared/i18n/activeLocale'
@@ -91,21 +90,17 @@ export function PlanToAgendaDialog({
   const { routines } = useAssignableRoutines()
 
   /*
-   * Cuantas sesiones salieron ya de esta asignacion. Volcar dos veces
-   * duplicaba en silencio; ahora se dice, y quien lo hace a proposito -un
-   * ciclo nuevo- sigue pudiendo, con el boton diciendo lo que va a pasar.
+   * Lo que ya hay en esas semanas, y cuantas salieron ya de esta asignacion.
+   * Volcar dos veces duplicaba en silencio; ahora se dice, y quien lo hace a
+   * proposito -un ciclo nuevo- sigue pudiendo, con el boton diciendo lo que va
+   * a pasar.
    */
-  const [alreadyDumped, setAlreadyDumped] = useState(0)
-  useEffect(() => {
-    if (!open) return
-    let active = true
-    container.sessions.findByAssignment(assignmentId).then((existing) => {
-      if (active) setAlreadyDumped(existing.length)
-    })
-    return () => {
-      active = false
-    }
-  }, [open, assignmentId])
+  const { existingSessions, alreadyDumped, dumpSessions } = usePlanDump({
+    assignmentId,
+    startDate,
+    weekCount: plan.weeks.length,
+    enabled: open,
+  })
 
   const weekdays = useMemo(() => weekdaysUsedBy(plan), [plan])
   const routinesById = useMemo(
@@ -115,7 +110,6 @@ export function PlanToAgendaDialog({
 
   const [timesByWeekday, setTimesByWeekday] = useState<TimesByWeekday>({})
   const [location, setLocation] = useState(SESSION_LOCATIONS[0])
-  const [existingSessions, setExistingSessions] = useState<Session[]>([])
   const [isSaving, setIsSaving] = useState(false)
 
   const planned: PlannedSession[] = useMemo(() => {
@@ -127,27 +121,6 @@ export function PlanToAgendaDialog({
       existingSessions
     )
   }, [plan, student.id, startDate, timesByWeekday, location, routinesById, existingSessions])
-
-  /*
-   * Se cargan las sesiones del INTERVALO que abarca el plan, no la agenda
-   * entera: son cuatro semanas, y con backend real la diferencia es una consulta
-   * acotada frente a descargarlo todo.
-   */
-  useEffect(() => {
-    if (!open) return
-
-    const lastWeek = plan.weeks.length
-    const to = addWeeks(startDate, lastWeek)
-
-    let active = true
-    container.sessions.findBetween(startDate, to).then((result) => {
-      if (active) setExistingSessions(result)
-    })
-
-    return () => {
-      active = false
-    }
-  }, [open, plan.weeks.length, startDate])
 
   const conflicting = countConflicting(planned)
 
@@ -169,13 +142,7 @@ export function PlanToAgendaDialog({
     setIsSaving(true)
     setSaveError(null)
     try {
-      // Todas o ninguna, y cada una con la asignacion de la que salio. Eran
-      // doce altas sueltas en serie, y una red que se cae a mitad dejaba
-      // medio plan en la agenda.
-      await container.sessions.createMany(
-        planned.map((entry) => entry.session),
-        assignmentId
-      )
+      await dumpSessions(planned.map((entry) => entry.session))
     } catch (caught) {
       // Se dice donde se pulso: un `finally` sin `catch` dejaba el dialogo
       // abierto y mudo cuando la base rechazaba el lote.
@@ -359,15 +326,6 @@ export function PlanToAgendaDialog({
       </DialogContent>
     </Dialog>
   )
-}
-
-/** Suma semanas a una clave de fecha, construyéndola por partes. */
-function addWeeks(dateKey: string, weeks: number): string {
-  const [year, month, day] = dateKey.split('-').map(Number)
-  const result = new Date(year, month - 1, day + weeks * 7)
-  const resultMonth = String(result.getMonth() + 1).padStart(2, '0')
-  const resultDay = String(result.getDate()).padStart(2, '0')
-  return `${result.getFullYear()}-${resultMonth}-${resultDay}`
 }
 
 /**

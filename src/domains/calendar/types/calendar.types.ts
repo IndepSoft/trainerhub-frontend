@@ -1,3 +1,5 @@
+import type { SessionStatus } from '@/shared/domain/entities/session'
+
 /**
  * Entidades de la agenda.
  *
@@ -17,3 +19,14 @@
 export type { Session, SessionKind, SessionStatus } from '@/shared/domain/entities/session'
 
 export type CalendarViewMode = 'week' | 'day'
+
+/**
+ * Lo que la ficha de una sesión puede cambiar sin abrir el formulario entero.
+ *
+ * Vivía en `SessionDetailsModal`, pero lo necesita también el hook que lo
+ * escribe, y un hook no importa de un componente.
+ */
+export interface SessionDetailsChanges {
+  status: SessionStatus
+  notes: string
+}

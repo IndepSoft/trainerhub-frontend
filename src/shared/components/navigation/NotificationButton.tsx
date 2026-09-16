@@ -1,12 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Bell } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
-import { container } from '@/app/container'
 import { useViewerContext } from '@/app/ViewerContext'
+import { useNoticeInbox } from '@/shared/hooks/useNoticeInbox'
 import { cn } from '@/shared/lib/utils'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { activeLocale } from '@/shared/i18n/activeLocale'
-import type { Notice } from '@/shared/domain/entities/notice'
 
 /**
  * La campana: los avisos privados de quien mira.
@@ -27,23 +26,8 @@ export function NotificationButton() {
   const { t } = useTranslation()
   const studentId = active?.student?.id
 
-  const [notices, setNotices] = useState<Notice[]>([])
+  const { notices, markAllRead } = useNoticeInbox(studentId)
   const [open, setOpen] = useState(false)
-
-  const load = useCallback(async (): Promise<void> => {
-    if (studentId === undefined) {
-      setNotices([])
-      return
-    }
-    setNotices(await container.notices.findForStudent(studentId))
-  }, [studentId])
-
-  useEffect(() => {
-    void load()
-    return container.notices.onChange(() => {
-      void load()
-    })
-  }, [load])
 
   const unread = notices.filter((notice) => notice.readAt === null).length
 
@@ -55,8 +39,8 @@ export function NotificationButton() {
      * cierre deja el contador encendido mientras se están leyendo, que parece
      * que no ha funcionado.
      */
-    if (next && studentId !== undefined && unread > 0) {
-      void container.notices.markAllRead(studentId)
+    if (next && unread > 0) {
+      void markAllRead()
     }
   }
 
