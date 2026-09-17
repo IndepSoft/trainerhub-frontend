@@ -4127,3 +4127,34 @@ fila que abre una hoja también va a algún sitio.
 **Verificado en navegador**: a 375 px no hay desbordamiento, ningún objetivo
 por debajo de 44 px —el interruptor del sonido ocupa la fila entera— y ningún
 contenedor por debajo de 280.
+
+## 50. Los vacíos enseñan (17 sep 2026)
+
+Séptima tanda (artboards `EstudiantesVacio`, `EntrenamientosVacio`,
+`AgendaVacia`). Un equipo recién creado abre TRES pantallas vacías seguidas, así
+que esos huecos son la primera explicación que recibe quien acaba de empezar. Y
+lo que decían era una línea gris centrada en cuatrocientos píxeles de nada: «Aún
+no tienes alumnos», «Aún no has creado ninguna rutina». Constataban lo que ya se
+veía.
+
+**Ahora dicen qué va ahí, por qué, y por dónde se empieza**, con `EmptyState`:
+icono, título, dos líneas de explicación y las salidas. Lo que se explica es
+justo lo que nadie adivina —que la cuenta de un alumno se enlaza sola con su
+ficha por el correo; que una rutina se compone de bloques del catálogo y se
+asigna desde la ficha; que un plan volcado llena la agenda de un ciclo entero—.
+
+**Dos salidas y no una**, porque casi siempre hay dos caminos: dar de alta o
+enseñar el QR, crear una rutina o ir al catálogo a por ejercicios, agendar o
+mirar el día siguiente. La segunda va en texto, no compite.
+
+**Alineado a la izquierda** y no centrado: se lee como el resto de la aplicación
+y el botón cae donde cae el pulgar.
+
+**No se mezcla con «no hay resultados».** Un filtro sin coincidencias sigue
+siendo una frase: lo que hace falta ahí es quitar el filtro, no dar de alta a
+alguien que ya existe. Y donde no hay a quién buscar, la fila de filtros
+desaparece: un buscador sobre una lista vacía sólo puede devolver lo mismo.
+
+**Lo que NO recibe vacío ilustrado**: los avisos y el historial, donde no hay
+nada que ofrecer —llegan solos al entrenar o al recibirlos—, y los huecos de
+dentro de una ficha, que ya explican lo suyo en una línea.

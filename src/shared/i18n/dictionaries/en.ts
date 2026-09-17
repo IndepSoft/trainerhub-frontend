@@ -465,7 +465,10 @@ export const english: Dictionary = {
   'calendar.layout.list': 'List',
   'calendar.layout.schedule': 'Schedule',
   'calendar.freeUntil': 'Free until {time}',
-  'calendar.dayEmpty': 'Nothing scheduled for this day.',
+  'calendar.dayEmpty': 'Schedule one from here, or roll a whole plan from a student record and the calendar fills itself.',
+  'calendar.nextDay': 'Go to the next day',
+  'calendar.dayEmptyOther': 'No sessions that day',
+  'calendar.dayEmptyToday': 'No sessions today',
   'calendar.thisWeek': 'This week',
   'calendar.weekSummary': 'Week summary',
   'calendar.summary.pending.one': '{count} pending',
@@ -902,7 +905,8 @@ export const english: Dictionary = {
   'trainings.newRoutineShort': 'Routine',
   'trainings.newPlan': 'New plan',
   'trainings.newPlanShort': 'Plan',
-  'trainings.noPlans': 'You have not created any plan yet.',
+  'trainings.noPlans': 'A plan arranges routines into weeks. Roll it onto a student and the whole cycle lands on their calendar at once.',
+  'trainings.noPlansTitle': 'Your first plan',
   'trainings.filters': 'Filters',
   'trainings.searchRoutines': 'Search routines…',
   'trainings.tab.exercises': 'Exercises',
@@ -1096,7 +1100,9 @@ export const english: Dictionary = {
   // -------------------------------------------- entrenamientos: pestañas
   'trainings.tab.routines': 'Routines ({count})',
   'trainings.tab.plans': 'Plans ({count})',
-  'trainings.noRoutines': 'You have not created any routine yet.',
+  'trainings.noRoutines': 'A routine is blocks of exercises from the catalogue, with their sets and reps. Create it once and assign it from each student record.',
+  'trainings.seeCatalog': 'See the exercise catalogue',
+  'trainings.noRoutinesTitle': 'Your first routine',
 
   // --------------------------------------------- catalogo del entrenador
   'exercise.noMatch': 'No exercise contains “{search}”.',
@@ -1253,8 +1259,9 @@ export const english: Dictionary = {
   'filters.level.all': 'All levels',
   'filters.level.label': 'Level',
   'filters.level.selected': 'Level: {level}',
-  'students.empty':
-    'No students yet. Add the first one to assign routines and schedule sessions.',
+  'students.empty': 'Add your first student with their email. When they sign up with that same email, their account links to the record on its own.',
+  'students.emptyShareCode': 'Or share the team code',
+  'students.emptyTitle': 'Nobody here yet',
   'students.noMatches': 'No student matches the search.',
   'students.rowHint':
     'Tap a student to open their record, schedule a session or assign a plan.',

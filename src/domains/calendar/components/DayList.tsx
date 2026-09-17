@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { ListRow } from '@/shared/components/ListRow'
 import { cn } from '@/shared/lib/utils'
 import { todayKey } from '@/shared/lib/dateKey'
@@ -10,6 +11,11 @@ import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 interface DayListProps {
   date: Date
+  /**
+   * Qué se enseña cuando el día no tiene nada. Lo compone la página, que es
+   * quien sabe agendar y quien sabe si hoy es hoy.
+   */
+  empty: ReactNode
   getSessionsOfDay: (date: Date) => Session[]
   onSelectSession: (session: Session) => void
   /** Alumnos indexados, para resolver el nombre de cada sesion una sola vez. */
@@ -27,13 +33,17 @@ interface DayListProps {
  * —`session.card.label`—: las dos vistas enseñan la misma sesión, y quien la
  * busca por voz no tiene por qué saber en cuál está.
  */
-export function DayList({ date, getSessionsOfDay, onSelectSession, studentsById }: DayListProps) {
+export function DayList({
+  date,
+  empty,
+  getSessionsOfDay,
+  onSelectSession,
+  studentsById,
+}: DayListProps) {
   const { t } = useTranslation()
   const entries = dayAgenda(getSessionsOfDay(date))
 
-  if (entries.length === 0) {
-    return <p className="px-5 py-10 text-center text-sm text-ink/40">{t('calendar.dayEmpty')}</p>
-  }
+  if (entries.length === 0) return <div className="px-5">{empty}</div>
 
   return (
     <ul className="px-5">

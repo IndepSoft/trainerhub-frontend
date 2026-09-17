@@ -476,7 +476,10 @@ export const spanish = {
   'calendar.layout.list': 'Lista',
   'calendar.layout.schedule': 'Horario',
   'calendar.freeUntil': 'Libre hasta las {time}',
-  'calendar.dayEmpty': 'Nada agendado este día.',
+  'calendar.dayEmpty': 'Agenda una desde aquí, o vuelca un plan entero desde la ficha de un alumno y la agenda se llena sola.',
+  'calendar.nextDay': 'Ir al día siguiente',
+  'calendar.dayEmptyOther': 'Ese día no hay sesiones',
+  'calendar.dayEmptyToday': 'Hoy no hay sesiones',
   'calendar.thisWeek': 'Esta semana',
   'calendar.weekSummary': 'Resumen de la semana',
   'calendar.summary.pending.one': '{count} pendiente',
@@ -913,7 +916,8 @@ export const spanish = {
   'trainings.newRoutineShort': 'Rutina',
   'trainings.newPlan': 'Nuevo Plan',
   'trainings.newPlanShort': 'Plan',
-  'trainings.noPlans': 'Aún no has creado ningún plan.',
+  'trainings.noPlans': 'Un plan ordena rutinas en semanas. Vuélcalo sobre un alumno y se le agendan las sesiones de todo el ciclo de una vez.',
+  'trainings.noPlansTitle': 'Tu primer plan',
   'trainings.filters': 'Filtros',
   'trainings.searchRoutines': 'Buscar rutinas...',
   'trainings.tab.exercises': 'Ejercicios',
@@ -1107,7 +1111,9 @@ export const spanish = {
   // -------------------------------------------- entrenamientos: pestañas
   'trainings.tab.routines': 'Rutinas ({count})',
   'trainings.tab.plans': 'Planes ({count})',
-  'trainings.noRoutines': 'Aún no has creado ninguna rutina.',
+  'trainings.noRoutines': 'Una rutina son bloques de ejercicios del catálogo, con sus series y repeticiones. Créala una vez y asígnala desde la ficha de cada alumno.',
+  'trainings.seeCatalog': 'Ver el catálogo de ejercicios',
+  'trainings.noRoutinesTitle': 'Tu primera rutina',
 
   // --------------------------------------------- catalogo del entrenador
   'exercise.noMatch': 'Ningún ejercicio contiene «{search}».',
@@ -1264,8 +1270,9 @@ export const spanish = {
   'filters.level.all': 'Todos los niveles',
   'filters.level.label': 'Nivel',
   'filters.level.selected': 'Nivel: {level}',
-  'students.empty':
-    'Aún no tienes alumnos. Añade el primero para poder asignarle rutinas y agendarle sesiones.',
+  'students.empty': 'Da de alta a tu primer alumno con su correo. Cuando se registre con ese mismo correo, su cuenta queda enlazada a la ficha sola.',
+  'students.emptyShareCode': 'O comparte el código del equipo',
+  'students.emptyTitle': 'Todavía no hay nadie',
   'students.noMatches': 'Ningún alumno coincide con la búsqueda.',
   'students.rowHint':
     'Toca un alumno para ver su ficha, agendarle o asignarle un plan.',

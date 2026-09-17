@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { PageHeader } from '@/shared/components/PageHeader'
-import { Plus } from 'lucide-react'
+import { EmptyState } from '@/shared/components/EmptyState'
+import { Button } from '@/shared/ui/button'
+import { Plus, Users } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { StudentRow } from '../components/StudentRow'
 import { StudentFilters } from '../components/StudentFilters'
 import { StudentFormDialog } from '../components/StudentFormDialog'
@@ -92,10 +95,15 @@ export default function Students() {
         </p>
       )}
 
-      {/* `px-5`, el mismo margen que la cabecera. */}
-      <section className="px-5 pt-4">
-        <StudentFilters filters={filters} onChange={setFilters} />
-      </section>
+      {/* `px-5`, el mismo margen que la cabecera. Sin nadie a quien buscar no
+          hay fila de filtros: un buscador sobre una lista vacía es un control
+          que sólo puede devolver lo mismo. Mientras carga se queda, para no
+          meter un salto en cuanto lleguen los datos. */}
+      {(loading || students.length > 0) && (
+        <section className="px-5 pt-4">
+          <StudentFilters filters={filters} onChange={setFilters} />
+        </section>
+      )}
 
       {/* Contenedor de scroll de la pagina. Es un div y no un <main> a
           proposito: el landmark <main> ya lo pinta SidebarInset desde
@@ -135,7 +143,22 @@ export default function Students() {
               con estos filtros. Decir lo primero cuando pasa lo segundo
               manda a dar de alta a alguien que ya existe. */}
           {!loading && students.length === 0 ? (
-            <p className="py-12 text-center text-sm text-ink/45">{t('students.empty')}</p>
+            <EmptyState
+              icon={Users}
+              title={t('students.emptyTitle')}
+              body={t('students.empty')}
+            >
+              <Button type="button" onClick={() => setIsFormOpen(true)} disabled={!canEnroll}>
+                {t('students.add')}
+              </Button>
+              {/* El otro camino: quien escanea el QR se da de alta solo, y su
+                  ficha se crea al aprobarle. */}
+              {canEnroll && (
+                <Button asChild variant="ghost" className="text-cobalt">
+                  <Link to="/crew?seccion=invitar">{t('students.emptyShareCode')}</Link>
+                </Button>
+              )}
+            </EmptyState>
           ) : null}
           {!loading && students.length > 0 && visibleStudents.length === 0 && isFiltering ? (
             <p className="py-12 text-center text-sm text-ink/45">{t('students.noMatches')}</p>

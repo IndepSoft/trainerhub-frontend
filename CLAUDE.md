@@ -419,7 +419,10 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   deja pegado abajo mientras el cuerpo se desplaza. Una PANTALLA DE AJUSTES
   son filas que dicen cómo está cada cosa, con lo que se rellena en una hoja
   y las opciones de una sola respuesta en `ChoiceRow` (§49); lo que hay que
-  saber antes de elegir se lee DONDE se elige, no en la fila.
+  saber antes de elegir se lee DONDE se elige, no en la fila. Un VACÍO de
+  pantalla es `EmptyState` (§50): dice qué va ahí y por dónde se empieza, con
+  hasta dos salidas. «Ningún resultado» NO es un vacío: ahí lo que hace falta
+  es quitar el filtro.
 - TIEMPO REAL en **todo lo que la aplicación escucha**, por `postgres_changes`
   con `subscribeToTable` / `subscribeToTables`. Quince tablas publicadas: las
   de pertenencia e identidad —`crews`, `crew_staff`, `students`, `profiles`—

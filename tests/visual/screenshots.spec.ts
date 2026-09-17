@@ -2210,7 +2210,8 @@ test.describe('borrado', () => {
     await page.getByRole('dialog').getByRole('button', { name: 'Eliminar' }).click()
 
     await page.waitForURL(/seccion=planes/)
-    await expect(page.getByText('Aún no has creado ningún plan.')).toBeVisible()
+    // El vacío ENSEÑA lo que va ahí (§50), en vez de constatar que no hay nada.
+    await expect(page.getByRole('heading', { name: 'Tu primer plan' })).toBeVisible()
 
     /*
      * Y la rutina que ese plan programaba pasa a poder borrarse: la regla mira
@@ -4283,7 +4284,20 @@ test.describe('plataforma', () => {
      * suscripcion. Es la trampa documentada en el traspaso.
      */
     await page.getByRole('link', { name: 'Estudiantes' }).first().click()
-    await expect(page.getByRole('button', { name: /Añadir alumno/ })).toBeDisabled()
+
+    /*
+     * EL VACIO EXPLICA QUE VA AHI Y COMO SE CONSIGUE (§50). La linea de antes
+     * —«Aún no tienes alumnos»— decia lo que ya se veia; esto cuenta que la
+     * cuenta se enlaza con la ficha por el correo, que es lo que nadie adivina.
+     */
+    await expect(page.getByRole('heading', { name: 'Todavía no hay nadie' })).toBeVisible()
+    await expect(page.getByText(/su cuenta queda enlazada a la ficha sola/)).toBeVisible()
+
+    // Y no lo esconde: el boton de dar de alta esta, apagado -en la cabecera y
+    // en el propio vacio-, con el porque debajo.
+    const alta = page.getByRole('button', { name: /Añadir alumno/ })
+    await expect(alta.first()).toBeDisabled()
+    await expect(alta.last()).toBeDisabled()
     await expect(page.getByText(/hace falta activar la suscripción/)).toBeVisible()
   })
 

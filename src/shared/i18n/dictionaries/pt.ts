@@ -465,7 +465,10 @@ export const portuguese: Dictionary = {
   'calendar.layout.list': 'Lista',
   'calendar.layout.schedule': 'Horário',
   'calendar.freeUntil': 'Livre até as {time}',
-  'calendar.dayEmpty': 'Nada agendado neste dia.',
+  'calendar.dayEmpty': 'Agende uma aqui, ou despeje um plano inteiro pela ficha de um aluno e a agenda se enche sozinha.',
+  'calendar.nextDay': 'Ir para o dia seguinte',
+  'calendar.dayEmptyOther': 'Nesse dia não há sessões',
+  'calendar.dayEmptyToday': 'Hoje não há sessões',
   'calendar.thisWeek': 'Esta semana',
   'calendar.weekSummary': 'Resumo da semana',
   'calendar.summary.pending.one': '{count} pendente',
@@ -902,7 +905,8 @@ export const portuguese: Dictionary = {
   'trainings.newRoutineShort': 'Rotina',
   'trainings.newPlan': 'Novo plano',
   'trainings.newPlanShort': 'Plano',
-  'trainings.noPlans': 'Você ainda não criou nenhum plano.',
+  'trainings.noPlans': 'Um plano organiza rotinas em semanas. Despeje-o sobre um aluno e as sessões do ciclo inteiro entram na agenda de uma vez.',
+  'trainings.noPlansTitle': 'Seu primeiro plano',
   'trainings.filters': 'Filtros',
   'trainings.searchRoutines': 'Buscar rotinas...',
   'trainings.tab.exercises': 'Exercícios',
@@ -1096,7 +1100,9 @@ export const portuguese: Dictionary = {
   // -------------------------------------------- entrenamientos: pestañas
   'trainings.tab.routines': 'Rotinas ({count})',
   'trainings.tab.plans': 'Planos ({count})',
-  'trainings.noRoutines': 'Você ainda não criou nenhuma rotina.',
+  'trainings.noRoutines': 'Uma rotina são blocos de exercícios do catálogo, com suas séries e repetições. Crie uma vez e atribua na ficha de cada aluno.',
+  'trainings.seeCatalog': 'Ver o catálogo de exercícios',
+  'trainings.noRoutinesTitle': 'Sua primeira rotina',
 
   // --------------------------------------------- catalogo del entrenador
   'exercise.noMatch': 'Nenhum exercício contém «{search}».',
@@ -1253,8 +1259,9 @@ export const portuguese: Dictionary = {
   'filters.level.all': 'Todos os níveis',
   'filters.level.label': 'Nível',
   'filters.level.selected': 'Nível: {level}',
-  'students.empty':
-    'Ainda não tens alunos. Adiciona o primeiro para lhe atribuir rotinas e marcar sessões.',
+  'students.empty': 'Cadastre seu primeiro aluno com o e-mail dele. Quando se registrar com esse mesmo e-mail, a conta se liga à ficha sozinha.',
+  'students.emptyShareCode': 'Ou compartilhe o código da equipe',
+  'students.emptyTitle': 'Ainda não há ninguém',
   'students.noMatches': 'Nenhum aluno corresponde à pesquisa.',
   'students.rowHint':
     'Toque em um aluno para ver a ficha, agendar uma sessão ou atribuir um plano.',

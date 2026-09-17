@@ -7,7 +7,10 @@ import {
 } from '@/shared/ui/select'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Plus } from 'lucide-react'
+import { CalendarDays, Plus } from 'lucide-react'
+import { Button } from '@/shared/ui/button'
+import { EmptyState } from '@/shared/components/EmptyState'
+import { todayKey, toLocalDateKey } from '@/shared/lib/dateKey'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { CreateSessionModal } from '../components/CreateSessionModal'
 import { SessionDetailsModal } from '../components/SessionDetailsModal'
@@ -293,6 +296,34 @@ export default function Calendar() {
             {viewMode === 'day' && dayLayout === 'list' && (
               <DayList
                 date={currentDate}
+                empty={
+                  <EmptyState
+                    icon={CalendarDays}
+                    title={
+                      toLocalDateKey(currentDate) === todayKey()
+                        ? t('calendar.dayEmptyToday')
+                        : t('calendar.dayEmptyOther')
+                    }
+                    body={t('calendar.dayEmpty')}
+                  >
+                    {can('schedule.manage') && (
+                      <Button type="button" onClick={() => setIsCreateOpen(true)}>
+                        {t('newSession.open')}
+                      </Button>
+                    )}
+                    {/* La salida barata: casi siempre lo que se busca está en
+                        el día siguiente, y volver a la cabecera a pulsar la
+                        flecha es el gesto que esta pantalla ya pide dos veces. */}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-cobalt"
+                      onClick={goToNext}
+                    >
+                      {t('calendar.nextDay')}
+                    </Button>
+                  </EmptyState>
+                }
                 getSessionsOfDay={getSessionsOfDay}
                 onSelectSession={selectSession}
                 studentsById={studentsById}

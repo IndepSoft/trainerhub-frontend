@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { Library, Plus } from 'lucide-react'
+import { Dumbbell, CalendarRange, Library, Plus } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Button } from '@/shared/ui/button'
+import { EmptyState } from '@/shared/components/EmptyState'
 import {
   EMPTY_ROUTINE_FILTERS,
   filterRoutines,
@@ -164,9 +167,22 @@ export default function Trainings() {
               misma. */}
           <TabsContent value="rutinas">
             {routines.length === 0 && (
-              <p className="px-5 py-10 text-center text-sm text-ink/40">
-                {t('trainings.noRoutines')}
-              </p>
+              <div className="px-5">
+                <EmptyState
+                  icon={Dumbbell}
+                  title={t('trainings.noRoutinesTitle')}
+                  body={t('trainings.noRoutines')}
+                >
+                  <Button asChild>
+                    <Link to="/trainings/new">{t('trainings.newRoutine')}</Link>
+                  </Button>
+                  {/* De donde salen los ejercicios: sin catalogo, componer una
+                      rutina ofrece una lista vacia. */}
+                  <Button asChild variant="ghost" className="text-cobalt">
+                    <Link to="/trainings/catalog">{t('trainings.seeCatalog')}</Link>
+                  </Button>
+                </EmptyState>
+              </div>
             )}
 
             {/* Rejilla y no <ul>: `RoutineCard` es un <article>, y
@@ -195,9 +211,17 @@ export default function Trainings() {
           */}
           <TabsContent value="planes">
             {plans.length === 0 ? (
-              <p className="px-5 py-10 text-center text-sm text-ink/40">
-                {t('trainings.noPlans')}
-              </p>
+              <div className="px-5">
+                <EmptyState
+                  icon={CalendarRange}
+                  title={t('trainings.noPlansTitle')}
+                  body={t('trainings.noPlans')}
+                >
+                  <Button asChild>
+                    <Link to="/trainings/plans/new">{t('trainings.newPlan')}</Link>
+                  </Button>
+                </EmptyState>
+              </div>
             ) : (
               <div className="grid grid-cols-1 gap-3 px-5 pb-4 lg:grid-cols-2 xl:grid-cols-3">
                 {plans.map((plan) => (
