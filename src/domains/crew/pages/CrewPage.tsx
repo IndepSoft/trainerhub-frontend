@@ -1,5 +1,11 @@
+import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Check, Plus, Settings, UserPlus, Users, X } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
+import { ListRow } from '@/shared/components/ListRow'
+import { useSwipe } from '@/shared/hooks/useSwipe'
+import { useUrlSection } from '@/shared/hooks/useUrlSection'
+import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 import { toast } from 'sonner'
 import { describeError } from '@/shared/i18n/errorMessages'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
@@ -15,36 +21,94 @@ import { SubscriptionNotice } from '../components/SubscriptionNotice'
 import { CrewWall } from '../components/CrewWall'
 import { CrewRanking } from '../components/CrewRanking'
 import { canEnrollMembers } from '@/shared/domain/entities/crew'
+import type { Membership } from '@/shared/domain/entities/crew'
 import { cohortOf } from '@/shared/domain/entities/progress'
 import type { Student } from '@/shared/domain/entities/student'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { STUDENT_LEVEL_LABEL_KEY } from '@/shared/i18n/domainLabels'
 import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
+/** Las secciones del equipo, en el orden en que se miran. */
+const CREW_SECTIONS = ['muro', 'miembros', 'ranking', 'invitar'] as const
+type CrewSection = (typeof CREW_SECTIONS)[number]
+
+const CREW_SECTION_LABEL_KEY: Record<CrewSection, TranslationKey> = {
+  muro: 'crew.wall',
+  miembros: 'crew.members',
+  ranking: 'crew.ranking',
+  invitar: 'crew.inviteSection',
+}
+
 /**
  * La página del equipo. Sólo composición.
  *
  * Es a donde lleva el nombre del crew de la barra lateral.
  *
- * EL ORDEN ES POR URGENCIA, no por importancia. Primero lo que espera una
- * decisión —las solicitudes—, después lo que se viene a mirar —el muro, y el
- * ranking—, y al final lo que se consulta de vez en cuando: el padrón y el QR.
- * Sin solicitudes pendientes, lo primero que se ve es el muro, que es lo que
- * hace que alguien vuelva a esta pantalla.
+ * EN SECCIONES, y antes no: muro, miembros, solicitudes, ranking y QR iban
+ * seguidos en una columna de 1.920 px, y la lista de miembros salía dos veces
+ * —como miembros y como ranking—.
  *
- * UNA SOLA COLUMNA QUE SE DESPLAZA, sin pestañas. Cuatro secciones invitan a
- * ponerlas, y esconderían justo lo que se viene a ver: un anuncio nuevo detrás
- * de una pestaña es un anuncio que nadie lee.
+ * LA OBJECIÓN DE ENTONCES ERA BUENA y por eso el muro es la PRIMERA sección:
+ * «un anuncio nuevo detrás de una pestaña es un anuncio que nadie lee», así que
+ * el muro es lo que se ve al entrar y ninguna pestaña lo tapa. Lo que sí se
+ * quedaba esperando una decisión —las solicitudes— viaja a «Miembros» con su
+ * cuenta en la pestaña, además de contar en la bandeja del panel y en la barra:
+ * esconderlo sin avisar habría sido el mismo error al revés.
  *
  * TODO: faltan los eventos. Los entrenamientos grupales NO son una entidad
  * nueva —`Session` ya tiene `kind: 'group'`—; un evento, una carrera o una
  * quedada, sí lo es.
  */
 export default function CrewPage() {
+  const { active, loading: loadingViewer } = useViewerContext()
+
+  if (loadingViewer) return null
+
+  // Sin crew no hay página que pintar: se ofrece la salida en vez de un vacío.
+  if (active === null) return <NoCrew />
+
+  /*
+   * EL TABLERO VA EN SU PROPIO COMPONENTE, y no aquí mismo, porque QUÉ
+   * SECCIONES EXISTEN depende del equipo —el ranking se puede apagar, el QR
+   * sólo lo ve quien invita— y los hooks que las manejan —la sección de la
+   * dirección, el deslizamiento, el desplazamiento— no pueden vivir detrás de
+   * los dos `return` de arriba.
+   */
+  return <CrewBoard membership={active} />
+}
+
+interface CrewBoardProps {
+  membership: Membership
+}
+
+/** El equipo, ya resuelto: cabecera fija y las secciones debajo. */
+function CrewBoard({ membership }: CrewBoardProps) {
+  const { crew, role, student: viewerStudent } = membership
   const { t, plural } = useTranslation()
-  const { active, trainer, can, loading: loadingViewer } = useViewerContext()
+  const { trainer, can } = useViewerContext()
   const { members, pending, loading, approve, reject } = useCrewMembers()
   const { rotateJoinToken, requestActivation, saving, error: editorError } = useCrewEditor()
+  const scrollerRef = useRef<HTMLDivElement>(null)
+
+  /*
+   * CADA CONTROL PREGUNTA POR SU PROPIA CAPACIDAD, no por el rol.
+   *
+   * Con `role === 'trainer'` no cabía el gimnasio: su dueño gobierna sin
+   * entrenar y sus entrenadores llevan alumnos sin tocar los ajustes. Preguntar
+   * por lo que cada botón necesita deja los dos casos expresados, y deja además
+   * la puerta abierta a prestarle una llave suelta a alguien.
+   */
+  const isStaff = role !== 'student'
+  const canInvite = canEnrollMembers(crew)
+
+  // Las que EXISTEN AHORA. Una dirección que nombre otra cae en el muro.
+  const sections = CREW_SECTIONS.filter(
+    (candidate) =>
+      (candidate !== 'ranking' || crew.rankingEnabled) &&
+      (candidate !== 'invitar' || can('crew.invite'))
+  )
+  const { section, select: selectSection } = useUrlSection(sections)
+  const pendingCount = can('crew.members') ? pending.length : 0
 
   // Aceptar y rechazar se esperan y se dicen: eran dos `void` mudos.
   const decide = async (decision: () => Promise<void>) => {
@@ -55,21 +119,22 @@ export default function CrewPage() {
     }
   }
 
-  if (loadingViewer) return null
+  const moveSection = (delta: number) => {
+    const next = sections.indexOf(section) + delta
+    if (next < 0 || next >= sections.length) return
+    selectSection(sections[next])
+  }
 
-  // Sin crew no hay página que pintar: se ofrece la salida en vez de un vacío.
-  if (active === null) return <NoCrew />
+  const { handlers: swipeHandlers } = useSwipe({
+    onSwipeLeft: () => moveSection(1),
+    onSwipeRight: () => moveSection(-1),
+  })
 
-  const { crew, role } = active
-  /*
-   * CADA CONTROL PREGUNTA POR SU PROPIA CAPACIDAD, no por el rol.
-   *
-   * Con `role === 'trainer'` no cabía el gimnasio: su dueño gobierna sin
-   * entrenar y sus entrenadores llevan alumnos sin tocar los ajustes. Preguntar
-   * por lo que cada botón necesita deja los dos casos expresados, y deja además
-   * la puerta abierta a prestarle una llave suelta a alguien.
-   */
-  const isStaff = role !== 'student'
+  // Cada sección empieza por arriba: el contenedor que desplaza es el mismo
+  // para todas, y sin esto el ranking se abría a la altura del muro.
+  useEffect(() => {
+    scrollerRef.current?.scrollTo({ top: 0 })
+  }, [section])
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
@@ -114,149 +179,194 @@ export default function CrewPage() {
         </PageHeader.Content>
       </PageHeader>
 
-      <div className={PAGE_SCROLL}>
-        <div className="mx-auto max-w-3xl space-y-8 px-5 py-6">
-          {/* Lo que pide una decisión va primero: es lo único de esta pantalla
-              que se queda parado esperando al entrenador. */}
-          {can('crew.members') && pending.length > 0 && (
-            <section className="space-y-3" aria-labelledby="solicitudes-titulo">
-              <h2
-                id="solicitudes-titulo"
-                className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60"
+      <Tabs
+        value={section}
+        onValueChange={(value) => {
+          const chosen = sections.find((candidate) => candidate === value)
+          if (chosen !== undefined) selectSection(chosen)
+        }}
+        className="min-h-0 flex-1 gap-0"
+      >
+        <div className="shrink-0 px-5 pb-3">
+          <TabsList aria-label={t('crew.sectionsLabel')} className="w-full md:max-w-lg">
+            {sections.map((candidate) => (
+              <TabsTrigger
+                key={candidate}
+                value={candidate}
+                className="gap-1.5 px-2 text-[13px] font-semibold"
               >
-                {t('crew.requestsHeading', { count: pending.length })}
-              </h2>
-
-              <ul className="divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3">
-                {pending.map((student) => (
-                  <li key={student.id} className="flex items-center gap-3 py-3">
-                    <MemberAvatar student={student} />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold text-ink">
-                        {getShortName(student.firstName, student.lastName)}
-                      </p>
-                      <p className="truncate text-xs text-ink/45">{student.email}</p>
-                    </div>
-
-                    <div className="flex shrink-0 gap-1">
-                      <button
-                        type="button"
-                        aria-label={t('crew.acceptLabel', {
-                          name: getShortName(student.firstName, student.lastName),
-                        })}
-                        onClick={() => void decide(() => approve(student.id))}
-                        className="inline-flex size-11 items-center justify-center rounded-action text-cobalt transition-colors hover:bg-cobalt-tint"
-                      >
-                        <Check className="size-5" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={t('crew.rejectLabel', {
-                          name: getShortName(student.firstName, student.lastName),
-                        })}
-                        onClick={() => void decide(() => reject(student.id))}
-                        className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:text-danger"
-                      >
-                        <X className="size-5" />
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          {/* Se firma con el nombre de quien entrena el equipo. Si su ficha
-              no está —cuenta sin perfil—, con el nombre del propio equipo: un
-              anuncio sin autor se lee como un aviso del sistema. */}
-          <CrewWall
-            isStaff={isStaff}
-            canPublish={can('crew.wall')}
-            authorName={
-              trainer === null ? crew.name : `${trainer.firstName} ${trainer.lastName}`
-            }
-          />
-
-          {/* El equipo puede apagarlo: en un grupo de rehabilitación o de salud
-              general, comparar públicamente el esfuerzo hace daño. */}
-          {crew.rankingEnabled && (
-            <CrewRanking
-              viewerStudentId={active.student?.id ?? null}
-              viewerCohort={cohortOf(active.student?.birthDate ?? null)}
-            />
-          )}
-
-          <section className="space-y-3" aria-labelledby="miembros-titulo">
-            <h2
-              id="miembros-titulo"
-              className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60"
-            >
-              {t('crew.members')}
-            </h2>
-
-            {!loading && members.length === 0 ? (
-              <p className="py-8 text-sm text-ink/45">
-                {t('crew.membersEmpty')}
-              </p>
-            ) : (
-              <ul className="divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3">
-                {members.map((student) => (
-                  <li key={student.id} className="flex items-center gap-3 py-3">
-                    <MemberAvatar student={student} />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold text-ink">
-                        {getShortName(student.firstName, student.lastName)}
-                      </p>
-                      <p className="truncate text-xs text-ink/45">
-                        {t(STUDENT_LEVEL_LABEL_KEY[student.level])}
-                      </p>
-                    </div>
-
-                    {/*
-                      «Sin cuenta» es una nota al margen, no un grupo aparte.
-                      Quien tiene ficha ya entrena aquí y se le agenda igual; lo
-                      único que le falta es poder entrar a ver su progreso. Estos
-                      cuatro estaban en su propia sección, y la lista de miembros
-                      salia vacia al lado.
-                    */}
-                    {student.profileId === null && (
-                      <span className="shrink-0 rounded-action border border-cobalt-tint-3 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-ink/55">
-                        {t('crew.noAccount')}
-                      </span>
-                    )}
-                    {student.profileId === null && can('crew.invite') && canEnrollMembers(crew) && (
-                      <CopyInviteButton joinToken={crew.joinToken} />
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          {/*
-            El QR sólo lo enseña quien entrena -es la llave del equipo- y sólo
-            con la suscripción activa. Sin ella no se esconde: se explica, que
-            es la diferencia entre una puerta cerrada y una pared.
-          */}
-          {can('crew.invite') &&
-            (canEnrollMembers(crew) ? (
-              <CrewInviteCard
-                crew={crew}
-                rotating={saving}
-                onRotate={async () => {
-                  await rotateJoinToken(crew.id)
-                }}
-              />
-            ) : (
-              <SubscriptionNotice
-                crew={crew}
-                requesting={saving}
-                error={editorError}
-                onRequestActivation={() => requestActivation(crew.id)}
-              />
+                {t(CREW_SECTION_LABEL_KEY[candidate])}
+                {/* Lo que espera una decisión se anuncia en su pestaña: las
+                    solicitudes, y la suscripción sin activar. */}
+                {candidate === 'miembros' && pendingCount > 0 && (
+                  <span
+                    aria-label={t('crew.pendingWaiting', { count: pendingCount })}
+                    className="metric-figures rounded-action bg-cobalt px-1.5 text-[11px] font-bold text-white"
+                  >
+                    {pendingCount}
+                  </span>
+                )}
+                {candidate === 'invitar' && !canInvite && (
+                  <span
+                    role="img"
+                    aria-label={t('crew.needsActivation')}
+                    className="size-2 shrink-0 rounded-full bg-ember"
+                  />
+                )}
+              </TabsTrigger>
             ))}
+          </TabsList>
         </div>
-      </div>
+
+        <div ref={scrollerRef} className={PAGE_SCROLL} {...swipeHandlers}>
+          <div className="mx-auto max-w-3xl px-5 pb-6">
+            <TabsContent value="muro">
+              {/* Se firma con el nombre de quien entrena el equipo. Si su ficha
+                  no está —cuenta sin perfil—, con el nombre del propio equipo:
+                  un anuncio sin autor se lee como un aviso del sistema. */}
+              <CrewWall
+                isStaff={isStaff}
+                canPublish={can('crew.wall')}
+                authorName={
+                  trainer === null ? crew.name : `${trainer.firstName} ${trainer.lastName}`
+                }
+              />
+            </TabsContent>
+
+            <TabsContent value="miembros" className="flex flex-col gap-6 pt-2">
+              {/* Lo que pide una decisión va primero: es lo único de esta
+                  pantalla que se queda parado esperando al entrenador. */}
+              {can('crew.members') && pending.length > 0 && (
+                <section className="flex flex-col" aria-labelledby="solicitudes-titulo">
+                  <h2
+                    id="solicitudes-titulo"
+                    className="border-b border-cobalt-tint-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60"
+                  >
+                    {t('crew.requestsHeading', { count: pending.length })}
+                  </h2>
+
+                  <ul>
+                    {pending.map((student) => (
+                      <ListRow
+                        key={student.id}
+                        primary={getShortName(student.firstName, student.lastName)}
+                        secondary={student.email}
+                        leading={<MemberAvatar student={student} />}
+                        trailing={
+                          <div className="flex shrink-0 gap-1">
+                            <button
+                              type="button"
+                              aria-label={t('crew.acceptLabel', {
+                                name: getShortName(student.firstName, student.lastName),
+                              })}
+                              onClick={() => void decide(() => approve(student.id))}
+                              className="inline-flex size-11 items-center justify-center rounded-action text-cobalt transition-colors hover:bg-cobalt-tint"
+                            >
+                              <Check className="size-5" />
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={t('crew.rejectLabel', {
+                                name: getShortName(student.firstName, student.lastName),
+                              })}
+                              onClick={() => void decide(() => reject(student.id))}
+                              className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:text-danger"
+                            >
+                              <X className="size-5" />
+                            </button>
+                          </div>
+                        }
+                      />
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              <section className="flex flex-col" aria-labelledby="miembros-titulo">
+                <div className="flex items-baseline justify-between gap-2 border-b border-cobalt-tint-3 pb-2">
+                  <h2
+                    id="miembros-titulo"
+                    className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60"
+                  >
+                    {t('crew.members')}
+                  </h2>
+                  <span className="metric-figures text-[13px] font-semibold text-cobalt">
+                    {members.length}
+                  </span>
+                </div>
+
+                {!loading && members.length === 0 ? (
+                  <p className="py-8 text-sm text-ink/45">{t('crew.membersEmpty')}</p>
+                ) : (
+                  <ul>
+                    {members.map((student) => (
+                      <ListRow
+                        key={student.id}
+                        primary={getShortName(student.firstName, student.lastName)}
+                        /*
+                          «Sin cuenta» es una nota al margen, no un grupo aparte.
+                          Quien tiene ficha ya entrena aquí y se le agenda igual;
+                          lo único que le falta es poder entrar a ver su
+                          progreso.
+                        */
+                        secondary={`${t(STUDENT_LEVEL_LABEL_KEY[student.level])} · ${
+                          student.profileId === null
+                            ? t('crew.noAccount')
+                            : t('crew.withAccount')
+                        }`}
+                        leading={<MemberAvatar student={student} />}
+                        trailing={
+                          student.profileId === null && can('crew.invite') && canInvite ? (
+                            <CopyInviteButton joinToken={crew.joinToken} />
+                          ) : undefined
+                        }
+                      />
+                    ))}
+                  </ul>
+                )}
+              </section>
+            </TabsContent>
+
+            {/* El equipo puede apagar el ranking: en un grupo de rehabilitación
+                o de salud general, comparar públicamente el esfuerzo hace daño.
+                Apagado, su pestaña no existe. */}
+            {crew.rankingEnabled && (
+              <TabsContent value="ranking" className="pt-2">
+                <CrewRanking
+                  viewerStudentId={viewerStudent?.id ?? null}
+                  viewerCohort={cohortOf(viewerStudent?.birthDate ?? null)}
+                />
+              </TabsContent>
+            )}
+
+            {/*
+              El QR sólo lo enseña quien entrena -es la llave del equipo- y sólo
+              con la suscripción activa. Sin ella no se esconde: se explica, que
+              es la diferencia entre una puerta cerrada y una pared.
+            */}
+            {can('crew.invite') && (
+              <TabsContent value="invitar" className="pt-2">
+                {canInvite ? (
+                  <CrewInviteCard
+                    crew={crew}
+                    rotating={saving}
+                    onRotate={async () => {
+                      await rotateJoinToken(crew.id)
+                    }}
+                  />
+                ) : (
+                  <SubscriptionNotice
+                    crew={crew}
+                    requesting={saving}
+                    error={editorError}
+                    onRequestActivation={() => requestActivation(crew.id)}
+                  />
+                )}
+              </TabsContent>
+            )}
+          </div>
+        </div>
+      </Tabs>
     </div>
   )
 }

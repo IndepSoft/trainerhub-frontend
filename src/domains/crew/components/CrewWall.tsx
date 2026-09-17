@@ -46,11 +46,12 @@ export function CrewWall({ isStaff, canPublish, authorName }: CrewWallProps) {
   }
 
   return (
-    <section className="space-y-4" aria-labelledby="muro-titulo">
-      <h2
-        id="muro-titulo"
-        className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60"
-      >
+    <section className="space-y-4 pt-2" aria-labelledby="muro-titulo">
+      {/* El encabezado sólo lo oyen los lectores de pantalla: la pestaña de
+          arriba ya dice «Muro», y repetirlo debajo era la misma palabra dos
+          veces seguidas. Se queda en el árbol porque es lo que nombra a la
+          sección. */}
+      <h2 id="muro-titulo" className="sr-only">
         {t('crew.wall')}
       </h2>
 

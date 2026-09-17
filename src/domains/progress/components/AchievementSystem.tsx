@@ -4,7 +4,7 @@ import { RARITY_LABEL_KEY as PLATE_RARITY_LABEL_KEY } from '../libs/badgeLabels'
 import { cn } from '@/shared/lib/utils'
 import { unlockedAchievements } from '../libs/badges'
 import type { Achievement } from '../types/achievement.types'
-import type { BadgeCategory } from '@/shared/domain/entities/progress'
+import { isBadgeRarity, type BadgeCategory } from '@/shared/domain/entities/progress'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 import { activeLocale } from '@/shared/i18n/activeLocale'
@@ -85,12 +85,15 @@ export function AchievementSystem({ achievements }: AchievementSystemProps) {
 
   return (
     <div className="space-y-8">
+      {/* En los tres idiomas: la frase estaba escrita en español dentro del
+          componente, así que el recuento seguía diciendo «logros conseguidos»
+          con la aplicación en inglés. */}
       <p className="text-sm text-ink/50">
-        <span className="metric-figures font-display text-2xl font-extrabold text-ink">
-          {unlocked.length}
-        </span>
-        <span className="metric-figures text-ink/40"> / {achievements.length}</span>
-        {' logros conseguidos · '}
+        {t('progress.achievementsWon', {
+          unlocked: unlocked.length,
+          total: achievements.length,
+        })}
+        {' · '}
         <span className="metric-figures font-semibold text-cobalt">
           {achievements.length === 0 ? 0 : Math.round((unlocked.length / achievements.length) * 100)}%
         </span>
@@ -106,7 +109,10 @@ export function AchievementSystem({ achievements }: AchievementSystemProps) {
             <span className="sr-only">{t('achievement.filterByRarity')}</span>
             <select
               value={rarity}
-              onChange={(event) => setRarity(event.target.value as RarityFilter)}
+              onChange={(event) => {
+                const chosen = event.target.value
+                if (chosen === 'all' || isBadgeRarity(chosen)) setRarity(chosen)
+              }}
               className="h-11 rounded-none border-b border-cobalt-tint-3 bg-transparent pe-6 text-xs font-semibold uppercase tracking-wider text-ink/70"
             >
               {Object.entries(RARITY_LABEL_KEY).map(([value, key]) => (

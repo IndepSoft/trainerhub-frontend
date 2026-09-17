@@ -3930,3 +3930,69 @@ el alto va en `dvh`. A 1440: centradas, 512 px, separadas de los bordes. Dos
 pruebas nuevas fijan lo que se puede romper sin que se note: que la hoja se
 pega abajo en móvil y se centra en escritorio, y que la hoja de pago cuenta
 desde el día del pago —treinta días desde hace cinco son veinticinco.
+
+## 45. El equipo y el progreso, en secciones (17 sep 2026)
+
+Quinta tanda del rediseño de vistas (artboards `Equipo*`, `Progreso`,
+`ProgresoHistorial`, `Insignias`). Las dos pantallas que quedaban en columna
+larga pasan a secciones, con el mismo patrón que la ficha del alumno (§40) —y
+por eso lo primero fue SACARLO A UN SITIO: `useUrlSection` lleva la sección en
+la dirección, siempre con `replace`, con la primera sin parámetro. La ficha, el
+equipo y el progreso lo comparten; antes era un bloque copiado en la ficha.
+
+**El equipo medía 1.920 px de alto** y enseñaba la lista de miembros dos veces
+—como padrón y como ranking—. Ahora son cuatro: muro, miembros, ranking e
+invitar.
+
+**LA OBJECIÓN DE ANTES ERA BUENA y por eso el muro es la primera.** Estaba
+escrito en la propia página: «un anuncio nuevo detrás de una pestaña es un
+anuncio que nadie lee». Sigue siendo cierto, así que el muro es lo que se ve al
+entrar y ninguna pestaña lo tapa. Lo que sí esperaba una decisión —las
+solicitudes— se va a «Miembros», y para que moverlo no sea esconderlo, **su
+pestaña lleva la cuenta**; la suscripción sin activar pone un punto en
+«Invitar». Además de lo que ya hacían la bandeja del panel y la barra.
+
+**Las secciones que EXISTEN dependen del equipo**: el ranking se puede apagar
+—en un grupo de rehabilitación, comparar hace daño— y el QR sólo lo ve quien
+puede invitar. Una dirección que nombre una sección que no está cae en el muro
+en vez de dejar la pantalla en blanco. Por eso `useUrlSection` recibe la lista
+de las vigentes y no la de todas, y por eso el tablero es un componente aparte
+de la guarda: los hooks no pueden vivir detrás de un `return` condicional.
+
+**El progreso** va en ruta, logros e historial, con el nivel y la racha FUERA
+del contenedor que desplaza —iban dentro, pegados con `sticky`—: cambiar de
+sección ya no los mueve. El recuento de sesiones sale del resumen, que lo
+repetía: ahora vive en el historial, que es la sección que lo explica.
+
+**EL HISTORIAL NO EXISTÍA.** El progreso enseñaba lo que el esfuerzo produce
+—nivel, racha, insignias— y en ningún sitio el esfuerzo: quien se preguntaba
+«¿cuántas llevo este mes?» tenía que contarlas en el calendario, que es del
+entrenador. Sale de lo que `useGamificationProfile` YA leía —las sesiones y sus
+puntuaciones—, no de una consulta nueva: dos lecturas de lo mismo son dos
+ocasiones de discrepar, y la pantalla diría 326 XP arriba y otra cifra abajo.
+Se agrupa por meses con su suma, y una sesión cerrada antes de que el servidor
+puntuara lleva un guion y no un cero, que se leería como haber entrenado para
+nada. Cuatro pruebas unitarias fijan lo que se puede romper sin que se vea: que
+ordena por el día en que se CERRÓ y no por el agendado, y que lo no puntuado no
+resta del mes.
+
+**Dónde se distancia del artboard.** Su pestaña de logros se llama «Insignias»,
+y aquí se llama «Logros»: la galería, el filtro y el vacío llevan diciendo
+«logros» desde el catálogo, y dos palabras para una misma cosa en la misma
+pantalla se leen como dos cosas. Y su sección de logros propone «las más cerca»
+—«7 de 10 sesiones»—, que no se hace: el avance hacia una insignia por
+conseguir no lo publica el servidor, y dibujarlo en el cliente sería inventarse
+la barra. Queda anotado como lo que falta, no como una sección a medias.
+
+De paso, dos cosas que estaban mal a la vista de cualquiera que mire la
+pantalla en otro idioma: el recuento de logros estaba escrito en español dentro
+del componente —«5 de 21 logros conseguidos» en la aplicación en inglés—, y el
+filtro de rareza estrechaba su valor con `as`. Ahora es `isBadgeRarity`, como
+`isTrainingLevel`.
+
+**Verificado en navegador**, midiendo. A 375, las siete secciones: cero
+desbordamiento, pestañas de 44 px, ningún objetivo por debajo y ningún
+contenedor bajo 280 px. A 1440, la composición de escritorio de estas dos
+pantallas sigue siendo la de la tanda 9; lo que se comprueba aquí es que nada
+se rompe. El encabezado «Muro» del propio muro pasa a `sr-only`: la pestaña de
+arriba ya dice esa palabra.

@@ -8,6 +8,7 @@ import { PageHeader } from '@/shared/components/PageHeader'
 import { PageSkeleton } from '@/shared/components/PageSkeleton'
 import { SubscriptionBadge } from '@/shared/components/SubscriptionBadge'
 import { useSwipe } from '@/shared/hooks/useSwipe'
+import { useUrlSection } from '@/shared/hooks/useUrlSection'
 import { getInitials, getShortName } from '@/shared/lib/personName'
 import { cn } from '@/shared/lib/utils'
 import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
@@ -27,13 +28,10 @@ import { StudentSessions } from '../components/StudentSessions'
 import { ScheduleSessionDialog } from '../components/ScheduleSessionDialog'
 import { LEVEL_BADGE } from '../libs/levelBadge'
 import {
-  DEFAULT_STUDENT_SECTION,
   SCHEDULE_PARAM,
-  SECTION_PARAM,
   STUDENT_SECTIONS,
   STUDENT_SECTION_LABEL_KEY,
   isStudentSection,
-  type StudentSection,
 } from '../libs/studentSections'
 
 /** Las insignias de la cabecera: el mismo trazo que las del resto del sistema. */
@@ -63,27 +61,12 @@ export default function StudentDetail() {
    * del resumen lleva a cada sección con un enlace normal, `?agendar` abre el
    * diálogo al entrar, y recargar deja la ficha donde estaba.
    *
-   * `replace` en todos los cambios: volver tiene que salir de la ficha, no
-   * recorrer sus secciones ni reabrir un diálogo ya cerrado.
+   * `replace` en los dos: volver tiene que salir de la ficha, no recorrer sus
+   * secciones ni reabrir un diálogo ya cerrado.
    */
+  const { section: activeSection, select: selectSection } = useUrlSection(STUDENT_SECTIONS)
   const [searchParams, setSearchParams] = useSearchParams()
-  const requestedSection = searchParams.get(SECTION_PARAM)
-  const activeSection: StudentSection = isStudentSection(requestedSection)
-    ? requestedSection
-    : DEFAULT_STUDENT_SECTION
   const isScheduleOpen = searchParams.has(SCHEDULE_PARAM)
-
-  const selectSection = (section: StudentSection) => {
-    setSearchParams(
-      (previous) => {
-        const next = new URLSearchParams(previous)
-        if (section === DEFAULT_STUDENT_SECTION) next.delete(SECTION_PARAM)
-        else next.set(SECTION_PARAM, section)
-        return next
-      },
-      { replace: true }
-    )
-  }
 
   const setScheduleOpen = (open: boolean) => {
     setSearchParams(

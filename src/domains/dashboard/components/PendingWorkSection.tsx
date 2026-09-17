@@ -74,7 +74,9 @@ function rowsFrom(
       label: plural('pending.requests.one', 'pending.requests.other', work.requests.length, {
         count: work.requests.length,
       }),
-      to: '/crew',
+      // A la sección donde se aceptan, no a la pantalla del equipo: desde que
+      // va en secciones (`CAMBIOS` §45), «/crew» a secas abre el muro.
+      to: '/crew?seccion=miembros',
     })
   }
 

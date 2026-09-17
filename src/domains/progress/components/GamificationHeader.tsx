@@ -42,7 +42,7 @@ export function GamificationHeader({
   const animatedExperience = useCountUp({ target: level.currentExperience })
 
   return (
-    <div className="sticky top-0 z-20 border-b border-cobalt-tint-3 bg-bone/95 px-5 py-4 backdrop-blur">
+    <div className="shrink-0 border-b border-cobalt-tint-3 bg-bone px-5 py-4">
       <div className="flex items-center gap-5">
         <div className="flex shrink-0 items-center gap-2">
           <Flame

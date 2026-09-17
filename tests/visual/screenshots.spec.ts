@@ -39,19 +39,33 @@ async function registrarPago(page: Page): Promise<void> {
 }
 
 /**
- * Abre una sección de la ficha del alumno y devuelve su panel.
+ * Abre una sección y devuelve su panel.
  *
- * La ficha va en secciones (`CAMBIOS` §40): lo que no es del resumen no se
- * pinta hasta que se abre su pestaña. Por la pestaña y no por la dirección,
- * para no recargar y perder lo que los adaptadores simulados guardan en
- * memoria.
+ * Tres pantallas van por secciones: la ficha del alumno (`CAMBIOS` §40), el
+ * equipo y el progreso (§45). Lo que no es de la sección abierta no se pinta,
+ * así que hay que abrirla. Por la pestaña y no por la dirección, para no
+ * recargar y perder lo que los adaptadores simulados guardan en memoria.
+ *
+ * Por expresión regular y no por texto exacto: la pestaña de «Miembros» lleva
+ * además la cuenta de solicitudes cuando hay alguna esperando.
  */
-async function abrirSeccion(
-  page: Page,
-  nombre: 'Resumen' | 'Progreso' | 'Sesiones' | 'Cuota'
-): Promise<Locator> {
-  await page.getByRole('tab', { name: nombre }).click()
-  const panel = page.getByRole('tabpanel', { name: nombre })
+type NombreDeSeccion =
+  | 'Resumen'
+  | 'Progreso'
+  | 'Sesiones'
+  | 'Cuota'
+  | 'Muro'
+  | 'Miembros'
+  | 'Ranking'
+  | 'Invitar'
+  | 'Ruta'
+  | 'Logros'
+  | 'Historial'
+
+async function abrirSeccion(page: Page, nombre: NombreDeSeccion): Promise<Locator> {
+  const pestana = new RegExp(`^${nombre}`)
+  await page.getByRole('tab', { name: pestana }).click()
+  const panel = page.getByRole('tabpanel', { name: pestana })
   await expect(panel).toBeVisible()
   return panel
 }
@@ -717,6 +731,7 @@ test('placas de logro', async ({ page }) => {
   await page.getByRole('button', { name: 'Crear cuenta' }).click()
   await page.waitForURL(/\/progress/, { timeout: 20_000 })
   await page.waitForTimeout(2000)
+  await abrirSeccion(page, 'Logros')
 
   // Sin sesiones cerradas, Maria tiene la galeria entera BLOQUEADA, que es justo
   // el contraste que esta captura documenta. El rotulo sale de `AchievementBadge`.
@@ -1210,9 +1225,14 @@ test.describe('reparto de secciones', () => {
     await page.goto('/progress')
     await page.waitForTimeout(1800)
 
-    await expect(page.getByRole('heading', { name: 'Logros' })).toBeVisible()
+    /*
+     * Progreso va en secciones -Ruta, Logros, Historial (§45)- y lo que se fija
+     * aqui es QUE NO HAY MAS: desafios y rachas se fueron a Entrenamientos,
+     * porque son cosas que el entrenador CREA para asignarlas.
+     */
+    const logros = await abrirSeccion(page, 'Logros')
+    await expect(logros.getByRole('heading', { name: 'Galería' })).toBeVisible()
 
-    // Ya no hay pestanas de navegacion de pagina: con una sola seccion sobran.
     await expect(page.getByRole('tab', { name: /Desafíos/ })).toHaveCount(0)
     await expect(page.getByRole('tab', { name: /Rachas/ })).toHaveCount(0)
   })
@@ -3671,8 +3691,11 @@ test.describe('progreso', () => {
   test('el progreso cumple las reglas de 375 px', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await signIn(page)
-    await page.goto('/progress?student=student-1')
+    await page.goto('/progress')
     await page.waitForTimeout(1500)
+    // El unico desplegable de esta pantalla es el filtro de rareza, y desde que
+    // Progreso va en secciones (§45) vive en «Logros».
+    await abrirSeccion(page, 'Logros')
     await scrollInnerContainerToBottom(page)
 
     const medidas = await page.evaluate(() => {
@@ -3683,7 +3706,7 @@ test.describe('progreso', () => {
         contenedoresEstrechos: [...document.querySelectorAll('main section, main .grid:not(dl) > div')]
           .map((elemento) => elemento.getBoundingClientRect().width)
           .filter((ancho) => ancho > 0 && ancho < 280).length,
-        // El selector de alumno es el control nuevo de esta pantalla.
+        // El filtro de rareza, que es el unico control con desplegable.
         altoSelector: (() => {
           const selector = document.querySelector('main select')
           return selector instanceof HTMLElement ? selector.offsetHeight : 0
@@ -3693,7 +3716,7 @@ test.describe('progreso', () => {
 
     expect(medidas.desborde, 'desbordamiento horizontal').toBe(0)
     expect(medidas.contenedoresEstrechos, 'contenedores bajo 280 px').toBe(0)
-    expect(medidas.altoSelector, 'objetivo tactil del selector de alumno').toBeGreaterThanOrEqual(44)
+    expect(medidas.altoSelector, 'objetivo tactil del filtro de rareza').toBeGreaterThanOrEqual(44)
   })
 })
 
@@ -3812,11 +3835,16 @@ test.describe('equipo', () => {
     // Los cuatro de la semilla: tienen ficha, asi que son del equipo aunque
     // todavia no tengan cuenta con la que entrar.
     await expect(page.getByText('Crew · 4 miembros')).toBeVisible()
-    await expect(page.getByText('Sin cuenta')).toHaveCount(4)
+
+    // Cada cosa en su seccion (§45): se entra por el muro, que es lo que hace
+    // volver a esta pantalla, y el padron esta a un toque.
+    const miembros = await abrirSeccion(page, 'Miembros')
+    await expect(miembros.getByText('Sin cuenta')).toHaveCount(4)
 
     // El codigo se enseña escrito ademas de en el QR: es la salida cuando la
     // camara no colabora -permiso denegado, mala luz, pantalla rota-.
-    await expect(page.getByText('HIER-RO24')).toBeVisible()
+    const invitar = await abrirSeccion(page, 'Invitar')
+    await expect(invitar.getByText('HIER-RO24')).toBeVisible()
   })
 
   test('una cuenta sin equipo no ve NADA de ningun equipo', async ({ page }) => {
@@ -3858,7 +3886,9 @@ test.describe('equipo', () => {
     await expect(page.getByText('Ruta Hybrid')).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Consolidación' })).toBeVisible()
     await expect(page.getByText('0/300')).toBeVisible()
-    await expect(page.getByText('0 / 21 logros conseguidos')).toBeVisible()
+
+    const logros = await abrirSeccion(page, 'Logros')
+    await expect(logros.getByText('0 de 21 logros conseguidos')).toBeVisible()
   })
 
   test('el QR mete a alguien en el equipo, con el visto bueno del entrenador', async ({
@@ -3916,7 +3946,9 @@ test.describe('equipo', () => {
     await expect(page.getByRole('heading', { name: 'La Tribu del Cerro' })).toBeVisible()
     // La denominacion que eligio: solo cambia como aparece escrito.
     await expect(page.getByText('Tribu · 0 miembros')).toBeVisible()
-    await expect(page.getByText('Todavía no entrena nadie aquí.')).toBeVisible()
+
+    const miembros = await abrirSeccion(page, 'Miembros')
+    await expect(miembros.getByText('Todavía no entrena nadie aquí.')).toBeVisible()
   })
 })
 
@@ -4148,6 +4180,7 @@ test.describe('plataforma', () => {
      * meter gente se lee como que la aplicacion esta rota, y el entrenador se
      * pone a buscar el boton.
      */
+    await abrirSeccion(page, 'Invitar')
     await expect(page.getByRole('heading', { name: 'Todavía no puedes invitar' })).toBeVisible()
     await expect(page.getByText('Suscripción pendiente')).toBeVisible()
     await expect(page.getByText('Copiar enlace')).toHaveCount(0)
@@ -4179,6 +4212,7 @@ test.describe('plataforma', () => {
     await page.getByLabel('Nombre').fill('La Tribu del Cerro')
     await page.getByRole('button', { name: 'Crear equipo' }).click()
     await page.waitForURL(/\/crew$/, { timeout: 20_000 })
+    await abrirSeccion(page, 'Invitar')
     await expect(page.getByRole('heading', { name: 'Todavía no puedes invitar' })).toBeVisible()
 
     // Se pasa a administrador sin recargar.
@@ -4210,7 +4244,8 @@ test.describe('plataforma', () => {
     await page.getByRole('button', { name: /La Tribu del Cerro/ }).first().click()
     await page.getByRole('menuitem', { name: 'Ver el equipo' }).click()
 
-    await expect(page.getByRole('button', { name: /Copiar enlace/ })).toBeVisible()
+    const invitar = await abrirSeccion(page, 'Invitar')
+    await expect(invitar.getByRole('button', { name: /Copiar enlace/ })).toBeVisible()
   })
 })
 
@@ -4226,7 +4261,7 @@ test.describe('muro', () => {
     await signIn(page)
     await page.goto('/crew')
 
-    const muro = page.locator('section').filter({ hasText: 'Muro' }).first()
+    const muro = await abrirSeccion(page, 'Muro')
     await muro.getByLabel('Escribe un anuncio para tu equipo').fill('Mañana cerramos a las 20:00.')
     await page.getByRole('button', { name: 'Publicar' }).click()
 
@@ -4243,7 +4278,8 @@ test.describe('muro', () => {
     await signIn(page)
     await page.goto('/crew')
 
-    const primero = page.locator('section').filter({ hasText: 'Muro' }).first().getByRole('listitem').first()
+    const muro = await abrirSeccion(page, 'Muro')
+    const primero = muro.getByRole('listitem').first()
 
     /*
      * El cero NO se pinta: «0» junto a un corazon se lee como un reproche, y
@@ -4264,7 +4300,7 @@ test.describe('muro', () => {
     await signIn(page)
     await page.goto('/crew')
 
-    const muro = page.locator('section').filter({ hasText: 'Muro' }).first()
+    const muro = await abrirSeccion(page, 'Muro')
 
     /*
      * Se comprueba que DESAPARECE ESE, no que la lista mengua.
@@ -4295,7 +4331,7 @@ test.describe('ranking', () => {
     await signIn(page)
     await page.goto('/crew')
 
-    const ranking = page.locator('section').filter({ hasText: 'Ranking' }).first()
+    const ranking = await abrirSeccion(page, 'Ranking')
 
     /*
      * ARRANCA EN LA SEMANA, y no es un detalle: un ranking por experiencia total
@@ -4352,7 +4388,12 @@ test.describe('ranking', () => {
 
     await page.getByRole('button', { name: /Hierro y Asfalto/ }).first().click()
     await page.getByRole('menuitem', { name: 'Ver el equipo' }).click()
-    await page.getByRole('button', { name: /^Aceptar a / }).click()
+
+    // LO QUE ESPERA UNA DECISION SE ANUNCIA EN SU PESTAÑA: moverlo a «Miembros»
+    // sin avisar habria sido esconderlo.
+    await expect(page.getByRole('tab', { name: 'Miembros 1 esperando' })).toBeVisible()
+    const miembros = await abrirSeccion(page, 'Miembros')
+    await miembros.getByRole('button', { name: /^Aceptar a / }).click()
 
     // Y vuelve la alumna.
     await page.getByRole('button', { name: 'Menú de usuario' }).click()
@@ -4370,7 +4411,7 @@ test.describe('ranking', () => {
      * sus sesiones en la agenda. Las dos cosas a la vez son justo el punto: la
      * clasificacion cruza la frontera de privacidad porque llega ya resuelta.
      */
-    const ranking = page.locator('section').filter({ hasText: 'Ranking' }).first()
+    const ranking = await abrirSeccion(page, 'Ranking')
     await expect(ranking.getByText('Juan Pérez')).toBeVisible()
 
     // Y no puede publicar: el muro es del entrenador.
@@ -4453,7 +4494,8 @@ test.describe('roles del equipo', () => {
 
     await page.getByRole('button', { name: /Hierro y Asfalto/ }).first().click()
     await page.getByRole('menuitem', { name: 'Ver el equipo' }).click()
-    await page.getByRole('button', { name: /^Aceptar a / }).click()
+    const miembros = await abrirSeccion(page, 'Miembros')
+    await miembros.getByRole('button', { name: /^Aceptar a / }).click()
 
     await page.getByRole('button', { name: 'Menú de usuario' }).click()
     await page.getByRole('menuitem', { name: 'Cerrar sesión' }).click()
@@ -4615,6 +4657,8 @@ test.describe('capacidades', () => {
     await page.waitForURL(/\/crew$/, { timeout: 20_000 })
     await expect(page.getByRole('heading', { name: 'Hierro y Asfalto Norte' })).toBeVisible()
     await expect(page.getByText('Tribu · 4 miembros')).toBeVisible()
+    // Sin ranking no hay pestaña de ranking: una seccion apagada no existe.
+    await expect(page.getByRole('tab', { name: 'Ranking' })).toHaveCount(0)
     await expect(page.getByRole('heading', { name: 'Ranking' })).toHaveCount(0)
   })
 
@@ -4669,7 +4713,8 @@ test.describe('capacidades', () => {
     await entrarComo(page, 'entrenador@indepsoft.com', /\/dashboard/)
     await page.getByRole('button', { name: /Hierro y Asfalto/ }).first().click()
     await page.getByRole('menuitem', { name: 'Ver el equipo' }).click()
-    await page.getByRole('button', { name: /^Aceptar a / }).click()
+    const miembros = await abrirSeccion(page, 'Miembros')
+    await miembros.getByRole('button', { name: /^Aceptar a / }).click()
 
     // Sin la concesion, no alcanza el catalogo.
     await cerrarSesion(page)
@@ -4708,7 +4753,8 @@ test.describe('capacidades', () => {
     await entrarComo(page, 'entrenador@indepsoft.com', /\/dashboard/)
     await page.getByRole('button', { name: /Hierro y Asfalto/ }).first().click()
     await page.getByRole('menuitem', { name: 'Ver el equipo' }).click()
-    await page.getByRole('button', { name: /^Aceptar a / }).click()
+    const miembros = await abrirSeccion(page, 'Miembros')
+    await miembros.getByRole('button', { name: /^Aceptar a / }).click()
 
     /*
      * Antes esto fallaba con «todavia no esta implementado»: `crewStaff.add`
@@ -5693,6 +5739,7 @@ test.describe('fugas de secuencia', () => {
     await page.getByRole('button', { name: 'Crear equipo' }).click()
     await page.waitForURL(/\/crew$/, { timeout: 20_000 })
 
+    await abrirSeccion(page, 'Invitar')
     await page.getByRole('button', { name: 'Solicitar la activación' }).click()
     await expect(page.getByText(/Activación solicitada el/)).toBeVisible()
     await expect(page.getByRole('button', { name: 'Solicitar la activación' })).toHaveCount(0)
@@ -5703,6 +5750,7 @@ test.describe('fugas de secuencia', () => {
     await signIn(page)
     await page.goto('/crew')
 
+    await abrirSeccion(page, 'Invitar')
     await expect(page.getByText('HIER-RO24')).toBeVisible()
     await page.getByRole('button', { name: 'Generar uno nuevo' }).click()
     // Todavia no ha pasado nada: el codigo sigue, y se avisa de lo que va a pasar.

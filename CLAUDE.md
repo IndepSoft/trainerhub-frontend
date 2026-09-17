@@ -360,9 +360,17 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   viaje por el correo. Con sesión abierta, `claim_membership` hace lo mismo con
   el código tecleado. El retorno a la ruta pretendida tras confirmar el correo
   sigue sin existir: el enlace aterriza en `/`.
-- La página del equipo tiene miembros, solicitudes, QR, muro y ranking.
-  **Faltan los eventos.** Los entrenamientos grupales NO son una entidad nueva
-  —`Session` ya tiene `kind: 'group'`—; un evento, una carrera o una quedada, sí.
+- La página del equipo tiene miembros, solicitudes, QR, muro y ranking, en
+  CUATRO SECCIONES y con el muro de entrada (`CAMBIOS` §45): las solicitudes
+  viven en «Miembros» con su cuenta en la pestaña, y el ranking apagado o el QR
+  sin suscripción no tienen sección. **Faltan los eventos.** Los entrenamientos
+  grupales NO son una entidad nueva —`Session` ya tiene `kind: 'group'`—; un
+  evento, una carrera o una quedada, sí.
+- El progreso va en RUTA, LOGROS e HISTORIAL (§45), con el nivel y la racha
+  fuera del contenedor que desplaza. El historial sale de lo que
+  `useGamificationProfile` ya lee, no de una consulta nueva. **Falta «las más
+  cerca»**: el avance hacia una insignia por conseguir no lo publica el
+  servidor, y dibujarlo en el cliente sería inventarse la barra.
 - El muro cuenta lo no leído sobre la insignia del equipo —`countUnread` y
   `markAllRead` en el puerto, `crew_wall_reads` detrás— y abrir el muro lo da
   por leído. Las notificaciones push son otro trabajo.
@@ -383,9 +391,11 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   decide sobre el objeto —editar, dar de baja, borrar— vive en su ficha, en
   `PageHeader.OverflowMenu`; si una entrada abre un diálogo, el menú se
   controla y se cierra a mano (ver `StudentActions`). La tarjeta se queda
-  para donde el objeto ES el contenido. Una FICHA LARGA va en secciones fijas
-  bajo la cabecera, con la sección en la dirección (`?seccion=`, siempre con
-  `replace`): ver `StudentDetail` y `CAMBIOS` §40. Lo LARGO Y REPETIDO
+  para donde el objeto ES el contenido. Una PANTALLA LARGA va en secciones
+  fijas bajo la cabecera, con la sección en la dirección (`?seccion=`, siempre
+  con `replace`): lo hace `useUrlSection`, que lo comparten la ficha, el equipo
+  y el progreso, y recibe la lista de las secciones que EXISTEN AHORA —una
+  dirección que nombre otra cae en la primera— (`CAMBIOS` §40 y §45). Lo LARGO Y REPETIDO
   —semanas de un plan— se pliega con `CollapsibleRow`, y la fila cerrada
   resume lo que hay dentro (§41). Las cifras de un objeto van en
   `MetricStrip` con `MetricFigure`, no apiladas. Un FORMULARIO LARGO va en
