@@ -14,6 +14,7 @@ import { SessionDetailsModal } from '../components/SessionDetailsModal'
 import { CalendarDirectionControls, CalendarTodayButton } from '../components/CalendarNavigation'
 import { WeekView } from '../components/WeekView'
 import { DayView } from '../components/DayView'
+import { DayList } from '../components/DayList'
 import { SessionSummary } from '../components/SessionSummary'
 import { useCalendar } from '../hooks/useCalendar'
 import { useSchedulableStudents } from '../hooks/useSchedulableStudents'
@@ -28,9 +29,24 @@ import {
   formatWeekRange,
   parseLocalDateKey,
 } from '../libs/calendar.utils'
-import type { CalendarViewMode, Session, SessionDetailsChanges } from '../types/calendar.types'
+import { cn } from '@/shared/lib/utils'
+import type {
+  CalendarViewMode,
+  DayLayout,
+  Session,
+  SessionDetailsChanges,
+} from '../types/calendar.types'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
+
+/** Las dos formas de ver un día, en el orden en que se ofrecen. */
+const DAY_LAYOUTS = ['list', 'schedule'] as const
+
+const DAY_LAYOUT_LABEL_KEY: Record<DayLayout, TranslationKey> = {
+  list: 'calendar.layout.list',
+  schedule: 'calendar.layout.schedule',
+}
 
 export default function Calendar() {
   const { t } = useTranslation()
@@ -79,6 +95,8 @@ export default function Calendar() {
     weekDates,
     viewMode,
     canChooseViewMode,
+    dayLayout,
+    setDayLayout,
     selectedSession,
     countByStatus,
     setViewMode,
@@ -220,6 +238,37 @@ export default function Calendar() {
         />
       )}
 
+      {/*
+        CÓMO SE VE EL DÍA, fijo bajo la cabecera y sólo cuando hay un día que
+        ver: en la rejilla semanal no hay nada que elegir. Va aquí y no dentro
+        del contenedor que desplaza porque se cambia de vista mirando la misma
+        franja horaria.
+      */}
+      {viewMode === 'day' && (
+        <div
+          role="group"
+          aria-label={t('calendar.dayLayout')}
+          className="flex shrink-0 gap-1 rounded-action bg-cobalt-tint/60 p-0.5 px-5 md:mx-5 md:max-w-xs md:px-0.5"
+        >
+          {DAY_LAYOUTS.map((candidate) => (
+            <button
+              key={candidate}
+              type="button"
+              aria-pressed={candidate === dayLayout}
+              onClick={() => setDayLayout(candidate)}
+              className={cn(
+                'inline-flex min-h-11 flex-1 items-center justify-center rounded-action text-[13px] font-semibold transition-colors',
+                candidate === dayLayout
+                  ? 'bg-surface text-ink shadow-sm'
+                  : 'text-ink/55 hover:text-cobalt'
+              )}
+            >
+              {t(DAY_LAYOUT_LABEL_KEY[candidate])}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Contenedor de scroll de la pagina. Es un div y no un <main> a
           proposito: el landmark <main> ya lo pinta SidebarInset desde
           RootLayout, y anidar uno dentro de otro es HTML invalido -solo se
@@ -232,24 +281,35 @@ export default function Calendar() {
               horario, y dejaba el bloque de una sesion en 173 px a 375 px de
               ancho. La pagina ya es el marco. */}
           <section>
-            {viewMode === 'week' ? (
+            {viewMode === 'week' && (
               <WeekView
                 weekDates={weekDates}
                 getSessionsOfDay={getSessionsOfDay}
                 onSelectSession={selectSession}
-              studentsById={studentsById}
+                studentsById={studentsById}
               />
-            ) : (
+            )}
+
+            {viewMode === 'day' && dayLayout === 'list' && (
+              <DayList
+                date={currentDate}
+                getSessionsOfDay={getSessionsOfDay}
+                onSelectSession={selectSession}
+                studentsById={studentsById}
+              />
+            )}
+
+            {viewMode === 'day' && dayLayout === 'schedule' && (
               <DayView
                 date={currentDate}
                 getSessionsOfDay={getSessionsOfDay}
                 onSelectSession={selectSession}
-              studentsById={studentsById}
+                studentsById={studentsById}
               />
             )}
           </section>
 
-          <SessionSummary countByStatus={countByStatus} />
+          <SessionSummary countByStatus={countByStatus} weekDates={weekDates} />
         </div>
       </div>
 

@@ -334,6 +334,12 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   sobre `/students`, `/trainings`, `/dashboard` y `/reports`. No es la
   seguridad, que sigue siendo RLS: es no abrir una pantalla vacía con controles
   que fallan uno a uno.
+- La AGENDA enseña el día como LISTA de filas (`CAMBIOS` §47) y guarda la
+  rejilla de horas detrás de «Horario»: el día entero cabe sin desplazar, y lo
+  vacío se cuenta en una línea —«Libre hasta las 18:00», desde dos horas de
+  hueco y medido desde que TERMINA la anterior—. El resumen de estados habla de
+  LA SEMANA QUE SE MIRA, no de todas las sesiones que existen, y un estado sin
+  sesiones no se pinta.
 - NINGÚN AVISO ANTES DE ESCRIBIR. El `toast` de éxito va después de que el
   puerto resuelva, y el fallo se dice donde se hizo la acción. Antes la agenda
   celebraba cambios que la base había rechazado.

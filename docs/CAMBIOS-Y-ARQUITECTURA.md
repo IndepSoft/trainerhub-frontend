@@ -4031,3 +4031,36 @@ control, que era el último que quedaba fuera de una guarda.
 cómo mengua la lista, así que desplazarse no puede llevárselo; vivía dentro de
 la lista y se iba con ella. Al subir su estado, `RoutineList` se queda sin nada
 que hacer y desaparece.
+
+## 47. La agenda como lista, y el hueco contado (17 sep 2026)
+
+Sexta tanda, segunda parte (artboard `Agenda`). Su margen lo explica: «el día
+como LISTA, no como rejilla de horas: de 08:00 a 21:00 son catorce franjas, once
+vacías, y las sesiones quedaban repartidas en 2.300 px de desplazamiento. Lo
+vacío se cuenta en una línea».
+
+**La lista es lo que se ve al entrar; la rejilla sigue estando.** No es una
+sustitución: la rejilla sitúa una sesión en su tramo y es como se ve dónde cabe
+otra, así que se queda detrás de «Horario». La lista enseña el día entero sin
+desplazarse, con una fila por sesión —hora, con quién, de qué y en qué estado— y
+una línea por hueco: «LIBRE HASTA LAS 18:00».
+
+**El hueco se mide desde que TERMINA la anterior**, no desde que empieza: una
+sesión de dos horas no deja libre el rato que dura. Y sólo a partir de dos
+horas, porque entre sesión y sesión hay huecos de veinte minutos que son el
+propio descanso del entrenador y anunciarlos llenaría el día de líneas. Dos
+horas es un tramo donde cabe otra sesión, que es la decisión que la línea
+informa. Cinco pruebas unitarias lo fijan, umbral incluido.
+
+**La fila es la misma `ListRow` del resto**, que aprende a abrir algo que no es
+una dirección: la ficha de una sesión es un diálogo. Su nombre accesible es el
+mismo que el de la tarjeta de la rejilla, así que quien la busca por voz no
+tiene que saber en qué vista está.
+
+**El resumen deja de mentir.** Contaba TODAS las sesiones que existen —«10
+completadas» era el historial entero del equipo, un número que sólo crece— en
+cinco bloques de 90 px que se llevaban 270 px por debajo del día. Ahora habla de
+LA SEMANA QUE SE MIRA, lo dice en su encabezado —«Esta semana», o el rango
+cuando se navega a otra— y son cinco píldoras en dos líneas. Un estado sin
+sesiones no se pinta: «0 canceladas» ocupa lo mismo que «3 confirmadas» y no
+informa de nada.

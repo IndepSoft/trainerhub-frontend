@@ -3,7 +3,7 @@ import { useIsMobile } from '@/shared/hooks/useIsMobile'
 import { container } from '@/app/container'
 import { addDays, getWeekDates } from '../libs/calendar.utils'
 import { toLocalDateKey } from '@/shared/lib/dateKey'
-import type { CalendarViewMode, Session } from '../types/calendar.types'
+import type { CalendarViewMode, DayLayout, Session } from '../types/calendar.types'
 import { presentationStateOf, type SessionPresentationState } from '../libs/sessionStatus'
 
 interface UseCalendarResult {
@@ -18,7 +18,16 @@ interface UseCalendarResult {
   viewMode: CalendarViewMode
   /** false en movil, donde el modo esta forzado y el selector se oculta. */
   canChooseViewMode: boolean
+  /** Cómo se dibuja el día: como lista de filas o como rejilla de horas. */
+  dayLayout: DayLayout
+  setDayLayout: (layout: DayLayout) => void
   selectedSession: Session | null
+  /**
+   * Cuántas sesiones hay en cada estado EN LA SEMANA QUE SE MIRA.
+   *
+   * Antes contaba todas las que existen, y ese número sólo crece: «10
+   * completadas» era el historial entero del equipo, no una medida de nada.
+   */
   countByStatus: Record<SessionPresentationState, number>
   setViewMode: (mode: CalendarViewMode) => void
   goToToday: () => void
@@ -69,6 +78,7 @@ export function useCalendar(): UseCalendarResult {
   }, [])
   const [currentDate, setCurrentDate] = useState(new Date())
   const [preferredViewMode, setPreferredViewMode] = useState<CalendarViewMode>('week')
+  const [dayLayout, setDayLayout] = useState<DayLayout>('list')
   const [selectedSession, setSelectedSession] = useState<Session | null>(null)
 
   // La preferencia del usuario se conserva aparte del modo efectivo: si vuelve a
@@ -103,6 +113,8 @@ export function useCalendar(): UseCalendarResult {
   // Con «no ocurrio» aparte: una pendiente cuyo dia paso no es pendiente.
   const countByStatus = useMemo(() => {
     const today = toLocalDateKey(new Date())
+    const from = toLocalDateKey(weekDates[0])
+    const to = toLocalDateKey(weekDates[weekDates.length - 1])
     const counts: Record<SessionPresentationState, number> = {
       pending: 0,
       confirmed: 0,
@@ -111,10 +123,11 @@ export function useCalendar(): UseCalendarResult {
       missed: 0,
     }
     for (const session of sessions) {
+      if (session.date < from || session.date > to) continue
       counts[presentationStateOf(session, today)] += 1
     }
     return counts
-  }, [sessions])
+  }, [sessions, weekDates])
 
   const getSessionsOfDay = (date: Date): Session[] =>
     sessionsByDay.get(toLocalDateKey(date)) ?? []
@@ -128,6 +141,8 @@ export function useCalendar(): UseCalendarResult {
     weekDates,
     viewMode,
     canChooseViewMode: !isMobile,
+    dayLayout,
+    setDayLayout,
     selectedSession,
     countByStatus,
     setViewMode: setPreferredViewMode,

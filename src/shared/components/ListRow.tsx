@@ -16,6 +16,16 @@ interface ListRowProps {
    * ella, no recorrer sus secciones.
    */
   replace?: boolean
+  /**
+   * Qué hace la fila entera cuando lo que abre NO es una dirección: la ficha de
+   * una sesión, que es un diálogo. Se ignora si hay `to`.
+   */
+  onSelect?: () => void
+  /**
+   * Nombre accesible de la fila, cuando sus dos líneas no bastan para decidir.
+   * La agenda lo usa para decir además el estado y la duración.
+   */
+  label?: string
   /** La línea que se busca al escanear: un nombre, un título. */
   primary: string
   /** Lo que ayuda a distinguir uno de otro. Una línea, y se trunca. */
@@ -80,12 +90,17 @@ function RowText({ primary, secondary }: RowTextProps) {
 export function ListRow({
   to,
   replace = false,
+  onSelect,
+  label,
   primary,
   secondary,
   leading,
   trailing,
   className,
 }: ListRowProps) {
+  // El mismo estirado en las tres formas: el objetivo táctil es la fila.
+  const stretched =
+    'group flex min-h-11 min-w-0 flex-1 flex-col justify-center gap-0.5 text-left outline-none after:absolute after:inset-0'
   return (
     <li
       className={cn(
@@ -95,18 +110,18 @@ export function ListRow({
     >
       {leading}
 
-      {to === undefined ? (
+      {to !== undefined ? (
+        <Link to={to} replace={replace} aria-label={label} className={stretched}>
+          <RowText primary={primary} secondary={secondary} />
+        </Link>
+      ) : onSelect !== undefined ? (
+        <button type="button" onClick={onSelect} aria-label={label} className={stretched}>
+          <RowText primary={primary} secondary={secondary} />
+        </button>
+      ) : (
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <RowText primary={primary} secondary={secondary} />
         </span>
-      ) : (
-        <Link
-          to={to}
-          replace={replace}
-          className="group flex min-h-11 min-w-0 flex-1 flex-col justify-center gap-0.5 outline-none after:absolute after:inset-0"
-        >
-          <RowText primary={primary} secondary={secondary} />
-        </Link>
       )}
 
       {trailing}

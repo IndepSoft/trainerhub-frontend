@@ -165,14 +165,36 @@ function sumarDias(date: Date, dias: number): Date {
 }
 
 /**
- * Un contador de la cabecera de la agenda, por su rotulo.
+ * Una píldora del resumen de la agenda, por lo que dice.
  *
  * Devuelve el localizador y no su texto para que las aserciones ESPEREN: el
- * cambio de estado pasa por el puerto, asi que el contador se actualiza un
+ * cambio de estado pasa por el puerto, asi que el resumen se actualiza un
  * instante despues de guardar.
+ *
+ * Desde §47 el resumen son píldoras —«3 confirmadas»— y habla de LA SEMANA QUE
+ * SE MIRA, no de todas las sesiones que existen. Un estado sin sesiones no se
+ * pinta, asi que aqui se cuenta con `count()` antes de leer la cifra.
  */
-function contador(page: Page, rotulo: string): Locator {
-  return page.locator('main .grid > div').filter({ hasText: rotulo })
+function contador(page: Page, estado: RegExp): Locator {
+  // Acotado a la región del resumen: un aviso de sonner tambien es un <li>, y
+  // el suyo habla de la misma sesion que acaba de cambiar de estado.
+  return page
+    .getByRole('region', { name: 'Resumen de la semana' })
+    .getByRole('listitem')
+    .filter({ hasText: estado })
+}
+
+/**
+ * Cuántas sesiones hay en un estado, segun el resumen de la semana.
+ *
+ * Un estado SIN SESIONES no tiene píldora (§47), y eso es un cero: aquí se
+ * cuenta antes de leer. No vale hacerlo dentro de `leerCifra`, que se usa con
+ * cifras que sí existen y necesitan su espera.
+ */
+async function leerPildora(page: Page, estado: RegExp): Promise<number> {
+  const pildora = contador(page, estado)
+  if ((await pildora.count()) === 0) return 0
+  return leerCifra(pildora)
 }
 
 /**
@@ -1060,10 +1082,12 @@ test.describe('calendario: iniciar una sesion', () => {
      * coloca las sesiones sobre una escala de tiempo, asi que la de las 18:00
      * va primera en el DOM aunque se pinte abajo. Lo que distingue a la sesion
      * sobre la que se puede actuar es su ESTADO, no donde caiga en la lista.
+     *
+     * El estado se lee del NOMBRE ACCESIBLE y no del texto de la fila: desde
+     * §47 el dia es una lista y su insignia vive fuera del boton, al lado.
      */
     await page
-      .getByRole('button', { name: /Entrenamiento Personal/ })
-      .filter({ hasText: 'Confirmada' })
+      .getByRole('button', { name: /Entrenamiento Personal\. .*\. Confirmada\./ })
       .first()
       .click()
 
@@ -1086,6 +1110,40 @@ test.describe('calendario: iniciar una sesion', () => {
     await expect(page.getByRole('button', { name: 'Pausar la sesión' })).toBeVisible()
   })
 
+  test('el dia cabe entero como lista, y el hueco se cuenta', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/calendar')
+    await page.waitForTimeout(1500)
+
+    // La lista es lo que se ve al entrar (§47).
+    await expect(page.getByRole('button', { name: 'Lista' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+
+    // Lo vacio se dice en una linea, en vez de en setecientos pixeles en blanco.
+    await expect(page.getByText(/Libre hasta las/)).toBeVisible()
+
+    /*
+     * ESTA ES LA MEDIDA que justifica la lista: el dia de la semilla cabe entero
+     * sin desplazar, y la misma jornada en la rejilla son mas de mil pixeles,
+     * casi todos vacios.
+     */
+    const oculto = () =>
+      page.evaluate(() =>
+        [...document.querySelectorAll('main .overflow-auto')]
+          .map((elemento) => elemento.scrollHeight - elemento.clientHeight)
+          .reduce((mayor, actual) => Math.max(mayor, actual), 0)
+      )
+
+    expect(await oculto(), 'desplazamiento del dia en lista').toBe(0)
+
+    await page.getByRole('button', { name: 'Horario' }).click()
+    await page.waitForTimeout(600)
+    expect(await oculto(), 'desplazamiento del dia en rejilla').toBeGreaterThan(800)
+  })
+
   test('los avisos de confirmacion se ven', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await signIn(page)
@@ -1103,10 +1161,12 @@ test.describe('calendario: iniciar una sesion', () => {
      * coloca las sesiones sobre una escala de tiempo, asi que la de las 18:00
      * va primera en el DOM aunque se pinte abajo. Lo que distingue a la sesion
      * sobre la que se puede actuar es su ESTADO, no donde caiga en la lista.
+     *
+     * El estado se lee del NOMBRE ACCESIBLE y no del texto de la fila: desde
+     * §47 el dia es una lista y su insignia vive fuera del boton, al lado.
      */
     await page
-      .getByRole('button', { name: /Entrenamiento Personal/ })
-      .filter({ hasText: 'Confirmada' })
+      .getByRole('button', { name: /Entrenamiento Personal\. .*\. Confirmada\./ })
       .first()
       .click()
     await page.getByRole('button', { name: /Recordatorio/ }).click()
@@ -2854,8 +2914,8 @@ test.describe('estado de la sesion', () => {
      * el cambio de estado mueve la sesion de un contador al otro, y eso se dice
      * en diferencias.
      */
-    const completadasAntes = await leerCifra(contador(page, 'Completadas'))
-    const confirmadasAntes = await leerCifra(contador(page, 'Confirmadas'))
+    const completadasAntes = await leerPildora(page, /completada/)
+    const confirmadasAntes = await leerPildora(page, /confirmada/)
 
     await sesionSinCompletar(page).first().click()
     const dialogo = page.getByRole('dialog')
@@ -2868,9 +2928,13 @@ test.describe('estado de la sesion', () => {
      * El cambio PERSISTE. Antes esto lanzaba un aviso y no tocaba nada: es la
      * diferencia entre que la aplicacion diga que ha pasado algo y que pase.
      */
-    await expect(contador(page, 'Completadas')).toContainText(String(completadasAntes + 1))
+    await expect
+      .poll(() => leerPildora(page, /completada/))
+      .toBe(completadasAntes + 1)
     // Y sale de donde estaba: no se suma, se mueve.
-    await expect(contador(page, 'Confirmadas')).toContainText(String(confirmadasAntes - 1))
+    await expect
+      .poll(() => leerPildora(page, /confirmada/))
+      .toBe(confirmadasAntes - 1)
   })
 
   test('el desplegable ofrece los cuatro estados, en orden de ciclo de vida', async ({
@@ -3236,7 +3300,8 @@ test.describe('sesion en vivo', () => {
     await page.goto('/calendar')
     await page.waitForTimeout(1500)
 
-    await expect(contador(page, 'Completadas')).toContainText('0')
+    // El cambio, no el valor: la semilla decide cuantas hay cerradas ya.
+    const completadasAntes = await leerPildora(page, /completada/)
 
     // Se entra a la sesion desde su detalle, que es el camino real. Una que
     // se pueda empezar: las cerradas ya no se ejecutan otra vez.
@@ -3267,7 +3332,9 @@ test.describe('sesion en vivo', () => {
     await page.goBack()
     await page.waitForURL(/\/calendar$/)
 
-    await expect(contador(page, 'Completadas')).toContainText('1')
+    await expect
+      .poll(() => leerPildora(page, /completada/))
+      .toBe(completadasAntes + 1)
   })
 
   test('lo hecho en la sesion llega al progreso del alumno', async ({ page }) => {
@@ -5972,8 +6039,19 @@ test.describe('ciclos de vida y bandeja', () => {
     await signIn(page)
     await page.goto('/calendar')
 
-    // El resumen tiene el tile propio, con la de la semilla que quedo sin cerrar.
-    const noOcurrieron = contador(page, 'No ocurrieron')
+    /*
+     * El resumen tiene su propia píldora. La sesion sin cerrar de la semilla es
+     * de hace diez dias, y el resumen habla de LA SEMANA QUE SE MIRA (§47): se
+     * retrocede hasta dar con su semana, que segun el dia de hoy es la anterior
+     * o la de antes.
+     */
+    await page.waitForTimeout(1200)
+    const noOcurrieron = contador(page, /no ocurr/)
+    for (let intento = 0; intento < 3 && (await noOcurrieron.count()) === 0; intento += 1) {
+      await page.getByRole('button', { name: 'Periodo anterior' }).click()
+      await page.waitForTimeout(500)
+    }
+
     await expect(noOcurrieron).toBeVisible()
     expect(await leerCifra(noOcurrieron)).toBeGreaterThanOrEqual(1)
 
