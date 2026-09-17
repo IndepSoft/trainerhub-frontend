@@ -159,7 +159,7 @@ export default function PlanDetail() {
         </p>
         <p className="text-sm text-ink/50">{t('plan.notFoundHint')}</p>
         <Button asChild variant="outline">
-          <Link to="/trainings?tab=planes">{t('plan.back')}</Link>
+          <Link to="/trainings?seccion=planes">{t('plan.back')}</Link>
         </Button>
       </div>
     )
@@ -169,7 +169,7 @@ export default function PlanDetail() {
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
       <PageHeader>
         <Link
-          to={manages ? '/trainings?tab=planes' : '/progress'}
+          to={manages ? '/trainings?seccion=planes' : '/progress'}
           className="-ms-2 mb-3 inline-flex h-11 items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/45 transition-colors hover:text-cobalt"
         >
           <ArrowLeft className="size-4" />
@@ -277,7 +277,7 @@ export default function PlanDetail() {
         onOpenChange={setIsDeleteOpen}
         onConfirm={() => {
           void deletePlan(plan.id).then((result) => {
-            if (result.deleted) navigate('/trainings?tab=planes')
+            if (result.deleted) navigate('/trainings?seccion=planes')
             else setBlockedReason(result.reason)
           })
         }}

@@ -3996,3 +3996,38 @@ contenedor bajo 280 px. A 1440, la composición de escritorio de estas dos
 pantallas sigue siendo la de la tanda 9; lo que se comprueba aquí es que nada
 se rompe. El encabezado «Muro» del propio muro pasa a `sr-only`: la pestaña de
 arriba ya dice esa palabra.
+
+## 46. Entrenamientos: la tarjeta compacta (17 sep 2026)
+
+Sexta tanda del rediseño, primera parte (artboard `Entrenamientos`). Lo que el
+artboard deja escrito en su propio margen: «la tarjeta de rutina conserva lo que
+la distingue —qué ejercicios lleva— pero en una línea, no en una lista de cuatro
+filas con series y RIR: eso es de la ficha».
+
+**Medido antes y después, a 375 px**: de 320 px por rutina —una y media por
+pantalla— a 164 px, las tres de la semilla enteras y comparables de un vistazo.
+Lo que se fue: la cuña diagonal, el rótulo «RUTINA» encima —la pestaña en la que
+está ya lo dice—, la rejilla de dos cifras, los tres primeros ejercicios en
+filas con su prescripción y la flecha de destino. Lo que queda: el título, una
+línea de medidas —«4 ejercicios · 25 min · 12 series»—, los ejercicios en una
+línea truncada y las insignias de nivel y método. Una prueba fija la medida, que
+es lo único que impide que la tarjeta vuelva a engordar sola.
+
+**La tarjeta de plan va detrás**, y no por simetría: las dos viven en la misma
+pantalla, y una alta al lado de una baja se lee como dos listas distintas.
+
+**El título es el objetivo táctil.** El enlace estirado ya cubría la tarjeta
+entera, pero su propia caja medía 26 px y cualquier auditoría —la nuestra la
+primera— lo cuenta como un destino de 26 px. Ahora la caja mide 44.
+
+**Las secciones, fijas y en la dirección.** Entrenamientos y su catálogo pasan a
+`useUrlSection` como el resto (§45): las pestañas quedan fuera del contenedor
+que desplaza, y el parámetro deja de llamarse `?tab=` para llamarse `?seccion=`
+como en las otras cuatro pantallas —una sola palabra para una sola cosa—. En el
+catálogo eso se lleva además el `as` con el que se estrechaba el valor del
+control, que era el último que quedaba fuera de una guarda.
+
+**El filtro de rutinas sube a la página y se queda fijo.** Se filtra mirando
+cómo mengua la lista, así que desplazarse no puede llevárselo; vivía dentro de
+la lista y se iba con ella. Al subir su estado, `RoutineList` se queda sin nada
+que hacer y desaparece.

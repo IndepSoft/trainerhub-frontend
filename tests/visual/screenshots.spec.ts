@@ -615,24 +615,32 @@ test.describe('gestos', () => {
     const panel = page.getByRole('tabpanel').first()
 
     /*
-     * El gesto recorre el BUSCADOR, de su borde derecho al izquierdo. Antes
-     * recorria el panel entero por su primera fila, que era el buscador a
-     * todo el ancho; ahora comparte fila con el filtro -un `Select` de
-     * Radix, que se abre en `pointerdown`- y empezar encima de el abriria el
-     * desplegable en vez de deslizar. Las tarjetas tampoco valen: llevan la
-     * pulsacion larga, que se queda con el puntero.
+     * EL GESTO EMPIEZA EN UN HUECO, y encontrarlo es la mitad de la prueba.
+     *
+     * El deslizamiento vive en el contenedor que desplaza (§46): la fila de
+     * filtros quedo fuera, fija bajo las pestañas, asi que el buscador ya no
+     * sirve de superficie. Y sobre una tarjeta tampoco vale: su enlace estirado
+     * es un `::after` absoluto, que se pinta por encima del texto, de modo que
+     * arrastrar desde ahi arranca el arrastre nativo de un enlace y el gesto
+     * muere sin `pointerup`. En «Planes» hay UNA tarjeta y el resto del
+     * contenedor esta vacio: ese hueco es la superficie.
      */
-    const buscador = await panel.getByRole('textbox').first().boundingBox()
-    expect(buscador).not.toBeNull()
+    await lista.getByRole('tab', { name: /Planes/ }).click()
+    await page.waitForTimeout(400)
+    await expect(lista.getByRole('tab', { selected: true })).toContainText('Planes')
 
-    const y = buscador!.y + buscador!.height / 2
-    await page.mouse.move(buscador!.x + buscador!.width - 10, y)
+    const tarjeta = await panel.locator('article').first().boundingBox()
+    expect(tarjeta).not.toBeNull()
+
+    // Hacia la derecha: se vuelve a la seccion anterior.
+    const y = tarjeta!.y + tarjeta!.height + 40
+    await page.mouse.move(60, y)
     await page.mouse.down()
-    await page.mouse.move(buscador!.x + 10, y + 5, { steps: 8 })
+    await page.mouse.move(300, y + 5, { steps: 8 })
     await page.mouse.up()
     await page.waitForTimeout(400)
 
-    await expect(lista.getByRole('tab', { selected: true })).toContainText('Planes')
+    await expect(lista.getByRole('tab', { selected: true })).toContainText('Rutinas')
   })
 
   test('un desplazamiento vertical NO cambia de pestana', async ({ page }) => {
@@ -1440,9 +1448,9 @@ test('los planes se ven desde entrenamientos', async ({ page }) => {
 
   await expect(page.getByRole('heading', { name: 'Base de fuerza · 4 semanas' })).toBeVisible()
   // El objetivo y la division se resuelven desde el catalogo, que era la otra
-  // mitad muerta: se guardan por identificador, no por nombre.
-  await expect(page.getByText('Acondicionamiento general')).toBeVisible()
-  await expect(page.getByText('Full body', { exact: true })).toBeVisible()
+  // mitad muerta: se guardan por identificador, no por nombre. Desde que la
+  // tarjeta es compacta (§46) comparten linea.
+  await expect(page.getByText('Acondicionamiento general · Full body')).toBeVisible()
 
   const desborde = await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth
@@ -1849,13 +1857,13 @@ test.describe('planes', () => {
     await expect(page.getByRole('link', { name: 'Nueva Rutina' })).toHaveCount(0)
 
     // La pestana viaja en la URL, asi que es enlazable.
-    await expect(page).toHaveURL(/tab=planes/)
+    await expect(page).toHaveURL(/seccion=planes/)
   })
 
   test('un plan nuevo se crea y aparece en su pestana', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
-    await page.goto('/trainings?tab=planes')
+    await page.goto('/trainings?seccion=planes')
 
     await page.getByRole('link', { name: 'Nuevo Plan' }).click()
     await expect(page.getByRole('heading', { name: 'Nuevo plan' })).toBeVisible()
@@ -1891,7 +1899,7 @@ test.describe('planes', () => {
 
     // Y desde la ficha se vuelve a la lista, con el contador ya en dos.
     await page.getByRole('link', { name: 'Planes' }).first().click()
-    await page.waitForURL(/tab=planes/)
+    await page.waitForURL(/seccion=planes/)
     await expect(page.getByRole('tab', { name: /Planes/ })).toContainText('(2)')
   })
 
@@ -1973,7 +1981,7 @@ test.describe('ficha de plan', () => {
   test('la tarjeta lleva a la ficha, y la ficha a la rutina de cada dia', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
-    await page.goto('/trainings?tab=planes')
+    await page.goto('/trainings?seccion=planes')
 
     await page.getByRole('link', { name: 'Base de fuerza · 4 semanas' }).click()
     await page.waitForURL(/\/trainings\/plans\/plan-1$/)
@@ -2127,7 +2135,7 @@ test.describe('borrado', () => {
     await page.getByRole('button', { name: 'Eliminar' }).click()
     await page.getByRole('dialog').getByRole('button', { name: 'Eliminar' }).click()
 
-    await page.waitForURL(/tab=planes/)
+    await page.waitForURL(/seccion=planes/)
     await expect(page.getByText('Aún no has creado ningún plan.')).toBeVisible()
 
     /*
@@ -5458,7 +5466,7 @@ test.describe('huecos cerrados', () => {
   test('los filtros de rutinas filtran, y sin resultados lo dicen', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
-    await page.goto('/trainings?tab=rutinas')
+    await page.goto('/trainings?seccion=rutinas')
     await page.waitForTimeout(1200)
 
     const tarjetas = page.locator('article')
@@ -5473,10 +5481,35 @@ test.describe('huecos cerrados', () => {
     await expect(page.getByText('Ninguna rutina coincide con la búsqueda.')).toBeVisible()
   })
 
+  test('las tres rutinas caben en una pantalla de movil', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/trainings')
+    await page.waitForTimeout(1500)
+
+    /*
+     * ESTA ES LA MEDIDA QUE JUSTIFICA LA TARJETA COMPACTA (§46). Con la cuña
+     * diagonal, la rejilla de dos cifras y los tres primeros ejercicios en
+     * filas, cada rutina medía 320 px: una y media por pantalla. Se cuenta lo
+     * que cabe ENTERO, que es lo que de verdad se puede comparar de un vistazo.
+     */
+    const alturas = await page.evaluate(() =>
+      [...document.querySelectorAll('article')].map((tarjeta) => {
+        const caja = tarjeta.getBoundingClientRect()
+        return { alto: Math.round(caja.height), abajo: Math.round(caja.bottom) }
+      })
+    )
+
+    expect(alturas).toHaveLength(3)
+    for (const { alto } of alturas) expect(alto).toBeLessThanOrEqual(200)
+    const enteras = alturas.filter(({ abajo }) => abajo <= 812).length
+    expect(enteras, 'rutinas visibles enteras a 375 px').toBe(3)
+  })
+
   test('el tempo y las notas de un ejercicio se editan y sobreviven al guardar', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
-    await page.goto('/trainings?tab=rutinas')
+    await page.goto('/trainings?seccion=rutinas')
     await page.waitForTimeout(1200)
 
     // La primera rutina de la lista, a su edicion por la interfaz.

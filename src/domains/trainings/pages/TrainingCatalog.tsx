@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { useSwipe } from '@/shared/hooks/useSwipe'
+import { useUrlSection } from '@/shared/hooks/useUrlSection'
 import { ExerciseCatalog } from '../components/ExerciseCatalog'
 import { EquipmentCatalog } from '../components/EquipmentCatalog'
 import { BlockLibrary } from '../components/BlockLibrary'
@@ -11,8 +12,7 @@ import { ReferenceCatalog } from '../components/ReferenceCatalog'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
-const TAB_ORDER = ['ejercicios', 'equipamiento', 'bloques', 'referencia'] as const
-type TabValue = (typeof TAB_ORDER)[number]
+const CATALOG_SECTIONS = ['ejercicios', 'equipamiento', 'bloques', 'referencia'] as const
 
 /**
  * El catálogo del entrenamiento. Sólo composición.
@@ -29,18 +29,29 @@ type TabValue = (typeof TAB_ORDER)[number]
  */
 export default function TrainingCatalog() {
   const { t } = useTranslation()
-  const [activeTab, setActiveTab] = useState<TabValue>('ejercicios')
+  const scrollerRef = useRef<HTMLDivElement>(null)
 
-  const moveTab = (offset: number) => {
-    const next = TAB_ORDER.indexOf(activeTab) + offset
-    if (next < 0 || next >= TAB_ORDER.length) return
-    setActiveTab(TAB_ORDER[next])
+  /*
+   * La sección en la dirección, como en el resto (`CAMBIOS` §45). De paso se
+   * lleva el `as` con el que se estrechaba el valor del control: ahora lo
+   * estrecha la lista.
+   */
+  const { section, select: selectSection } = useUrlSection(CATALOG_SECTIONS)
+
+  const moveSection = (offset: number) => {
+    const next = CATALOG_SECTIONS.indexOf(section) + offset
+    if (next < 0 || next >= CATALOG_SECTIONS.length) return
+    selectSection(CATALOG_SECTIONS[next])
   }
 
   const { handlers: swipeHandlers } = useSwipe({
-    onSwipeLeft: () => moveTab(1),
-    onSwipeRight: () => moveTab(-1),
+    onSwipeLeft: () => moveSection(1),
+    onSwipeRight: () => moveSection(-1),
   })
+
+  useEffect(() => {
+    scrollerRef.current?.scrollTo({ top: 0 })
+  }, [section])
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
@@ -57,38 +68,49 @@ export default function TrainingCatalog() {
         <PageHeader.Title>{t('trainings.catalog')}</PageHeader.Title>
       </PageHeader>
 
-      <div className={PAGE_SCROLL}>
-        <Tabs
-          value={activeTab}
-          onValueChange={(value) => setActiveTab(value as TabValue)}
-          {...swipeHandlers}
-        >
-          <div className="px-5 pt-1">
-            <TabsList className="w-full md:grid md:grid-cols-4">
-              <TabsTrigger value="ejercicios">{t('trainings.tab.exercises')}</TabsTrigger>
-              <TabsTrigger value="equipamiento">{t('trainings.tab.equipment')}</TabsTrigger>
-              <TabsTrigger value="bloques">{t('trainings.tab.blocks')}</TabsTrigger>
-              <TabsTrigger value="referencia">{t('trainings.tab.reference')}</TabsTrigger>
-            </TabsList>
-          </div>
+      <Tabs
+        value={section}
+        onValueChange={(value) => {
+          const chosen = CATALOG_SECTIONS.find((candidate) => candidate === value)
+          if (chosen !== undefined) selectSection(chosen)
+        }}
+        className="min-h-0 flex-1 gap-0"
+      >
+        <div className="shrink-0 px-5 pb-3">
+          <TabsList aria-label={t('trainings.catalogSectionsLabel')} className="w-full md:max-w-xl">
+            <TabsTrigger value="ejercicios" className="px-2 text-[13px] font-semibold">
+              {t('trainings.tab.exercises')}
+            </TabsTrigger>
+            <TabsTrigger value="equipamiento" className="px-2 text-[13px] font-semibold">
+              {t('trainings.tab.equipment')}
+            </TabsTrigger>
+            <TabsTrigger value="bloques" className="px-2 text-[13px] font-semibold">
+              {t('trainings.tab.blocks')}
+            </TabsTrigger>
+            <TabsTrigger value="referencia" className="px-2 text-[13px] font-semibold">
+              {t('trainings.tab.reference')}
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-          <TabsContent value="ejercicios" className="mt-4">
+        <div ref={scrollerRef} className={PAGE_SCROLL} {...swipeHandlers}>
+          <TabsContent value="ejercicios">
             <ExerciseCatalog />
           </TabsContent>
 
-          <TabsContent value="equipamiento" className="mt-4">
+          <TabsContent value="equipamiento">
             <EquipmentCatalog />
           </TabsContent>
 
-          <TabsContent value="bloques" className="mt-4">
+          <TabsContent value="bloques">
             <BlockLibrary />
           </TabsContent>
 
-          <TabsContent value="referencia" className="mt-4">
+          <TabsContent value="referencia">
             <ReferenceCatalog />
           </TabsContent>
-        </Tabs>
-      </div>
+        </div>
+      </Tabs>
     </div>
   )
 }

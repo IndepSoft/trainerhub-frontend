@@ -393,9 +393,13 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   controla y se cierra a mano (ver `StudentActions`). La tarjeta se queda
   para donde el objeto ES el contenido. Una PANTALLA LARGA va en secciones
   fijas bajo la cabecera, con la sección en la dirección (`?seccion=`, siempre
-  con `replace`): lo hace `useUrlSection`, que lo comparten la ficha, el equipo
-  y el progreso, y recibe la lista de las secciones que EXISTEN AHORA —una
-  dirección que nombre otra cae en la primera— (`CAMBIOS` §40 y §45). Lo LARGO Y REPETIDO
+  con `replace`): lo hace `useUrlSection`, que lo comparten la ficha, el equipo,
+  el progreso, los entrenamientos y su catálogo, y recibe la lista de las
+  secciones que EXISTEN AHORA —una dirección que nombre otra cae en la primera—
+  (`CAMBIOS` §40, §45 y §46). Una TARJETA de lista es compacta: título, una
+  línea de medidas y una línea de lo que la distingue, truncada (§46). El
+  detalle es de la ficha, y su título mide 44 px aunque el enlace estirado
+  cubra la tarjeta entera. Lo LARGO Y REPETIDO
   —semanas de un plan— se pliega con `CollapsibleRow`, y la fila cerrada
   resume lo que hay dentro (§41). Las cifras de un objeto van en
   `MetricStrip` con `MetricFigure`, no apiladas. Un FORMULARIO LARGO va en

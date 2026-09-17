@@ -46,7 +46,7 @@ export default function PlanForm() {
         </p>
         <p className="text-sm text-ink/50">{t('plan.notFoundHint')}</p>
         <Button asChild variant="outline">
-          <Link to="/trainings?tab=planes">{t('plan.back')}</Link>
+          <Link to="/trainings?seccion=planes">{t('plan.back')}</Link>
         </Button>
       </div>
     )
@@ -138,7 +138,7 @@ function PlanFormFields({ plan }: PlanFormFieldsProps) {
       <PageHeader>
         <Link
           to={
-            isEditing ? `/trainings/plans/${planId}` : '/trainings?tab=planes'
+            isEditing ? `/trainings/plans/${planId}` : '/trainings?seccion=planes'
           }
           className="-ms-2 mb-3 inline-flex h-11 items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/45 transition-colors hover:text-cobalt"
         >
@@ -160,7 +160,7 @@ function PlanFormFields({ plan }: PlanFormFieldsProps) {
                 navigate(
                   isEditing
                     ? `/trainings/plans/${planId}`
-                    : '/trainings?tab=planes'
+                    : '/trainings?seccion=planes'
                 )
               }
             />

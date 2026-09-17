@@ -41,7 +41,7 @@ export function RoutineDraftLine({ routine }: RoutineDraftLineProps) {
         aria-label={t('routine.liveSummary')}
         className="metric-figures shrink-0 whitespace-nowrap"
       >
-        {plural('routine.draftFigures.one', 'routine.draftFigures.other', sets, {
+        {plural('routine.figures.one', 'routine.figures.other', sets, {
           minutes: estimateRoutineMinutes(routine),
           sets,
         })}
