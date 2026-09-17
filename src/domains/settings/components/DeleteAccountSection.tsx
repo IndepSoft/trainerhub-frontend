@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Trash2 } from 'lucide-react'
+import { ListRow } from '@/shared/components/ListRow'
 import { Button } from '@/shared/ui/button'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import {
@@ -20,6 +20,10 @@ import { useDeleteAccount } from '@/auth/hooks/useDeleteAccount'
  * y un botón rojo a la altura del pulgar en un móvil se pulsa sin querer. El
  * diálogo repite lo que va a pasar, con el botón de irse en segundo lugar.
  *
+ * QUÉ SE LLEVA POR DELANTE se dice DENTRO (§49), no en la fila: es lo que hay
+ * que leer para decidir, y en la fila era un párrafo de tres líneas bajo un
+ * rótulo de tres palabras.
+ *
  * El error se pinta FUERA del diálogo: la negativa más probable es `lastAdmin`,
  * que pide hacer algo en otra pantalla, y hay que poder leerla con calma.
  */
@@ -34,41 +38,50 @@ export function DeleteAccountSection() {
   }
 
   return (
-    <div className="space-y-3">
-      <p className="text-xs text-ink/45">{t('settings.deleteAccount.hint')}</p>
+    <>
+      <ListRow
+        primary={t('settings.deleteAccount')}
+        onSelect={() => setConfirming(true)}
+        className="[&_span]:text-danger"
+      />
 
       {error !== null && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <li className="py-3">
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        </li>
       )}
-
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full gap-2 border-danger/40 text-danger hover:bg-danger/5 hover:text-danger"
-        onClick={() => setConfirming(true)}
-      >
-        <Trash2 className="size-4" />
-        {t('settings.deleteAccount')}
-      </Button>
 
       <Dialog open={confirming} onOpenChange={setConfirming}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('settings.deleteAccount.confirmTitle')}</DialogTitle>
-            <DialogDescription>{t('settings.deleteAccount.confirmBody')}</DialogDescription>
+            <DialogDescription>{t('settings.deleteAccount.hint')}</DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="outline" onClick={() => setConfirming(false)} disabled={loading}>
+
+          <p className="text-sm text-ink/70">{t('settings.deleteAccount.confirmBody')}</p>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setConfirming(false)}
+              disabled={loading}
+            >
               {t('common.cancel')}
             </Button>
-            <Button type="button" variant="destructive" onClick={handleConfirm} disabled={loading}>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleConfirm}
+              disabled={loading}
+            >
               {loading ? t('settings.deleteAccount.deleting') : t('settings.deleteAccount.confirm')}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   )
 }

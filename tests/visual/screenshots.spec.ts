@@ -198,6 +198,20 @@ async function leerPildora(page: Page, estado: RegExp): Promise<number> {
 }
 
 /**
+ * Abre un ajuste de una sola respuesta y devuelve SU FILA.
+ *
+ * Configuración va en filas (§49): la fila dice cómo está el ajuste y las
+ * opciones se eligen dentro, en una hoja. La fila se devuelve para poder
+ * comprobar después qué valor enseña.
+ */
+async function abrirAjuste(page: Page, nombre: string): Promise<Locator> {
+  const boton = page.getByRole('button', { name: nombre, exact: true })
+  const fila = page.getByRole('listitem').filter({ has: boton })
+  await boton.click()
+  return fila
+}
+
+/**
  * Una sesion de la agenda que TODAVIA no esta completada.
  *
  * Se pide por el NOMBRE ACCESIBLE, que es donde vive el estado: el
@@ -5240,14 +5254,20 @@ test.describe('configuracion', () => {
      * guardar escribe en ella. Por eso el cambio se ve en la cabecera, que lee
      * la misma ficha.
      */
-    await page.getByLabel('Nombre').fill('Marcos')
-    await page.getByLabel('Apellidos').fill('Salas Ruiz')
-    // Exacto: desde que la cuenta tiene contraseña, en esta pantalla hay
-    // tambien un «Guardar la contraseña» y el nombre a secas casaba con los dos.
-    await page.getByRole('button', { name: 'Guardar', exact: true }).click()
+    // El perfil se edita en una hoja (§49): la pantalla enseña quién eres, y
+    // los seis campos se abren al pulsar «Editar».
+    await page.getByRole('button', { name: 'Editar' }).click()
+    const hoja = page.getByRole('dialog')
+    await hoja.getByLabel('Nombre').fill('Marcos')
+    await hoja.getByLabel('Apellidos').fill('Salas Ruiz')
+    await hoja.getByRole('button', { name: 'Guardar', exact: true }).click()
 
-    await expect(page.getByRole('button', { name: 'Guardar', exact: true })).toHaveCount(0)
-    await expect(page.getByRole('button', { name: 'Perfil guardado' })).toBeVisible()
+    await expect(hoja.getByRole('button', { name: 'Guardar', exact: true })).toHaveCount(0)
+    await expect(hoja.getByRole('button', { name: 'Perfil guardado' })).toBeVisible()
+
+    // Y se cierra: la cabecera esta detras.
+    await page.keyboard.press('Escape')
+    await expect(page.getByRole('dialog')).toHaveCount(0)
 
     /*
      * En la cabecera, por su TEXTO y no por el nombre accesible: el boton del
@@ -5295,12 +5315,16 @@ test.describe('configuracion', () => {
     await page.goto('/settings')
 
     /*
-     * Un ajuste entra cuando hay algo detras que ajustar. La contraseña no la
-     * expone `AuthPort` y no hay mas canal de avisos que la campana, que no se
-     * apaga: ofrecer cualquiera de las dos seria un control que no controla nada.
+     * Un ajuste entra cuando hay algo detras que ajustar. No hay mas canal de
+     * avisos que la campana, y esa no se apaga: un interruptor de
+     * notificaciones seria un control que no controla nada.
+     *
+     * La contraseña SI esta, desde que `AuthPort` expone `updatePassword`.
      */
-    await expect(page.getByText('Contraseña')).toHaveCount(0)
     await expect(page.getByText('Notificaciones')).toHaveCount(0)
+    // Por el principio del nombre: la fila dice ademas para que sirve, y el
+     // nombre accesible es el de sus dos lineas.
+     await expect(page.getByRole('button', { name: /^Contraseña/ })).toBeVisible()
 
     // Y los ajustes del EQUIPO no estan aqui: son de la casa, no de la persona.
     await expect(page.getByText('Aprobar quién entra')).toHaveCount(0)
@@ -5311,13 +5335,14 @@ test.describe('configuracion', () => {
     await signIn(page)
     await page.goto('/settings')
 
-    const oscuro = page.getByRole('button', { name: 'Oscuro' })
-    await oscuro.click()
+    const tema = await abrirAjuste(page, 'Tema')
+    await page.getByRole('radio', { name: 'Oscuro' }).click()
 
     // La clase en <html> es lo que activa el bloque `.dark`; sin ella los tokens
     // no cambian de valor y no cambia nada mas.
     await expect(page.locator('html')).toHaveClass(/dark/)
-    await expect(oscuro).toHaveAttribute('aria-pressed', 'true')
+    // Y la fila dice cual esta puesto, que es para lo que existe.
+    await expect(tema).toContainText('Oscuro')
 
     // Y el fondo de verdad cambia: la clase por si sola no demuestra que la
     // paleta oscura exista.
@@ -5335,7 +5360,8 @@ test.describe('configuracion', () => {
     await page.reload()
     await expect(page.locator('html')).toHaveClass(/dark/)
 
-    await page.getByRole('button', { name: 'Claro' }).click()
+    await abrirAjuste(page, 'Tema')
+    await page.getByRole('radio', { name: 'Claro' }).click()
     await expect(page.locator('html')).not.toHaveClass(/dark/)
   })
 
@@ -5346,7 +5372,8 @@ test.describe('configuracion', () => {
 
     // Cada idioma se ofrece EN SU PROPIO IDIOMA: quien abre esta pantalla porque
     // la aplicacion esta en una lengua que no entiende necesita reconocer la suya.
-    await page.getByRole('button', { name: 'English' }).click()
+    await abrirAjuste(page, 'Idioma')
+    await page.getByRole('radio', { name: 'English' }).click()
 
     await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible()
     await expect(page.getByRole('link', { name: 'Students' }).first()).toBeVisible()
@@ -5362,7 +5389,8 @@ test.describe('configuracion', () => {
     await page.reload()
     await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible()
 
-    await page.getByRole('button', { name: 'Português' }).click()
+    await abrirAjuste(page, 'Language')
+    await page.getByRole('radio', { name: 'Português' }).click()
     await expect(page.getByRole('heading', { name: 'Configurações' })).toBeVisible()
     await expect(page.locator('html')).toHaveAttribute('lang', 'pt-BR')
   })
@@ -5371,7 +5399,8 @@ test.describe('configuracion', () => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
     await page.goto('/settings')
-    await page.getByRole('button', { name: 'English' }).click()
+    await abrirAjuste(page, 'Idioma')
+    await page.getByRole('radio', { name: 'English' }).click()
 
     /*
      * La linea es la que dice el propio selector: cambia lo que escribe la
@@ -5392,13 +5421,15 @@ test.describe('configuracion', () => {
     // En una PWA instalada esta etiqueta tiñe la barra de estado del sistema.
     // Con un valor fijo, el tema oscuro dejaba una franja azul sobre una
     // aplicacion negra.
-    await page.getByRole('button', { name: 'Oscuro' }).click()
+    await abrirAjuste(page, 'Tema')
+    await page.getByRole('radio', { name: 'Oscuro' }).click()
     await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute(
       'content',
       '#0d1017'
     )
 
-    await page.getByRole('button', { name: 'Claro' }).click()
+    await abrirAjuste(page, 'Tema')
+    await page.getByRole('radio', { name: 'Claro' }).click()
     await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute(
       'content',
       '#0b4bcc'
@@ -5443,14 +5474,19 @@ test.describe('cuenta', () => {
     await signIn(page)
     await page.goto('/settings')
 
-    await page.getByLabel('Contraseña nueva').fill('nueva-123')
-    await page.getByLabel('Repite la contraseña').fill('otra-123')
-    await page.getByRole('button', { name: 'Guardar la contraseña' }).click()
-    await expect(page.getByText('Las dos contraseñas no coinciden')).toBeVisible()
+    await page.getByRole('button', { name: /^Contraseña/ }).click()
+    const hoja = page.getByRole('dialog')
 
-    await page.getByLabel('Repite la contraseña').fill('nueva-123')
-    await page.getByRole('button', { name: 'Guardar la contraseña' }).click()
-    await expect(page.getByRole('button', { name: 'Contraseña cambiada' })).toBeVisible()
+    await hoja.getByLabel('Contraseña nueva').fill('nueva-123')
+    await hoja.getByLabel('Repite la contraseña').fill('otra-123')
+    await hoja.getByRole('button', { name: 'Guardar la contraseña' }).click()
+    await expect(hoja.getByText('Las dos contraseñas no coinciden')).toBeVisible()
+
+    await hoja.getByLabel('Repite la contraseña').fill('nueva-123')
+    await hoja.getByRole('button', { name: 'Guardar la contraseña' }).click()
+
+    // Cambiada, la hoja se cierra: dejarla abierta invita a cambiarla otra vez.
+    await expect(page.getByRole('dialog')).toHaveCount(0)
 
     // Sin desbordamiento a 375 px: el formulario nuevo cabe.
     const overflow = await page.evaluate(

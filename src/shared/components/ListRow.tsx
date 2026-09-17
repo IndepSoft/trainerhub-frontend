@@ -26,6 +26,13 @@ interface ListRowProps {
    * La agenda lo usa para decir además el estado y la duración.
    */
   label?: string
+  /**
+   * Si la fila lleva flecha. Por defecto, la lleva la que tiene destino.
+   *
+   * Una fila que abre una hoja también va a algún sitio —los ajustes—, y una
+   * que resuelve algo en el sitio no —la agenda, que acaba en su insignia—.
+   */
+  chevron?: boolean
   /** La línea que se busca al escanear: un nombre, un título. */
   primary: string
   /** Lo que ayuda a distinguir uno de otro. Una línea, y se trunca. */
@@ -92,6 +99,7 @@ export function ListRow({
   replace = false,
   onSelect,
   label,
+  chevron = false,
   primary,
   secondary,
   leading,
@@ -126,7 +134,7 @@ export function ListRow({
 
       {trailing}
 
-      {to !== undefined && (
+      {(to !== undefined || chevron) && (
         <ChevronRight aria-hidden="true" className="size-5 shrink-0 text-ink/35" />
       )}
     </li>

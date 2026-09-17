@@ -4093,3 +4093,37 @@ de leer —eso ya era así—, pero apagar el punto en el mismo instante en que 
 llega deja a quien entra sin saber cuál era el aviso nuevo. Se toma una foto de
 lo no leído al llegar, se marca todo leído por detrás, y el punto sobrevive
 mientras se está en la pantalla.
+
+## 49. Configuración, en filas (17 sep 2026)
+
+Sexta tanda, cuarta parte (artboard `Configuracion`). La pantalla era una
+columna de formularios abiertos: el perfil entero con su foto y sus cinco
+campos, la contraseña entera, seis botones apilados y dos grupos de tres
+opciones. **1.700 px de desplazamiento para una pantalla en la que casi nunca
+se cambia nada.** Ahora mide 1.190 y cada ajuste es una fila que dice CÓMO
+ESTÁ.
+
+**Lo que se mira, a la vista; lo que se rellena, dentro.** El perfil y la
+contraseña se abren en una hoja —seis campos no pueden estar siempre
+desplegados para algo que se toca una vez al año—, y tema e idioma pasan a
+`ChoiceRow`: una fila con el valor puesto a la derecha, y las opciones dentro.
+El precio es un toque más para cambiarlo, y es el correcto.
+
+**Lo que hay que saber ANTES de elegir va donde se elige.** El aviso de la
+traducción —«cambia lo que escribe la aplicación, no lo que escribiste tú»— y
+el de «Sistema» viajan a la hoja de su ajuste; lo que se lleva por delante
+eliminar la cuenta viaja a su confirmación, que es donde se decide. En la fila
+eran párrafos de tres líneas bajo un rótulo de tres palabras.
+
+**Quién eres, arriba y sin encabezado**: cara, nombre y correo, con «Editar» al
+lado. Es la respuesta a «¿de quién es esta aplicación?» y no necesita que se la
+anuncien. Sin ficha —quien no está en ningún equipo— el correo sube a la
+primera línea y debajo se explica por qué no hay nada que editar.
+
+**La fila compartida aprende dos cosas**: a abrir algo que no es una dirección
+—ya lo hacía la agenda— y a llevar flecha aunque no lleve a una URL, porque una
+fila que abre una hoja también va a algún sitio.
+
+**Verificado en navegador**: a 375 px no hay desbordamiento, ningún objetivo
+por debajo de 44 px —el interruptor del sonido ocupa la fila entera— y ningún
+contenedor por debajo de 280.
