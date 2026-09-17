@@ -13,6 +13,7 @@ import { onboardingRoutes } from '@/domains/onboarding/infrastructure/routes'
 import { crewRoutes } from '@/domains/crew/infrastructure/routes'
 import { platformRoutes } from '@/domains/platform/infrastructure/routes'
 import { settingsRoutes } from '@/domains/settings/infrastructure/routes'
+import { noticesRoutes } from '@/domains/notices/infrastructure/routes'
 
 const RootLayout = lazy(() => import('@/app/layouts/RootLayout'))
 const NotFound = lazy(() => import('@/shared/pages/NotFound'))
@@ -30,6 +31,7 @@ const domainRoutes = [
   ...crewRoutes,
   ...platformRoutes,
   ...settingsRoutes,
+  ...noticesRoutes,
   ...authRoutes,
 ]
 

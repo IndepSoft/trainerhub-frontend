@@ -51,6 +51,14 @@ export const spanish = {
 
   // ------------------------------------------------------------------ avisos
   'notices.title': 'Avisos',
+  'notices.eyebrow': 'Tu campana',
+  'notices.eyebrowUnread': 'Tu campana · {count} sin leer',
+  'notices.today': 'Hoy',
+  'notices.before': 'Antes',
+  'notices.unread': 'sin leer',
+  'notices.kind.dues': 'Tu cuota',
+  'notices.kind.general': 'De tu entrenador',
+  'notices.kind.membership': 'Tu equipo',
   'notices.unreadLabel': 'Avisos, {count} sin leer',
   'notices.empty': 'No tienes ningún aviso.',
   'notices.notYours':

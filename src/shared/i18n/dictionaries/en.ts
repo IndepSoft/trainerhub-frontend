@@ -40,6 +40,14 @@ export const english: Dictionary = {
 
   // --------------------------------------------------------------- notices
   'notices.title': 'Notices',
+  'notices.eyebrow': 'Your bell',
+  'notices.eyebrowUnread': 'Your bell · {count} unread',
+  'notices.today': 'Today',
+  'notices.before': 'Earlier',
+  'notices.unread': 'unread',
+  'notices.kind.dues': 'Your dues',
+  'notices.kind.general': 'From your trainer',
+  'notices.kind.membership': 'Your team',
   'notices.unreadLabel': 'Notices, {count} unread',
   'notices.empty': 'You have no notices.',
   'notices.notYours':

@@ -553,7 +553,9 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   cuándo**, no cuánto. Poner precio exige decidir moneda y modelo de tarifas, y
   nada de eso está decidido. Ver `StudentSubscription`.
 - Los avisos son una bandeja **dentro** de la aplicación: quien no la abra no se
-  entera. Correo o push son otro trabajo, y otro consentimiento.
+  entera. Correo o push son otro trabajo, y otro consentimiento. Viven en su
+  PANTALLA —`/notices`, agrupada en hoy y antes (`CAMBIOS` §48)—, a la que lleva
+  la campana; no tienen entrada en la navegación a propósito.
 - El lint esta en cero. `react-refresh/only-export-components` queda desactivada
   **solo** en `src/shared/ui/**`, porque el patron de shadcn -componente y
   variantes de `cva` en el mismo fichero- choca con ella y no es corregible sin

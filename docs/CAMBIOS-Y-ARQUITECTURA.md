@@ -4064,3 +4064,32 @@ LA SEMANA QUE SE MIRA, lo dice en su encabezado —«Esta semana», o el rango
 cuando se navega a otra— y son cinco píldoras en dos líneas. Un estado sin
 sesiones no se pinta: «0 canceladas» ocupa lo mismo que «3 confirmadas» y no
 informa de nada.
+
+## 48. Los avisos dejan la esquina (17 sep 2026)
+
+Sexta tanda, tercera parte (artboard `Avisos`). La bandeja era un desplegable de
+320 px colgando de la campana: los avisos apretados, ocho líneas visibles y sin
+más orden que la fecha. Un aviso es lo ÚNICO que la aplicación le manda a un
+alumno —su cuota, un recordatorio de su entrenador, la aprobación de su equipo—,
+y leerlo en una esquina es leerlo con prisa.
+
+**Ahora es una pantalla**, `/notices`, y la campana lleva a ella. Sin entrada en
+la navegación, a propósito: se llega por la campana, que es donde se ve que hay
+algo, y la barra de móvil ya está en sus cinco destinos.
+
+**Se agrupa en HOY y ANTES**, que es como se lee una bandeja: lo de hoy puede
+pedir algo y lo de antes es historia. Sin más tramos —con diez avisos, «esta
+semana» y «este mes» serían encabezados con una fila debajo—. Lo de hoy lleva la
+hora y lo de antes el día, porque a las dos preguntas se responde distinto.
+
+**Cada aviso dice de qué es.** El motivo ya se guardaba —`kind`: cuota, del
+entrenador, del equipo— y no se enseñaba en ninguna parte; ahora rotula la
+entrada. El artboard propone además un titular por aviso («Sesión movida al
+martes»), y eso NO se hace: no hay dato del que salga, y escribirlo sería
+inventar el contenido del aviso a partir de su motivo.
+
+**Lo no leído se marca al entrar y se sigue viendo marcado.** Abrir es el acto
+de leer —eso ya era así—, pero apagar el punto en el mismo instante en que se
+llega deja a quien entra sin saber cuál era el aviso nuevo. Se toma una foto de
+lo no leído al llegar, se marca todo leído por detrás, y el punto sobrevive
+mientras se está en la pantalla.

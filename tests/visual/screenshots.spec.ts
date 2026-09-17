@@ -4941,15 +4941,22 @@ test.describe('cuotas', () => {
     await page.getByRole('button', { name: 'Crear cuenta' }).click()
     await page.waitForURL(/\/progress/, { timeout: 20_000 })
 
-    // Le llega, y el contador lo dice.
-    await page.getByRole('button', { name: 'Avisos, 1 sin leer' }).click()
-    await expect(page.getByText(/tu cuota vence en 3 días/)).toBeVisible()
+    // Le llega, y el contador lo dice. La campana LLEVA a la bandeja (§48):
+    // era un desplegable de 320 px colgando de la esquina.
+    await page.getByRole('link', { name: 'Avisos, 1 sin leer' }).click()
+    await page.waitForURL(/\/notices/, { timeout: 20_000 })
+
+    // Agrupado por cuando llego, y con su motivo.
+    const hoy = page.getByRole('region', { name: 'Hoy' })
+    await expect(hoy.getByText(/tu cuota vence en 3 días/)).toBeVisible()
+    // El rotulo dice de que es, y lleva dentro el «sin leer» que solo oye un
+    // lector de pantalla: el punto de color no dice nada por si solo.
+    await expect(hoy.getByText('Tu cuota sin leer')).toBeVisible()
 
     /*
      * Y NO ESTA EN EL MURO. Es la mitad que importa: un recordatorio de dinero
      * publicado donde lo ven sus compañeros seria exponer a alguien por deber.
      */
-    await page.keyboard.press('Escape')
     await page.getByRole('button', { name: /Hierro y Asfalto/ }).first().click()
     await page.getByRole('menuitem', { name: 'Ver el equipo' }).click()
     await expect(page.getByText(/tu cuota vence en 3 días/)).toHaveCount(0)

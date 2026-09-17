@@ -40,6 +40,14 @@ export const portuguese: Dictionary = {
 
   // ------------------------------------------------------------------ avisos
   'notices.title': 'Avisos',
+  'notices.eyebrow': 'Seu sino',
+  'notices.eyebrowUnread': 'Seu sino · {count} sem ler',
+  'notices.today': 'Hoje',
+  'notices.before': 'Antes',
+  'notices.unread': 'sem ler',
+  'notices.kind.dues': 'Seu pagamento',
+  'notices.kind.general': 'Do seu treinador',
+  'notices.kind.membership': 'Sua equipe',
   'notices.unreadLabel': 'Avisos, {count} não lidos',
   'notices.empty': 'Você não tem nenhum aviso.',
   'notices.notYours':
