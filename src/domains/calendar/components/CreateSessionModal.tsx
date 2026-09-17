@@ -4,6 +4,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
@@ -410,13 +411,17 @@ export function CreateSessionModal({
             <ScheduleConflictNotice message={conflict} onOverride={scheduleSession} />
           )}
 
-          <Button
-            onClick={handleSubmit}
-            className="h-14 w-full gap-2 font-display text-base font-extrabold uppercase tracking-[0.14em]"
-          >
-            <CalendarCheck className="size-5" />
-            {editing === undefined ? t('newSession.submit') : t('newSession.saveChanges')}
-          </Button>
+          {/* En el pie: en móvil se queda pegado abajo, para que el botón no
+              dependa de que se desplace hasta el final del formulario. */}
+          <DialogFooter className="-mx-5 border-t border-cobalt-tint-3 px-5 py-3 md:mx-0 md:border-0 md:p-0">
+            <Button
+              onClick={handleSubmit}
+              className="h-14 w-full gap-2 font-display text-base font-extrabold uppercase tracking-[0.14em]"
+            >
+              <CalendarCheck className="size-5" />
+              {editing === undefined ? t('newSession.submit') : t('newSession.saveChanges')}
+            </Button>
+          </DialogFooter>
         </div>
       </DialogContent>
     </Dialog>

@@ -4,6 +4,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
@@ -295,14 +296,14 @@ function StudentFields({ student, onSave, onCancel }: StudentFieldsProps) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:justify-end">
+      <DialogFooter className="pt-2">
         <Button type="button" variant="outline" onClick={onCancel}>
           {t('common.cancel')}
         </Button>
         <Button type="submit">
           {student === null ? t('students.add') : t('studentForm.saveChanges')}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   )
 }

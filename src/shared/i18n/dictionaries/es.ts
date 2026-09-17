@@ -619,6 +619,10 @@ export const spanish = {
   'dues.title': 'Cuota',
   'dues.renewed': 'Cuota renovada',
   'dues.registerPayment': 'Registrar pago',
+  'dues.paymentHint': 'Se registra el pago de {name} y la cuota vuelve a estar al día.',
+  'dues.paidOn': 'Pagado el',
+  'dues.coversUntil': 'Cubre hasta',
+  'dues.paymentPeriod': 'Paga {period}. Se cambia abajo, en «cada cuánto paga».',
   'dues.period': 'Cada cuánto paga',
   'dues.periodHint': 'Cambiarlo no cobra nada: sólo dice cuánto durará el próximo pago.',
 

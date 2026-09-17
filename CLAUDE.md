@@ -393,7 +393,10 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   que se decide siempre a la vista y lo de a veces detrás de «Más ajustes»,
   abierto si ya tiene valor (§42). El valor de un desplegable se estrecha con
   la guarda de su entidad (`isTrainingLevel`, `isBlockMethod`…), nunca con
-  `as`.
+  `as`. Y en MÓVIL TODO DIÁLOGO ES UNA HOJA que sube desde abajo (§44): lo
+  hace `shared/ui/dialog.tsx`, así que un diálogo nuevo ya nace siéndolo. Sus
+  botones van en `DialogFooter`, que los apila con el primario arriba y lo
+  deja pegado abajo mientras el cuerpo se desplaza.
 - TIEMPO REAL en **todo lo que la aplicación escucha**, por `postgres_changes`
   con `subscribeToTable` / `subscribeToTables`. Quince tablas publicadas: las
   de pertenencia e identidad —`crews`, `crew_staff`, `students`, `profiles`—

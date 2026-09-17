@@ -6,6 +6,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
@@ -194,13 +195,17 @@ export function ScheduleSessionDialog({
             <ScheduleConflictNotice message={conflict} onOverride={() => void scheduleSession()} />
           )}
 
-          <Button
-            type="submit"
-            className="h-14 w-full gap-2 font-display text-base font-extrabold uppercase tracking-[0.14em]"
-          >
-            <CalendarCheck className="size-5" />
-            {t('scheduleSession.title')}
-          </Button>
+          {/* En el pie, que en movil se queda pegado abajo: el boton no puede
+              depender de que se desplace hasta el final. */}
+          <DialogFooter className="-mx-5 border-t border-cobalt-tint-3 px-5 py-3 md:mx-0 md:border-0 md:p-0">
+            <Button
+              type="submit"
+              className="h-14 w-full gap-2 font-display text-base font-extrabold uppercase tracking-[0.14em]"
+            >
+              <CalendarCheck className="size-5" />
+              {t('scheduleSession.title')}
+            </Button>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

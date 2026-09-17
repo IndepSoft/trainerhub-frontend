@@ -4,6 +4,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
@@ -218,14 +219,14 @@ function ExerciseForm({ exercise, onSave, onCancel }: ExerciseFormProps) {
         />
       </div>
 
-      <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:justify-end">
+      <DialogFooter className="pt-2">
         <Button type="button" variant="outline" onClick={onCancel}>
           {t('common.cancel')}
         </Button>
         <Button type="submit">
           {exercise === null ? t('exercise.addToCatalog') : t('exercise.saveChanges')}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   )
 }

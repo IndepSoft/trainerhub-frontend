@@ -4,6 +4,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
@@ -213,7 +214,7 @@ function MembershipFields({
         </p>
       )}
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+      <DialogFooter>
         <Button type="button" variant="outline" onClick={onCancel}>
           {t('common.cancel')}
         </Button>
@@ -224,7 +225,7 @@ function MembershipFields({
         >
           {saving ? t('common.saving') : t('common.save')}
         </Button>
-      </div>
+      </DialogFooter>
     </div>
   )
 }

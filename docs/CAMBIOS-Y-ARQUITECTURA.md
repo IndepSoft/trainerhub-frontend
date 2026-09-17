@@ -3882,3 +3882,51 @@ ruta todavía en «Cargando…» sobre un servidor recién arrancado, sin caché
 Vite, y pasó tres de tres al repetirla. Salir del equipo no tiene prueba en la
 suite y se recorrió aparte a 375 px: el diálogo confirma, la cabecera pasa a
 «Sin equipo» y Progreso invita a unirse a uno.
+
+## 44. En móvil, los diálogos son hojas (17 sep 2026)
+
+Cuarta tanda del rediseño de vistas (artboards `Hoja*`). La propuesta no deja
+margen: «en móvil TODO diálogo es esto». Así que se hace **una vez, en
+`shared/ui/dialog.tsx`**, y no en los trece diálogos que hay: uno nuevo nace
+siendo hoja sin que nadie tenga que acordarse.
+
+**La hoja**: pegada abajo, a todo el ancho, esquinas de arriba redondeadas,
+como mucho el 90 % del alto y lo que no quepa se desplaza por dentro. Entra
+deslizando desde abajo y lleva un asa, que no se arrastra —cerrar es el aspa,
+«Cancelar» o tocar fuera— sino que dice qué es eso y por dónde se va. Desde
+`md` vuelve el diálogo centrado de siempre, con sus animaciones; las de la
+hoja se anulan una por una, porque si no el diálogo de escritorio entraría
+deslizando.
+
+**El pie manda**, y por eso pasa a ser el `DialogFooter` compartido en los
+ocho sitios que se lo hacían aparte: en la hoja, los botones van apilados, a
+todo el ancho y con **el primario arriba** —`flex-col-reverse`, sin tocar el
+orden del DOM, que sigue siendo el de lectura—; en escritorio, en fila y a la
+derecha. Y **pegado abajo** mientras el cuerpo se desplaza: asignar un plan
+tiene un calendario dentro, y su botón se quedaba fuera de la pantalla, que es
+justo lo que la hoja viene a arreglar.
+
+**Registrar un pago deja de escribir al pulsar.** Era un botón que movía la
+fecha pagada sin decir a dónde, y eso no se deshace desde la aplicación. Ahora
+abre su hoja, que dice **hasta cuándo cubre** antes de escribir y deja
+**cambiar la fecha del pago**, que es el caso corriente: el dinero se recibe el
+lunes y se registra el miércoles. La regla es la de siempre —`renewedThrough`,
+que cuenta desde la fecha pagada o desde la del pago, la que sea posterior—, y
+lo que la hoja enseña sale de ella, así que es exactamente lo que va a quedar
+guardado. El periodo NO se toca ahí: se elige en la sección, y tenerlo en dos
+sitios serían dos controles para un mismo dato.
+
+**Dónde se distancia del artboard.** Sus hojas llevan «Cancelar» siempre y no
+llevan aspa. Aquí los formularios largos —asignar, agendar, volcar un plan,
+nueva sesión— se quedan con su primario y el aspa: añadirles un «Cancelar» a
+todo el ancho sumaba 56 px a la hoja para repetir lo que ya hacen el aspa y
+tocar fuera. Las hojas de confirmar —eliminar, avisar, pago— sí llevan los
+dos, que es donde el artboard lo pide de verdad.
+
+**Verificado en navegador**, midiendo. A 375, las seis hojas: pegadas al borde
+inferior, 375 px de ancho, esquina de 16 px, el primario arriba y los botones
+del mismo ancho; ninguna tapa el contenido con la barra del navegador porque
+el alto va en `dvh`. A 1440: centradas, 512 px, separadas de los bordes. Dos
+pruebas nuevas fijan lo que se puede romper sin que se note: que la hoja se
+pega abajo en móvil y se centra en escritorio, y que la hoja de pago cuenta
+desde el día del pago —treinta días desde hace cinco son veinticinco.

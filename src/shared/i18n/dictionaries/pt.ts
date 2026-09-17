@@ -608,6 +608,10 @@ export const portuguese: Dictionary = {
   'dues.title': 'Mensalidade',
   'dues.renewed': 'Mensalidade renovada',
   'dues.registerPayment': 'Registrar pagamento',
+  'dues.paymentHint': 'Registra o pagamento de {name} e a mensalidade volta a ficar em dia.',
+  'dues.paidOn': 'Pago em',
+  'dues.coversUntil': 'Cobre até',
+  'dues.paymentPeriod': 'Paga {period}. Muda-se abaixo, em «de quanto em quanto tempo paga».',
   'dues.period': 'De quanto em quanto tempo paga',
   'dues.periodHint': 'Mudar isso não cobra nada: só diz quanto vai durar o próximo pagamento.',
 

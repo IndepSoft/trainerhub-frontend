@@ -28,6 +28,17 @@ async function signIn(page: Page): Promise<void> {
 }
 
 /**
+ * Registra un pago: el botón de la sección abre la hoja, y la hoja confirma.
+ */
+async function registrarPago(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Registrar pago' }).click()
+  const hoja = page.getByRole('dialog')
+  await expect(hoja.getByText('Cubre hasta')).toBeVisible()
+  await hoja.getByRole('button', { name: 'Registrar pago' }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+}
+
+/**
  * Abre una sección de la ficha del alumno y devuelve su panel.
  *
  * La ficha va en secciones (`CAMBIOS` §40): lo que no es del resumen no se
@@ -822,6 +833,95 @@ test.describe('fila de estudiante', () => {
     await page.getByRole('button', { name: 'Acciones para Carla López' }).click()
     await expect(page.getByRole('menuitem', { name: 'Editar' })).toBeVisible()
     await expect(page.getByRole('menuitem', { name: 'Dar de baja' })).toHaveCount(0)
+  })
+})
+
+/**
+ * Las hojas (`CAMBIOS` §44). En móvil todo diálogo sube desde abajo, a todo el
+ * ancho y con su botón donde llega el pulgar; en escritorio sigue siendo la
+ * caja centrada de siempre.
+ */
+test.describe('hojas', () => {
+  test('en movil el dialogo sube desde abajo, y en escritorio se centra', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/trainings/routine-3')
+
+    await page.getByRole('button', { name: 'Eliminar' }).first().click()
+    const hoja = page.getByRole('dialog')
+    await expect(hoja).toBeVisible()
+    // La hoja ENTRA deslizando: medir antes de que termine da la posición de
+    // partida, que está fuera de la pantalla.
+    await page.waitForTimeout(500)
+
+    const enMovil = await hoja.evaluate((elemento) => {
+      const caja = elemento.getBoundingClientRect()
+      const pie = elemento.querySelector('[data-slot="dialog-footer"]')
+      const botones = pie === null ? [] : [...pie.querySelectorAll('button')]
+      return {
+        pegadaAbajo: Math.round(window.innerHeight - caja.bottom),
+        aTodoElAncho: Math.round(window.innerWidth - caja.width),
+        esquina: getComputedStyle(elemento).borderTopLeftRadius,
+        // El primario ARRIBA: es el que se pulsa. Lo hace `flex-col-reverse`,
+        // sin tocar el orden del DOM, que sigue siendo el de lectura.
+        primeroEnPantalla: botones
+          .slice()
+          .sort((uno, otro) => uno.getBoundingClientRect().top - otro.getBoundingClientRect().top)[0]
+          ?.textContent?.trim(),
+        anchoDeLosBotones: botones.map((boton) => Math.round(boton.getBoundingClientRect().width)),
+      }
+    })
+
+    expect(enMovil.pegadaAbajo, 'pegada al borde de abajo').toBe(0)
+    expect(enMovil.aTodoElAncho, 'a todo el ancho').toBe(0)
+    expect(enMovil.esquina, 'esquina superior redondeada').toBe('16px')
+    expect(enMovil.primeroEnPantalla, 'el primario, arriba').toBe('Eliminar')
+    // Los dos a todo el ancho de la hoja, no uno al lado del otro.
+    expect(new Set(enMovil.anchoDeLosBotones).size, 'los dos, del mismo ancho').toBe(1)
+    expect(enMovil.anchoDeLosBotones[0]).toBeGreaterThan(300)
+
+    await page.screenshot({ path: 'tests/visual/salida/hoja-eliminar-mobile.png' })
+
+    // Y en escritorio, centrada y sin pegarse a ningún borde.
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.waitForTimeout(400)
+    const enEscritorio = await hoja.evaluate((elemento) => {
+      const caja = elemento.getBoundingClientRect()
+      return {
+        margenIzquierdo: Math.round(caja.left),
+        margenDerecho: Math.round(window.innerWidth - caja.right),
+        separadaDelBorde: Math.round(window.innerHeight - caja.bottom),
+      }
+    })
+
+    expect(enEscritorio.margenIzquierdo).toBe(enEscritorio.margenDerecho)
+    expect(enEscritorio.margenIzquierdo, 'centrada').toBeGreaterThan(100)
+    expect(enEscritorio.separadaDelBorde, 'sin pegarse abajo').toBeGreaterThan(50)
+  })
+
+  test('la hoja de pago dice hasta cuando cubre antes de escribir', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/students/student-1?seccion=cuota')
+
+    await page.getByRole('button', { name: 'Registrar pago' }).click()
+    const hoja = page.getByRole('dialog')
+
+    /*
+     * El dinero se recibe un día y se registra otro: la fecha se cambia, y lo
+     * que cubre se recalcula con la MISMA regla que escribe —`renewedThrough`—,
+     * así que lo que se lee aquí es lo que va a quedar guardado.
+     */
+    const haceCincoDias = new Date()
+    haceCincoDias.setDate(haceCincoDias.getDate() - 5)
+    const clave = haceCincoDias.toISOString().slice(0, 10)
+    await hoja.getByLabel('Pagado el').fill(clave)
+
+    await hoja.getByRole('button', { name: 'Registrar pago' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    // Treinta días desde el día del pago, no desde hoy: quedan veinticinco.
+    await expect(page.getByText('Vence en 25 días')).toBeVisible()
   })
 })
 
@@ -4674,7 +4774,11 @@ test.describe('cuotas', () => {
      * vieja: quien lleva dias sin pagar no compra dias de pasado. Treinta dias
      * desde hoy caen dentro de «activa», no de «vence pronto».
      */
-    await page.getByRole('button', { name: 'Registrar pago' }).click()
+    /*
+     * Cobrar pasa por su hoja (`CAMBIOS` §44): dice hasta cuándo cubre ANTES
+     * de escribir, porque mover la fecha pagada no se deshace desde aquí.
+     */
+    await registrarPago(page)
     await expect(page.getByText('Vence en 30 días')).toBeVisible()
 
     // Cambiar el periodo NO cobra: la fecha pagada se queda donde estaba.
@@ -4682,7 +4786,7 @@ test.describe('cuotas', () => {
     await expect(page.getByText('Vence en 30 días')).toBeVisible()
 
     // Y el siguiente pago ya dura tres meses.
-    await page.getByRole('button', { name: 'Registrar pago' }).click()
+    await registrarPago(page)
     await expect(page.getByText('Vence en 120 días')).toBeVisible()
   })
 

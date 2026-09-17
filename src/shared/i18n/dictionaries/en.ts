@@ -608,6 +608,10 @@ export const english: Dictionary = {
   'dues.title': 'Dues',
   'dues.renewed': 'Dues renewed',
   'dues.registerPayment': 'Record a payment',
+  'dues.paymentHint': '{name}’s payment gets recorded and the dues are up to date again.',
+  'dues.paidOn': 'Paid on',
+  'dues.coversUntil': 'Covers until',
+  'dues.paymentPeriod': 'They pay {period}. Change it below, in «how often they pay».',
   'dues.period': 'How often they pay',
   'dues.periodHint': 'Changing it charges nothing: it only says how long the next payment lasts.',
 

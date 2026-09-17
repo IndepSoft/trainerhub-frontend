@@ -7,11 +7,13 @@ import { useSendNotice } from '@/shared/hooks/useSendNotice'
 import { useViewerContext } from '@/app/ViewerContext'
 import { describeError } from '@/shared/i18n/errorMessages'
 import {
+  DEFAULT_PERIOD_DAYS,
   SUBSCRIPTION_PERIOD_DAYS,
   type SubscriptionStanding,
 } from '@/shared/domain/entities/studentSubscription'
 import { SUBSCRIPTION_PERIOD_LABEL_KEY } from '@/shared/i18n/domainLabels'
 import { formatDateKey } from '../libs/dateKey'
+import { DuesPaymentDialog } from './DuesPaymentDialog'
 import { duesReminderDraft } from '../libs/duesReminder'
 import { useSubscriptions } from '../hooks/useSubscriptions'
 import { NoticeDialog } from './NoticeDialog'
@@ -61,6 +63,8 @@ export function StudentSubscriptionSection({ student }: StudentSubscriptionSecti
   const { sendNotice } = useSendNotice()
 
   const [noticeOpen, setNoticeOpen] = useState(false)
+  const [paymentOpen, setPaymentOpen] = useState(false)
+  const [registering, setRegistering] = useState(false)
   const [justRenewed, setJustRenewed] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -85,14 +89,18 @@ export function StudentSubscriptionSection({ student }: StudentSubscriptionSecti
   }
 
   // Cobrar y cambiar el periodo se esperan y se dicen: eran promesas sueltas.
-  const handleRenew = async () => {
+  const handleRenew = async (paidOn: string) => {
     setError(null)
+    setRegistering(true)
     try {
-      await renew(student.id, student.crewId)
+      await renew(student.id, student.crewId, paidOn)
     } catch (caught) {
       setError(describeError(caught, t, 'dues.error'))
       return
+    } finally {
+      setRegistering(false)
     }
+    setPaymentOpen(false)
     // Confirmación breve y en el sitio: cobrar mueve una fecha, y sin acuse el
     // botón parece no haber hecho nada.
     setJustRenewed(true)
@@ -138,9 +146,11 @@ export function StudentSubscriptionSection({ student }: StudentSubscriptionSecti
       {canManage && (
         <>
           <div className="flex flex-wrap gap-2">
+            {/* Abre la hoja en vez de escribir al pulsar: cobrar mueve una
+                fecha y no se deshace desde aquí. Ver `DuesPaymentDialog`. */}
             <Button
               className="min-w-[9.5rem] flex-1 gap-2 rounded-action"
-              onClick={() => void handleRenew()}
+              onClick={() => setPaymentOpen(true)}
             >
               {justRenewed ? <Check className="size-4" /> : <CreditCard className="size-4" />}
               {justRenewed ? t('dues.renewed') : t('dues.registerPayment')}
@@ -197,6 +207,25 @@ export function StudentSubscriptionSection({ student }: StudentSubscriptionSecti
           </section>
         </>
       )}
+
+      <DuesPaymentDialog
+        open={paymentOpen}
+        studentName={student.firstName}
+        /* Sin cuota registrada se parte de una en blanco, la misma que crearía
+           el propio cobro: el alumno puede entrenar antes de pagar. */
+        subscription={
+          subscription ?? {
+            studentId: student.id,
+            crewId: student.crewId,
+            periodDays: DEFAULT_PERIOD_DAYS,
+            paidThrough: null,
+          }
+        }
+        busy={registering}
+        error={error}
+        onOpenChange={setPaymentOpen}
+        onConfirm={(paidOn) => void handleRenew(paidOn)}
+      />
 
       <NoticeDialog
         open={noticeOpen}
