@@ -1546,7 +1546,7 @@ test.describe('catalogo del entrenamiento', () => {
 
   async function abrirCatalogo(page: Page): Promise<void> {
     await page.goto('/trainings')
-    await page.getByRole('link', { name: 'Catálogo' }).click()
+    await page.getByRole('link', { name: 'Catálogo', exact: true }).click()
     /*
      * Margen amplio a proposito: la ruta es `lazy`, asi que al pulsar hay que
      * descargar y compilar su fragmento. En el servidor de desarrollo, y con la
@@ -1762,7 +1762,7 @@ test.describe('biblioteca de bloques', () => {
      * lo devolveria a su semilla, que en esta biblioteca es estar vacia.
      */
     await page.getByRole('link', { name: 'Rutinas' }).first().click()
-    await page.getByRole('link', { name: 'Catálogo' }).click()
+    await page.getByRole('link', { name: 'Catálogo', exact: true }).click()
     await page.getByRole('tab', { name: 'Bloques' }).click()
 
     await expect(page.getByText('Serie simple · Press de banca con barra')).toBeVisible()
@@ -1777,7 +1777,7 @@ test.describe('biblioteca de bloques', () => {
     await page.getByRole('button', { name: /Guardar el bloque 1 en la biblioteca/ }).click()
 
     await page.getByRole('link', { name: 'Rutinas' }).first().click()
-    await page.getByRole('link', { name: 'Catálogo' }).click()
+    await page.getByRole('link', { name: 'Catálogo', exact: true }).click()
     await page.getByRole('tab', { name: 'Bloques' }).click()
 
     // El nombre sale del contenido: guardar no pregunta, para no convertir un

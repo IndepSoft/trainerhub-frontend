@@ -73,8 +73,14 @@ const PRIMARY_ACTION: Record<TrainingSection, PrimaryAction> = {
  */
 export default function Trainings() {
   const { t } = useTranslation()
-  const { routines } = useRoutines()
-  const { plans } = usePlans()
+  /*
+   * CARGAR NO ES ESTAR VACÍO. Las dos listas nacen vacías hasta que llega la
+   * respuesta, y sin distinguirlo el vacío —«Tu primera rutina»— se pintaba un
+   * instante a quien tiene diez. La CI lo cazó: su máquina es más lenta y el
+   * instante le daba para encontrar el enlace del vacío.
+   */
+  const { routines, loading: loadingRoutines } = useRoutines()
+  const { plans, loading: loadingPlans } = usePlans()
   const scrollerRef = useRef<HTMLDivElement>(null)
 
   /*
@@ -166,7 +172,7 @@ export default function Trainings() {
               pero no habia `TabsContent`, asi que la lista era SIEMPRE la
               misma. */}
           <TabsContent value="rutinas">
-            {routines.length === 0 && (
+            {!loadingRoutines && routines.length === 0 && (
               <div className="px-5">
                 <EmptyState
                   icon={Dumbbell}
@@ -210,7 +216,7 @@ export default function Trainings() {
             y borrarlo habria sido tirar el trabajo de ayer.
           */}
           <TabsContent value="planes">
-            {plans.length === 0 ? (
+            {loadingPlans ? null : plans.length === 0 ? (
               <div className="px-5">
                 <EmptyState
                   icon={CalendarRange}

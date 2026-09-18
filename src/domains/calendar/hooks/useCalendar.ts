@@ -8,6 +8,8 @@ import { presentationStateOf, type SessionPresentationState } from '../libs/sess
 
 interface UseCalendarResult {
   sessions: Session[]
+  /** Hasta la primera respuesta. Un día sin sesiones y uno sin cargar no son lo mismo. */
+  loading: boolean
   currentDate: Date
   weekDates: Date[]
   /**
@@ -58,13 +60,16 @@ export function useCalendar(): UseCalendarResult {
    * pantallas compartan estado, sino de que compartan origen.
    */
   const [sessions, setSessions] = useState<Session[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let active = true
 
     const load = () => {
       container.sessions.findAll().then((result) => {
-        if (active) setSessions(result)
+        if (!active) return
+        setSessions(result)
+        setLoading(false)
       })
     }
 
@@ -137,6 +142,7 @@ export function useCalendar(): UseCalendarResult {
 
   return {
     sessions,
+    loading,
     currentDate,
     weekDates,
     viewMode,

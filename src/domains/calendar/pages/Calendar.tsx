@@ -94,6 +94,7 @@ export default function Calendar() {
   )
 
   const {
+    loading: loadingSessions,
     currentDate,
     weekDates,
     viewMode,
@@ -296,7 +297,10 @@ export default function Calendar() {
             {viewMode === 'day' && dayLayout === 'list' && (
               <DayList
                 date={currentDate}
+                /* Mientras carga, nada: el vacío diría «hoy no hay sesiones» a
+                   quien tiene cuatro. */
                 empty={
+                  loadingSessions ? null : (
                   <EmptyState
                     icon={CalendarDays}
                     title={
@@ -323,6 +327,7 @@ export default function Calendar() {
                       {t('calendar.nextDay')}
                     </Button>
                   </EmptyState>
+                  )
                 }
                 getSessionsOfDay={getSessionsOfDay}
                 onSelectSession={selectSession}
