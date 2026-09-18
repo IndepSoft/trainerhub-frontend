@@ -33,10 +33,10 @@ export function PendingWorkSection({ enabled }: PendingWorkSectionProps) {
   return (
     <section>
       <SectionHeading count={work.total}>{t('dashboard.pending')}</SectionHeading>
-      <p className="pt-2 text-xs text-ink/45">{t('dashboard.pendingHint')}</p>
+      <p className="pt-2 text-xs text-ink/60">{t('dashboard.pendingHint')}</p>
 
       {rows.length === 0 ? (
-        <p className="pt-5 text-sm text-ink/40">{t('dashboard.pendingEmpty')}</p>
+        <p className="pt-5 text-sm text-ink/60">{t('dashboard.pendingEmpty')}</p>
       ) : (
         <ul className="mt-3 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3">
           {rows.map((row) => (

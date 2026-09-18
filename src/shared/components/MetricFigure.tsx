@@ -28,7 +28,7 @@ export function MetricFigure({ label, value, unit }: MetricFigureProps) {
       <dd className="metric-figures truncate font-display text-[1.625rem] font-extrabold leading-none text-ink">
         {value ?? '—'}
         {unit !== undefined && (
-          <span className="ml-1 font-sans text-xs font-medium text-ink/45">{unit}</span>
+          <span className="ml-1 font-sans text-xs font-medium text-ink/60">{unit}</span>
         )}
       </dd>
     </div>

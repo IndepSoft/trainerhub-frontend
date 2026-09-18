@@ -5245,6 +5245,122 @@ test.describe('reportes', () => {
  * «Perfil» del menu de usuario no tenia ni `onClick` ni enlace: dos puertas
  * pintadas en la pared.
  */
+/**
+ * El contraste del texto, MEDIDO en la página y en los dos temas (§51).
+ *
+ * Se mide el color que se pinta de verdad contra el fondo que tiene detrás
+ * —compuestas las capas semitransparentes, que un tinte al 18 % no es un
+ * fondo sino un velo—, y no se deduce de los tokens: un `text-ink/45` daba
+ * 2,99:1 en claro y 4,07 en oscuro, y ninguna lectura de clases lo decía.
+ *
+ * El listón es AA: 4,5:1 para texto normal y 3:1 para el grande. Queda fuera
+ * lo decorativo —`aria-hidden`— y lo que no es texto.
+ */
+async function textosFlojos(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const canales = (color: string): number[] => (color.match(/[\d.]+/g) ?? []).map(Number)
+
+    const mezcla = (delante: string, detras: string): string => {
+      const [fr, fg, fb, fa = 1] = canales(delante)
+      const [br, bg, bb] = canales(detras)
+      return `rgb(${fr * fa + br * (1 - fa)}, ${fg * fa + bg * (1 - fa)}, ${fb * fa + bb * (1 - fa)})`
+    }
+
+    const luminancia = (color: string): number => {
+      const lineal = (valor: number): number => {
+        const proporcion = valor / 255
+        return proporcion <= 0.03928
+          ? proporcion / 12.92
+          : Math.pow((proporcion + 0.055) / 1.055, 2.4)
+      }
+      const [r, g, b] = canales(color)
+      return 0.2126 * lineal(r) + 0.7152 * lineal(g) + 0.0722 * lineal(b)
+    }
+
+    const fondoDe = (elemento: Element): string => {
+      const capas: string[] = []
+      let actual: Element | null = elemento
+      while (actual !== null) {
+        const color = window.getComputedStyle(actual).backgroundColor
+        const alfa = canales(color)[3] ?? 1
+        if (color !== 'rgba(0, 0, 0, 0)' && alfa > 0) {
+          capas.push(color)
+          if (alfa >= 1) break
+        }
+        actual = actual.parentElement
+      }
+      const ultima = capas[capas.length - 1]
+      if (ultima === undefined || (canales(ultima)[3] ?? 1) < 1) {
+        capas.push(window.getComputedStyle(document.body).backgroundColor)
+      }
+      let compuesto = capas.pop() ?? 'rgb(255, 255, 255)'
+      while (capas.length > 0) compuesto = mezcla(capas.pop() ?? compuesto, compuesto)
+      return compuesto
+    }
+
+    const flojos: string[] = []
+    for (const elemento of document.querySelectorAll('p, span, h1, h2, h3, li, button, a, dt, dd')) {
+      const texto = (elemento.textContent ?? '').trim()
+      if (texto === '' || elemento.children.length > 0) continue
+      if (elemento.closest('[aria-hidden="true"]') !== null) continue
+
+      const caja = elemento.getBoundingClientRect()
+      if (caja.width === 0 || caja.height === 0) continue
+
+      const estilo = window.getComputedStyle(elemento)
+      const fondo = fondoDe(elemento)
+      const primero = luminancia(mezcla(estilo.color, fondo))
+      const segundo = luminancia(fondo)
+      const contraste =
+        (Math.max(primero, segundo) + 0.05) / (Math.min(primero, segundo) + 0.05)
+
+      const tamano = Number.parseFloat(estilo.fontSize)
+      const grande = tamano >= 24 || (tamano >= 18.66 && Number(estilo.fontWeight) >= 700)
+      if (contraste < (grande ? 3 : 4.5)) {
+        flojos.push(`«${texto.slice(0, 24)}» ${contraste.toFixed(2)}:1`)
+      }
+    }
+    return flojos
+  })
+}
+
+test.describe('contraste', () => {
+  for (const tema of ['light', 'dark'] as const) {
+    test(`ningun texto baja de AA en tema ${tema === 'light' ? 'claro' : 'oscuro'}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 375, height: 812 })
+      // Antes de que la aplicacion arranque: el tema lo lee un guion en linea
+      // de `index.html` antes del primer pintado.
+      await page.addInitScript((elegido) => {
+        window.localStorage.setItem('theme', elegido)
+      }, tema)
+      await page.emulateMedia({ colorScheme: tema })
+      await signIn(page)
+
+      const pantallas = [
+        '/dashboard',
+        '/calendar',
+        '/students',
+        '/students/student-1',
+        '/students/student-2?seccion=cuota',
+        '/crew?seccion=miembros',
+        '/trainings',
+        '/settings',
+      ]
+
+      const hallazgos: string[] = []
+      for (const ruta of pantallas) {
+        await page.goto(ruta)
+        await page.waitForTimeout(1200)
+        for (const flojo of await textosFlojos(page)) hallazgos.push(`${ruta} ${flojo}`)
+      }
+
+      expect(hallazgos, 'textos por debajo de AA').toEqual([])
+    })
+  }
+})
+
 test.describe('configuracion', () => {
   test('«Perfil» de la cabecera lleva a Configuracion', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })

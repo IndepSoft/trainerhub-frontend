@@ -57,7 +57,7 @@ export default function RoutineForm() {
         <p className="font-display text-2xl font-extrabold uppercase text-ink">
           {t('routine.notFound')}
         </p>
-        <p className="text-sm text-ink/50">{t('routine.notFoundHint')}</p>
+        <p className="text-sm text-ink/60">{t('routine.notFoundHint')}</p>
         <Button asChild variant="outline">
           <Link to="/trainings">{t('routine.back')}</Link>
         </Button>
@@ -214,7 +214,7 @@ function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
       <PageHeader className="pb-2 md:pb-3">
         <Link
           to={isEditing ? `/trainings/${routineId}` : '/trainings'}
-          className="-ms-2 mb-1 inline-flex h-11 items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/45 transition-colors hover:text-cobalt"
+          className="-ms-2 mb-1 inline-flex h-11 items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60 transition-colors hover:text-cobalt"
         >
           <ArrowLeft className="size-4" />
           {isEditing ? t('routine.backToRecord') : t('routine.plural')}

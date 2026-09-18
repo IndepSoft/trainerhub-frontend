@@ -144,7 +144,7 @@ export default function Settings() {
               <p className="truncate font-semibold text-ink">
                 {owner === 'none' || fullName === '' ? t('settings.profile.noRecord') : fullName}
               </p>
-              <p className="truncate text-[13px] text-ink/55">{email === '' ? '—' : email}</p>
+              <p className="truncate text-[13px] text-ink/60">{email === '' ? '—' : email}</p>
             </div>
 
             {owner !== 'none' && (
@@ -227,7 +227,7 @@ export default function Settings() {
 
           {/* El correo no se cambia, y el porqué va donde se lee. Un campo
               apagado sin explicación se lee como un fallo. */}
-          <p className="text-xs text-ink/45">{t('settings.account.emailHint')}</p>
+          <p className="text-xs text-ink/60">{t('settings.account.emailHint')}</p>
         </div>
       </div>
 
@@ -441,7 +441,7 @@ function ProfileFields({ initial, saving, asksBirthDate, onSave }: ProfileFields
             onChange={(event) => setField('birthDate', event.target.value)}
             className="mt-1.5"
           />
-          <p className="mt-1 text-xs text-ink/55">{t('settings.profile.birthDateHint')}</p>
+          <p className="mt-1 text-xs text-ink/60">{t('settings.profile.birthDateHint')}</p>
         </div>
       )}
 

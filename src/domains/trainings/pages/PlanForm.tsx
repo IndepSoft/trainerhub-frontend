@@ -44,7 +44,7 @@ export default function PlanForm() {
         <p className="font-display text-2xl font-extrabold uppercase text-ink">
           {t('plan.notFound')}
         </p>
-        <p className="text-sm text-ink/50">{t('plan.notFoundHint')}</p>
+        <p className="text-sm text-ink/60">{t('plan.notFoundHint')}</p>
         <Button asChild variant="outline">
           <Link to="/trainings?seccion=planes">{t('plan.back')}</Link>
         </Button>
@@ -140,7 +140,7 @@ function PlanFormFields({ plan }: PlanFormFieldsProps) {
           to={
             isEditing ? `/trainings/plans/${planId}` : '/trainings?seccion=planes'
           }
-          className="-ms-2 mb-3 inline-flex h-11 items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/45 transition-colors hover:text-cobalt"
+          className="-ms-2 mb-3 inline-flex h-11 items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60 transition-colors hover:text-cobalt"
         >
           <ArrowLeft className="size-4" />
           {isEditing ? t('routine.backToRecord') : t('plan.plural')}

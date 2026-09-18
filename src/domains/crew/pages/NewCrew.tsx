@@ -139,7 +139,7 @@ export default function NewCrew() {
               <span className={cn('block', FIELD_LABEL)}>
                 {t('crew.denomination')}
               </span>
-              <p className="mt-1 text-xs text-ink/45">
+              <p className="mt-1 text-xs text-ink/60">
                 {t('crew.denominationHint')}
               </p>
 
@@ -157,7 +157,7 @@ export default function NewCrew() {
                         'inline-flex min-h-11 items-center rounded-action border px-3 text-xs font-semibold transition-colors',
                         isSelected
                           ? 'border-cobalt/50 bg-cobalt-tint text-cobalt'
-                          : 'border-cobalt-tint-3 text-ink/50 hover:border-cobalt/40 hover:text-ink'
+                          : 'border-cobalt-tint-3 text-ink/60 hover:border-cobalt/40 hover:text-ink'
                       )}
                     >
                       {candidate}

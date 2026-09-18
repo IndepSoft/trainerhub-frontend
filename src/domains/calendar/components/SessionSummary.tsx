@@ -45,7 +45,7 @@ const SUMMARY_ITEMS: {
     status: 'missed',
     oneKey: 'calendar.summary.missed.one',
     otherKey: 'calendar.summary.missed.other',
-    className: 'text-ink/50',
+    className: 'text-ink/60',
   },
 ]
 

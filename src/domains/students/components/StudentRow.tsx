@@ -78,7 +78,7 @@ function trailingBadge(
 
   if (student.profileId === null) {
     return (
-      <span className="shrink-0 rounded-action border border-cobalt-tint-3 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-ink/55">
+      <span className="shrink-0 rounded-action border border-cobalt-tint-3 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-ink/60">
         {t('crew.noAccount')}
       </span>
     )

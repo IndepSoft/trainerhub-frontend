@@ -19,14 +19,14 @@ import type {
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /** Registro de etiqueta del formulario, igual que el de las métricas. */
-const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50'
+const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
 
 /**
  * Las etiquetas de la fila de tres —series, repeticiones, RIR— con menos
  * espaciado: a 375 px cada casilla mide unos 95 px, y «REPETICIONES» con el
  * espaciado de siempre no cabía.
  */
-const COMPACT_FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.06em] text-ink/50'
+const COMPACT_FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.06em] text-ink/60'
 
 interface PrescribedExerciseFieldsProps {
   exercise: PrescribedExerciseDraft
@@ -133,7 +133,7 @@ export function PrescribedExerciseFields({
               type="button"
               onClick={onRemove}
               aria-label={t('prescription.removeLabel', { position })}
-              className="inline-flex size-11 shrink-0 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-danger-surface hover:text-danger"
+              className="inline-flex size-11 shrink-0 items-center justify-center rounded-action text-ink/50 transition-colors hover:bg-danger-surface hover:text-danger"
             >
               <Trash2 className="size-4" />
             </button>
@@ -209,7 +209,7 @@ export function PrescribedExerciseFields({
           />
           <span>
             {t('prescription.moreSettings')}
-            <span className="font-normal text-ink/50"> · {t('prescription.moreSettingsHint')}</span>
+            <span className="font-normal text-ink/60"> · {t('prescription.moreSettingsHint')}</span>
           </span>
         </button>
 

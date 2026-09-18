@@ -88,21 +88,21 @@ export default function Reports() {
             </TabsList>
 
             <TabsContent value="cobros" className="mt-6 space-y-3">
-              <p className="text-sm text-ink/55">
+              <p className="text-sm text-ink/60">
                 {loadingDues ? t('common.loading') : t('reports.dues.hint')}
               </p>
               <DuesQueue />
             </TabsContent>
 
             <TabsContent value="retencion" className="mt-6 space-y-3">
-              <p className="text-sm text-ink/55">
+              <p className="text-sm text-ink/60">
                 {t('reports.retention.hint')}
               </p>
               <RetentionList />
             </TabsContent>
 
             <TabsContent value="actividad" className="mt-6 space-y-3">
-              <p className="text-sm text-ink/55">
+              <p className="text-sm text-ink/60">
                 {t('reports.activity.hint', { count: completedThisWeek })}
               </p>
               <ActivityBreakdown />

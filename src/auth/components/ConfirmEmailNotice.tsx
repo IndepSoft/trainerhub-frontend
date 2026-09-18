@@ -57,7 +57,7 @@ export function ConfirmEmailNotice({ email }: ConfirmEmailNoticeProps) {
           {t('register.confirm.sentTo', { email })}
         </p>
         <p className="text-sm leading-relaxed text-ink/70">{t('register.confirm.body')}</p>
-        <p className="text-xs leading-relaxed text-ink/45">{t('register.confirm.spam')}</p>
+        <p className="text-xs leading-relaxed text-ink/60">{t('register.confirm.spam')}</p>
       </div>
 
       {error !== null && (
@@ -82,7 +82,7 @@ export function ConfirmEmailNotice({ email }: ConfirmEmailNoticeProps) {
             {loading ? t('register.confirm.resending') : t('register.confirm.resend')}
           </Button>
         )}
-        <p className="flex min-h-11 items-center justify-center gap-1.5 text-sm text-ink/55">
+        <p className="flex min-h-11 items-center justify-center gap-1.5 text-sm text-ink/60">
           {t('auth.haveAccount')}
           <Link
             to={{ search: authViewSearch('login') }}

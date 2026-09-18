@@ -57,7 +57,7 @@ export function ChoiceRow<Value extends string>({
         onSelect={() => setOpen(true)}
         chevron
         trailing={
-          <span className="shrink-0 text-[13px] font-semibold text-ink/55">
+          <span className="shrink-0 text-[13px] font-semibold text-ink/60">
             {current?.label ?? '—'}
           </span>
         }

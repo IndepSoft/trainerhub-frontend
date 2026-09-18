@@ -63,10 +63,10 @@ export function GamificationHeader({
 
         <div className="min-w-0 flex-1">
           <div className="mb-1.5 flex items-baseline justify-between gap-3">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
               {t('progress.level', { level: level.level })}
             </span>
-            <span className="metric-figures text-[11px] font-semibold text-ink/40">
+            <span className="metric-figures text-[11px] font-semibold text-ink/60">
               {Math.round(animatedExperience)} / {level.experienceForNextLevel} XP
             </span>
           </div>
@@ -76,7 +76,7 @@ export function GamificationHeader({
             className="h-2 bg-cobalt-tint-2 [&>[data-slot=progress-indicator]]:bg-cobalt"
           />
 
-          <p className="mt-1.5 text-[11px] text-ink/40">
+          <p className="mt-1.5 text-[11px] text-ink/60">
             {t('progress.xpToLevel', {
               amount: experienceToNextLevel,
               level: level.level + 1,
@@ -92,7 +92,7 @@ export function GamificationHeader({
         racha perdida, aqui se da la salida antes de que duela.
       */}
       {(wildcards > 0 || canCoverYesterday) && (
-        <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px] text-ink/55">
+        <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px] text-ink/60">
           <span>{t('progress.wildcards', { count: wildcards })}</span>
           {canCoverYesterday && (
             <button

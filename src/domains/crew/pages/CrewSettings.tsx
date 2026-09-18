@@ -117,7 +117,7 @@ export default function CrewSettings() {
                       'inline-flex min-h-11 items-center rounded-action border px-3 text-xs font-semibold transition-colors',
                       candidate === denomination
                         ? 'border-cobalt/50 bg-cobalt-tint text-cobalt'
-                        : 'border-cobalt-tint-3 text-ink/50 hover:border-cobalt/40 hover:text-ink'
+                        : 'border-cobalt-tint-3 text-ink/60 hover:border-cobalt/40 hover:text-ink'
                     )}
                   >
                     {candidate}
@@ -195,7 +195,7 @@ function SettingToggle({ label, description, checked, onToggle }: SettingToggleP
 
       <span className="min-w-0">
         <span className="block text-sm font-semibold text-ink">{label}</span>
-        <span className="block text-xs text-ink/50">{description}</span>
+        <span className="block text-xs text-ink/60">{description}</span>
       </span>
     </button>
   )

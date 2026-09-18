@@ -17,7 +17,7 @@ import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { STUDENT_LEVEL_LABEL_KEY } from '@/shared/i18n/domainLabels'
 
 /** Registro de etiqueta del formulario, igual que en el resto del dominio. */
-const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50'
+const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
 
 interface PlanIdentityFieldsProps {
   draft: PlanDraft
@@ -142,7 +142,7 @@ export function PlanIdentityFields({
           </Select>
           {errors.splitId === undefined ? (
             selectedSplit !== undefined && (
-              <p className="metric-figures mt-1.5 text-xs text-ink/40">
+              <p className="metric-figures mt-1.5 text-xs text-ink/60">
                 Asume {selectedSplit.sessionsPerWeek} sesiones por semana.
               </p>
             )
@@ -170,7 +170,7 @@ export function PlanIdentityFields({
             aria-invalid={errors.weeklyFrequency !== undefined}
           />
           {errors.weeklyFrequency === undefined ? (
-            <p className="mt-1.5 text-xs text-ink/40">{t('plan.frequencyHint')}</p>
+            <p className="mt-1.5 text-xs text-ink/60">{t('plan.frequencyHint')}</p>
           ) : (
             <p className="mt-1.5 text-sm text-danger">{errors.weeklyFrequency}</p>
           )}

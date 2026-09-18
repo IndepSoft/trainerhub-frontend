@@ -23,7 +23,7 @@ export function UpcomingSessions({ sessions }: UpcomingSessionsProps) {
       <SectionHeading count={sessions.length}>{t('dashboard.upcoming')}</SectionHeading>
 
       {sessions.length === 0 && (
-        <p className="pt-5 text-sm text-ink/40">
+        <p className="pt-5 text-sm text-ink/60">
           {t('dashboard.upcomingEmpty')}
         </p>
       )}

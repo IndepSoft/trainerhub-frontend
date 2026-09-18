@@ -55,7 +55,7 @@ export function InactiveStudents() {
                     >
                       {name}
                     </Link>
-                    <p className="truncate text-xs text-ink/45">{student.email}</p>
+                    <p className="truncate text-xs text-ink/60">{student.email}</p>
                   </div>
                   <Button
                     type="button"

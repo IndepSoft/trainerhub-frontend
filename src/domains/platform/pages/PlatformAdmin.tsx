@@ -77,7 +77,7 @@ function NotAllowed() {
       <h1 className="font-display text-3xl font-extrabold uppercase leading-none tracking-tight text-ink">
         {t('platform.notAllowed')}
       </h1>
-      <p className="max-w-sm text-sm text-ink/55">
+      <p className="max-w-sm text-sm text-ink/60">
         {t('platform.notAllowedHint')}
       </p>
       <Button asChild variant="outline">

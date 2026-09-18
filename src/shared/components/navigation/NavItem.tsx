@@ -51,9 +51,10 @@ export function NavItem({
         <span
           className={cn(
             'ml-auto px-2 py-0.5 text-xs font-medium rounded-full',
-            isActive
-              ? 'bg-primary-foreground/20 text-primary-foreground'
-              : 'bg-muted text-muted-foreground'
+            /* En el activo, la pastilla se INVIERTE en vez de teñirse: el velo
+               del color de primer plano oscurecía el Cobalt claro del tema
+               oscuro, y la cifra caía a 4,2:1. Invertida pasa en los dos. */
+            isActive ? 'bg-primary-foreground text-primary' : 'bg-muted text-muted-foreground'
           )}
         >
           {badge}

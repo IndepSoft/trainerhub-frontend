@@ -4158,3 +4158,66 @@ desaparece: un buscador sobre una lista vacía sólo puede devolver lo mismo.
 **Lo que NO recibe vacío ilustrado**: los avisos y el historial, donde no hay
 nada que ofrecer —llegan solos al entrenar o al recibirlos—, y los huecos de
 dentro de una ficha, que ya explican lo suyo en una línea.
+
+## 51. Todo texto que se lee pasa AA, en los dos temas (18 sep 2026)
+
+Octava tanda (artboards `Oscuro*`). El tema oscuro ya estaba donde la propuesta
+lo pone —fondo `#0C1017`, superficie `#151923`, Cobalt `#4990F3` y los tres
+estados coinciden uno a uno con los tokens—, así que la tanda no fue pintar un
+tema: fue MEDIR los dos. Y el que salió peor fue el claro.
+
+**Medido en la página, no leído de los tokens.** Un script recorre diecisiete
+pantallas a 375 y a 1440 px, en claro y en oscuro, y calcula el contraste del
+color que se pinta de verdad contra el fondo que tiene detrás, con las capas
+semitransparentes compuestas —un tinte al 18 % no es un fondo, es un velo—.
+Lo que encontró:
+
+| Texto | Claro | Oscuro |
+|---|---|---|
+| `text-ink/40` | 2,59 | 3,46 |
+| `text-ink/45` | 2,99 | 4,07 |
+| `text-ink/50` | 3,48 | — |
+| `text-ink/55` | 4,08 | — |
+| «Pendiente» (aviso) | 2,84 | — |
+| «Confirmada» (éxito) | 3,32 | — |
+| «Cuota vencida» (peligro) | 3,33 | — |
+| Blanco sobre Ember (contadores) | 3,29 | 2,78 |
+| Blanco sobre Cobalt (iniciales) | — | 3,20 |
+
+AA pide 4,5:1 para texto normal. **El texto secundario de toda la aplicación
+estaba por debajo en claro**, y era la pregunta que había quedado abierta.
+
+**La regla, que se puede medir:**
+
+- **Texto: el suelo es `text-ink/60`.** Es el primer tramo que pasa en claro
+  (4,8:1) y en oscuro sobra. 284 clases suben a él; `/70` y `/80` se quedan.
+  La jerarquía no se pierde: la llevan el tamaño, el peso y las versalitas, no
+  sólo la opacidad.
+- **Botón de sólo icono: el suelo es `/50`.** Un icono que ES el control es un
+  componente de interfaz (WCAG 1.4.11) y pide 3:1: `/50` da 3,48 en claro. Son
+  veinte.
+- **Lo decorativo se queda como está**: `aria-hidden`, el icono al lado de su
+  rótulo, los separadores y flechas a `/20`–`/25`. No transmiten nada que no
+  diga el texto de al lado.
+- Sólo la clase BASE: `hover:text-ink/40` es un estado de paso, no el de
+  reposo.
+
+**Los estados, como en la propuesta.** Sus colores de claro ya venían
+oscurecidos para esto (`#1B6E3C`, `#B05A00`, `#D93025`) y los tokens se
+habían quedado en los de shadcn. Aviso y peligro bajan un punto más, porque
+también se leen sobre su propia superficie teñida, algo más oscura que Bone.
+
+**El texto encima de un color tiene su token.** `text-cobalt-foreground` es
+blanco en claro y tinta en oscuro, donde Cobalt sube y el blanco se quedaba en
+3,2:1; `text-ember-foreground` es tinta en los dos, porque encima van
+contadores de 9 px y el blanco no pasaba en ninguno. La pastilla del menú
+lateral activo se invierte en vez de teñirse, y el gris de shadcn
+(`--muted-foreground`) baja lo justo para pasar sobre su propia pista.
+
+**Una prueba lo fija**: recorre ocho pantallas en los dos temas con el mismo
+cálculo y falla si un solo texto baja de AA. Corrida contra el código de antes
+de esta tanda, falla con exactamente las cifras de la tabla.
+
+**Los marcadores de posición también cuentan** para WCAG. Los de shadcn
+pasan con el gris nuevo, y el único que iba a `/35` sube al suelo de texto:
+sigue distinguiéndose de un valor escrito, que va en tinta entera.

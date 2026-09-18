@@ -14,8 +14,8 @@ import { useTranslation } from '@/shared/i18n/LanguageContext'
 const STANDING_BADGE: Record<SubscriptionStanding['state'], string> = {
   overdue: 'border-danger/40 bg-danger/5 text-danger',
   dueSoon: 'border-ember/40 bg-ember/10 text-ember-deep',
-  active: 'border-cobalt-tint-3 text-ink/45',
-  never: 'border-cobalt-tint-3 text-ink/40',
+  active: 'border-cobalt-tint-3 text-ink/60',
+  never: 'border-cobalt-tint-3 text-ink/60',
 }
 
 interface SubscriptionBadgeProps {

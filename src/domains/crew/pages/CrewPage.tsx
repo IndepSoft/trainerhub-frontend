@@ -201,7 +201,7 @@ function CrewBoard({ membership }: CrewBoardProps) {
                 {candidate === 'miembros' && pendingCount > 0 && (
                   <span
                     aria-label={t('crew.pendingWaiting', { count: pendingCount })}
-                    className="metric-figures rounded-action bg-cobalt px-1.5 text-[11px] font-bold text-white"
+                    className="metric-figures rounded-action bg-cobalt px-1.5 text-[11px] font-bold text-cobalt-foreground"
                   >
                     {pendingCount}
                   </span>
@@ -270,7 +270,7 @@ function CrewBoard({ membership }: CrewBoardProps) {
                                 name: getShortName(student.firstName, student.lastName),
                               })}
                               onClick={() => void decide(() => reject(student.id))}
-                              className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:text-danger"
+                              className="inline-flex size-11 items-center justify-center rounded-action text-ink/50 transition-colors hover:text-danger"
                             >
                               <X className="size-5" />
                             </button>
@@ -296,7 +296,7 @@ function CrewBoard({ membership }: CrewBoardProps) {
                 </div>
 
                 {!loading && members.length === 0 ? (
-                  <p className="py-8 text-sm text-ink/45">{t('crew.membersEmpty')}</p>
+                  <p className="py-8 text-sm text-ink/60">{t('crew.membersEmpty')}</p>
                 ) : (
                   <ul>
                     {members.map((student) => (
@@ -396,7 +396,7 @@ function NoCrew() {
       <h1 className="font-display text-3xl font-extrabold uppercase leading-none tracking-tight text-ink">
         {t('crew.none')}
       </h1>
-      <p className="max-w-sm text-sm text-ink/55">
+      <p className="max-w-sm text-sm text-ink/60">
         {t('crew.noneHint')}
       </p>
 

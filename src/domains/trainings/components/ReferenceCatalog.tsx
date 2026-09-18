@@ -43,7 +43,7 @@ export function ReferenceCatalog() {
         <dl className="divide-y divide-cobalt-tint-3">
           {regions.map((region) => (
             <div key={region} className="py-4">
-              <dt className="text-xs font-semibold uppercase tracking-wider text-ink/45">
+              <dt className="text-xs font-semibold uppercase tracking-wider text-ink/60">
                 {catalogEnumLabel(region, t)}
               </dt>
               <dd className="mt-2 flex flex-wrap gap-2">
@@ -87,7 +87,7 @@ export function ReferenceCatalog() {
           {[...objectivesById.values()].map((objective) => (
             <div key={objective.id} className="py-4">
               <dt className="font-semibold text-ink">{catalogLabel(objective.id, objective.name, t)}</dt>
-              <dd className="mt-0.5 text-sm text-ink/50">
+              <dd className="mt-0.5 text-sm text-ink/60">
                 {catalogDescription(objective.id, objective.description, t)}
               </dd>
             </div>
@@ -104,11 +104,11 @@ export function ReferenceCatalog() {
             <div key={split.id} className="py-4">
               <dt className="flex items-baseline justify-between gap-4 font-semibold text-ink">
                 {catalogLabel(split.id, split.name, t)}
-                <span className="metric-figures shrink-0 text-xs font-normal text-ink/45">
+                <span className="metric-figures shrink-0 text-xs font-normal text-ink/60">
                   {t('reference.sessionsPerWeek', { count: split.sessionsPerWeek })}
                 </span>
               </dt>
-              <dd className="mt-0.5 text-sm text-ink/50">
+              <dd className="mt-0.5 text-sm text-ink/60">
                 {catalogDescription(split.id, split.description, t)}
               </dd>
             </div>

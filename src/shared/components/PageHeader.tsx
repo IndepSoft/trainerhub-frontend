@@ -55,7 +55,7 @@ function PageHeaderEyebrow({ children, className }: PageHeaderSlotProps) {
   return (
     <p
       className={cn(
-        '[grid-area:eyebrow] min-w-0 self-center truncate text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/45',
+        '[grid-area:eyebrow] min-w-0 self-center truncate text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60',
         className
       )}
     >
@@ -85,7 +85,7 @@ function PageHeaderTitle({ children, className }: PageHeaderSlotProps) {
  * páginas sin descripción —que son casi todas— habrían pagado esos píxeles.
  */
 function PageHeaderDescription({ children, className }: PageHeaderSlotProps) {
-  return <p className={cn('mt-2 text-sm text-ink/50', className)}>{children}</p>
+  return <p className={cn('mt-2 text-sm text-ink/60', className)}>{children}</p>
 }
 
 /**

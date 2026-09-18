@@ -75,7 +75,7 @@ export function DuesPaymentDialog({
           <DialogTitle className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
             {t('dues.registerPayment')}
           </DialogTitle>
-          <DialogDescription className="text-sm text-ink/50">
+          <DialogDescription className="text-sm text-ink/60">
             {t('dues.paymentHint', { name: studentName })}
           </DialogDescription>
         </DialogHeader>
@@ -84,7 +84,7 @@ export function DuesPaymentDialog({
           <div className="min-w-0 flex-1">
             <Label
               htmlFor="cuota-pagado-el"
-              className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50"
+              className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60"
             >
               {t('dues.paidOn')}
             </Label>
@@ -101,7 +101,7 @@ export function DuesPaymentDialog({
           </div>
 
           <div className="min-w-0 flex-1">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
               {t('dues.coversUntil')}
             </span>
             {/* Derivado, no un campo: lo decide el periodo, y escribirlo a mano

@@ -51,7 +51,7 @@ const TREND_SIGNS: Record<MetricTrend, string> = {
 const TREND_COLORS: Record<MetricTrend, string> = {
   up: 'text-success',
   down: 'text-destructive',
-  same: 'text-ink/40',
+  same: 'text-ink/60',
 }
 
 /**
@@ -97,7 +97,7 @@ export function MetricBlock({
           isWide && 'flex-row-reverse items-center justify-end gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3'
         )}
       >
-        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
           {title}
         </span>
         <Icon className="size-4 shrink-0 text-cobalt" strokeWidth={2.25} />
@@ -112,7 +112,7 @@ export function MetricBlock({
         >
           {prefix}
           {typeof indicator === 'number' ? indicator.toLocaleString(activeLocale()) : indicator}
-          <span className="ml-1 text-xl font-bold text-ink/45 sm:text-2xl">{suffix}</span>
+          <span className="ml-1 text-xl font-bold text-ink/60 sm:text-2xl">{suffix}</span>
         </p>
 
         {hasTrend && (
@@ -123,7 +123,7 @@ export function MetricBlock({
               {delta}
               {suffix}
             </span>
-            <span className="text-ink/40">{t(PERIOD_LABEL_KEY[period])}</span>
+            <span className="text-ink/60">{t(PERIOD_LABEL_KEY[period])}</span>
           </p>
         )}
       </dd>

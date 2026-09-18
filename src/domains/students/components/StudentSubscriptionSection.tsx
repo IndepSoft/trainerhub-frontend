@@ -190,7 +190,7 @@ export function StudentSubscriptionSection({ student }: StudentSubscriptionSecti
                     className={cn(
                       'inline-flex min-h-11 items-center rounded-action border px-3.5 text-[13px] font-medium transition-colors',
                       isSelected
-                        ? 'border-cobalt bg-cobalt text-white'
+                        ? 'border-cobalt bg-cobalt text-cobalt-foreground'
                         : 'border-cobalt-tint-3 bg-surface text-ink hover:border-cobalt/40'
                     )}
                   >
@@ -203,7 +203,7 @@ export function StudentSubscriptionSection({ student }: StudentSubscriptionSecti
             {/* El porqué de que esto exista: lo normal es mensual, pero no
                 siempre, y sin esto habría que falsear la fecha para cuadrar un
                 bono trimestral. */}
-            <p className="text-[13px] text-ink/45">{t('dues.periodHint')}</p>
+            <p className="text-[13px] text-ink/60">{t('dues.periodHint')}</p>
           </section>
         </>
       )}

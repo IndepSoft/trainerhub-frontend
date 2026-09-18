@@ -20,7 +20,7 @@ export function RetentionList() {
   if (loading) return null
 
   if (entries.length === 0) {
-    return <p className="py-8 text-sm text-ink/45">{t('reports.noStudents')}</p>
+    return <p className="py-8 text-sm text-ink/60">{t('reports.noStudents')}</p>
   }
 
   return (
@@ -39,7 +39,7 @@ export function RetentionList() {
                   {getShortName(entry.student.firstName, entry.student.lastName)}
                 </Link>
               </p>
-              <p className="truncate text-xs text-ink/45">
+              <p className="truncate text-xs text-ink/60">
                 {entry.lastTrained === null
                   ? t('reports.neverTrained')
                   : t('reports.lastSession', { date: formatDateKey(entry.lastTrained) })}
@@ -51,7 +51,7 @@ export function RetentionList() {
                 'shrink-0 text-xs font-semibold',
                 // Solo se enciende lo que reclama accion: pintar tambien a
                 // quien vino ayer dejaria la lista sin jerarquia.
-                atRisk ? 'text-danger' : 'text-ink/40'
+                atRisk ? 'text-danger' : 'text-ink/60'
               )}
             >
               {entry.daysSince === null

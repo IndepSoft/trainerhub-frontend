@@ -78,7 +78,7 @@ export default function Notices() {
       <div className={PAGE_SCROLL}>
         <div className="mx-auto flex max-w-2xl flex-col gap-6 px-5 pb-6">
           {notices.length === 0 && (
-            <p className="py-10 text-center text-sm text-ink/45">
+            <p className="py-10 text-center text-sm text-ink/60">
               {studentId === undefined ? t('notices.notYours') : t('notices.empty')}
             </p>
           )}
@@ -140,13 +140,13 @@ function NoticeGroup({ id, heading, notices, newOnes, withTime = false }: Notice
 
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline justify-between gap-3">
-                <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink/45">
+                <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink/60">
                   {t(NOTICE_KIND_LABEL_KEY[notice.kind])}
                   {newOnes.has(notice.id) && (
                     <span className="sr-only"> {t('notices.unread')}</span>
                   )}
                 </span>
-                <span className="metric-figures shrink-0 text-[11px] text-ink/40">
+                <span className="metric-figures shrink-0 text-[11px] text-ink/60">
                   {formatWhen(notice, withTime)}
                 </span>
               </div>

@@ -101,7 +101,7 @@ export function RoutineCard({ routine }: RoutineCardProps) {
             <button
               type="button"
               aria-label={`Acciones para ${routine.title}`}
-              className="relative z-10 -me-2 -mt-2 inline-flex size-11 shrink-0 items-center justify-center rounded-action text-ink/35 transition-colors hover:text-ink"
+              className="relative z-10 -me-2 -mt-2 inline-flex size-11 shrink-0 items-center justify-center rounded-action text-ink/50 transition-colors hover:text-ink"
             >
               <MoreVertical className="size-5" />
             </button>

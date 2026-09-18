@@ -86,7 +86,7 @@ export default function Students() {
         explica la cinta de arriba.
       */}
       {can('students.manage') && !canEnroll && active !== null && (
-        <p className="px-5 pt-3 text-sm text-ink/55">
+        <p className="px-5 pt-3 text-sm text-ink/60">
           {/* Pendiente y suspendida no se explican igual: a una le falta la
               activacion, a la otra se le retiro. */}
           {active.crew.subscriptionStatus === 'suspended'
@@ -136,7 +136,7 @@ export default function Students() {
           {/* Que se hace con la lista, dicho una vez. Una fila que no enseña un
               menu tiene que decir a donde lleva. */}
           {visibleStudents.length > 0 && (
-            <p className="pt-3 text-[13px] text-ink/45">{t('students.rowHint')}</p>
+            <p className="pt-3 text-[13px] text-ink/60">{t('students.rowHint')}</p>
           )}
 
           {/* Dos vacíos distintos: no tener alumnos y no encontrar ninguno
@@ -161,7 +161,7 @@ export default function Students() {
             </EmptyState>
           ) : null}
           {!loading && students.length > 0 && visibleStudents.length === 0 && isFiltering ? (
-            <p className="py-12 text-center text-sm text-ink/45">{t('students.noMatches')}</p>
+            <p className="py-12 text-center text-sm text-ink/60">{t('students.noMatches')}</p>
           ) : null}
 
           {/* Las bajas, plegadas: quien puede reactivarlas las encuentra aqui. */}

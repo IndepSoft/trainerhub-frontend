@@ -21,7 +21,7 @@ const STATUS_CLASS: Record<SessionStatus, string> = {
 }
 
 /** «No ocurrio»: abierta y con el dia pasado. Se deriva, no se guarda. */
-const MISSED_CLASS = 'border-ink/25 text-ink/50 border-dashed'
+const MISSED_CLASS = 'border-ink/25 text-ink/60 border-dashed'
 
 interface StudentSessionsProps {
   student: Student
@@ -112,7 +112,7 @@ export function StudentSessions({ student }: StudentSessionsProps) {
       {/* Sin boton propio de agendar: la cabecera de la ficha ya tiene esa
           accion, y duplicarla dejaba dos botones identicos en la misma pagina. */}
       {loading ? null : sessions.length === 0 ? (
-        <p className="py-8 text-center text-sm text-ink/40">
+        <p className="py-8 text-center text-sm text-ink/60">
           {t('studentSessions.empty', { name: student.firstName })}
         </p>
       ) : (

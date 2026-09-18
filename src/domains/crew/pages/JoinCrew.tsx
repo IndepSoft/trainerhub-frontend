@@ -150,13 +150,13 @@ function JoinResult({ outcome, onEnter }: JoinResultProps) {
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-bone px-6 text-center">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/45">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
         {outcome.crew.denomination} · {outcome.crew.name}
       </p>
       <h1 className="font-display text-3xl font-extrabold uppercase leading-none tracking-tight text-ink">
         {t(titleKeys[outcome.kind])}
       </h1>
-      <p className="max-w-sm text-sm text-ink/55">{t(descriptionKeys[outcome.kind])}</p>
+      <p className="max-w-sm text-sm text-ink/60">{t(descriptionKeys[outcome.kind])}</p>
 
       <Button className="mt-2" onClick={onEnter}>
         {outcome.kind === 'pending' ? t('common.understood') : t('join.seeProgress')}

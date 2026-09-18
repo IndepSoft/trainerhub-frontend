@@ -36,7 +36,7 @@ export function DuesQueue() {
   if (loading) return null
 
   if (queue.length === 0) {
-    return <p className="py-8 text-sm text-ink/45">{t('reports.noStudents')}</p>
+    return <p className="py-8 text-sm text-ink/60">{t('reports.noStudents')}</p>
   }
 
   return (
@@ -57,14 +57,14 @@ export function DuesQueue() {
                 </Link>
               </p>
               {entry.paidThrough !== null && (
-                <p className="truncate text-xs text-ink/45">
+                <p className="truncate text-xs text-ink/60">
                   {t('reports.paidThrough', { date: formatDateKey(entry.paidThrough) })}
                 </p>
               )}
               {/* Sin cuenta el aviso espera en su ficha: se dice, en vez de
                   dar por leido lo que todavia no tiene campana. */}
               {entry.student.profileId === null && (
-                <p className="truncate text-xs text-ink/45">{t('notice.noAccount')}</p>
+                <p className="truncate text-xs text-ink/60">{t('notice.noAccount')}</p>
               )}
             </div>
 

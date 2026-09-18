@@ -56,7 +56,7 @@ export function CardioSession({
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
       <header className="flex shrink-0 items-center justify-between gap-3 px-5 pt-5 pb-3">
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/45">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
             {studentName}
           </p>
           <h1 className="truncate font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
@@ -69,7 +69,7 @@ export function CardioSession({
 
       <div className="flex flex-1 flex-col justify-center overflow-auto">
         <SessionDuration elapsedSeconds={elapsedSeconds} state={state} />
-        <p className="px-5 pb-8 text-center text-sm text-ink/40">
+        <p className="px-5 pb-8 text-center text-sm text-ink/60">
           {t('liveSession.cardioHint')}
         </p>
       </div>

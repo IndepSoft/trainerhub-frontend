@@ -168,7 +168,7 @@ export function AssignDialog({
           <DialogTitle className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
             {t('assign.title')}
           </DialogTitle>
-          <DialogDescription className="text-sm text-ink/50">
+          <DialogDescription className="text-sm text-ink/60">
             {t('assign.hint', {
               name: `${student.firstName} ${student.lastName}`,
             })}
@@ -245,7 +245,7 @@ export function AssignDialog({
               <p
                 className={cn(
                   'text-xs',
-                  routeHint.outcome === 'change' ? 'text-ember-deep' : 'text-ink/55'
+                  routeHint.outcome === 'change' ? 'text-ember-deep' : 'text-ink/60'
                 )}
               >
                 {t(ROUTE_HINT_KEY[routeHint.outcome], {
@@ -281,7 +281,7 @@ export function AssignDialog({
               <span className={cn('block', FIELD_LABEL)}>
                 {t('assign.startDate')}
               </span>
-              <p className="text-xs text-ink/55">{t('assign.startDateHint')}</p>
+              <p className="text-xs text-ink/60">{t('assign.startDateHint')}</p>
               <div className="rounded-block border border-cobalt-tint-3 p-2">
                 <Calendar
                   mode="single"
@@ -344,7 +344,7 @@ function KindOption({
         'inline-flex min-h-11 items-center justify-center gap-2 rounded-action border px-3 text-xs font-bold uppercase tracking-[0.12em] transition-colors',
         isSelected
           ? 'border-ember/50 bg-ember/10 text-ember-deep'
-          : 'border-cobalt-tint-3 text-ink/45 hover:border-cobalt/40 hover:text-ink'
+          : 'border-cobalt-tint-3 text-ink/60 hover:border-cobalt/40 hover:text-ink'
       )}
     >
       <Icon className="size-3.5" />

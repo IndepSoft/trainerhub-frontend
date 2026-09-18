@@ -23,7 +23,7 @@ import type {
 import { BLOCK_METHOD_LABEL_KEY } from '@/shared/i18n/domainLabels'
 
 /** Registro de etiqueta del formulario, igual que el de las métricas. */
-const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50'
+const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
 
 interface BlockEditorProps {
   block: BlockDraft
@@ -104,7 +104,7 @@ export function BlockEditor({
             onClick={onSaveToLibrary}
             disabled={!canSaveToLibrary}
             aria-label={t('block.saveToLibraryLabel', { position })}
-            className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-cobalt-tint hover:text-cobalt disabled:pointer-events-none disabled:opacity-40"
+            className="inline-flex size-11 items-center justify-center rounded-action text-ink/50 transition-colors hover:bg-cobalt-tint hover:text-cobalt disabled:pointer-events-none disabled:opacity-40"
           >
             <BookmarkPlus className="size-4" />
           </button>
@@ -114,7 +114,7 @@ export function BlockEditor({
               type="button"
               onClick={onRemove}
               aria-label={t('block.deleteLabel', { position })}
-              className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-danger-surface hover:text-danger"
+              className="inline-flex size-11 items-center justify-center rounded-action text-ink/50 transition-colors hover:bg-danger-surface hover:text-danger"
             >
               <Trash2 className="size-4" />
             </button>

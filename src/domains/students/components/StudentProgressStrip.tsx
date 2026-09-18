@@ -30,7 +30,7 @@ export function StudentProgressStrip({ progress }: StudentProgressStripProps) {
 
   if (progress === null || progress.completedSessions === 0) {
     return (
-      <p className="px-5 pt-4 text-xs text-ink/40">{t('studentProgress.noSessions')}</p>
+      <p className="px-5 pt-4 text-xs text-ink/60">{t('studentProgress.noSessions')}</p>
     )
   }
 
@@ -39,10 +39,10 @@ export function StudentProgressStrip({ progress }: StudentProgressStripProps) {
   return (
     <div className="px-5 pt-4">
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/60">
           {t('progress.level', { level: progress.level.level })}
         </span>
-        <span className="metric-figures text-xs text-ink/45">
+        <span className="metric-figures text-xs text-ink/60">
           {plural(
             'studentProgress.sessionCount.one',
             'studentProgress.sessionCount.other',
@@ -61,7 +61,7 @@ export function StudentProgressStrip({ progress }: StudentProgressStripProps) {
         className="mt-1.5 h-1.5 bg-cobalt-tint-2 [&>[data-slot=progress-indicator]]:bg-cobalt"
       />
 
-      <p className="metric-figures mt-1 text-[11px] text-ink/40">
+      <p className="metric-figures mt-1 text-[11px] text-ink/60">
         {progress.level.currentExperience} / {progress.level.experienceForNextLevel} XP
       </p>
     </div>

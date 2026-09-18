@@ -76,7 +76,7 @@ export function SoundToggle() {
         </span>
       </button>
 
-      <p className="ms-7 mt-1 text-xs text-ink/45">
+      <p className="ms-7 mt-1 text-xs text-ink/60">
         {/* Las dos limitaciones que no se pueden arreglar desde aquí, dichas
             donde se decide: el silenciador del teléfono manda por encima de
             esto, y en iOS el sonido es el ÚNICO aviso que llega porque Apple

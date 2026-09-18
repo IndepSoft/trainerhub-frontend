@@ -107,7 +107,7 @@ function BlockSection({ block, position, firstExerciseNumber, exercisesById }: B
       </ol>
 
       {(!isSimple || block.notes) && (
-        <p className="pt-2 text-xs text-ink/50">
+        <p className="pt-2 text-xs text-ink/60">
           {!isSimple && t('routine.roundRest', { rest: formatRest(block.restAfterSeconds) })}
           {!isSimple && block.notes ? ' · ' : null}
           {block.notes}
@@ -153,7 +153,7 @@ export default function RoutineDetail() {
         <p className="font-display text-2xl font-extrabold uppercase text-ink">
           {t('routine.notFound')}
         </p>
-        <p className="text-sm text-ink/50">{t('routine.notFoundHint')}</p>
+        <p className="text-sm text-ink/60">{t('routine.notFoundHint')}</p>
         <Button asChild variant="outline">
           <Link to="/trainings">{t('routine.back')}</Link>
         </Button>
@@ -174,7 +174,7 @@ export default function RoutineDetail() {
       <PageHeader>
         <Link
           to={manages ? '/trainings' : '/progress'}
-          className="-ms-2 mb-3 inline-flex h-11 items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/45 transition-colors hover:text-cobalt"
+          className="-ms-2 mb-3 inline-flex h-11 items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60 transition-colors hover:text-cobalt"
         >
           <ArrowLeft className="size-4" />
           {manages ? t('routine.plural') : t('nav.progress')}
@@ -236,7 +236,7 @@ export default function RoutineDetail() {
           {/* Qué se hace con ella, al pie: se lee una vez, y arriba empujaba
               los ejercicios, que son lo que se viene a mirar. */}
           {manages && (
-            <p className="text-[13px] text-ink/50">
+            <p className="text-[13px] text-ink/60">
               {t('routine.assignHint')}{' '}
               <Link
                 to="/students"

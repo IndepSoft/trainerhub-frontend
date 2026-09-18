@@ -104,7 +104,10 @@ export function BottomTabBar({ navigationViewer }: BottomTabBarProps) {
                     // 56 px de alto: por encima del objetivo tactil de 44 px que
                     // exige la regla 1.6.
                     'flex h-14 items-center justify-center px-0.5 transition-colors',
-                    isActive ? 'text-cobalt' : 'text-ink/45'
+                    /* En oscuro, Cobalt sobre su propio tinte da 4,24:1 para una
+                       etiqueta de 10 px; el Cobalt elevado le da el medio punto
+                       que le falta sin cambiar de color. */
+                    isActive ? 'text-cobalt dark:text-cobalt-lift' : 'text-ink/60'
                   )}
                 >
                   <span
@@ -122,7 +125,7 @@ export function BottomTabBar({ navigationViewer }: BottomTabBarProps) {
                         {route.id === 'dashboard' && pending.total > 0 && (
                           <span
                             aria-label={t('nav.pendingLabel', { count: pending.total })}
-                            className="metric-figures absolute -end-2.5 -top-1.5 flex min-w-4 items-center justify-center rounded-full bg-ember px-1 text-[9px] font-bold leading-4 text-white"
+                            className="metric-figures absolute -end-2.5 -top-1.5 flex min-w-4 items-center justify-center rounded-full bg-ember px-1 text-[9px] font-bold leading-4 text-ember-foreground"
                           >
                             {pending.total > 9 ? '9+' : pending.total}
                           </span>

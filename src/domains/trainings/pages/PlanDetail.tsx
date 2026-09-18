@@ -78,7 +78,7 @@ function PlanWeekRow({ week, routinesById, defaultOpen }: PlanWeekRowProps) {
                 {routine === undefined ? (
                   // La rutina se borró o no se ha cargado: se dice, sin enlace
                   // a una ficha que no existe.
-                  <span className="min-w-0 flex-1 text-ink/40">{t('exercise.fallback')}</span>
+                  <span className="min-w-0 flex-1 text-ink/60">{t('exercise.fallback')}</span>
                 ) : (
                   <>
                     {/* Mide 44 px por sí mismo ADEMÁS de estirarse: la caja de
@@ -91,7 +91,7 @@ function PlanWeekRow({ week, routinesById, defaultOpen }: PlanWeekRowProps) {
                     >
                       {routine.title}
                     </Link>
-                    <span className="metric-figures shrink-0 text-xs text-ink/45">
+                    <span className="metric-figures shrink-0 text-xs text-ink/60">
                       {estimateRoutineMinutes(routine)} {t('routine.minutes')}
                     </span>
                   </>
@@ -103,8 +103,8 @@ function PlanWeekRow({ week, routinesById, defaultOpen }: PlanWeekRowProps) {
         {restDays > 0 && (
           <li className="flex min-h-11 items-center justify-between gap-4 text-sm">
             <span className="w-24 shrink-0 text-ink/60">{t('plan.restOfWeek')}</span>
-            <span className="min-w-0 flex-1 text-ink/40">{t('plan.rest')}</span>
-            <span className="metric-figures shrink-0 text-xs text-ink/45">
+            <span className="min-w-0 flex-1 text-ink/60">{t('plan.rest')}</span>
+            <span className="metric-figures shrink-0 text-xs text-ink/60">
               {plural('plan.restDays.one', 'plan.restDays.other', restDays, { count: restDays })}
             </span>
           </li>
@@ -157,7 +157,7 @@ export default function PlanDetail() {
         <p className="font-display text-2xl font-extrabold uppercase text-ink">
           {t('plan.notFound')}
         </p>
-        <p className="text-sm text-ink/50">{t('plan.notFoundHint')}</p>
+        <p className="text-sm text-ink/60">{t('plan.notFoundHint')}</p>
         <Button asChild variant="outline">
           <Link to="/trainings?seccion=planes">{t('plan.back')}</Link>
         </Button>
@@ -170,7 +170,7 @@ export default function PlanDetail() {
       <PageHeader>
         <Link
           to={manages ? '/trainings?seccion=planes' : '/progress'}
-          className="-ms-2 mb-3 inline-flex h-11 items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/45 transition-colors hover:text-cobalt"
+          className="-ms-2 mb-3 inline-flex h-11 items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60 transition-colors hover:text-cobalt"
         >
           <ArrowLeft className="size-4" />
           {manages ? t('plan.plural') : t('nav.progress')}
@@ -256,7 +256,7 @@ export default function PlanDetail() {
               —es a una persona a quien se asigna—, y desde aquí no había forma
               de llegar: el plan se veía y no se sabía qué hacer con él. */}
           {manages && (
-            <p className="text-[13px] text-ink/50">
+            <p className="text-[13px] text-ink/60">
               {t('plan.assignHint')}{' '}
               <Link
                 to="/students"

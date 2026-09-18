@@ -94,7 +94,7 @@ export function StudentAssignments({ student }: StudentAssignmentsProps) {
       {error !== null && <p className="py-4 text-sm text-danger">{error}</p>}
 
       {loading ? null : assignments.length === 0 ? (
-        <p className="py-8 text-center text-sm text-ink/40">
+        <p className="py-8 text-center text-sm text-ink/60">
           {t('assignments.empty', { name: student.firstName })}
         </p>
       ) : (
@@ -102,7 +102,7 @@ export function StudentAssignments({ student }: StudentAssignmentsProps) {
           {assignments.map((assignment) => (
             <li key={assignment.id} className="flex items-start gap-3 py-4">
               <div className="min-w-0 flex-1">
-                <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-ink/45">
+                <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-ink/60">
                   {assignment.kind === 'plan' ? (
                     <CalendarRange className="size-3.5" />
                   ) : (
@@ -121,15 +121,15 @@ export function StudentAssignments({ student }: StudentAssignmentsProps) {
                     {titlesById.get(targetOf(assignment))}
                   </Link>
                 ) : (
-                  <p className="mt-1 flex min-h-11 items-center font-semibold text-ink/45">
+                  <p className="mt-1 flex min-h-11 items-center font-semibold text-ink/60">
                     {t('assignments.gone')}
                   </p>
                 )}
 
-                <p className="text-xs text-ink/45">{describeWhen(assignment, t)}</p>
+                <p className="text-xs text-ink/60">{describeWhen(assignment, t)}</p>
 
                 {assignment.notes !== '' && (
-                  <p className="mt-1 text-xs text-ink/40">{assignment.notes}</p>
+                  <p className="mt-1 text-xs text-ink/60">{assignment.notes}</p>
                 )}
 
                 {/* Lo que el volcado dejo en la agenda, con sus acciones en
@@ -151,7 +151,7 @@ export function StudentAssignments({ student }: StudentAssignmentsProps) {
                     aria-label={t('assignments.dumpLabel', {
                       title: titlesById.get(assignment.planId) ?? t('assignments.thePlan'),
                     })}
-                    className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-cobalt-tint hover:text-cobalt"
+                    className="inline-flex size-11 items-center justify-center rounded-action text-ink/50 transition-colors hover:bg-cobalt-tint hover:text-cobalt"
                   >
                     <CalendarCheck className="size-4" />
                   </button>
@@ -163,7 +163,7 @@ export function StudentAssignments({ student }: StudentAssignmentsProps) {
                 aria-label={t('assignments.removeLabel', {
                   title: titlesById.get(targetOf(assignment)) ?? t('assignments.thisItem'),
                 })}
-                className="inline-flex size-11 shrink-0 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-danger-surface hover:text-danger"
+                className="inline-flex size-11 shrink-0 items-center justify-center rounded-action text-ink/50 transition-colors hover:bg-danger-surface hover:text-danger"
               >
                 <Trash2 className="size-4" />
               </button>

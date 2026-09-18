@@ -175,7 +175,7 @@ export function ScheduleSessionDialog({
           <DialogTitle className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
             {t('scheduleSession.title')}
           </DialogTitle>
-          <DialogDescription className="text-sm text-ink/50">
+          <DialogDescription className="text-sm text-ink/60">
             {t('scheduleSession.hint', { name: `${student.firstName} ${student.lastName}` })}
           </DialogDescription>
         </DialogHeader>

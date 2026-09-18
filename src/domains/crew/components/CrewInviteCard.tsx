@@ -78,7 +78,7 @@ export function CrewInviteCard({
       </div>
 
       <div className="text-center">
-        <p className="text-xs text-ink/50">{t('crew.orThisCode')}</p>
+        <p className="text-xs text-ink/60">{t('crew.orThisCode')}</p>
         <p className="metric-figures mt-1 font-display text-3xl font-extrabold tracking-[0.1em] text-ink">
           {formatJoinCode(crew.joinToken)}
         </p>
@@ -130,7 +130,7 @@ export function CrewInviteCard({
         )}
       </div>
 
-      <p className="text-center text-xs text-ink/55">
+      <p className="text-center text-xs text-ink/60">
         {/* El porqué del botón de rotar, dicho donde se decide usarlo. */}
         {confirmingRotate ? t('crew.rotateWarning') : t('crew.rotateHint')}
       </p>

@@ -115,7 +115,7 @@ export default function StudentDetail() {
         <p className="font-display text-2xl font-extrabold uppercase text-ink">
           {t('students.notFound')}
         </p>
-        <p className="text-sm text-ink/50">{t('students.notFoundHint')}</p>
+        <p className="text-sm text-ink/60">{t('students.notFoundHint')}</p>
         <Button asChild variant="outline">
           <Link to="/students">{t('students.backToStudents')}</Link>
         </Button>
@@ -136,7 +136,7 @@ export default function StudentDetail() {
             instalada no hay barra del navegador con boton de atras. */}
         <Link
           to="/students"
-          className="-ms-2 mb-1 inline-flex h-11 items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/45 transition-colors hover:text-cobalt"
+          className="-ms-2 mb-1 inline-flex h-11 items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60 transition-colors hover:text-cobalt"
         >
           <ArrowLeft className="size-4" />
           {t('students.title')}

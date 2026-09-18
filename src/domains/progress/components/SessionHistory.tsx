@@ -50,7 +50,7 @@ export function SessionHistory({ entries }: SessionHistoryProps) {
       </MetricStrip>
 
       {entries.length === 0 ? (
-        <p className="py-8 text-sm text-ink/45">{t('progress.historyEmpty')}</p>
+        <p className="py-8 text-sm text-ink/60">{t('progress.historyEmpty')}</p>
       ) : (
         months.map((month) => (
           <section key={month.month} className="flex flex-col" aria-labelledby={`mes-${month.month}`}>
@@ -73,7 +73,7 @@ export function SessionHistory({ entries }: SessionHistoryProps) {
                   primary={entry.title}
                   secondary={describeWork(entry, t)}
                   leading={
-                    <span className="metric-figures w-14 shrink-0 text-[11px] font-bold uppercase tracking-wider text-ink/45">
+                    <span className="metric-figures w-14 shrink-0 text-[11px] font-bold uppercase tracking-wider text-ink/60">
                       {formatShortDateKey(entry.day)}
                     </span>
                   }
@@ -82,7 +82,7 @@ export function SessionHistory({ entries }: SessionHistoryProps) {
                       {/* Sin puntuación se pinta un guion: las sesiones cerradas
                           antes de que el servidor puntuara no valen cero. */}
                       {entry.points === null ? '—' : `+${entry.points}`}
-                      <span className="ml-1 font-sans text-[11px] font-medium text-ink/45">XP</span>
+                      <span className="ml-1 font-sans text-[11px] font-medium text-ink/60">XP</span>
                     </span>
                   }
                 />

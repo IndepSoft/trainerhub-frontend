@@ -88,7 +88,7 @@ export function AchievementSystem({ achievements }: AchievementSystemProps) {
       {/* En los tres idiomas: la frase estaba escrita en español dentro del
           componente, así que el recuento seguía diciendo «logros conseguidos»
           con la aplicación en inglés. */}
-      <p className="text-sm text-ink/50">
+      <p className="text-sm text-ink/60">
         {t('progress.achievementsWon', {
           unlocked: unlocked.length,
           total: achievements.length,
@@ -105,7 +105,7 @@ export function AchievementSystem({ achievements }: AchievementSystemProps) {
             {t('achievement.gallery')}
           </h3>
 
-          <label className="flex items-center gap-2 text-xs text-ink/50">
+          <label className="flex items-center gap-2 text-xs text-ink/60">
             <span className="sr-only">{t('achievement.filterByRarity')}</span>
             <select
               value={rarity}
@@ -148,7 +148,7 @@ export function AchievementSystem({ achievements }: AchievementSystemProps) {
                 className={cn(
                   'flex h-11 shrink-0 items-center gap-1.5 rounded-action border px-4 text-xs font-semibold uppercase tracking-wider transition-colors',
                   isActive
-                    ? 'border-cobalt bg-cobalt text-white'
+                    ? 'border-cobalt bg-cobalt text-cobalt-foreground'
                     : 'border-cobalt-tint-3 text-ink/60 hover:border-cobalt/40'
                 )}
               >
@@ -173,7 +173,7 @@ export function AchievementSystem({ achievements }: AchievementSystemProps) {
         </div>
 
         {filtered.length === 0 && (
-          <p className="py-8 text-center text-sm text-ink/40">
+          <p className="py-8 text-center text-sm text-ink/60">
             {t('achievement.noneMatch')}
           </p>
         )}
@@ -185,7 +185,7 @@ export function AchievementSystem({ achievements }: AchievementSystemProps) {
         </h3>
 
         {recent.length === 0 && (
-          <p className="py-6 text-sm text-ink/40">
+          <p className="py-6 text-sm text-ink/60">
             {t('achievement.noneYet')}
           </p>
         )}
@@ -197,8 +197,8 @@ export function AchievementSystem({ achievements }: AchievementSystemProps) {
 
               <div className="min-w-0 flex-1">
                 <p className="font-semibold text-ink">{t(achievement.nameKey)}</p>
-                <p className="text-sm text-ink/50">{t(achievement.descriptionKey)}</p>
-                <p className="metric-figures mt-1 text-[11px] uppercase tracking-wider text-ink/35">
+                <p className="text-sm text-ink/60">{t(achievement.descriptionKey)}</p>
+                <p className="metric-figures mt-1 text-[11px] uppercase tracking-wider text-ink/60">
                   {achievement.unlockedAt?.toLocaleDateString(activeLocale())}
                 </p>
               </div>

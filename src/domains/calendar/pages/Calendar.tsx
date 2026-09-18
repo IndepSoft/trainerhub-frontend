@@ -264,7 +264,7 @@ export default function Calendar() {
                 'inline-flex min-h-11 flex-1 items-center justify-center rounded-action text-[13px] font-semibold transition-colors',
                 candidate === dayLayout
                   ? 'bg-surface text-ink shadow-sm'
-                  : 'text-ink/55 hover:text-cobalt'
+                  : 'text-ink/60 hover:text-cobalt'
               )}
             >
               {t(DAY_LAYOUT_LABEL_KEY[candidate])}

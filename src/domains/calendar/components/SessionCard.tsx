@@ -117,7 +117,7 @@ export function SessionCard({
       </div>
 
       {isCompact ? (
-        <span className="mt-0.5 truncate text-[10px] uppercase tracking-wider text-ink/45">
+        <span className="mt-0.5 truncate text-[10px] uppercase tracking-wider text-ink/60">
           {session.category}
         </span>
       ) : (
@@ -131,7 +131,7 @@ export function SessionCard({
             >
               {t(status.labelKey)}
             </span>
-            <span className="rounded-action border border-cobalt-tint-3 px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-ink/50">
+            <span className="rounded-action border border-cobalt-tint-3 px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-ink/60">
               {session.kind === 'individual'
                 ? t('session.kind.individual')
                 : t('session.kind.group')}
@@ -141,7 +141,7 @@ export function SessionCard({
           {/* `mt-auto` empuja los datos al pie: la tarjeta ocupa el alto que le
               da la duracion, y sin esto una sesion larga dejaba un hueco debajo
               del titulo en vez de repartirse. */}
-          <p className="metric-figures mt-auto flex min-w-0 items-center gap-2 pe-5 text-[11px] text-ink/55">
+          <p className="metric-figures mt-auto flex min-w-0 items-center gap-2 pe-5 text-[11px] text-ink/60">
             <span className="shrink-0">{session.durationMinutes} min</span>
             <span className="text-ink/20">·</span>
             <span className="truncate">{session.location}</span>

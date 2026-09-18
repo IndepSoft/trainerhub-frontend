@@ -102,9 +102,9 @@ export const SESSION_STATUS_ENTRIES = Object.entries(SESSION_STATUS) as [
  */
 export const MISSED_SESSION: SessionStatusPresentation = {
   labelKey: 'session.status.missed',
-  slotClassName: 'bg-cobalt-tint-1 text-ink/50 border-cobalt-tint-3 border-dashed',
-  badgeClassName: 'bg-cobalt-tint-1 text-ink/55',
-  outlineBadgeClassName: 'border-ink/25 text-ink/50 border-dashed',
+  slotClassName: 'bg-cobalt-tint-1 text-ink/60 border-cobalt-tint-3 border-dashed',
+  badgeClassName: 'bg-cobalt-tint-1 text-ink/60',
+  outlineBadgeClassName: 'border-ink/25 text-ink/60 border-dashed',
   accentClassName: 'bg-ink/10',
   icon: <CircleDashed className="w-3 h-3" />,
 }

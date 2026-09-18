@@ -52,7 +52,7 @@ export function DayList({
           return (
             <li
               key={`libre-${entry.until}`}
-              className="flex min-h-9 items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/35"
+              className="flex min-h-9 items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/60"
             >
               <span aria-hidden="true" className="h-px flex-1 bg-cobalt-tint-3" />
               {t('calendar.freeUntil', { time: entry.until })}

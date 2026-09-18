@@ -67,7 +67,7 @@ export function SessionPlanList({
 
   return (
     <section className="pb-6">
-      <h2 className="px-5 pb-3 pt-5 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/45">
+      <h2 className="px-5 pb-3 pt-5 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
         {t('liveSession.plan')}
       </h2>
 
@@ -85,7 +85,7 @@ export function SessionPlanList({
                   className={cn(
                     'rounded-action border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]',
                     head.blockMethod === 'simple'
-                      ? 'border-cobalt-tint-3 text-ink/45'
+                      ? 'border-cobalt-tint-3 text-ink/60'
                       : 'border-ember/40 text-ember-deep'
                   )}
                 >
@@ -105,7 +105,7 @@ export function SessionPlanList({
                       aria-current={current ? 'step' : undefined}
                       className={cn(
                         'flex items-baseline gap-2 text-sm',
-                        done && 'text-ink/35',
+                        done && 'text-ink/60',
                         current && 'font-semibold text-cobalt',
                         !done && !current && 'text-ink/60'
                       )}

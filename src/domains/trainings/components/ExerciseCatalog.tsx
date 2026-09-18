@@ -130,7 +130,7 @@ export function ExerciseCatalog() {
       )}
 
       {visible.length === 0 ? (
-        <p className="py-10 text-center text-sm text-ink/40">
+        <p className="py-10 text-center text-sm text-ink/60">
           {search.trim() === ''
             ? t('exercise.emptyCatalog')
             : t('exercise.noMatch', { search: search.trim() })}
@@ -144,7 +144,7 @@ export function ExerciseCatalog() {
               <li key={exercise.id} className="flex items-start gap-3 py-4">
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-ink">{exercise.name}</p>
-                  <p className="mt-0.5 text-xs text-ink/45">
+                  <p className="mt-0.5 text-xs text-ink/60">
                     {[
                       catalogEntryLabel(muscleGroupsById.get(exercise.primaryMuscleGroupId)),
                       catalogEntryLabel(movementPatternsById.get(exercise.movementPatternId)),
@@ -166,7 +166,7 @@ export function ExerciseCatalog() {
                     type="button"
                     onClick={() => openForEdit(exercise)}
                     aria-label={t('exercise.editLabel', { name: exercise.name })}
-                    className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-cobalt-tint hover:text-cobalt"
+                    className="inline-flex size-11 items-center justify-center rounded-action text-ink/50 transition-colors hover:bg-cobalt-tint hover:text-cobalt"
                   >
                     <Pencil className="size-4" />
                   </button>
@@ -174,7 +174,7 @@ export function ExerciseCatalog() {
                     type="button"
                     onClick={() => handleDelete(exercise)}
                     aria-label={t('exercise.deleteLabel', { name: exercise.name })}
-                    className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-danger-surface hover:text-danger"
+                    className="inline-flex size-11 items-center justify-center rounded-action text-ink/50 transition-colors hover:bg-danger-surface hover:text-danger"
                   >
                     <Trash2 className="size-4" />
                   </button>

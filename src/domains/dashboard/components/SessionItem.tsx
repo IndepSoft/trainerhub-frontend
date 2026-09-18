@@ -33,7 +33,7 @@ export function SessionItem({ session, studentName }: SessionItemProps) {
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0">
         <p className="truncate font-semibold text-ink">{studentName}</p>
-        <p className="truncate text-sm text-ink/50">{session.title}</p>
+        <p className="truncate text-sm text-ink/60">{session.title}</p>
       </div>
 
       {/* Insignia de contorno, no de relleno: en el registro sobrio un bloque

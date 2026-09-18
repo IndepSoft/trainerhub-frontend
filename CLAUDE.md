@@ -113,6 +113,14 @@ veinte caracteres por línea el texto deja de leerse con comodidad.
 de plataforma para una app instalable —44 pt en Apple HIG, 48 dp en Material— y
 va por encima del mínimo de 24 px que exige WCAG 2.2 AA.
 
+**Contraste AA en los dos temas, medido** (`CAMBIOS` §51). Todo texto que se lee
+va a 4,5:1 —3:1 si es grande— contra el fondo que tiene detrás de verdad. En la
+práctica: el suelo del texto es `text-ink/60` —de `/55` para abajo no pasa en
+claro—, un botón de sólo icono no baja de `/50`, y el texto encima de un color va
+en su `-foreground` (`text-cobalt-foreground`, `text-ember-foreground`), nunca en
+`text-white`. Lo decorativo con `aria-hidden` queda fuera. Lo vigila la prueba
+`contraste`, que recorre ocho pantallas en claro y en oscuro.
+
 **Seguimiento del trabajo:** [`docs/PWA-SEGUIMIENTO.md`](docs/PWA-SEGUIMIENTO.md)
 lleva la lista de pasos con su estado.
 

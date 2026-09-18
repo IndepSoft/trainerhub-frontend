@@ -331,7 +331,7 @@ export function CreateSessionModal({
           <DialogTitle className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
             {editing === undefined ? t('newSession.title') : t('newSession.editTitle')}
           </DialogTitle>
-          <DialogDescription className="text-sm text-ink/50">
+          <DialogDescription className="text-sm text-ink/60">
             {editing === undefined ? t('newSession.hint') : t('newSession.editHint')}
           </DialogDescription>
         </DialogHeader>

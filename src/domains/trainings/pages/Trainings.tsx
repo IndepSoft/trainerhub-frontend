@@ -203,7 +203,7 @@ export default function Trainings() {
             )}
 
             {routines.length > 0 && visibleRoutines.length === 0 && (
-              <p className="px-5 py-10 text-center text-sm text-ink/40">
+              <p className="px-5 py-10 text-center text-sm text-ink/60">
                 {t('trainings.noMatches')}
               </p>
             )}

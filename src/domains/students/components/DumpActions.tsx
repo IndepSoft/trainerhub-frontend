@@ -49,7 +49,7 @@ export function DumpActions({ assignmentId }: DumpActionsProps) {
 
   return (
     <div className="mt-2 flex flex-wrap items-center gap-2">
-      <span className="metric-figures text-xs text-ink/45">
+      <span className="metric-figures text-xs text-ink/60">
         {t('assignments.dumped', { count: sessions.length, open: openCount })}
         {missedCount > 0 && ` · ${t('assignments.missed', { count: missedCount })}`}
       </span>

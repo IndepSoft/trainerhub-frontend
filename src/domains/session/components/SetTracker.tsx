@@ -49,7 +49,7 @@ const OFF_TARGET = 'text-ember'
 
 /** Los valores de RPE que se ofrecen: por debajo de 6 nadie anota. */
 const RPE_OPTIONS = [6, 7, 8, 9, 10] as const
-const ON_TARGET = 'text-ink/45'
+const ON_TARGET = 'text-ink/60'
 
 interface SetTrackerProps {
   step: SetStep
@@ -191,9 +191,9 @@ export function SetTracker({
         */}
         {lastRecord !== null && (
           <div className="mt-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/55">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
               {t('liveSession.rpeLabel')}
-              <span className="ms-2 normal-case tracking-normal text-ink/45">{t('liveSession.rpeHint')}</span>
+              <span className="ms-2 normal-case tracking-normal text-ink/60">{t('liveSession.rpeHint')}</span>
             </p>
             <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label={t('liveSession.rpeLabel')}>
               {RPE_OPTIONS.map((option) => (
@@ -218,7 +218,7 @@ export function SetTracker({
         )}
 
         {nextStep !== null && (
-          <p className="mt-3 text-xs text-ink/45">
+          <p className="mt-3 text-xs text-ink/60">
             {t('liveSession.nextUp', {
               exercise: nextExerciseName,
               set: nextStep.setNumber,
@@ -242,7 +242,7 @@ export function SetTracker({
 
   return (
     <section className="shrink-0 border-y border-cobalt-tint-3 px-5 py-6">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/45">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
         {t('liveSession.blockPosition', { position: step.blockPosition })} ·{' '}
         {t(BLOCK_METHOD_LABEL_KEY[step.blockMethod])}
       </p>
@@ -251,7 +251,7 @@ export function SetTracker({
         {exerciseName}
       </h2>
 
-      <p className="metric-figures mt-1.5 text-sm text-ink/55">
+      <p className="metric-figures mt-1.5 text-sm text-ink/60">
         {t('liveSession.setOf', { set: step.setNumber, total: step.totalSets })} · {step.reps}
         {/* El peso justo detrás de las repeticiones y por delante del RIR: con
             la barra delante, la carga se decide antes que el esfuerzo. */}
@@ -336,8 +336,8 @@ export function SetTracker({
               className={cn(
                 'flex size-11 items-center justify-center rounded-action border-2 text-sm font-bold transition-colors',
                 marked
-                  ? 'border-cobalt bg-cobalt text-white'
-                  : 'border-cobalt-tint-3 text-ink/35 hover:border-cobalt/50'
+                  ? 'border-cobalt bg-cobalt text-cobalt-foreground'
+                  : 'border-cobalt-tint-3 text-ink/60 hover:border-cobalt/50'
               )}
             >
               {marked ? <Check className="size-4" strokeWidth={3} /> : rep}
@@ -349,7 +349,7 @@ export function SetTracker({
       <p
         className={cn(
           'mt-2 text-sm',
-          repsDone === 0 ? 'text-ink/45' : reps === 'within' ? 'text-ink/60' : OFF_TARGET
+          repsDone === 0 ? 'text-ink/60' : reps === 'within' ? 'text-ink/60' : OFF_TARGET
         )}
       >
         {t('liveSession.repsDone', { done: repsDone, prescribed: step.reps })}
@@ -391,7 +391,7 @@ function UndoButton({ onUndo, label }: UndoButtonProps) {
     <button
       type="button"
       onClick={onUndo}
-      className="mt-2 flex min-h-11 w-full items-center justify-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-ink/40 transition-colors hover:text-ink"
+      className="mt-2 flex min-h-11 w-full items-center justify-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-ink/60 transition-colors hover:text-ink"
     >
       <Undo2 className="size-3.5" />
       {label}

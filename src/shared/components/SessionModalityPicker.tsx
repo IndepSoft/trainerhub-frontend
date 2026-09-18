@@ -58,7 +58,7 @@ function ModalityOption({ icon: Icon, label, isSelected, onSelect }: ModalityOpt
         'inline-flex min-h-11 items-center justify-center gap-2 rounded-action border px-3 text-xs font-bold uppercase tracking-[0.12em] transition-colors',
         isSelected
           ? 'border-ember/50 bg-ember/10 text-ember-deep'
-          : 'border-cobalt-tint-3 text-ink/45 hover:border-cobalt/40 hover:text-ink'
+          : 'border-cobalt-tint-3 text-ink/60 hover:border-cobalt/40 hover:text-ink'
       )}
     >
       <Icon className="size-3.5" />

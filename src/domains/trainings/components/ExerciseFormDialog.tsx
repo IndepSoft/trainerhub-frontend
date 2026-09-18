@@ -26,7 +26,7 @@ import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { catalogLabel } from '@/shared/i18n/domainLabels'
 
 /** Registro de etiqueta del formulario, igual que en el resto del dominio. */
-const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50'
+const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
 
 interface ExerciseFormDialogProps {
   open: boolean
@@ -59,7 +59,7 @@ export function ExerciseFormDialog({
           <DialogTitle className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
             {exercise === null ? t('exercise.newTitle') : t('exercise.editTitle')}
           </DialogTitle>
-          <DialogDescription className="text-sm text-ink/50">
+          <DialogDescription className="text-sm text-ink/60">
             {exercise === null
               ? t('exercise.newHint')
               : t('exercise.editHint')}
@@ -162,7 +162,7 @@ function ExerciseForm({ exercise, onSave, onCancel }: ExerciseFormProps) {
       */}
       <div role="group" aria-label={t('exercise.secondaryMusclesLabel')}>
         <span className={cn('block', FIELD_LABEL)}>{t('exercise.secondaryMuscles')}</span>
-        <p className="mt-1 text-xs text-ink/40">
+        <p className="mt-1 text-xs text-ink/60">
           {t('exercise.secondaryHint')}
         </p>
         <div className="mt-2 flex flex-wrap gap-2">
@@ -180,7 +180,7 @@ function ExerciseForm({ exercise, onSave, onCancel }: ExerciseFormProps) {
                     'inline-flex min-h-11 items-center rounded-action border px-3 text-xs font-semibold transition-colors',
                     isSelected
                       ? 'border-cobalt/50 bg-cobalt-tint text-cobalt'
-                      : 'border-cobalt-tint-3 text-ink/50 hover:border-cobalt/40 hover:text-ink'
+                      : 'border-cobalt-tint-3 text-ink/60 hover:border-cobalt/40 hover:text-ink'
                   )}
                 >
                   {catalogLabel(muscleGroup.id, muscleGroup.name, t)}
@@ -208,7 +208,7 @@ function ExerciseForm({ exercise, onSave, onCancel }: ExerciseFormProps) {
         <Label htmlFor={`${fieldId}-instructions`} className={FIELD_LABEL}>
           {t('exercise.instructions')}
         </Label>
-        <p className="mt-1 text-xs text-ink/40">{t('exercise.instructionsHint')}</p>
+        <p className="mt-1 text-xs text-ink/60">{t('exercise.instructionsHint')}</p>
         <Textarea
           id={`${fieldId}-instructions`}
           className="mt-1.5"

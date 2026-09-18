@@ -102,7 +102,7 @@ export function PlanWeekEditor({
             'inline-flex min-h-11 items-center rounded-action border px-3 text-[10px] font-bold uppercase tracking-[0.12em] transition-colors',
             week.isDeload
               ? 'border-ember/50 bg-ember/10 text-ember-deep'
-              : 'border-cobalt-tint-3 text-ink/45 hover:border-cobalt/40 hover:text-ink'
+              : 'border-cobalt-tint-3 text-ink/60 hover:border-cobalt/40 hover:text-ink'
           )}
         >
           {t('plan.deload')}
@@ -113,7 +113,7 @@ export function PlanWeekEditor({
             type="button"
             onClick={onRemove}
             aria-label={t('plan.deleteWeekLabel', { position })}
-            className="ms-auto inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-danger-surface hover:text-danger"
+            className="ms-auto inline-flex size-11 items-center justify-center rounded-action text-ink/50 transition-colors hover:bg-danger-surface hover:text-danger"
           >
             <Trash2 className="size-4" />
           </button>
@@ -146,7 +146,7 @@ export function PlanWeekEditor({
             >
               <Label
                 htmlFor={dayFieldId}
-                className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50 sm:w-28 sm:shrink-0 sm:text-sm sm:normal-case sm:tracking-normal sm:text-ink/70"
+                className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60 sm:w-28 sm:shrink-0 sm:text-sm sm:normal-case sm:tracking-normal sm:text-ink/70"
               >
                 {weekdayName(day.dayOfWeek)}
               </Label>

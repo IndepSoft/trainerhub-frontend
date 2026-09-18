@@ -52,7 +52,7 @@ export function WeekView({
         <div className="w-14 shrink-0" />
         {weekDates.map((date, index) => (
           <div key={toLocalDateKey(date)} className="min-w-0 flex-1 py-2 text-center">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/50">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/60">
               {dayLabels[index]}
             </p>
             <p
@@ -72,7 +72,7 @@ export function WeekView({
           {TIME_SLOTS.map((time) => (
             <div
               key={time}
-              className="metric-figures flex items-start justify-end pe-2 pt-1 text-[11px] font-semibold tabular-nums text-ink/35"
+              className="metric-figures flex items-start justify-end pe-2 pt-1 text-[11px] font-semibold tabular-nums text-ink/60"
               style={{ height: SLOT_HEIGHT }}
             >
               {/* Sólo la hora en punto. Con las veintisiete etiquetas la columna

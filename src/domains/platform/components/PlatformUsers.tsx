@@ -16,8 +16,8 @@ const ROLE_FILTERS: Array<CrewRole | null> = [null, 'admin', 'trainer', 'student
 
 const ROLE_BADGE: Record<CrewRole, string> = {
   admin: 'border-cobalt/40 bg-cobalt-tint text-cobalt',
-  trainer: 'border-cobalt-tint-3 text-ink/55',
-  student: 'border-cobalt-tint-3 text-ink/40',
+  trainer: 'border-cobalt-tint-3 text-ink/60',
+  student: 'border-cobalt-tint-3 text-ink/60',
 }
 
 /**
@@ -74,8 +74,8 @@ export function PlatformUsers() {
               className={cn(
                 'inline-flex min-h-11 items-center rounded-action px-3 text-xs font-semibold uppercase tracking-wider transition-colors',
                 candidate === role
-                  ? 'bg-cobalt text-white'
-                  : 'text-ink/45 hover:bg-cobalt-tint hover:text-cobalt'
+                  ? 'bg-cobalt text-cobalt-foreground'
+                  : 'text-ink/60 hover:bg-cobalt-tint hover:text-cobalt'
               )}
             >
               {candidate === null ? t('platform.users.allRoles') : t(ROLE_LABEL_KEY[candidate])}
@@ -91,7 +91,7 @@ export function PlatformUsers() {
       )}
 
       {!loading && users.length === 0 ? (
-        <p className="py-8 text-sm text-ink/45">
+        <p className="py-8 text-sm text-ink/60">
           {/* Se distingue «no hay nadie» de «tu búsqueda no encuentra nada»: con
               un filtro puesto, lo segundo no es un problema de la plataforma. */}
           {search.trim() === '' && role === null
@@ -107,7 +107,7 @@ export function PlatformUsers() {
             >
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold text-ink">{user.displayName}</p>
-                <p className="truncate text-xs text-ink/45">
+                <p className="truncate text-xs text-ink/60">
                   {user.email} · {user.crewName}
                 </p>
                 {user.extraCapabilities.length > 0 && (
@@ -150,7 +150,7 @@ export function PlatformUsers() {
           flechas apagadas es ruido que sugiere que falta algo. */}
       {pageCount > 1 && (
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs text-ink/45">
+          <p className="text-xs text-ink/60">
             {t('platform.users.page', { page, pages: pageCount, total })}
           </p>
 

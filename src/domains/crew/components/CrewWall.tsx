@@ -88,7 +88,7 @@ export function CrewWall({ isStaff, canPublish, authorName }: CrewWallProps) {
               permanente junto a un campo de texto invita a escribir corto en
               vez de a escribir lo que hace falta. */}
           {draft.length > CREW_POST_MAX_LENGTH - 80 && (
-            <p className="text-xs text-ink/40">
+            <p className="text-xs text-ink/60">
               {t('crew.wallRemaining', { count: CREW_POST_MAX_LENGTH - draft.length })}
             </p>
           )}
@@ -96,7 +96,7 @@ export function CrewWall({ isStaff, canPublish, authorName }: CrewWallProps) {
       )}
 
       {!loading && posts.length === 0 ? (
-        <p className="py-6 text-sm text-ink/45">
+        <p className="py-6 text-sm text-ink/60">
           {isStaff
             ? t('crew.wallEmptyTrainer')
             : t('crew.wallEmptyStudent')}
@@ -143,10 +143,10 @@ function PostCard({
   return (
     <li className="rounded-block border border-cobalt-tint-3 bg-surface p-4">
       <div className="flex items-baseline justify-between gap-3">
-        <p className="truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
+        <p className="truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
           {authorName}
         </p>
-        <p className="shrink-0 text-xs text-ink/40">{describePostTime(post.createdAt, t)}</p>
+        <p className="shrink-0 text-xs text-ink/60">{describePostTime(post.createdAt, t)}</p>
       </div>
 
       {/* `whitespace-pre-line`: quien escribe un anuncio separa los parrafos con
@@ -161,7 +161,7 @@ function PostCard({
           onClick={onToggleLike}
           className={cn(
             'inline-flex min-h-11 items-center gap-2 rounded-action px-3 text-sm font-semibold transition-colors',
-            liked ? 'text-ember' : 'text-ink/40 hover:text-ink'
+            liked ? 'text-ember' : 'text-ink/60 hover:text-ink'
           )}
         >
           <Heart className="size-4" fill={liked ? 'currentColor' : 'none'} />
@@ -175,7 +175,7 @@ function PostCard({
             type="button"
             aria-label={t('crew.wallDelete')}
             onClick={onDelete}
-            className="ms-auto inline-flex size-11 items-center justify-center rounded-action text-ink/30 transition-colors hover:text-danger"
+            className="ms-auto inline-flex size-11 items-center justify-center rounded-action text-ink/50 transition-colors hover:text-danger"
           >
             <Trash2 className="size-4" />
           </button>

@@ -75,7 +75,7 @@ export function StudentFormDialog({
           <DialogTitle className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
             {student === null ? t('studentForm.newTitle') : t('studentForm.editTitle')}
           </DialogTitle>
-          <DialogDescription className="text-sm text-ink/50">
+          <DialogDescription className="text-sm text-ink/60">
             {student === null ? t('studentForm.newHint') : t('studentForm.editHint')}
           </DialogDescription>
         </DialogHeader>
@@ -209,7 +209,7 @@ function StudentFields({ student, onSave, onCancel }: StudentFieldsProps) {
           value={email}
           onChange={(event) => setEmail(event.target.value)}
         />
-        <p className="mt-1 text-xs text-ink/40">
+        <p className="mt-1 text-xs text-ink/60">
           {t('studentForm.emailHint')}
         </p>
       </div>
@@ -286,7 +286,7 @@ function StudentFields({ student, onSave, onCancel }: StudentFieldsProps) {
                   'inline-flex min-h-11 items-center rounded-action border px-3 text-xs font-semibold transition-colors',
                   isSelected
                     ? 'border-cobalt/50 bg-cobalt-tint text-cobalt'
-                    : 'border-cobalt-tint-3 text-ink/50 hover:border-cobalt/40 hover:text-ink'
+                    : 'border-cobalt-tint-3 text-ink/60 hover:border-cobalt/40 hover:text-ink'
                 )}
               >
                 {goalLabel(goal, t)}
