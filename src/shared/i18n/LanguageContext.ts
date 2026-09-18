@@ -38,6 +38,13 @@ export interface LanguageContextValue {
   ) => string
 }
 
+/**
+ * La funcion de plural, suelta. Mismo motivo que `Translate`: hay composicion
+ * de texto fuera de los componentes —la linea de apoyo de una fila de lista—
+ * que necesita elegir entre singular y plural sin ser un componente.
+ */
+export type Pluralize = LanguageContextValue['plural']
+
 /*
  * Sin valor por defecto a propósito: usar `useTranslation` fuera del proveedor
  * es un fallo de montaje, y un diccionario de reserva lo escondería hasta que

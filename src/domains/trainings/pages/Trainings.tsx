@@ -1,6 +1,8 @@
-import { useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { Library, Plus } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Dumbbell, CalendarRange, Library, Plus } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Button } from '@/shared/ui/button'
+import { EmptyState } from '@/shared/components/EmptyState'
 import {
   EMPTY_ROUTINE_FILTERS,
   filterRoutines,
@@ -9,40 +11,32 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { useSwipe } from '@/shared/hooks/useSwipe'
+import { useUrlSection } from '@/shared/hooks/useUrlSection'
 import { RoutineCard } from '../components/RoutineCard'
 import { PlanCard } from '../components/PlanCard'
 import { TrainingFilters } from '../components/TrainingFilters'
 import { useRoutines } from '../hooks/useRoutines'
 import { usePlans } from '../hooks/usePlans'
-import type { Routine } from '../types/training.types'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
 /**
- * Orden de las pestañas, junto a los `TabsTrigger` para que añadir una no
- * obligue a acordarse de tocar dos sitios.
+ * Las secciones, en el orden en que se miran.
  *
  * Los planes van tras las rutinas porque son el nivel de arriba: una rutina es
- * una sesión y un plan es el mesociclo que las ordena. Desafíos y rachas
- * cierran, que es lo que todavía no existe.
+ * una sesión y un plan es el mesociclo que las ordena.
  *
  * Ya no hay pestaña de plantillas. La marca `isTemplate` no gobernaba nada y,
  * con ninguna rutina asignada a ningún estudiante, todas eran igualmente
  * plantillas: la pestaña separaba una colección de sí misma.
- */
-const TAB_ORDER = ['rutinas', 'planes'] as const
-type TabValue = (typeof TAB_ORDER)[number]
-
-/**
- * La pestaña activa vive en la URL, no en el estado del componente.
  *
- * Así `/trainings?tab=planes` es enlazable, que es lo que permite que al guardar
- * un plan se vuelva a la lista de planes y no a la de rutinas: antes se creaba
- * un plan y el usuario aterrizaba donde no podía verlo.
+ * La sección vive en la dirección —`?seccion=planes`— como en la ficha y el
+ * equipo (`CAMBIOS` §40 y §45): es lo que permite que al guardar un plan se
+ * vuelva a la lista de planes y no a la de rutinas.
  */
-function isTabValue(value: string | null): value is TabValue {
-  return TAB_ORDER.some((tab) => tab === value)
-}
+const TRAINING_SECTIONS = ['rutinas', 'planes'] as const
+type TrainingSection = (typeof TRAINING_SECTIONS)[number]
 
 interface PrimaryAction {
   labelKey: TranslationKey
@@ -56,7 +50,7 @@ interface PrimaryAction {
  * crea una rutina.
  *
  */
-const PRIMARY_ACTION: Record<TabValue, PrimaryAction> = {
+const PRIMARY_ACTION: Record<TrainingSection, PrimaryAction> = {
   rutinas: {
     labelKey: 'trainings.newRoutine',
     shortLabelKey: 'trainings.newRoutineShort',
@@ -79,29 +73,43 @@ const PRIMARY_ACTION: Record<TabValue, PrimaryAction> = {
  */
 export default function Trainings() {
   const { t } = useTranslation()
-  const { routines } = useRoutines()
-  const { plans } = usePlans()
-  const [searchParams, setSearchParams] = useSearchParams()
+  /*
+   * CARGAR NO ES ESTAR VACÍO. Las dos listas nacen vacías hasta que llega la
+   * respuesta, y sin distinguirlo el vacío —«Tu primera rutina»— se pintaba un
+   * instante a quien tiene diez. La CI lo cazó: su máquina es más lenta y el
+   * instante le daba para encontrar el enlace del vacío.
+   */
+  const { routines, loading: loadingRoutines } = useRoutines()
+  const { plans, loading: loadingPlans } = usePlans()
+  const scrollerRef = useRef<HTMLDivElement>(null)
 
-  const requestedTab = searchParams.get('tab')
-  const activeTab: TabValue = isTabValue(requestedTab) ? requestedTab : 'rutinas'
+  /*
+   * EL FILTRO VIVE EN LA PÁGINA porque su fila queda FIJA bajo las pestañas:
+   * se filtra mirando cómo mengua la lista, así que desplazarse no puede
+   * llevárselo. Estaba dentro de la lista, y allí se iba con ella.
+   */
+  const [filters, setFilters] = useState<RoutineFilterState>(EMPTY_ROUTINE_FILTERS)
+  const visibleRoutines = filterRoutines(routines, filters)
 
-  // `replace` para que cambiar de pestaña no llene el historial: el boton de
-  // volver debe salir de Entrenamientos, no recorrer las cuatro pestañas.
-  const setActiveTab = (tab: TabValue) => setSearchParams({ tab }, { replace: true })
+  const { section, select: selectSection } = useUrlSection(TRAINING_SECTIONS)
 
-  const moveTab = (offset: number) => {
-    const next = TAB_ORDER.indexOf(activeTab) + offset
+  const moveSection = (offset: number) => {
+    const next = TRAINING_SECTIONS.indexOf(section) + offset
     // Sin envolver por los extremos: en la ultima, deslizar a la izquierda no
     // debe devolver a la primera.
-    if (next < 0 || next >= TAB_ORDER.length) return
-    setActiveTab(TAB_ORDER[next])
+    if (next < 0 || next >= TRAINING_SECTIONS.length) return
+    selectSection(TRAINING_SECTIONS[next])
   }
 
   const { handlers: swipeHandlers } = useSwipe({
-    onSwipeLeft: () => moveTab(1),
-    onSwipeRight: () => moveTab(-1),
+    onSwipeLeft: () => moveSection(1),
+    onSwipeRight: () => moveSection(-1),
   })
+
+  // Cada sección empieza por arriba: el contenedor que desplaza es el mismo.
+  useEffect(() => {
+    scrollerRef.current?.scrollTo({ top: 0 })
+  }, [section])
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden bg-bone">
@@ -120,40 +128,85 @@ export default function Trainings() {
             />
             <PageHeader.PrimaryAction
               icon={Plus}
-              label={t(PRIMARY_ACTION[activeTab].labelKey)}
-              shortLabel={t(PRIMARY_ACTION[activeTab].shortLabelKey)}
-              to={PRIMARY_ACTION[activeTab].to}
+              label={t(PRIMARY_ACTION[section].labelKey)}
+              shortLabel={t(PRIMARY_ACTION[section].shortLabelKey)}
+              to={PRIMARY_ACTION[section].to}
             />
           </PageHeader.Actions>
         </PageHeader.Content>
       </PageHeader>
 
-      <div className="flex-1 overflow-auto">
-        <Tabs
-          value={activeTab}
-          onValueChange={(value) => {
-            if (isTabValue(value)) setActiveTab(value)
-          }}
-          {...swipeHandlers}
-        >
-          <div className="px-4 pt-1">
-            <TabsList className="w-full md:grid md:grid-cols-2">
-              {/* Los contadores salen del dato: antes estaban escritos a mano y
-                  mentian. */}
-              <TabsTrigger value="rutinas">
-                {t('trainings.tab.routines', { count: routines.length })}
-              </TabsTrigger>
-              <TabsTrigger value="planes">
-                {t('trainings.tab.plans', { count: plans.length })}
-              </TabsTrigger>
-            </TabsList>
-          </div>
+      <Tabs
+        value={section}
+        onValueChange={(value) => {
+          const chosen = TRAINING_SECTIONS.find((candidate) => candidate === value)
+          if (chosen !== undefined) selectSection(chosen)
+        }}
+        className="min-h-0 flex-1 gap-0"
+      >
+        {/* Las secciones, FIJAS bajo la cabecera: quedan fuera del contenedor
+            que desplaza, así que cambiar de sección no obliga a volver arriba. */}
+        <div className="shrink-0 px-5 pb-3">
+          <TabsList aria-label={t('trainings.sectionsLabel')} className="w-full md:max-w-md">
+            {/* Los contadores salen del dato: antes estaban escritos a mano y
+                mentian. */}
+            <TabsTrigger value="rutinas" className="px-2 text-[13px] font-semibold">
+              {t('trainings.tab.routines', { count: routines.length })}
+            </TabsTrigger>
+            <TabsTrigger value="planes" className="px-2 text-[13px] font-semibold">
+              {t('trainings.tab.plans', { count: plans.length })}
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
+        {/* Sólo en rutinas —filtrar por nivel no significa nada en un plan— y
+            sólo si hay algo que filtrar. */}
+        {section === 'rutinas' && routines.length > 0 && (
+          <div className="shrink-0 px-5 pb-3">
+            <TrainingFilters filters={filters} onChange={setFilters} />
+          </div>
+        )}
+
+        <div ref={scrollerRef} className={PAGE_SCROLL} {...swipeHandlers}>
           {/* Cada pestaña pinta lo suyo. Antes el control cambiaba de estado
               pero no habia `TabsContent`, asi que la lista era SIEMPRE la
               misma. */}
-          <TabsContent value="rutinas" className="mt-4">
-            <RoutineList routines={routines} emptyLabel={t('trainings.noRoutines')} />
+          <TabsContent value="rutinas">
+            {!loadingRoutines && routines.length === 0 && (
+              <div className="px-5">
+                <EmptyState
+                  icon={Dumbbell}
+                  title={t('trainings.noRoutinesTitle')}
+                  body={t('trainings.noRoutines')}
+                >
+                  <Button asChild>
+                    <Link to="/trainings/new">{t('trainings.newRoutine')}</Link>
+                  </Button>
+                  {/* De donde salen los ejercicios: sin catalogo, componer una
+                      rutina ofrece una lista vacia. */}
+                  <Button asChild variant="ghost" className="text-cobalt">
+                    <Link to="/trainings/catalog">{t('trainings.seeCatalog')}</Link>
+                  </Button>
+                </EmptyState>
+              </div>
+            )}
+
+            {/* Rejilla y no <ul>: `RoutineCard` es un <article>, y
+                `<ul><article>` es HTML invalido -los hijos de una lista tienen
+                que ser <li>-. */}
+            {visibleRoutines.length > 0 && (
+              <div className="grid grid-cols-1 gap-3 px-5 pb-4 lg:grid-cols-2 xl:grid-cols-3">
+                {visibleRoutines.map((routine) => (
+                  <RoutineCard key={routine.id} routine={routine} />
+                ))}
+              </div>
+            )}
+
+            {routines.length > 0 && visibleRoutines.length === 0 && (
+              <p className="px-5 py-10 text-center text-sm text-ink/60">
+                {t('trainings.noMatches')}
+              </p>
+            )}
           </TabsContent>
 
           {/*
@@ -162,68 +215,29 @@ export default function Trainings() {
             Un modelo que no se ve es indistinguible de un modelo que no existe,
             y borrarlo habria sido tirar el trabajo de ayer.
           */}
-          <TabsContent value="planes" className="mt-4">
-            {plans.length === 0 ? (
-              <p className="px-4 py-10 text-center text-sm text-ink/40">
-                {t('trainings.noPlans')}
-              </p>
+          <TabsContent value="planes">
+            {loadingPlans ? null : plans.length === 0 ? (
+              <div className="px-5">
+                <EmptyState
+                  icon={CalendarRange}
+                  title={t('trainings.noPlansTitle')}
+                  body={t('trainings.noPlans')}
+                >
+                  <Button asChild>
+                    <Link to="/trainings/plans/new">{t('trainings.newPlan')}</Link>
+                  </Button>
+                </EmptyState>
+              </div>
             ) : (
-              <div className="grid grid-cols-1 gap-4 px-4 pb-4 lg:grid-cols-2 xl:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 px-5 pb-4 lg:grid-cols-2 xl:grid-cols-3">
                 {plans.map((plan) => (
                   <PlanCard key={plan.id} plan={plan} />
                 ))}
               </div>
             )}
           </TabsContent>
-
-          {/*
-            Desafios y rachas YA NO TIENEN PESTAÑA. La tuvieron con un cartel de
-            «proximamente» y era una puerta pintada en la pared: dos de las
-            cuatro pestañas de la seccion no llevaban a nada. Volveran cuando
-            exista el flujo de asignacion, con contenido y no con un cartel.
-          */}
-        </Tabs>
-      </div>
+        </div>
+      </Tabs>
     </div>
-  )
-}
-
-interface RoutineListProps {
-  routines: Routine[]
-  emptyLabel: string
-}
-
-/**
- * Lista de rutinas con su fila de filtros.
- *
- * Los filtros sólo acompañan a las rutinas: filtrar por nivel o duración no
- * significa nada en desafíos ni en rachas, y dejarlos ahí sugeriría que hacen
- * algo.
- */
-function RoutineList({ routines, emptyLabel }: RoutineListProps) {
-  const { t } = useTranslation()
-  const [filters, setFilters] = useState<RoutineFilterState>(EMPTY_ROUTINE_FILTERS)
-  const visibleRoutines = filterRoutines(routines, filters)
-
-  if (routines.length === 0) {
-    return <p className="px-4 py-10 text-center text-sm text-ink/40">{emptyLabel}</p>
-  }
-
-  return (
-    <>
-      <div className="px-4 pb-4">
-        <TrainingFilters filters={filters} onChange={setFilters} />
-      </div>
-      {/* Rejilla y no <ul>: `RoutineCard` es un <article>, y `<ul><article>` es
-          HTML invalido -los hijos de una lista tienen que ser <li>-. */}
-      <div className="grid grid-cols-1 gap-4 px-4 pb-4 lg:grid-cols-2 xl:grid-cols-3">
-        {visibleRoutines.map((routine) => (
-          <RoutineCard key={routine.id} routine={routine} />
-        ))}
-      </div>
-      {visibleRoutines.length === 0 && (
-        <p className="px-4 py-10 text-center text-sm text-ink/40">{t('trainings.noMatches')}</p>
-      )}
-    </>
   )
 }

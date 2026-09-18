@@ -28,7 +28,7 @@ export function FirstSteps({ crew }: FirstStepsProps) {
       <SectionHeading count={steps.filter((step) => !step.done).length}>
         {t('dashboard.firstSteps')}
       </SectionHeading>
-      <p className="pt-2 text-xs text-ink/45">{t('firstSteps.hint')}</p>
+      <p className="pt-2 text-xs text-ink/60">{t('firstSteps.hint')}</p>
 
       <ol className="mt-3 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3">
         {steps.map((step, index) => (
@@ -38,7 +38,7 @@ export function FirstSteps({ crew }: FirstStepsProps) {
               aria-disabled={step.done}
               className={cn(
                 'flex min-h-11 items-center gap-3 py-2 text-sm transition-colors',
-                step.done ? 'text-ink/40' : 'text-ink hover:text-cobalt'
+                step.done ? 'text-ink/60' : 'text-ink hover:text-cobalt'
               )}
             >
               <span className="metric-figures w-5 shrink-0 text-xs font-bold text-cobalt">
@@ -51,7 +51,7 @@ export function FirstSteps({ crew }: FirstStepsProps) {
               )}
               <span className={cn('flex-1', step.done && 'line-through')}>{t(step.labelKey)}</span>
               {step.noteKey !== undefined && (
-                <span className="text-xs text-ink/45">{t(step.noteKey)}</span>
+                <span className="text-xs text-ink/60">{t(step.noteKey)}</span>
               )}
             </Link>
           </li>

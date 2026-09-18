@@ -1,0 +1,107 @@
+{
+  "artboards": [
+    {
+      "file": "Actual.dc.html",
+      "title": "A · Pegada (hoy)",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "Main.dc.html",
+      "title": "B · Píldora en el flujo",
+      "x": 470,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "Flotante.dc.html",
+      "title": "C · Píldora flotante · DECIDIDA",
+      "x": 940,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "ConAccion.dc.html",
+      "title": "D · Píldora + acción",
+      "x": 1410,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "EnTinta.dc.html",
+      "title": "E · Píldora en tinta",
+      "x": 1880,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "Anatomia.dc.html",
+      "title": "La píldora, medida",
+      "x": 0,
+      "y": 1240,
+      "w": 390,
+      "h": 900,
+      "print": "flow"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "brief",
+      "x": 0,
+      "y": -260,
+      "w": 760,
+      "text": "La barra inferior como píldora flotante. Cinco variantes de LA MISMA barra sobre la misma pantalla —el panel, con la cabecera compacta ya aplicada—, para que lo único que cambie entre artboards sea la barra. D va sobre Estudiantes porque es la única que toca la cabecera.\n\nLo que decide entre ellas no es el gusto sino tres cosas medibles: cuánto alto cuesta, si las etiquetas siguen a la vista, y cuántos archivos hay que tocar. Está en «La píldora, medida», abajo.\n\nLa etiqueta sólo en el activo no es capricho: cinco etiquetas en versalitas no caben en una píldora de 366 px («ENTRENAMIENTOS» mide 86). Se probó."
+    },
+    {
+      "id": "nota-a",
+      "x": 0,
+      "y": 900,
+      "w": 390,
+      "text": "A · Lo que hay. 56 px, las cinco etiquetas siempre, el indicador arriba del icono. Cuesta lo mínimo y se aprende sola. Su único defecto es de carácter: se lee como cromo del navegador, no como pieza de la app."
+    },
+    {
+      "id": "nota-b",
+      "x": 470,
+      "y": 900,
+      "w": 390,
+      "text": "B · La píldora en el flujo. Lo que se puede tener con UN archivo (`BottomTabBar.tsx`): el contenido termina encima, nada pasa por debajo. Cuesta 20 px más de alto que A (76) y pierde cuatro etiquetas: quien no conozca los iconos tiene que tocar para saber. Compensa que la app tiene cinco destinos y los iconos son los de siempre (casa, personas, mancuerna, calendario, grupo)."
+    },
+    {
+      "id": "nota-c",
+      "x": 940,
+      "y": 900,
+      "w": 390,
+      "text": "C · La misma píldora, flotando de verdad: el contenido pasa por debajo con un degradado a Bone para que la última fila no choque con ella. Es el aspecto «nativo» que se busca al decir flotante. Cuesta 0 px de flujo pero exige 84 px de relleno al final de CADA lista (19 páginas) y `scroll-padding` para que un enlace enfocado no quede tapado. Es la que recomiendo si se va a hacer: B es C a medias."
+    },
+    {
+      "id": "nota-d",
+      "x": 1410,
+      "y": 900,
+      "w": 390,
+      "text": "D · Píldora + la acción primaria de la pantalla como botón redondo al lado. Libera la cabecera del todo (aquí Estudiantes ya no lleva «+ Alumno» arriba) y pone la acción donde llega el pulgar. Pero contradice la decisión de §35 —la primaria en la fila del eyebrow— y toca nueve cabeceras; y el botón cambia de significado por pantalla, cosa que un botón fijo abajo no debería hacer. Está aquí para descartarla con conocimiento, no para elegirla."
+    },
+    {
+      "id": "nota-e",
+      "x": 1880,
+      "y": 900,
+      "w": 390,
+      "text": "E · La píldora en tinta, con el activo en Cobalt. Es la única que convierte la barra en pieza de marca: sobre Bone, una cápsula negra es lo primero que se ve. Mismo coste que C. Su riesgo es el contraste del activo —blanco sobre Cobalt, 3,5:1— y que compite con el título en Condensed por el peso visual de la pantalla. Funciona mejor en modo oscuro que en claro."
+    },
+    {
+      "id": "decision",
+      "x": 470,
+      "y": 1240,
+      "w": 620,
+      "text": "DECISIÓN (15 sep 2026): la opción C, la píldora flotante.\n\nLo que implica al implementarla:\n· `BottomTabBar` pasa a `absolute` sobre el contenido, 12 px de margen y `env(safe-area-inset-bottom)`; píldora de 56 px como dice «La píldora, medida».\n· El relleno inferior de las listas se pone UNA vez, en el contenedor de desplazamiento del layout (`RootLayout`), con `padding-bottom: calc(84px + env(safe-area-inset-bottom))` sólo bajo `md`; ninguna página lo compensa por su cuenta.\n· Degradado a Bone de 120 px bajo la píldora, `pointer-events: none`, para que la última fila no choque.\n· `scroll-padding-bottom` en ese contenedor para que un enlace enfocado con teclado no quede tapado.\n· `aria-label` en los cinco enlaces y la etiqueta del inactivo en `sr-only`: las pruebas que buscan «Calendario» siguen encontrándolo.\n· Se mide en dispositivo: 0 desbordamiento, objetivos ≥ 44 px, y que la última fila de cada lista se pueda leer entera con la píldora encima.\n\nA se descarta por carácter, B por pagar el alto sin dar el efecto, D por reabrir la decisión de las cabeceras (§35), E por contraste y por competir con el título."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}

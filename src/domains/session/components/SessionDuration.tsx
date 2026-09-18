@@ -32,7 +32,7 @@ export function SessionDuration({ elapsedSeconds, state }: SessionDurationProps)
 
       <span aria-hidden="true" className="h-[3px] w-16 bg-cobalt" />
 
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink/50">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink/60">
         {t(STATE_LABEL_KEY[state])}
       </p>
     </div>

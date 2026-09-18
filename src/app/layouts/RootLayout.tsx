@@ -142,14 +142,27 @@ export default function RootLayout() {
             onSelectCrew={selectCrew}
           />
 
-          <div className="p-4 flex-1 flex flex-col overflow-hidden min-h-0">
+          {/*
+            EL HUECO DE LA PILDORA SE DECLARA AQUI, UNA VEZ. La barra inferior
+            flota sobre el contenido, asi que ya no se lleva su sitio del
+            reparto flex: lo que impide que tape la ultima fila de una lista es
+            este relleno, que cada contenedor de desplazamiento hereda con
+            `PAGE_SCROLL`. Ponerlo pagina a pagina era la trampa que advertia
+            el comentario anterior -cualquiera que se olvidara dejaria
+            contenido tapado-, y por eso vive en el layout.
+
+            Desde `md` vuelve a cero: ahi no hay pildora, hay barra lateral.
+
+            EN MOVIL, SIN RELLENO PROPIO. Ponia 16 px por lado y cada pagina
+            sumaba los suyos: 36 px de margen, 72 de 375, cuando la propuesta
+            de vistas usa 20. En una fila de lista eso eran los 32 px que le
+            faltaban al nombre para no truncarse. El margen lo pone ahora cada
+            pagina, una sola vez, y desde `md` vuelve el de siempre.
+          */}
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0 md:p-4 [--bottom-bar-space:calc(84px_+_env(safe-area-inset-bottom))] md:[--bottom-bar-space:0px]">
             <Outlet />
           </div>
 
-          {/* Ultimo hijo de la columna y no `fixed`: asi ocupa su sitio en el
-            reparto flex y el contenedor de desplazamiento se encoge solo. Con
-            `fixed` habria que compensar con relleno inferior en cada pagina, y
-            cualquiera que se olvidara dejaria contenido tapado. */}
           <BottomTabBar navigationViewer={navigationViewer} />
         </SidebarInset>
       </div>

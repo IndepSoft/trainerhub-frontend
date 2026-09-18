@@ -1,5 +1,5 @@
-import { useId } from 'react'
-import { Trash2 } from 'lucide-react'
+import { useId, useState } from 'react'
+import { ChevronDown, Trash2 } from 'lucide-react'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import {
@@ -9,6 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
+import { CollapsibleRow } from '@/shared/components/CollapsibleRow'
+import { cn } from '@/shared/lib/utils'
 import type { Exercise } from '../types/training.types'
 import type {
   PrescribedExerciseDraft,
@@ -17,7 +19,14 @@ import type {
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 
 /** Registro de etiqueta del formulario, igual que el de las métricas. */
-const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50'
+const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
+
+/**
+ * Las etiquetas de la fila de tres —series, repeticiones, RIR— con menos
+ * espaciado: a 375 px cada casilla mide unos 95 px, y «REPETICIONES» con el
+ * espaciado de siempre no cabía.
+ */
+const COMPACT_FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.06em] text-ink/60'
 
 interface PrescribedExerciseFieldsProps {
   exercise: PrescribedExerciseDraft
@@ -26,6 +35,8 @@ interface PrescribedExerciseFieldsProps {
   /** Posición dentro del bloque, sólo para el nombre accesible del botón. */
   position: number
   canRemove: boolean
+  /** Abierto al montar. Quien compone decide cuáles: ver `BlockEditor`. */
+  defaultOpen: boolean
   onChange: (changes: PrescribedExerciseDraftChanges) => void
   onRemove: () => void
 }
@@ -33,222 +44,257 @@ interface PrescribedExerciseFieldsProps {
 /**
  * Un ejercicio prescrito dentro de un bloque. Sólo presentación.
  *
+ * PLEGADO, CON SU DOSIS EN LA FILA. Una rutina de cuatro ejercicios eran
+ * cuatro formularios de ocho campos abiertos a la vez; cerrado, cada uno dice
+ * qué ejercicio es y cuánto —«Press de banca · 3 × 8-10»—, que es lo que se
+ * mira para encontrar el que se quiere tocar.
+ *
+ * LO DE SIEMPRE A LA VISTA, LO DE A VECES DETRÁS (patrón 4 de la propuesta).
+ * Series, repeticiones y RIR se deciden en cada ejercicio y van en una fila;
+ * peso, descanso propio, tempo e indicaciones, detrás de «Más ajustes», que
+ * se abre por ejercicio y arranca abierto si alguno ya tiene valor: esconder
+ * un dato escrito sería esconder una decisión.
+ *
  * Cada control lleva su `<label>` apuntando a un `id` real, incluido el
  * desplegable: `SelectTrigger` renderiza un `<button>`, que es un elemento
- * etiquetable, así que `htmlFor` lo alcanza. Es una comprobación que este
- * proyecto ya pagó una vez —el formulario de registro tenía etiquetas que no
- * apuntaban a ningún control— y no conviene repetir.
- *
- * `useId` y no el identificador del borrador: el mismo ejercicio puede
- * aparecer en dos sitios de la pantalla y los `id` del documento tienen que
- * ser únicos aunque el dato sea el mismo.
+ * etiquetable. `useId` y no el identificador del borrador: el mismo ejercicio
+ * puede aparecer en dos sitios y los `id` tienen que ser únicos.
  */
 export function PrescribedExerciseFields({
   exercise,
   catalog,
   position,
   canRemove,
+  defaultOpen,
   onChange,
   onRemove,
 }: PrescribedExerciseFieldsProps) {
   const { t } = useTranslation()
   const fieldId = useId()
+  const hasExtras = exercise.weightKg !== '' || exercise.tempo !== '' || exercise.notes !== ''
+  const [extrasOpen, setExtrasOpen] = useState(hasExtras)
 
   const exerciseFieldId = `${fieldId}-exercise`
   const setsFieldId = `${fieldId}-sets`
   const repsFieldId = `${fieldId}-reps`
   const repetitionsInReserveFieldId = `${fieldId}-rir`
+  const extrasId = `${fieldId}-extras`
   const weightFieldId = `${fieldId}-weight`
   const restFieldId = `${fieldId}-rest`
   const tempoFieldId = `${fieldId}-tempo`
   const notesFieldId = `${fieldId}-notes`
 
+  const exerciseName = catalog.find((candidate) => candidate.id === exercise.exerciseId)?.name
+  const dose =
+    exercise.sets !== '' && exercise.reps !== '' ? `${exercise.sets} × ${exercise.reps}` : undefined
+
   return (
-    /*
-      Una fila con su regla, NO una tarjeta.
+    <CollapsibleRow
+      title={exerciseName ?? t('prescription.exercisePlaceholder')}
+      trailing={
+        dose === undefined ? undefined : (
+          <span className="metric-figures shrink-0 whitespace-nowrap font-display text-[15px] font-bold text-ink">
+            {dose}
+          </span>
+        )
+      }
+      defaultOpen={defaultOpen}
+    >
+      <div className="flex flex-col gap-3">
+        <div className="flex items-end gap-2">
+          <div className="min-w-0 flex-1">
+            <Label htmlFor={exerciseFieldId} className={FIELD_LABEL}>
+              {t('prescription.exercise')}
+            </Label>
+            <Select
+              value={exercise.exerciseId}
+              onValueChange={(exerciseId) => onChange({ exerciseId })}
+            >
+              <SelectTrigger id={exerciseFieldId} className="mt-1.5 w-full">
+                <SelectValue placeholder={t('prescription.exercisePlaceholder')} />
+              </SelectTrigger>
+              <SelectContent>
+                {catalog.map((candidate) => (
+                  <SelectItem key={candidate.id} value={candidate.id}>
+                    {candidate.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-      Era una tarjeta y medía 269 px a 375: la página aporta 20 px de relleno,
-      el bloque otros 16 y la tarjeta del ejercicio 16 más, así que el contenido
-      pagaba el relleno tres veces y caía bajo el mínimo de 280 de la regla 1.6.
-      Es el mismo defecto que se corrigió en Reportes y en Progreso, y la misma
-      cura: quitar el nivel de anidamiento en lugar de recortar el relleno. De
-      paso queda como la ficha de rutina, que también lista los ejercicios de un
-      bloque en filas separadas por una regla.
-    */
-    <div className="py-4">
-      <div className="flex items-end gap-2">
-        <div className="min-w-0 flex-1">
-          <Label htmlFor={exerciseFieldId} className={FIELD_LABEL}>
-            {t('prescription.exercise')}
-          </Label>
-          <Select
-            value={exercise.exerciseId}
-            onValueChange={(exerciseId) => onChange({ exerciseId })}
-          >
-            <SelectTrigger id={exerciseFieldId} className="mt-1.5 w-full">
-              <SelectValue placeholder={t('prescription.exercisePlaceholder')} />
-            </SelectTrigger>
-            <SelectContent>
-              {catalog.map((candidate) => (
-                <SelectItem key={candidate.id} value={candidate.id}>
-                  {candidate.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/*
+            Sólo cuando hay más de un ejercicio. Deshabilitarlo en vez de
+            ocultarlo dejaría un control apagado sin explicación; que un bloque
+            de un solo ejercicio no ofrezca vaciarse se entiende solo.
+          */}
+          {canRemove && (
+            <button
+              type="button"
+              onClick={onRemove}
+              aria-label={t('prescription.removeLabel', { position })}
+              className="inline-flex size-11 shrink-0 items-center justify-center rounded-action text-ink/50 transition-colors hover:bg-danger-surface hover:text-danger"
+            >
+              <Trash2 className="size-4" />
+            </button>
+          )}
         </div>
 
         {/*
-          El botón sólo aparece cuando hay más de un ejercicio. Deshabilitarlo
-          en vez de ocultarlo dejaría un control apagado sin explicación; que un
-          bloque de un solo ejercicio no ofrezca vaciarse se entiende solo.
+          En FILA, con `flex` y no con una rejilla de tres columnas fijas: son
+          tres casillas de números cortos —«3», «8-10», «2»— y a 375 px caben a
+          unos 95 px cada una. La regla de 280 px mide contenedores, no cada
+          casilla de una fila de cifras. El relleno lateral, algo menor que el
+          de siempre: con él, «No aplica» no cabía en la del RIR.
         */}
-        {canRemove && (
-          <button
-            type="button"
-            onClick={onRemove}
-            aria-label={`Quitar el ejercicio ${position}`}
-            className="inline-flex size-11 shrink-0 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-danger-surface hover:text-danger"
-          >
-            <Trash2 className="size-4" />
-          </button>
-        )}
+        <div className="flex gap-2">
+          <div className="min-w-0 flex-1">
+            <Label htmlFor={setsFieldId} className={COMPACT_FIELD_LABEL}>
+              {t('prescription.sets')}
+            </Label>
+            <Input
+              id={setsFieldId}
+              type="number"
+              inputMode="numeric"
+              min={1}
+              className="mt-1.5 px-2.5"
+              value={exercise.sets}
+              onChange={(event) => onChange({ sets: event.target.value })}
+            />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <Label htmlFor={repsFieldId} className={COMPACT_FIELD_LABEL}>
+              {t('prescription.reps')}
+            </Label>
+            {/* Texto y no número: «8-10» es una prescripción válida y corriente. */}
+            <Input
+              id={repsFieldId}
+              type="text"
+              className="mt-1.5 px-2.5"
+              placeholder={t('prescription.repsPlaceholder')}
+              value={exercise.reps}
+              onChange={(event) => onChange({ reps: event.target.value })}
+            />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <Label htmlFor={repetitionsInReserveFieldId} className={COMPACT_FIELD_LABEL}>
+              {t('prescription.rir')}
+            </Label>
+            {/* Vacío es «no aplica»; 0 es «al fallo». El marcador lo dice. */}
+            <Input
+              id={repetitionsInReserveFieldId}
+              type="number"
+              inputMode="numeric"
+              min={0}
+              className="mt-1.5 px-2.5"
+              placeholder={t('prescription.rirPlaceholder')}
+              value={exercise.rir}
+              onChange={(event) => onChange({ rir: event.target.value })}
+            />
+          </div>
+        </div>
+
+        <button
+          type="button"
+          aria-expanded={extrasOpen}
+          aria-controls={extrasId}
+          onClick={() => setExtrasOpen((current) => !current)}
+          className="flex min-h-11 items-center gap-1.5 self-start text-start text-[13px] font-semibold text-cobalt"
+        >
+          <ChevronDown
+            aria-hidden="true"
+            className={cn('size-4 shrink-0 transition-transform', extrasOpen && 'rotate-180')}
+          />
+          <span>
+            {t('prescription.moreSettings')}
+            <span className="font-normal text-ink/60"> · {t('prescription.moreSettingsHint')}</span>
+          </span>
+        </button>
+
+        <div id={extrasId} hidden={!extrasOpen}>
+          {extrasOpen && (
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-2">
+                {/*
+                  EL PESO ES OPCIONAL Y NO CONTRADICE AL RIR: el RIR prescribe
+                  esfuerzo y esto prescribe dónde empezar. Vacío significa «que
+                  lo decida quien entrena».
+
+                  Texto y no `type="number"`: el teclado del móvil ofrece el
+                  separador decimal del idioma del teléfono, y un campo numérico
+                  rechaza «62,5» en varios navegadores. Se acepta coma o punto.
+                */}
+                <div className="min-w-0 flex-1">
+                  <Label htmlFor={weightFieldId} className={COMPACT_FIELD_LABEL}>
+                    {t('prescription.weight')}
+                  </Label>
+                  <Input
+                    id={weightFieldId}
+                    type="text"
+                    inputMode="decimal"
+                    className="mt-1.5"
+                    placeholder={t('prescription.weightPlaceholder')}
+                    value={exercise.weightKg}
+                    onChange={(event) => onChange({ weightKg: event.target.value })}
+                  />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <Label htmlFor={restFieldId} className={COMPACT_FIELD_LABEL}>
+                    {t('prescription.rest')}
+                  </Label>
+                  <Input
+                    id={restFieldId}
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    step={15}
+                    className="mt-1.5"
+                    value={exercise.restSeconds}
+                    onChange={(event) => onChange({ restSeconds: event.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/*
+                Tempo e indicaciones van aparte de las cifras porque no son
+                cifras: el tempo es una cadencia —«3-1-1-0»— y las indicaciones,
+                texto libre para el alumno. La sesión en vivo pinta los dos.
+              */}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,10rem)_1fr]">
+                <div>
+                  <Label htmlFor={tempoFieldId} className={FIELD_LABEL}>
+                    {t('prescription.tempo')}
+                  </Label>
+                  <Input
+                    id={tempoFieldId}
+                    type="text"
+                    className="mt-1.5"
+                    placeholder={t('prescription.tempoPlaceholder')}
+                    value={exercise.tempo}
+                    onChange={(event) => onChange({ tempo: event.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor={notesFieldId} className={FIELD_LABEL}>
+                    {t('prescription.notes')}
+                  </Label>
+                  <Input
+                    id={notesFieldId}
+                    type="text"
+                    className="mt-1.5"
+                    placeholder={t('prescription.notesPlaceholder')}
+                    value={exercise.notes}
+                    onChange={(event) => onChange({ notes: event.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-
-      {/*
-        Dos columnas en móvil, tres desde `sm` y las cinco desde `lg`. A 375 px
-        cada campo queda en unos 140 px, que para «3» o «90» sobra: el mínimo de
-        280 px de la regla 1.6 mide contenedores, no cada casilla de una rejilla
-        de números.
-
-        El salto intermedio existe porque los campos pasaron de cuatro a cinco:
-        con `sm:grid-cols-4` el quinto se quedaba solo en una fila, que se lee
-        como un campo desemparejado y no como el final de una rejilla.
-      */}
-      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <div>
-          <Label htmlFor={setsFieldId} className={FIELD_LABEL}>
-            {t('prescription.sets')}
-          </Label>
-          <Input
-            id={setsFieldId}
-            type="number"
-            inputMode="numeric"
-            min={1}
-            className="mt-1.5"
-            value={exercise.sets}
-            onChange={(event) => onChange({ sets: event.target.value })}
-          />
-        </div>
-
-        <div>
-          <Label htmlFor={repsFieldId} className={FIELD_LABEL}>
-            {t('prescription.reps')}
-          </Label>
-          {/* Texto y no número: «8-10» es una prescripción válida y corriente. */}
-          <Input
-            id={repsFieldId}
-            type="text"
-            className="mt-1.5"
-            placeholder={t('prescription.repsPlaceholder')}
-            value={exercise.reps}
-            onChange={(event) => onChange({ reps: event.target.value })}
-          />
-        </div>
-
-        <div>
-          <Label htmlFor={repetitionsInReserveFieldId} className={FIELD_LABEL}>
-            {t('prescription.rir')}
-          </Label>
-          {/* Vacío es «no aplica»; 0 es «al fallo». El marcador lo dice. */}
-          <Input
-            id={repetitionsInReserveFieldId}
-            type="number"
-            inputMode="numeric"
-            min={0}
-            className="mt-1.5"
-            placeholder={t('prescription.rirPlaceholder')}
-            value={exercise.rir}
-            onChange={(event) => onChange({ rir: event.target.value })}
-          />
-        </div>
-
-        {/*
-          EL PESO ES OPCIONAL Y NO CONTRADICE AL RIR: el RIR prescribe esfuerzo
-          y esto prescribe dónde empezar. Vacío significa «que lo decida quien
-          entrena», que es lo que ocurría antes de que este campo existiera.
-
-          Texto y no `type="number"`: el teclado del móvil ofrece el separador
-          decimal del idioma del teléfono, y un campo numérico rechaza «62,5» en
-          varios navegadores. Se acepta coma o punto al convertir.
-        */}
-        <div>
-          <Label htmlFor={weightFieldId} className={FIELD_LABEL}>
-            {t('prescription.weight')}
-          </Label>
-          <Input
-            id={weightFieldId}
-            type="text"
-            inputMode="decimal"
-            className="mt-1.5"
-            placeholder={t('prescription.weightPlaceholder')}
-            value={exercise.weightKg}
-            onChange={(event) => onChange({ weightKg: event.target.value })}
-          />
-        </div>
-
-        <div>
-          <Label htmlFor={restFieldId} className={FIELD_LABEL}>
-            {t('prescription.rest')}
-          </Label>
-          <Input
-            id={restFieldId}
-            type="number"
-            inputMode="numeric"
-            min={0}
-            step={15}
-            className="mt-1.5"
-            value={exercise.restSeconds}
-            onChange={(event) => onChange({ restSeconds: event.target.value })}
-          />
-        </div>
-      </div>
-
-      {/*
-        Tempo y notas, en su propia fila y OPCIONALES. Se conservaban sin poder
-        editarse -una rutina de la semilla los traia y editarla no podia
-        perderlos-; ahora se escriben. Van aparte de las cifras porque no son
-        cifras: el tempo es una cadencia -«3-1-1-0»- y las notas, texto libre
-        para el alumno -«sin rebote abajo»-. La sesion en vivo pinta los dos.
-      */}
-      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,10rem)_1fr]">
-        <div>
-          <Label htmlFor={tempoFieldId} className={FIELD_LABEL}>
-            {t('prescription.tempo')}
-          </Label>
-          <Input
-            id={tempoFieldId}
-            type="text"
-            className="mt-1.5"
-            placeholder={t('prescription.tempoPlaceholder')}
-            value={exercise.tempo}
-            onChange={(event) => onChange({ tempo: event.target.value })}
-          />
-        </div>
-        <div>
-          <Label htmlFor={notesFieldId} className={FIELD_LABEL}>
-            {t('prescription.notes')}
-          </Label>
-          <Input
-            id={notesFieldId}
-            type="text"
-            className="mt-1.5"
-            placeholder={t('prescription.notesPlaceholder')}
-            value={exercise.notes}
-            onChange={(event) => onChange({ notes: event.target.value })}
-          />
-        </div>
-      </div>
-    </div>
+    </CollapsibleRow>
   )
 }

@@ -14,6 +14,7 @@ import {
   type CrewDenomination,
 } from '@/shared/domain/entities/crew'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
 const FIELD_LABEL =
   'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
@@ -100,7 +101,7 @@ export default function NewCrew() {
         </PageHeader.Description>
       </PageHeader>
 
-      <div className="flex-1 overflow-auto">
+      <div className={PAGE_SCROLL}>
         <div className="mx-auto max-w-md space-y-6 px-5 py-6">
           <p className="text-sm text-ink/60">{t('crew.createIntro')}</p>
 
@@ -138,7 +139,7 @@ export default function NewCrew() {
               <span className={cn('block', FIELD_LABEL)}>
                 {t('crew.denomination')}
               </span>
-              <p className="mt-1 text-xs text-ink/45">
+              <p className="mt-1 text-xs text-ink/60">
                 {t('crew.denominationHint')}
               </p>
 
@@ -156,7 +157,7 @@ export default function NewCrew() {
                         'inline-flex min-h-11 items-center rounded-action border px-3 text-xs font-semibold transition-colors',
                         isSelected
                           ? 'border-cobalt/50 bg-cobalt-tint text-cobalt'
-                          : 'border-cobalt-tint-3 text-ink/50 hover:border-cobalt/40 hover:text-ink'
+                          : 'border-cobalt-tint-3 text-ink/60 hover:border-cobalt/40 hover:text-ink'
                       )}
                     >
                       {candidate}

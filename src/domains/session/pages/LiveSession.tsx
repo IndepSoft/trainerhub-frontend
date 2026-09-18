@@ -52,7 +52,7 @@ export default function LiveSession() {
         <p className="font-display text-2xl font-extrabold uppercase text-ink">
           {t('liveSession.notFound')}
         </p>
-        <p className="text-sm text-ink/50">{t('liveSession.notFoundHint')}</p>
+        <p className="text-sm text-ink/60">{t('liveSession.notFoundHint')}</p>
         <Button asChild variant="outline">
           <Link to="/calendar">{t('liveSession.backToCalendar')}</Link>
         </Button>
@@ -74,7 +74,7 @@ export default function LiveSession() {
             ? t('liveSession.alreadyDone')
             : t('liveSession.cancelled')}
         </p>
-        <p className="text-sm text-ink/50">{t('liveSession.closedHint')}</p>
+        <p className="text-sm text-ink/60">{t('liveSession.closedHint')}</p>
         <Button asChild variant="outline">
           <Link to={origin ?? '/calendar'}>{t('liveSession.back')}</Link>
         </Button>

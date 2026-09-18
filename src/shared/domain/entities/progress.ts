@@ -53,6 +53,11 @@ export type BadgeCategory = 'streak' | 'performance' | 'technique' | 'longevity'
 /** El orden de las rarezas, de la más común a la más rara. */
 export const BADGE_RARITIES: BadgeRarity[] = ['bronze', 'silver', 'gold', 'platinum', 'diamond', 'mythic']
 
+/** Estrecha el valor de un desplegable de rarezas. Mismo motivo que `isTrainingLevel`. */
+export function isBadgeRarity(value: string): value is BadgeRarity {
+  return BADGE_RARITIES.some((rarity) => rarity === value)
+}
+
 export const BADGE_CATEGORIES: BadgeCategory[] = [
   'streak',
   'performance',

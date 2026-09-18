@@ -62,7 +62,7 @@ export function SetWeightField({
 
   return (
     <div>
-      <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
+      <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
         {t('liveSession.weight')}
       </span>
 
@@ -88,7 +88,7 @@ export function SetWeightField({
           />
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-ink/35"
+            className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-ink/60"
           >
             {t('liveSession.kilos')}
           </span>
@@ -110,7 +110,7 @@ export function SetWeightField({
         <p
           className={cn(
             'mt-1 text-xs',
-            weightKg !== null && weightKg > lastWeightKg ? 'text-success' : 'text-ink/45'
+            weightKg !== null && weightKg > lastWeightKg ? 'text-success' : 'text-ink/60'
           )}
         >
           {t('liveSession.lastWeight', { weight: formatKilos(lastWeightKg) })}
@@ -130,7 +130,7 @@ export function SetWeightField({
         se pueda seguir.
       */}
       {prescribedKg !== null && prescribedKg !== lastWeightKg && (
-        <p className="mt-1 text-xs text-ink/45">
+        <p className="mt-1 text-xs text-ink/60">
           {t('liveSession.prescribedWeight', { weight: formatKilos(prescribedKg) })}
         </p>
       )}

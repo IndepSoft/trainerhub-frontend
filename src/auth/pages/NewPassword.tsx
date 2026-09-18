@@ -41,7 +41,7 @@ export default function NewPasswordPage() {
         />
       }
     >
-      <p className="text-sm leading-relaxed text-ink/55">{t('auth.newPassword.hint')}</p>
+      <p className="text-sm leading-relaxed text-ink/60">{t('auth.newPassword.hint')}</p>
 
       {loading ? null : user === null ? (
         <div className="flex flex-1 flex-col gap-5">

@@ -3462,7 +3462,374 @@ título como antes, ahora en píldora —que es el radio que `--radius-action`
 siempre dijo que tenían las acciones—. Las dos pruebas que esperaban «Agenda»
 como `h1` esperan ahora un `h1` visible y el eyebrow.
 
-## 36. La presentación deja de tocar datos (16 sep 2026)
+## 36. Decisión: la barra inferior será una píldora flotante (15 sep 2026)
+
+Rama `feature/cabeceras-moviles`. Exploración en `docs/design/barra/`
+—cinco variantes de la misma barra sobre la misma pantalla— y lienzo en
+https://claude.ai/artifact/WWqY29JEw4Gk9RVNkVFpE9. **Decidida la C**: la
+píldora flotando sobre el contenido. Todavía NO está implementada; esto es
+la decisión y lo que implica, para que quien la haga no la reabra.
+
+**Lo que se comparó.** A, la barra pegada de hoy (56 px, cinco etiquetas).
+B, la misma píldora dentro del flujo flex (un archivo, pero cuesta 76 px y
+el contenido no pasa por debajo: es C a medias). C, la píldora `absolute`
+sobre el contenido con un degradado a Bone. D, píldora más la acción
+primaria de la pantalla como botón redondo al lado: libera la cabecera pero
+reabre §35 —la primaria va en la fila del eyebrow— y el botón cambiaría de
+significado por pantalla. E, la píldora en tinta: pieza de marca, pero
+compite con el título en Condensed y el activo queda en 3,5:1.
+
+**Lo que se midió antes de decidir.** Cinco etiquetas en versalitas no caben
+en una píldora de 366 px («ENTRENAMIENTOS» mide 86; «EQUIPO» quedaba
+cortado): la píldora lleva iconos y la etiqueta SÓLO en el activo, dentro
+de su cápsula. Se probó en local con `BottomTabBar` y se revirtió.
+
+**Lo que implica implementarla.**
+
+- `BottomTabBar` pasa a `absolute` sobre el contenido —12 px de margen a los
+  lados y abajo más `env(safe-area-inset-bottom)`—, 56 px de alto, radio
+  `rounded-action`, fondo `surface`, borde `cobalt-tint-3`, sombra
+  `0 8 24` de tinta al 12 %. Cápsula del activo de 36 px en `cobalt-tint-2`
+  con icono y palabra; iconos de 20 px, trazo 2 (2,5 en el activo).
+- El relleno inferior de las listas se pone UNA vez, en el contenedor de
+  desplazamiento de `RootLayout`, con `calc(84px + env(safe-area-inset-bottom))`
+  sólo bajo `md`. Es justo lo que el comentario actual de `BottomTabBar`
+  advertía —«cualquiera que se olvidara dejaría contenido tapado»— y por eso
+  se resuelve en el layout y no página a página.
+- Degradado a Bone de 120 px bajo la píldora con `pointer-events: none`,
+  para que la última fila se lea entera al llegar al final.
+- `scroll-padding-bottom` en ese contenedor: un enlace enfocado con teclado
+  no puede quedar debajo de la píldora.
+- `aria-label` en los cinco enlaces y la etiqueta del inactivo en `sr-only`,
+  así las pruebas que buscan `link "Calendario"` siguen encontrándolo.
+- Se mide en dispositivo: cero desbordamiento, objetivos ≥ 44 px y la última
+  fila de cada lista legible con la píldora encima, a 390 y a 375 × 667.
+
+---
+
+## 37. La píldora flotante, hecha (15 sep 2026)
+
+Lo que §36 dejó decidido y sin implementar. La barra inferior deja de ser una
+franja pegada al borde y pasa a ser una **píldora que flota sobre el
+contenido**: la variante C de `docs/design/barra/`.
+
+**Lo que se gana.** Pegada, la barra se comía 56 px de todas las pantallas y
+partía la página con una línea de lado a lado. Flotando, el contenido pasa por
+debajo y la aplicación se lee de borde a borde; el degradado a Bone bajo la
+píldora hace que la última fila se desvanezca en vez de cortarse, que es lo que
+dice si hay más o se acabó la lista.
+
+**La etiqueta sólo la lleva la activa, y está medido.** Cinco en versalitas no
+caben: «ENTRENAMIENTOS» mide 86 px y la píldora tiene 343 de interior a 375. La
+activa se dimensiona por su contenido —`flex: 1 0 auto`— y las otras cuatro se
+reparten el resto; con todas a `flex-1`, la etiqueta de la activa no cabría en
+su quinto. Comprobado con la etiqueta más larga activa: las cinco pestañas
+suman 337 px.
+
+**El nombre no se pierde para quien no ve la pantalla.** Cada enlace lleva su
+`aria-label`, que además es como lo encuentran las pruebas; la activa marca
+`aria-current="page"`. Y se dejó de usar `NavLink`: el ancho de la pestaña
+depende de si está activa, y eso se decide en el `<li>`, fuera del alcance de
+su render. La regla de «activa» —la ruta exacta o cualquiera por debajo— está
+escrita una vez, en `isCurrent`.
+
+**EL HUECO SE DECLARA UNA VEZ, Y ÉSE ERA EL RIESGO.** El comentario de la
+versión anterior lo advertía: con la barra fuera del reparto flex «habría que
+compensar con relleno inferior en cada página, y cualquiera que se olvidara
+dejaría contenido tapado». Así que no se compensa página a página: `RootLayout`
+declara `--bottom-bar-space` —`calc(84px + env(safe-area-inset-bottom))` bajo
+`md`, cero desde ahí— y cada contenedor de desplazamiento lo hereda como
+relleno y como `scroll-padding-bottom`. Lo segundo resuelve otra cosa: al
+recorrer con el teclado, sin ello «la vista» incluiría lo que hay bajo la
+píldora.
+
+**Y para heredarlo hubo que dejar de repetirse.** `flex-1 overflow-auto` estaba
+copiado **veintiuna veces** con su comentario al lado. Ahora es `PAGE_SCROLL`,
+una constante con el comentario una sola vez. La variable vale `0px` en la
+raíz, así que la sesión en vivo —que va a pantalla completa y sin barras— no se
+come un hueco que nadie ocupa, sin tener que saber nada de esto.
+
+**Verificado en navegador**, que es lo que la regla exige. A 390 × 844: cero
+desbordamiento, píldora de 366 × 58 a 12 px del borde, pestañas de 56 px de
+alto y 48 de ancho mínimo, y 46 px libres entre la última tarjeta y la píldora
+al llegar al final. A 375 × 667 en oscuro, con la etiqueta más larga activa:
+cero desbordamiento y sin recorte. Desde `md`: píldora no pintada y relleno a
+cero. Dos pruebas nuevas fijan lo que la forma anterior no podía romper: que el
+contenido pasa por debajo, y que aun así la última fila queda por encima.
+
+## 38. El padrón de alumnos, en filas (16 sep 2026)
+
+Primera tanda del rediseño de vistas (`docs/design/vistas/`, artboards
+`Estudiantes` y `Patrones`). Las tandas van en commits separados y cada una se
+revisa antes de entrar.
+
+**Filas y no tarjetas, porque la lista es para encontrar.** Cada alumno
+ocupaba una tarjeta de 320 px —edad, grasa, nivel, objetivos y la franja de
+progreso— y en un teléfono cabía una y media. Ahora es una fila de 64 px:
+avatar, nombre, una línea de apoyo y, a la derecha, un solo estado. Lo que
+enseñaba la tarjeta sigue en la ficha, a un toque. La fila es un patrón
+compartido, `ListRow`, con el enlace estirado sobre toda ella; el objetivo
+táctil es la fila y no las letras del nombre.
+
+**La línea de apoyo se compone por importancia**: nivel, cuántas sesiones
+lleva —«sin sesiones» en palabras, nunca una barra a cero— y «cuota vencida»
+sólo si lo está. **A la derecha manda el dinero**: la cuota vencida o por
+vencer gana a «sin cuenta», y en forma breve —«Vencida», «Por vencer»—,
+porque «Venció hace 5 días» son 135 px de los 303 de la fila y dejaban la
+línea en «Intermedio · …». Los días exactos siguen en la ficha y en la cola de
+cobros (`describeStandingBriefly`, `SubscriptionBadge brief`).
+
+**Las acciones se mudan a la ficha.** La fila no lleva menú a propósito:
+editar, dar de baja y eliminar están en la cabecera de la ficha, en un menú de
+tres puntos —`PageHeader.OverflowMenu`, una tercera categoría junto a la
+primaria y las secundarias—. Allí se decide sobre una persona, y un menú por
+fila multiplicaba los destinos táctiles de una pantalla que se recorre con el
+pulgar. El menú sólo se pinta con `students.manage`, que es lo que exige la
+base; la tarjeta lo ofrecía a cualquiera. «Sin cuenta» y «Copiar invitación»
+también pasan a la ficha, que es adonde manda la bandeja del panel.
+
+**Mudar las acciones destapó un fallo.** `useStudent` leía una vez y no
+escuchaba: con las acciones en la lista daba igual, porque la lista sí
+escucha, pero editar desde la ficha dejaba la ficha con los datos de antes, y
+tras una baja el menú seguía ofreciéndola. Ahora se suscribe, sin volver a
+encender `loading` —eso pintaría el esqueleto y desmontaría el diálogo que
+acaba de guardar—, y el menú no ofrece la baja a quien ya la tiene. Hay prueba,
+y se comprobó que falla sin el arreglo.
+
+**El filtro dice «Nivel».** Con `SelectValue`, el disparador medía lo que la
+opción elegida —«Todos los niveles»—. Ahora nombra qué filtra y, puesto,
+enseña el nivel. Su `aria-label` contiene siempre el texto visible («Nivel»,
+«Nivel: Intermedio»): `combobox` no toma el nombre de su contenido.
+
+**Verificado en navegador.** A 375: cero desbordamiento, filas de 64 px, la
+lista alineada con el título (36 px) y 303 px de ancho, filtro de 80 × 44, menú
+de 44 × 44; los tres diálogos del menú abren y cierran dejando la página
+operable. A 1440: cero desbordamiento.
+
+**Queda pendiente, y va en tandas siguientes:**
+
+- A 375 la línea de apoyo se trunca en las cuatro filas: la columna del nombre
+  se queda en 116–137 px. La causa no es la fila sino el margen de página:
+  `RootLayout` pone 16 px por lado y cada página otros 20, 72 px de 375; los
+  artboards usan 20. Se corrige en su propia tanda (§39), porque toca todas
+  las páginas.
+- `?agendar` abre el diálogo de agendar al entrar en la ficha, pero ya nadie
+  enlaza con él: su puerta era el menú de la tarjeta. Tiene `TODO:` en
+  `StudentDetail`; su sitio es la sección «Le toca» de la ficha por secciones
+  (resuelto en §40).
+- En escritorio el padrón es una columna de 864 px; la composición de
+  `EscritorioEstudiantes` es la tanda de escritorio.
+
+## 39. Un solo margen de página en móvil (16 sep 2026)
+
+Lo que §38 dejó pendiente. A 375 la línea de apoyo de las filas del padrón se
+truncaba en las cuatro, y la causa no era la fila: `RootLayout` ponía 16 px
+por lado y cada página sumaba los suyos. Eran 36 px de margen —72 de 375—
+cuando los artboards de `docs/design/vistas/` usan 20.
+
+**El layout deja de poner relleno bajo `md`**, y cada página pone el suyo una
+sola vez: 20 px, el de la cabecera. Desde `md` el relleno del layout vuelve y
+el escritorio no cambia, salvo que ahora el contenido y la cabecera coinciden
+también allí (antes, 32 y 36).
+
+**Lo que había que tocar** salió de un barrido medido, no de leer clases: las
+21 rutas de gestión a 375, marcando todo texto a menos de 14 px de un borde y
+contando dónde empieza cada bloque. Antes del cambio todo arrancaba a 32 o 36;
+después, a 20, salvo lo que se ajustó:
+
+- Las páginas que ponían 16 px propios —Entrenamientos, el catálogo y sus
+  cuatro secciones, Progreso y su repertorio, el aviso de suscripción del
+  padrón— pasan a 20, alineadas con su cabecera.
+- La agenda se quedaba con las sesiones pegadas al borde derecho. La rejilla
+  sigue de borde a borde; la franja de sesiones lleva `pe-4` en móvil, y en la
+  vista semanal lo llevan las dos filas para que las columnas coincidan. Las
+  tarjetas se colocan en absoluto sobre la franja, así que el relleno tiene
+  que ir en la fila que la contiene, no en la franja.
+- Las franjas de cifras del panel y de Reportes quedan a 16, como en el
+  artboard.
+
+**Resultado.** Cero desbordamiento y ningún texto nuevo contra un borde en las
+21 rutas, ni en las tres del alumno. Lo que el barrido sigue marcando ya estaba
+ahí y está dentro de un contenedor que desplaza en horizontal: las pestañas del
+catálogo, el carrusel de logros y los textos truncados de la cola de avisos.
+En el padrón, «Avanzado · sin sesiones» se lee entera.
+
+## 40. La ficha del alumno, en secciones (16 sep 2026)
+
+Segunda tanda del rediseño de vistas (artboards `FichaAlumno*`). La ficha era
+una sola columna de más de cuatro mil píxeles con todo abierto —cifras,
+objetivos, cuota, progreso, ruta, cargas, asignaciones y sesiones— y lo que se
+venía a mirar había que encontrarlo desplazando.
+
+**La cabecera dice quién es y en qué estado está.** Nivel, edad y, sólo si
+reclama algo, la cuota («Cuota vencida», «Cuota por vencer»), en una línea.
+«Sin cuenta» y su invitación salieron de aquí: partían la línea en dos y
+bajaban el contenido 50 px en todas las secciones, y son un pendiente, así que
+van en «Le toca».
+
+**Cuatro secciones fijas bajo la cabecera**: Resumen, Progreso, Sesiones y
+Cuota. Quedan fuera del contenedor que desplaza, la sección vive en la
+dirección (`?seccion=cuota`), se cambia también deslizando —como en
+Entrenamientos— y cada una empieza por arriba. Todos los cambios usan
+`replace`: volver sale de la ficha, no recorre sus secciones.
+
+- **Resumen**: la franja de cifras —edad, grasa, sesiones hechas y racha—,
+  objetivos, lo asignado y **«Le toca»**, que es la bandeja del panel para una
+  persona: la cuota que reclama, el hito que espera validación, las insignias
+  por confirmar, las cargas por revisar, si no tiene cuenta —con el botón de
+  copiar la invitación ahí mismo— y la próxima sesión o su ausencia. Cada fila
+  lleva a la sección donde se resuelve. **Compone, no calcula reglas**
+  (`useStudentSummary`): las sesiones hechas salen del mismo agregado que la
+  fila del padrón, la racha de `streakFrom` con las pausas, y el hito
+  pendiente lo dice el servidor (`pendingMilestones`), no una tercera copia de
+  los umbrales.
+- **Progreso**: nivel, ruta y cargas, como estaban. Sin su título propio,
+  que repetía la pestaña.
+- **Sesiones**: lo próximo arriba y en orden de llegada; lo pasado debajo,
+  por meses y con cuántas se hicieron (`groupSessions`, con prueba unitaria).
+  Filas de 56 px en vez de 90: día, qué y cuándo, y el estado; lo hecho y lo
+  cancelado, atenuado; lo que no ocurrió, no.
+- **Cuota**: primero la tarjeta de estado —la insignia, la periodicidad y
+  hasta qué día está pagado—, después Registrar pago y Avisar juntos, y al
+  final la periodicidad.
+
+**`?agendar` recupera su puerta**, que perdió con la tarjeta del padrón
+(§38): la fila «Nada agendado» del resumen lleva a ella. El diálogo lee su
+estado de la dirección, y cerrarlo la limpia.
+
+**`ListRow` cambia en dos cosas.** El enlace envuelve las dos líneas y mide
+44 px propios: envolvía sólo el nombre, y aunque el área de pulsación era la
+fila, la auditoría de 375 px contaba un destino de 19 px —y el nombre
+accesible pasa a ser la fila entera, que es lo que debe leerse—. Y la fila
+puede no tener destino: entonces no es enlace ni lleva flecha, y lo de la
+derecha puede ser un control.
+
+**Verificado en navegador.** A 375 y a 1440, las cuatro secciones de dos
+alumnos: cero desbordamiento, pestañas de 82 × 44 sin desplazamiento, el
+contenido arranca a 316 px (366 con la cabecera en dos líneas). `?agendar`
+abre el diálogo y cerrarlo limpia la dirección; una fila de «Le toca» abre
+su sección y volver sale de la ficha. La auditoría de 375 px recorre ahora
+las cuatro secciones, no sólo la primera.
+
+**Queda para las tandas siguientes:** los dos formularios que siguen abiertos
+en Progreso —validar el hito y pausar la racha— pasan a hojas en la tanda de
+hojas, y la ficha de escritorio a su composición de 1440 en la de escritorio.
+
+## 41. Las fichas de rutina y de plan (16 sep 2026)
+
+Primera mitad de la tercera tanda del rediseño de vistas (artboards `Rutina`,
+`Plan` y los patrones 3 y 4 de `Patrones`). La segunda mitad son los
+formularios, en su propio commit.
+
+**Las cifras, en franja de dos por dos.** En las dos fichas iban apiladas
+—filas de 70 a 90 px cada una— y lo que es la rutina o el plan quedaba debajo
+del pliegue. Ahora son cuatro celdas arriba, y el nivel entra como una más en
+vez de ocupar un bloque. La celda es una pieza compartida, `MetricFigure`, que
+ya usaba el resumen de la ficha del alumno con otro nombre; más pequeña que
+`MetricBlock` a propósito: son los datos de un objeto, no los indicadores de
+una pantalla. `RoutineDraftSummary` pasa a `RoutineSummary` y, como
+`PlanSummary`, la usan la ficha y el formulario: lo que se ve al escribir es lo
+que se verá después.
+
+**La rutina, por bloques y en filas.** El rótulo dice el bloque y su método
+—«Bloque 03 · Superserie»— y, si tiene más de uno, cuántos ejercicios. Cada
+ejercicio es una fila con su número —sigue a lo largo de la rutina, que es el
+orden en que se hacen—, su nombre, su dosis y, debajo, el descanso, el tempo y
+las indicaciones. El descanso de cada ejercicio sólo se dice en una serie
+simple; en una superserie o un circuito cuenta el de la vuelta, que va al pie
+del bloque. **El nombre parte línea y no se trunca**: medido a 375, la dosis
+con peso y RIR se llevaba la mitad de la fila y tres nombres salían cortados.
+
+**El plan, con las semanas plegadas** (`CollapsibleRow`, el patrón 3). Las
+cuatro semanas eran 28 filas de días seguidas, 1.700 px para decir «lunes,
+miércoles y viernes». La fila cerrada dice cuántas sesiones y **qué días**
+—«3 sesiones · lunes, miércoles y viernes», con `Intl.ListFormat` para la
+conjunción de cada idioma—, que es precisamente lo que distingue días alternos
+de días seguidos, el motivo por el que antes se listaban los siete. Abierta
+sólo la primera; dentro, los días con rutina y los descansos contados
+(`summarizeWeek`, con prueba unitaria). Objetivo y división pasan a pares
+clave-valor.
+
+**La nota de cómo se asigna baja al pie** en las dos fichas: se lee una vez, y
+arriba empujaba lo que se viene a mirar.
+
+**De paso**: las cadenas «de descarga» y «/sem», escritas a mano en
+`PlanSummary`, pasan a los diccionarios, y salen seis claves que ya nadie
+usaba —dos de ellas desde antes de este trabajo—.
+
+**Verificado en navegador.** A 375 y a 1440, las tres rutinas de la semilla y
+el plan: cero desbordamiento, ningún nombre truncado, ningún control bajo
+44 px en móvil, y las semanas se abren y se cierran con `aria-expanded`.
+
+## 42. Los formularios de rutina y de plan (16 sep 2026)
+
+Segunda mitad de la tercera tanda (artboard `NuevaRutina` y los patrones 3 y 4
+de `Patrones`). El formulario de rutina era una página de más de dos mil
+píxeles con cada ejercicio abierto en ocho campos.
+
+**La rutina, en dos pasos**: «1 · La rutina» —nombre, descripción, nivel— y
+«2 · Bloques». Crear abre en el primero; editar, en los bloques, que es lo que
+se viene a cambiar. Se guarda desde cualquiera, y por eso:
+
+- el error de los bloques va **por encima de los pasos**, visible desde los
+  dos, y cada paso con un error lleva un punto (con su nombre para quien no lo
+  ve);
+- al intentar guardar se abre **el primer paso que falla**. Para saberlo,
+  `submit` deja de devolver `null` y devuelve los datos o los errores
+  (`RoutineSubmission`);
+- las cifras van en **una línea** —«25 min · 12 series»— en vez de la franja
+  de la ficha (`RoutineDraftLine`), con las mismas funciones. Sólo las cifras
+  son región viva: el nombre, que cambia con cada tecla, se anunciaría letra a
+  letra.
+
+**Cada ejercicio, plegado con su dosis** (patrón 3): «Press de banca con barra
+· 4 × 6-8». Los que había al abrir arrancan plegados; los que se añaden, los
+insertados desde la biblioteca y los que no tienen ejercicio elegido,
+abiertos, porque son los que se están escribiendo. La lista de «los que había»
+se toma una vez: añadir uno no repliega los que se abrieron a mano.
+
+**Lo de siempre a la vista, lo de a veces detrás** (patrón 4). Abierto, un
+ejercicio enseña el ejercicio, y series, repeticiones y RIR en una fila; peso,
+descanso propio, tempo e indicaciones, detrás de «Más ajustes», que se abre
+por ejercicio y **arranca abierto si alguno ya tiene valor**: esconder un dato
+escrito sería esconder una decisión. Hay prueba de las dos cosas.
+
+**El bloque**: método y descanso de la vuelta en una fila —apilados eran
+150 px antes del primer ejercicio—. La etiqueta del descanso parte línea en
+vez de acortarse: «descanso» a secas se confundiría con el de cada ejercicio.
+
+**El plan**: cada semana, plegada con el mismo resumen que en la ficha
+(«3 sesiones · lunes, miércoles y viernes», la descarga en su insignia).
+Abierta, la marca de descarga, el borrado y los siete días: al programar sí
+hay que ver los huecos, porque cada uno es una elección. Abierta al entrar
+sólo la primera; las que se añaden, abiertas.
+
+**De paso, lo que la revisión encontró en estos ficheros:**
+
+- cuatro `as` de conveniencia sobre el valor de un desplegable —nivel de
+  rutina, de plan y de alumno, y método de bloque—. Las listas cerradas y sus
+  guardas (`TRAINING_LEVELS`/`isTrainingLevel`, `BLOCK_METHODS`/
+  `isBlockMethod`, `STUDENT_LEVELS`/`isStudentLevel`) pasan a la entidad, y
+  desaparecen **cuatro copias** de la lista de niveles;
+- tres nombres accesibles y la nota de descarga escritos en castellano a
+  mano, que pasan a los diccionarios;
+- dos claves sin uso.
+
+Quedan dos `as` iguales fuera de estos ficheros —el filtro de logros y las
+pestañas del catálogo—, para sus tandas.
+
+**Verificado en navegador.** A 375 y a 1440: alta vacía, guardar con errores,
+el paso de bloques con «Más ajustes» abierto, la edición de una rutina y la de
+un plan. Cero desbordamiento, ningún control bajo 44 px en móvil y ninguna
+etiqueta que no quepa —«REPETICIONES» no cabía con el espaciado de siempre, y
+el marcador «No aplica» del RIR tampoco—. La auditoría de 375 px del
+formulario recorre ahora los dos pasos y comprueba también las etiquetas.
+
+## 43. La presentación deja de tocar datos (16 sep 2026)
+
+*Numerada §36 en su rama (`refactor/presentacion-tras-hooks`, PR #28); al
+juntarse con la del rediseño de vistas, que ya usaba del 36 al 42, pasó a ser
+la 43.*
 
 Rama `refactor/presentacion-tras-hooks`. §2.2 dice que un componente o una
 página sólo pinta, y que al puerto se llega por un hook. Nueve ficheros no lo
@@ -3515,3 +3882,342 @@ ruta todavía en «Cargando…» sobre un servidor recién arrancado, sin caché
 Vite, y pasó tres de tres al repetirla. Salir del equipo no tiene prueba en la
 suite y se recorrió aparte a 375 px: el diálogo confirma, la cabecera pasa a
 «Sin equipo» y Progreso invita a unirse a uno.
+
+## 44. En móvil, los diálogos son hojas (17 sep 2026)
+
+Cuarta tanda del rediseño de vistas (artboards `Hoja*`). La propuesta no deja
+margen: «en móvil TODO diálogo es esto». Así que se hace **una vez, en
+`shared/ui/dialog.tsx`**, y no en los trece diálogos que hay: uno nuevo nace
+siendo hoja sin que nadie tenga que acordarse.
+
+**La hoja**: pegada abajo, a todo el ancho, esquinas de arriba redondeadas,
+como mucho el 90 % del alto y lo que no quepa se desplaza por dentro. Entra
+deslizando desde abajo y lleva un asa, que no se arrastra —cerrar es el aspa,
+«Cancelar» o tocar fuera— sino que dice qué es eso y por dónde se va. Desde
+`md` vuelve el diálogo centrado de siempre, con sus animaciones; las de la
+hoja se anulan una por una, porque si no el diálogo de escritorio entraría
+deslizando.
+
+**El pie manda**, y por eso pasa a ser el `DialogFooter` compartido en los
+ocho sitios que se lo hacían aparte: en la hoja, los botones van apilados, a
+todo el ancho y con **el primario arriba** —`flex-col-reverse`, sin tocar el
+orden del DOM, que sigue siendo el de lectura—; en escritorio, en fila y a la
+derecha. Y **pegado abajo** mientras el cuerpo se desplaza: asignar un plan
+tiene un calendario dentro, y su botón se quedaba fuera de la pantalla, que es
+justo lo que la hoja viene a arreglar.
+
+**Registrar un pago deja de escribir al pulsar.** Era un botón que movía la
+fecha pagada sin decir a dónde, y eso no se deshace desde la aplicación. Ahora
+abre su hoja, que dice **hasta cuándo cubre** antes de escribir y deja
+**cambiar la fecha del pago**, que es el caso corriente: el dinero se recibe el
+lunes y se registra el miércoles. La regla es la de siempre —`renewedThrough`,
+que cuenta desde la fecha pagada o desde la del pago, la que sea posterior—, y
+lo que la hoja enseña sale de ella, así que es exactamente lo que va a quedar
+guardado. El periodo NO se toca ahí: se elige en la sección, y tenerlo en dos
+sitios serían dos controles para un mismo dato.
+
+**Dónde se distancia del artboard.** Sus hojas llevan «Cancelar» siempre y no
+llevan aspa. Aquí los formularios largos —asignar, agendar, volcar un plan,
+nueva sesión— se quedan con su primario y el aspa: añadirles un «Cancelar» a
+todo el ancho sumaba 56 px a la hoja para repetir lo que ya hacen el aspa y
+tocar fuera. Las hojas de confirmar —eliminar, avisar, pago— sí llevan los
+dos, que es donde el artboard lo pide de verdad.
+
+**Verificado en navegador**, midiendo. A 375, las seis hojas: pegadas al borde
+inferior, 375 px de ancho, esquina de 16 px, el primario arriba y los botones
+del mismo ancho; ninguna tapa el contenido con la barra del navegador porque
+el alto va en `dvh`. A 1440: centradas, 512 px, separadas de los bordes. Dos
+pruebas nuevas fijan lo que se puede romper sin que se note: que la hoja se
+pega abajo en móvil y se centra en escritorio, y que la hoja de pago cuenta
+desde el día del pago —treinta días desde hace cinco son veinticinco.
+
+## 45. El equipo y el progreso, en secciones (17 sep 2026)
+
+Quinta tanda del rediseño de vistas (artboards `Equipo*`, `Progreso`,
+`ProgresoHistorial`, `Insignias`). Las dos pantallas que quedaban en columna
+larga pasan a secciones, con el mismo patrón que la ficha del alumno (§40) —y
+por eso lo primero fue SACARLO A UN SITIO: `useUrlSection` lleva la sección en
+la dirección, siempre con `replace`, con la primera sin parámetro. La ficha, el
+equipo y el progreso lo comparten; antes era un bloque copiado en la ficha.
+
+**El equipo medía 1.920 px de alto** y enseñaba la lista de miembros dos veces
+—como padrón y como ranking—. Ahora son cuatro: muro, miembros, ranking e
+invitar.
+
+**LA OBJECIÓN DE ANTES ERA BUENA y por eso el muro es la primera.** Estaba
+escrito en la propia página: «un anuncio nuevo detrás de una pestaña es un
+anuncio que nadie lee». Sigue siendo cierto, así que el muro es lo que se ve al
+entrar y ninguna pestaña lo tapa. Lo que sí esperaba una decisión —las
+solicitudes— se va a «Miembros», y para que moverlo no sea esconderlo, **su
+pestaña lleva la cuenta**; la suscripción sin activar pone un punto en
+«Invitar». Además de lo que ya hacían la bandeja del panel y la barra.
+
+**Las secciones que EXISTEN dependen del equipo**: el ranking se puede apagar
+—en un grupo de rehabilitación, comparar hace daño— y el QR sólo lo ve quien
+puede invitar. Una dirección que nombre una sección que no está cae en el muro
+en vez de dejar la pantalla en blanco. Por eso `useUrlSection` recibe la lista
+de las vigentes y no la de todas, y por eso el tablero es un componente aparte
+de la guarda: los hooks no pueden vivir detrás de un `return` condicional.
+
+**El progreso** va en ruta, logros e historial, con el nivel y la racha FUERA
+del contenedor que desplaza —iban dentro, pegados con `sticky`—: cambiar de
+sección ya no los mueve. El recuento de sesiones sale del resumen, que lo
+repetía: ahora vive en el historial, que es la sección que lo explica.
+
+**EL HISTORIAL NO EXISTÍA.** El progreso enseñaba lo que el esfuerzo produce
+—nivel, racha, insignias— y en ningún sitio el esfuerzo: quien se preguntaba
+«¿cuántas llevo este mes?» tenía que contarlas en el calendario, que es del
+entrenador. Sale de lo que `useGamificationProfile` YA leía —las sesiones y sus
+puntuaciones—, no de una consulta nueva: dos lecturas de lo mismo son dos
+ocasiones de discrepar, y la pantalla diría 326 XP arriba y otra cifra abajo.
+Se agrupa por meses con su suma, y una sesión cerrada antes de que el servidor
+puntuara lleva un guion y no un cero, que se leería como haber entrenado para
+nada. Cuatro pruebas unitarias fijan lo que se puede romper sin que se vea: que
+ordena por el día en que se CERRÓ y no por el agendado, y que lo no puntuado no
+resta del mes.
+
+**Dónde se distancia del artboard.** Su pestaña de logros se llama «Insignias»,
+y aquí se llama «Logros»: la galería, el filtro y el vacío llevan diciendo
+«logros» desde el catálogo, y dos palabras para una misma cosa en la misma
+pantalla se leen como dos cosas. Y su sección de logros propone «las más cerca»
+—«7 de 10 sesiones»—, que no se hace: el avance hacia una insignia por
+conseguir no lo publica el servidor, y dibujarlo en el cliente sería inventarse
+la barra. Queda anotado como lo que falta, no como una sección a medias.
+
+De paso, dos cosas que estaban mal a la vista de cualquiera que mire la
+pantalla en otro idioma: el recuento de logros estaba escrito en español dentro
+del componente —«5 de 21 logros conseguidos» en la aplicación en inglés—, y el
+filtro de rareza estrechaba su valor con `as`. Ahora es `isBadgeRarity`, como
+`isTrainingLevel`.
+
+**Verificado en navegador**, midiendo. A 375, las siete secciones: cero
+desbordamiento, pestañas de 44 px, ningún objetivo por debajo y ningún
+contenedor bajo 280 px. A 1440, la composición de escritorio de estas dos
+pantallas sigue siendo la de la tanda 9; lo que se comprueba aquí es que nada
+se rompe. El encabezado «Muro» del propio muro pasa a `sr-only`: la pestaña de
+arriba ya dice esa palabra.
+
+## 46. Entrenamientos: la tarjeta compacta (17 sep 2026)
+
+Sexta tanda del rediseño, primera parte (artboard `Entrenamientos`). Lo que el
+artboard deja escrito en su propio margen: «la tarjeta de rutina conserva lo que
+la distingue —qué ejercicios lleva— pero en una línea, no en una lista de cuatro
+filas con series y RIR: eso es de la ficha».
+
+**Medido antes y después, a 375 px**: de 320 px por rutina —una y media por
+pantalla— a 164 px, las tres de la semilla enteras y comparables de un vistazo.
+Lo que se fue: la cuña diagonal, el rótulo «RUTINA» encima —la pestaña en la que
+está ya lo dice—, la rejilla de dos cifras, los tres primeros ejercicios en
+filas con su prescripción y la flecha de destino. Lo que queda: el título, una
+línea de medidas —«4 ejercicios · 25 min · 12 series»—, los ejercicios en una
+línea truncada y las insignias de nivel y método. Una prueba fija la medida, que
+es lo único que impide que la tarjeta vuelva a engordar sola.
+
+**La tarjeta de plan va detrás**, y no por simetría: las dos viven en la misma
+pantalla, y una alta al lado de una baja se lee como dos listas distintas.
+
+**El título es el objetivo táctil.** El enlace estirado ya cubría la tarjeta
+entera, pero su propia caja medía 26 px y cualquier auditoría —la nuestra la
+primera— lo cuenta como un destino de 26 px. Ahora la caja mide 44.
+
+**Las secciones, fijas y en la dirección.** Entrenamientos y su catálogo pasan a
+`useUrlSection` como el resto (§45): las pestañas quedan fuera del contenedor
+que desplaza, y el parámetro deja de llamarse `?tab=` para llamarse `?seccion=`
+como en las otras cuatro pantallas —una sola palabra para una sola cosa—. En el
+catálogo eso se lleva además el `as` con el que se estrechaba el valor del
+control, que era el último que quedaba fuera de una guarda.
+
+**El filtro de rutinas sube a la página y se queda fijo.** Se filtra mirando
+cómo mengua la lista, así que desplazarse no puede llevárselo; vivía dentro de
+la lista y se iba con ella. Al subir su estado, `RoutineList` se queda sin nada
+que hacer y desaparece.
+
+## 47. La agenda como lista, y el hueco contado (17 sep 2026)
+
+Sexta tanda, segunda parte (artboard `Agenda`). Su margen lo explica: «el día
+como LISTA, no como rejilla de horas: de 08:00 a 21:00 son catorce franjas, once
+vacías, y las sesiones quedaban repartidas en 2.300 px de desplazamiento. Lo
+vacío se cuenta en una línea».
+
+**La lista es lo que se ve al entrar; la rejilla sigue estando.** No es una
+sustitución: la rejilla sitúa una sesión en su tramo y es como se ve dónde cabe
+otra, así que se queda detrás de «Horario». La lista enseña el día entero sin
+desplazarse, con una fila por sesión —hora, con quién, de qué y en qué estado— y
+una línea por hueco: «LIBRE HASTA LAS 18:00».
+
+**El hueco se mide desde que TERMINA la anterior**, no desde que empieza: una
+sesión de dos horas no deja libre el rato que dura. Y sólo a partir de dos
+horas, porque entre sesión y sesión hay huecos de veinte minutos que son el
+propio descanso del entrenador y anunciarlos llenaría el día de líneas. Dos
+horas es un tramo donde cabe otra sesión, que es la decisión que la línea
+informa. Cinco pruebas unitarias lo fijan, umbral incluido.
+
+**La fila es la misma `ListRow` del resto**, que aprende a abrir algo que no es
+una dirección: la ficha de una sesión es un diálogo. Su nombre accesible es el
+mismo que el de la tarjeta de la rejilla, así que quien la busca por voz no
+tiene que saber en qué vista está.
+
+**El resumen deja de mentir.** Contaba TODAS las sesiones que existen —«10
+completadas» era el historial entero del equipo, un número que sólo crece— en
+cinco bloques de 90 px que se llevaban 270 px por debajo del día. Ahora habla de
+LA SEMANA QUE SE MIRA, lo dice en su encabezado —«Esta semana», o el rango
+cuando se navega a otra— y son cinco píldoras en dos líneas. Un estado sin
+sesiones no se pinta: «0 canceladas» ocupa lo mismo que «3 confirmadas» y no
+informa de nada.
+
+## 48. Los avisos dejan la esquina (17 sep 2026)
+
+Sexta tanda, tercera parte (artboard `Avisos`). La bandeja era un desplegable de
+320 px colgando de la campana: los avisos apretados, ocho líneas visibles y sin
+más orden que la fecha. Un aviso es lo ÚNICO que la aplicación le manda a un
+alumno —su cuota, un recordatorio de su entrenador, la aprobación de su equipo—,
+y leerlo en una esquina es leerlo con prisa.
+
+**Ahora es una pantalla**, `/notices`, y la campana lleva a ella. Sin entrada en
+la navegación, a propósito: se llega por la campana, que es donde se ve que hay
+algo, y la barra de móvil ya está en sus cinco destinos.
+
+**Se agrupa en HOY y ANTES**, que es como se lee una bandeja: lo de hoy puede
+pedir algo y lo de antes es historia. Sin más tramos —con diez avisos, «esta
+semana» y «este mes» serían encabezados con una fila debajo—. Lo de hoy lleva la
+hora y lo de antes el día, porque a las dos preguntas se responde distinto.
+
+**Cada aviso dice de qué es.** El motivo ya se guardaba —`kind`: cuota, del
+entrenador, del equipo— y no se enseñaba en ninguna parte; ahora rotula la
+entrada. El artboard propone además un titular por aviso («Sesión movida al
+martes»), y eso NO se hace: no hay dato del que salga, y escribirlo sería
+inventar el contenido del aviso a partir de su motivo.
+
+**Lo no leído se marca al entrar y se sigue viendo marcado.** Abrir es el acto
+de leer —eso ya era así—, pero apagar el punto en el mismo instante en que se
+llega deja a quien entra sin saber cuál era el aviso nuevo. Se toma una foto de
+lo no leído al llegar, se marca todo leído por detrás, y el punto sobrevive
+mientras se está en la pantalla.
+
+## 49. Configuración, en filas (17 sep 2026)
+
+Sexta tanda, cuarta parte (artboard `Configuracion`). La pantalla era una
+columna de formularios abiertos: el perfil entero con su foto y sus cinco
+campos, la contraseña entera, seis botones apilados y dos grupos de tres
+opciones. **1.700 px de desplazamiento para una pantalla en la que casi nunca
+se cambia nada.** Ahora mide 1.190 y cada ajuste es una fila que dice CÓMO
+ESTÁ.
+
+**Lo que se mira, a la vista; lo que se rellena, dentro.** El perfil y la
+contraseña se abren en una hoja —seis campos no pueden estar siempre
+desplegados para algo que se toca una vez al año—, y tema e idioma pasan a
+`ChoiceRow`: una fila con el valor puesto a la derecha, y las opciones dentro.
+El precio es un toque más para cambiarlo, y es el correcto.
+
+**Lo que hay que saber ANTES de elegir va donde se elige.** El aviso de la
+traducción —«cambia lo que escribe la aplicación, no lo que escribiste tú»— y
+el de «Sistema» viajan a la hoja de su ajuste; lo que se lleva por delante
+eliminar la cuenta viaja a su confirmación, que es donde se decide. En la fila
+eran párrafos de tres líneas bajo un rótulo de tres palabras.
+
+**Quién eres, arriba y sin encabezado**: cara, nombre y correo, con «Editar» al
+lado. Es la respuesta a «¿de quién es esta aplicación?» y no necesita que se la
+anuncien. Sin ficha —quien no está en ningún equipo— el correo sube a la
+primera línea y debajo se explica por qué no hay nada que editar.
+
+**La fila compartida aprende dos cosas**: a abrir algo que no es una dirección
+—ya lo hacía la agenda— y a llevar flecha aunque no lleve a una URL, porque una
+fila que abre una hoja también va a algún sitio.
+
+**Verificado en navegador**: a 375 px no hay desbordamiento, ningún objetivo
+por debajo de 44 px —el interruptor del sonido ocupa la fila entera— y ningún
+contenedor por debajo de 280.
+
+## 50. Los vacíos enseñan (17 sep 2026)
+
+Séptima tanda (artboards `EstudiantesVacio`, `EntrenamientosVacio`,
+`AgendaVacia`). Un equipo recién creado abre TRES pantallas vacías seguidas, así
+que esos huecos son la primera explicación que recibe quien acaba de empezar. Y
+lo que decían era una línea gris centrada en cuatrocientos píxeles de nada: «Aún
+no tienes alumnos», «Aún no has creado ninguna rutina». Constataban lo que ya se
+veía.
+
+**Ahora dicen qué va ahí, por qué, y por dónde se empieza**, con `EmptyState`:
+icono, título, dos líneas de explicación y las salidas. Lo que se explica es
+justo lo que nadie adivina —que la cuenta de un alumno se enlaza sola con su
+ficha por el correo; que una rutina se compone de bloques del catálogo y se
+asigna desde la ficha; que un plan volcado llena la agenda de un ciclo entero—.
+
+**Dos salidas y no una**, porque casi siempre hay dos caminos: dar de alta o
+enseñar el QR, crear una rutina o ir al catálogo a por ejercicios, agendar o
+mirar el día siguiente. La segunda va en texto, no compite.
+
+**Alineado a la izquierda** y no centrado: se lee como el resto de la aplicación
+y el botón cae donde cae el pulgar.
+
+**No se mezcla con «no hay resultados».** Un filtro sin coincidencias sigue
+siendo una frase: lo que hace falta ahí es quitar el filtro, no dar de alta a
+alguien que ya existe. Y donde no hay a quién buscar, la fila de filtros
+desaparece: un buscador sobre una lista vacía sólo puede devolver lo mismo.
+
+**Lo que NO recibe vacío ilustrado**: los avisos y el historial, donde no hay
+nada que ofrecer —llegan solos al entrenar o al recibirlos—, y los huecos de
+dentro de una ficha, que ya explican lo suyo en una línea.
+
+## 51. Todo texto que se lee pasa AA, en los dos temas (18 sep 2026)
+
+Octava tanda (artboards `Oscuro*`). El tema oscuro ya estaba donde la propuesta
+lo pone —fondo `#0C1017`, superficie `#151923`, Cobalt `#4990F3` y los tres
+estados coinciden uno a uno con los tokens—, así que la tanda no fue pintar un
+tema: fue MEDIR los dos. Y el que salió peor fue el claro.
+
+**Medido en la página, no leído de los tokens.** Un script recorre diecisiete
+pantallas a 375 y a 1440 px, en claro y en oscuro, y calcula el contraste del
+color que se pinta de verdad contra el fondo que tiene detrás, con las capas
+semitransparentes compuestas —un tinte al 18 % no es un fondo, es un velo—.
+Lo que encontró:
+
+| Texto | Claro | Oscuro |
+|---|---|---|
+| `text-ink/40` | 2,59 | 3,46 |
+| `text-ink/45` | 2,99 | 4,07 |
+| `text-ink/50` | 3,48 | — |
+| `text-ink/55` | 4,08 | — |
+| «Pendiente» (aviso) | 2,84 | — |
+| «Confirmada» (éxito) | 3,32 | — |
+| «Cuota vencida» (peligro) | 3,33 | — |
+| Blanco sobre Ember (contadores) | 3,29 | 2,78 |
+| Blanco sobre Cobalt (iniciales) | — | 3,20 |
+
+AA pide 4,5:1 para texto normal. **El texto secundario de toda la aplicación
+estaba por debajo en claro**, y era la pregunta que había quedado abierta.
+
+**La regla, que se puede medir:**
+
+- **Texto: el suelo es `text-ink/60`.** Es el primer tramo que pasa en claro
+  (4,8:1) y en oscuro sobra. 284 clases suben a él; `/70` y `/80` se quedan.
+  La jerarquía no se pierde: la llevan el tamaño, el peso y las versalitas, no
+  sólo la opacidad.
+- **Botón de sólo icono: el suelo es `/50`.** Un icono que ES el control es un
+  componente de interfaz (WCAG 1.4.11) y pide 3:1: `/50` da 3,48 en claro. Son
+  veinte.
+- **Lo decorativo se queda como está**: `aria-hidden`, el icono al lado de su
+  rótulo, los separadores y flechas a `/20`–`/25`. No transmiten nada que no
+  diga el texto de al lado.
+- Sólo la clase BASE: `hover:text-ink/40` es un estado de paso, no el de
+  reposo.
+
+**Los estados, como en la propuesta.** Sus colores de claro ya venían
+oscurecidos para esto (`#1B6E3C`, `#B05A00`, `#D93025`) y los tokens se
+habían quedado en los de shadcn. Aviso y peligro bajan un punto más, porque
+también se leen sobre su propia superficie teñida, algo más oscura que Bone.
+
+**El texto encima de un color tiene su token.** `text-cobalt-foreground` es
+blanco en claro y tinta en oscuro, donde Cobalt sube y el blanco se quedaba en
+3,2:1; `text-ember-foreground` es tinta en los dos, porque encima van
+contadores de 9 px y el blanco no pasaba en ninguno. La pastilla del menú
+lateral activo se invierte en vez de teñirse, y el gris de shadcn
+(`--muted-foreground`) baja lo justo para pasar sobre su propia pista.
+
+**Una prueba lo fija**: recorre ocho pantallas en los dos temas con el mismo
+cálculo y falla si un solo texto baja de AA. Corrida contra el código de antes
+de esta tanda, falla con exactamente las cifras de la tabla.
+
+**Los marcadores de posición también cuentan** para WCAG. Los de shadcn
+pasan con el gris nuevo, y el único que iba a `/35` sube al suelo de texto:
+sigue distinguiéndose de un valor escrito, que va en tinta entera.

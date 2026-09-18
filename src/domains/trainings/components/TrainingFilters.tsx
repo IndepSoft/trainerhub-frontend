@@ -9,10 +9,8 @@ import {
 import { Search } from 'lucide-react'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { STUDENT_LEVEL_LABEL_KEY } from '@/shared/i18n/domainLabels'
-import type { TrainingLevel } from '@/shared/domain/entities/routine'
+import { TRAINING_LEVELS, isTrainingLevel } from '@/shared/domain/entities/routine'
 import type { RoutineFilterState } from '../libs/filterRoutines'
-
-const LEVELS: TrainingLevel[] = ['Principiante', 'Intermedio', 'Avanzado']
 
 interface TrainingFiltersProps {
   filters: RoutineFilterState
@@ -54,7 +52,7 @@ export function TrainingFilters({ filters, onChange }: TrainingFiltersProps) {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">{t('filters.level.all')}</SelectItem>
-          {LEVELS.map((level) => (
+          {TRAINING_LEVELS.map((level) => (
             <SelectItem key={level} value={level}>
               {t(STUDENT_LEVEL_LABEL_KEY[level])}
             </SelectItem>
@@ -63,8 +61,4 @@ export function TrainingFilters({ filters, onChange }: TrainingFiltersProps) {
       </Select>
     </div>
   )
-}
-
-function isTrainingLevel(value: string): value is TrainingLevel {
-  return LEVELS.some((level) => level === value)
 }

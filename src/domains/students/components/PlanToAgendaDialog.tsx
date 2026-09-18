@@ -5,6 +5,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
@@ -162,7 +163,7 @@ export function PlanToAgendaDialog({
           <DialogTitle className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
             {t('planDump.title')}
           </DialogTitle>
-          <DialogDescription className="text-sm text-ink/50">
+          <DialogDescription className="text-sm text-ink/60">
             {t('planDump.hint', {
               plan: plan.title,
               name: student.firstName,
@@ -174,7 +175,7 @@ export function PlanToAgendaDialog({
         <div className="space-y-5 px-5 pb-5">
           <div className="space-y-3">
             <span className={cn('block', FIELD_LABEL)}>{t('planDump.timePerDay')}</span>
-            <p className="text-xs text-ink/50">
+            <p className="text-xs text-ink/60">
               {/* La forma del plan, en una línea: es de donde sale el total, y
                   sin ella el número del botón parece salir de la nada. Un plan
                   de una semana produce pocas sesiones y eso sorprende si no se
@@ -260,7 +261,7 @@ export function PlanToAgendaDialog({
           )}
 
           {planned.length === 0 ? (
-            <p className="rounded-block border border-cobalt-tint-3 px-4 py-6 text-center text-sm text-ink/45">
+            <p className="rounded-block border border-cobalt-tint-3 px-4 py-6 text-center text-sm text-ink/60">
               {t('planDump.pickAtLeastOne')}
             </p>
           ) : (
@@ -291,7 +292,7 @@ export function PlanToAgendaDialog({
                     <span
                       className={cn(
                         'metric-figures shrink-0 text-xs',
-                        entry.conflicts.length > 0 ? 'text-warning' : 'text-ink/40'
+                        entry.conflicts.length > 0 ? 'text-warning' : 'text-ink/60'
                       )}
                     >
                       {formatDateKey(entry.session.date)} · {entry.session.time}
@@ -309,19 +310,23 @@ export function PlanToAgendaDialog({
             </p>
           )}
 
-          <Button
-            type="button"
-            disabled={planned.length === 0 || isSaving}
-            onClick={() => void handleConfirm()}
-            className="h-14 w-full gap-2 font-display text-base font-extrabold uppercase tracking-[0.14em]"
-          >
-            <CalendarCheck className="size-5" />
-            {planned.length === 0
-              ? t('planDump.confirm')
-              : alreadyDumped > 0
-                ? t('planDump.confirmAgain')
-                : t('planDump.confirmCount', { count: planned.length })}
-          </Button>
+          {/* En el pie: en móvil se queda pegado abajo, para que el botón no
+              dependa de que se desplace hasta el final del formulario. */}
+          <DialogFooter className="-mx-5 border-t border-cobalt-tint-3 px-5 py-3 md:mx-0 md:border-0 md:p-0">
+            <Button
+              type="button"
+              disabled={planned.length === 0 || isSaving}
+              onClick={() => void handleConfirm()}
+              className="h-14 w-full gap-2 font-display text-base font-extrabold uppercase tracking-[0.14em]"
+            >
+              <CalendarCheck className="size-5" />
+              {planned.length === 0
+                ? t('planDump.confirm')
+                : alreadyDumped > 0
+                  ? t('planDump.confirmAgain')
+                  : t('planDump.confirmCount', { count: planned.length })}
+            </Button>
+          </DialogFooter>
         </div>
       </DialogContent>
     </Dialog>

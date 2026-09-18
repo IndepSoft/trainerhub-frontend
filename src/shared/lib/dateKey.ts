@@ -48,6 +48,39 @@ export function formatDateKey(key: string): string {
   })
 }
 
+/**
+ * `2026-09-16` → «mié 16». Para filas donde la fecha comparte línea con más
+ * cosas y el día de la semana basta para ubicarla.
+ *
+ * Por partes y no con el texto entero: según el idioma, el formato corto pone
+ * una coma entre el día de la semana y el número, y en una columna estrecha
+ * sobra.
+ */
+export function formatShortDateKey(key: string): string {
+  const [year, month, day] = key.split('-').map(Number)
+  const parts = new Intl.DateTimeFormat(activeLocale(), {
+    weekday: 'short',
+    day: 'numeric',
+  }).formatToParts(new Date(year, month - 1, day))
+  const weekday = parts.find((part) => part.type === 'weekday')?.value ?? ''
+  const dayNumber = parts.find((part) => part.type === 'day')?.value ?? ''
+  return `${weekday} ${dayNumber}`.trim()
+}
+
+/**
+ * El mes de una fecha, para agrupar: «septiembre». Con el año sólo cuando no
+ * es el de `referenceKey`, que es cuando hace falta para no confundir dos
+ * septiembres.
+ */
+export function formatMonthOfDateKey(key: string, referenceKey: string): string {
+  const [year, month] = key.split('-').map(Number)
+  const sameYear = referenceKey.startsWith(`${year}-`)
+  return new Date(year, month - 1, 1).toLocaleDateString(activeLocale(), {
+    month: 'long',
+    ...(sameYear ? {} : { year: 'numeric' }),
+  })
+}
+
 export function todayKey(): string {
   return toLocalDateKey(new Date())
 }

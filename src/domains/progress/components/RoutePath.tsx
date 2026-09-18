@@ -23,14 +23,14 @@ export function RoutePath({ route, nodes }: RoutePathProps) {
     // 1000 px y dejan de leerse como una barra.
     <section className="mx-auto w-full max-w-2xl px-5 py-6" aria-labelledby="ruta-titulo">
       <div className="mb-6 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="ruta-titulo" className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/50">
+        <h2 id="ruta-titulo" className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
           {t('progress.path')}
         </h2>
         <p className="font-display text-lg font-extrabold uppercase tracking-tight text-ink">
           {t('route.label', { route: t(ROUTE_NAME_KEY[route]) })}
         </p>
       </div>
-      <p className="mb-6 text-sm text-ink/55">{t(ROUTE_DESCRIPTION_KEY[route])}</p>
+      <p className="mb-6 text-sm text-ink/60">{t(ROUTE_DESCRIPTION_KEY[route])}</p>
 
       <ol className="relative">
         {nodes.map((node, index) => (

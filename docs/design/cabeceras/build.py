@@ -7,8 +7,9 @@ por pantalla, para que las seis compartan exactamente el mismo cromo y lo
 unico que cambie sea lo que se propone.
 """
 import io, sys, os
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 HERE = os.path.dirname(os.path.abspath(__file__))
+if __name__ == '__main__':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 # ---------------------------------------------------------------- tokens
 BONE = '#FAF8F5'
@@ -441,7 +442,10 @@ ARTBOARDS = {
     'Anatomia.dc.html': anatomia,
 }
 
-for name, build in ARTBOARDS.items():
-    with open(os.path.join(HERE, name), 'w', encoding='utf-8') as f:
-        f.write(build())
-    print('escrito', name)
+# Bajo guarda para que `vistas/build.py` pueda importar el shell y los tokens
+# de aqui sin regenerar estos artboards.
+if __name__ == '__main__':
+    for name, build in ARTBOARDS.items():
+        with open(os.path.join(HERE, name), 'w', encoding='utf-8') as f:
+            f.write(build())
+        print('escrito', name)

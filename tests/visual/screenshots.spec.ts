@@ -28,6 +28,63 @@ async function signIn(page: Page): Promise<void> {
 }
 
 /**
+ * Registra un pago: el botón de la sección abre la hoja, y la hoja confirma.
+ */
+async function registrarPago(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Registrar pago' }).click()
+  const hoja = page.getByRole('dialog')
+  await expect(hoja.getByText('Cubre hasta')).toBeVisible()
+  await hoja.getByRole('button', { name: 'Registrar pago' }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+}
+
+/**
+ * Abre una sección y devuelve su panel.
+ *
+ * Tres pantallas van por secciones: la ficha del alumno (`CAMBIOS` §40), el
+ * equipo y el progreso (§45). Lo que no es de la sección abierta no se pinta,
+ * así que hay que abrirla. Por la pestaña y no por la dirección, para no
+ * recargar y perder lo que los adaptadores simulados guardan en memoria.
+ *
+ * Por expresión regular y no por texto exacto: la pestaña de «Miembros» lleva
+ * además la cuenta de solicitudes cuando hay alguna esperando.
+ */
+type NombreDeSeccion =
+  | 'Resumen'
+  | 'Progreso'
+  | 'Sesiones'
+  | 'Cuota'
+  | 'Muro'
+  | 'Miembros'
+  | 'Ranking'
+  | 'Invitar'
+  | 'Ruta'
+  | 'Logros'
+  | 'Historial'
+
+async function abrirSeccion(page: Page, nombre: NombreDeSeccion): Promise<Locator> {
+  const pestana = new RegExp(`^${nombre}`)
+  await page.getByRole('tab', { name: pestana }).click()
+  const panel = page.getByRole('tabpanel', { name: pestana })
+  await expect(panel).toBeVisible()
+  return panel
+}
+
+/**
+ * Cambia de paso en el formulario de rutina (`CAMBIOS` §42): el nombre está en
+ * el primero y los bloques en el segundo, y sólo se pinta el abierto.
+ */
+async function pasoDelFormulario(page: Page, nombre: 'La rutina' | 'Bloques'): Promise<void> {
+  await page.getByRole('tab', { name: new RegExp(nombre) }).click()
+  await expect(page.getByRole('tab', { name: new RegExp(nombre), selected: true })).toBeVisible()
+}
+
+/** La línea viva del formulario de rutina, de donde se leen los minutos. */
+function resumenDeRutina(page: Page): Locator {
+  return page.getByRole('status', { name: 'Resumen de la rutina' })
+}
+
+/**
  * Los disparadores de un desplegable, por el nombre de su etiqueta.
  *
  * NO se usa `getByLabel`. Radix renderiza, junto al boton visible, un `<select>`
@@ -108,14 +165,50 @@ function sumarDias(date: Date, dias: number): Date {
 }
 
 /**
- * Un contador de la cabecera de la agenda, por su rotulo.
+ * Una píldora del resumen de la agenda, por lo que dice.
  *
  * Devuelve el localizador y no su texto para que las aserciones ESPEREN: el
- * cambio de estado pasa por el puerto, asi que el contador se actualiza un
+ * cambio de estado pasa por el puerto, asi que el resumen se actualiza un
  * instante despues de guardar.
+ *
+ * Desde §47 el resumen son píldoras —«3 confirmadas»— y habla de LA SEMANA QUE
+ * SE MIRA, no de todas las sesiones que existen. Un estado sin sesiones no se
+ * pinta, asi que aqui se cuenta con `count()` antes de leer la cifra.
  */
-function contador(page: Page, rotulo: string): Locator {
-  return page.locator('main .grid > div').filter({ hasText: rotulo })
+function contador(page: Page, estado: RegExp): Locator {
+  // Acotado a la región del resumen: un aviso de sonner tambien es un <li>, y
+  // el suyo habla de la misma sesion que acaba de cambiar de estado.
+  return page
+    .getByRole('region', { name: 'Resumen de la semana' })
+    .getByRole('listitem')
+    .filter({ hasText: estado })
+}
+
+/**
+ * Cuántas sesiones hay en un estado, segun el resumen de la semana.
+ *
+ * Un estado SIN SESIONES no tiene píldora (§47), y eso es un cero: aquí se
+ * cuenta antes de leer. No vale hacerlo dentro de `leerCifra`, que se usa con
+ * cifras que sí existen y necesitan su espera.
+ */
+async function leerPildora(page: Page, estado: RegExp): Promise<number> {
+  const pildora = contador(page, estado)
+  if ((await pildora.count()) === 0) return 0
+  return leerCifra(pildora)
+}
+
+/**
+ * Abre un ajuste de una sola respuesta y devuelve SU FILA.
+ *
+ * Configuración va en filas (§49): la fila dice cómo está el ajuste y las
+ * opciones se eligen dentro, en una hoja. La fila se devuelve para poder
+ * comprobar después qué valor enseña.
+ */
+async function abrirAjuste(page: Page, nombre: string): Promise<Locator> {
+  const boton = page.getByRole('button', { name: nombre, exact: true })
+  const fila = page.getByRole('listitem').filter({ has: boton })
+  await boton.click()
+  return fila
 }
 
 /**
@@ -280,10 +373,13 @@ for (const viewport of VIEWPORTS) {
 /**
  * Objetivo tactil y encaje de las etiquetas en la barra inferior.
  *
- * A 375 px, cinco destinos dejan 75 px por pestana. «Entrenamientos» tiene
- * catorce caracteres y es la que va justa: si la etiqueta desborda su caja, se
- * recorta o pisa a la vecina, y eso no se ve leyendo clases de Tailwind. La
- * regla 1.6 exige ademas 44 px de objetivo tactil.
+ * Desde que la barra es una PILDORA FLOTANTE (`CAMBIOS` §37) la etiqueta la
+ * lleva solo la pestana activa: cinco no caben -«ENTRENAMIENTOS» mide 86 px y
+ * la pildora tiene 343 de interior a 375-. La activa se dimensiona por su
+ * contenido y las demas se reparten el resto, asi que lo que hay que
+ * comprobar es que la suma cabe y que la etiqueta no se recorta. Eso no se ve
+ * leyendo clases de Tailwind. La regla 1.6 exige ademas 44 px de objetivo
+ * tactil.
  */
 test('la barra inferior encaja a 375 px', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 })
@@ -320,9 +416,73 @@ test('la barra inferior encaja a 375 px', async ({ page }) => {
 
   for (const pestana of medidas!.pestanas) {
     expect(pestana.alto, `alto de «${pestana.texto}»`).toBeGreaterThanOrEqual(44)
+    expect(pestana.ancho, `ancho de «${pestana.texto}»`).toBeGreaterThanOrEqual(44)
     expect(pestana.etiquetaDesborda, `«${pestana.texto}» desborda su pestana`).toBe(false)
   }
 })
+
+/**
+ * La pildora FLOTA, y eso cambia dos cosas que se miden, no se miran.
+ *
+ * Una: el contenido pasa por debajo, asi que el contenedor que desplaza llega
+ * mas abajo que la pildora. Si no, seria la barra de antes con otra forma
+ * -la variante B que §36 descarto-.
+ *
+ * Y dos: precisamente por eso, la ultima fila de una lista tiene que poder
+ * quedar POR ENCIMA de la pildora al llegar al final. Es lo que hace el
+ * relleno que `RootLayout` declara una vez; sin el, el contenido se lee tapado
+ * y nadie sabe si hay mas.
+ */
+for (const viewport of [
+  { nombre: '390', width: 390, height: 844 },
+  { nombre: '375', width: 375, height: 667 },
+] as const) {
+  test(`la pildora flota sin tapar la ultima fila en ${viewport.nombre} px`, async ({ page }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height })
+    await signIn(page)
+    /*
+     * Sobre la FICHA y no sobre el padron: desde que el padron son filas, los
+     * cuatro alumnos de la semilla caben sin desplazar y la prueba no probaria
+     * nada. La ficha desborda de sobra, y se comprueba que desborda.
+     */
+    await page.goto('/students/student-1')
+    await expect(page.getByRole('heading', { name: 'Juan Pérez' })).toBeVisible()
+
+    const medidas = await page.evaluate(async () => {
+      const bar = document.querySelector('nav[aria-label="Navegación principal"] ul')
+      const scroller = document.querySelector('main .overflow-auto')
+      if (!bar || !(scroller instanceof HTMLElement)) return null
+
+      scroller.scrollTop = scroller.scrollHeight
+      await new Promise((listo) => setTimeout(listo, 300))
+
+      const pildora = bar.getBoundingClientRect()
+      // Lo último que se VE: las secciones cerradas de la ficha siguen en el
+      // árbol, vacías y ocultas, y medirlas daría cero.
+      const visibles = [...scroller.children].filter(
+        (hijo) => hijo.getBoundingClientRect().height > 0
+      )
+      const ultimo = visibles[visibles.length - 1]?.getBoundingClientRect() ?? null
+
+      return {
+        desborda: scroller.scrollHeight > scroller.clientHeight,
+        desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        pildoraTop: pildora.top,
+        scrollerBottom: scroller.getBoundingClientRect().bottom,
+        ultimoBottom: ultimo === null ? null : ultimo.bottom,
+      }
+    })
+
+    expect(medidas).not.toBeNull()
+    expect(medidas!.desborda).toBe(true)
+    expect(medidas!.desborde).toBe(0)
+    // El contenido pasa por debajo: el contenedor llega mas abajo que la pildora.
+    expect(medidas!.scrollerBottom).toBeGreaterThan(medidas!.pildoraTop)
+    // Y aun asi lo ultimo de la pagina se lee entero, por encima de ella.
+    expect(medidas!.ultimoBottom).not.toBeNull()
+    expect(medidas!.ultimoBottom!).toBeLessThanOrEqual(medidas!.pildoraTop)
+  })
+}
 
 /**
  * Capturas del pie de las pantallas que se revisaron antes de que existiera el
@@ -491,24 +651,32 @@ test.describe('gestos', () => {
     const panel = page.getByRole('tabpanel').first()
 
     /*
-     * El gesto recorre el BUSCADOR, de su borde derecho al izquierdo. Antes
-     * recorria el panel entero por su primera fila, que era el buscador a
-     * todo el ancho; ahora comparte fila con el filtro -un `Select` de
-     * Radix, que se abre en `pointerdown`- y empezar encima de el abriria el
-     * desplegable en vez de deslizar. Las tarjetas tampoco valen: llevan la
-     * pulsacion larga, que se queda con el puntero.
+     * EL GESTO EMPIEZA EN UN HUECO, y encontrarlo es la mitad de la prueba.
+     *
+     * El deslizamiento vive en el contenedor que desplaza (§46): la fila de
+     * filtros quedo fuera, fija bajo las pestañas, asi que el buscador ya no
+     * sirve de superficie. Y sobre una tarjeta tampoco vale: su enlace estirado
+     * es un `::after` absoluto, que se pinta por encima del texto, de modo que
+     * arrastrar desde ahi arranca el arrastre nativo de un enlace y el gesto
+     * muere sin `pointerup`. En «Planes» hay UNA tarjeta y el resto del
+     * contenedor esta vacio: ese hueco es la superficie.
      */
-    const buscador = await panel.getByRole('textbox').first().boundingBox()
-    expect(buscador).not.toBeNull()
+    await lista.getByRole('tab', { name: /Planes/ }).click()
+    await page.waitForTimeout(400)
+    await expect(lista.getByRole('tab', { selected: true })).toContainText('Planes')
 
-    const y = buscador!.y + buscador!.height / 2
-    await page.mouse.move(buscador!.x + buscador!.width - 10, y)
+    const tarjeta = await panel.locator('article').first().boundingBox()
+    expect(tarjeta).not.toBeNull()
+
+    // Hacia la derecha: se vuelve a la seccion anterior.
+    const y = tarjeta!.y + tarjeta!.height + 40
+    await page.mouse.move(60, y)
     await page.mouse.down()
-    await page.mouse.move(buscador!.x + 10, y + 5, { steps: 8 })
+    await page.mouse.move(300, y + 5, { steps: 8 })
     await page.mouse.up()
     await page.waitForTimeout(400)
 
-    await expect(lista.getByRole('tab', { selected: true })).toContainText('Planes')
+    await expect(lista.getByRole('tab', { selected: true })).toContainText('Rutinas')
   })
 
   test('un desplazamiento vertical NO cambia de pestana', async ({ page }) => {
@@ -607,6 +775,7 @@ test('placas de logro', async ({ page }) => {
   await page.getByRole('button', { name: 'Crear cuenta' }).click()
   await page.waitForURL(/\/progress/, { timeout: 20_000 })
   await page.waitForTimeout(2000)
+  await abrirSeccion(page, 'Logros')
 
   // Sin sesiones cerradas, Maria tiene la galeria entera BLOQUEADA, que es justo
   // el contraste que esta captura documenta. El rotulo sale de `AchievementBadge`.
@@ -648,52 +817,218 @@ test('la navegacion con transicion llega a su destino', async ({ page }) => {
 })
 
 /**
- * Tarjetas navegables.
+ * Filas navegables.
  *
- * El patron de enlace estirado tiene un fallo caracteristico: el enlace cubre la
- * tarjeta entera y se come el boton del menu. Estas pruebas comprueban las dos
- * mitades, porque arreglar una suele romper la otra.
+ * El enlace estirado tiene que cubrir la fila ENTERA: el objetivo tactil es la
+ * fila de 64 px, no las letras del nombre. Y la fila no lleva menu: lo que se
+ * decide sobre un alumno esta en su ficha.
  */
-test.describe('tarjeta de estudiante', () => {
-  test('tocar la tarjeta abre la ficha', async ({ page }) => {
+test.describe('fila de estudiante', () => {
+  test('tocar la fila lejos del nombre abre la ficha', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await signIn(page)
     await page.goto('/students')
-    await page.waitForTimeout(1500)
 
-    const tarjeta = page.getByRole('link', { name: 'Juan Pérez' })
-    await tarjeta.scrollIntoViewIfNeeded()
+    const fila = page
+      .getByRole('list', { name: 'Estudiantes' })
+      .getByRole('listitem')
+      .filter({ hasText: 'Juan Pérez' })
+    await expect(fila).toBeVisible()
 
-    // Se pulsa lejos del nombre, abajo a la derecha de la tarjeta: si el enlace
-    // no estuviera estirado, ahi no habria nada que pulsar.
-    // Se busca el <article> contenedor y no una clase: la clase cambia con
-    // cada iteracion de diseno -paso de `rounded-xl` a `rounded-block`- y la
-    // prueba se rompia sin que la funcionalidad hubiera cambiado.
-    // Con el pie de la tarjeta a la vista: desde que la tarjeta dice si el
-    // alumno tiene cuenta es mas alta que el hueco, y el punto de abajo caia
-    // sobre la barra inferior.
-    const articulo = tarjeta.locator('xpath=ancestor::article[1]')
-    await articulo.evaluate((element) => element.scrollIntoView({ block: 'end' }))
-    const caja = await articulo.boundingBox()
+    // Se pulsa en el extremo derecho, sobre la flecha: si el enlace no
+    // estuviera estirado, ahi no habria nada que pulsar.
+    const caja = await fila.boundingBox()
     expect(caja).not.toBeNull()
-    await page.mouse.click(caja!.x + caja!.width - 60, caja!.y + caja!.height - 30)
+    expect(caja!.height).toBeGreaterThanOrEqual(64)
+    await page.mouse.click(caja!.x + caja!.width - 10, caja!.y + caja!.height / 2)
 
     await page.waitForURL(/\/students\/.+/, { timeout: 15_000 })
     await expect(page.getByRole('heading', { name: 'Juan Pérez' })).toBeVisible()
   })
 
-  test('el menu de acciones sigue siendo pulsable', async ({ page }) => {
+  test('las acciones sobre un alumno estan en su ficha', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await signIn(page)
     await page.goto('/students')
-    await page.waitForTimeout(1500)
 
+    const lista = page.getByRole('list', { name: 'Estudiantes' })
+    await expect(lista.getByRole('listitem').first()).toBeVisible()
+    await expect(lista.getByRole('button')).toHaveCount(0)
+
+    await lista.getByRole('link', { name: 'Juan Pérez' }).click()
     await page.getByRole('button', { name: 'Acciones para Juan Pérez' }).click()
-    await expect(page.getByRole('menuitem', { name: 'Ver ficha' })).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: 'Editar' })).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: 'Dar de baja' })).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: 'Eliminar' })).toBeVisible()
 
-    // Y no ha navegado: el enlace estirado no se ha tragado el toque.
-    expect(page.url()).toContain('/students')
-    expect(page.url()).not.toMatch(/\/students\/.+/)
+    // Y el menu no ha navegado: se sigue en la ficha.
+    expect(page.url()).toMatch(/\/students\/student-1$/)
+  })
+
+  test('lo que se cambia desde la ficha se ve en la ficha', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/students/student-3')
+    await expect(page.getByRole('heading', { name: 'Carlos López' })).toBeVisible()
+
+    /*
+     * La ficha leia una vez y no escuchaba. Con las acciones en la tarjeta daba
+     * igual, porque la lista si escucha; desde que se editan AQUI, guardar
+     * dejaba la ficha enseñando lo de antes.
+     */
+    await page.getByRole('button', { name: 'Acciones para Carlos López' }).click()
+    await page.getByRole('menuitem', { name: 'Editar' }).click()
+    const dialogo = page.getByRole('dialog')
+    await dialogo.getByLabel('Nombre').fill('Carla')
+    await dialogo.getByRole('button', { name: 'Guardar cambios' }).click()
+    await expect(page.getByRole('heading', { name: 'Carla López' })).toBeVisible()
+
+    // Y una baja deja de ofrecerse en cuanto se ha dado.
+    await page.getByRole('button', { name: 'Acciones para Carla López' }).click()
+    await page.getByRole('menuitem', { name: 'Dar de baja' }).click()
+    await page.getByRole('alertdialog').or(page.getByRole('dialog'))
+      .getByRole('button', { name: 'Dar de baja' }).click()
+    await expect(page.getByText('Carla López ha causado baja')).toBeVisible()
+    await page.getByRole('button', { name: 'Acciones para Carla López' }).click()
+    await expect(page.getByRole('menuitem', { name: 'Editar' })).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: 'Dar de baja' })).toHaveCount(0)
+  })
+})
+
+/**
+ * Las hojas (`CAMBIOS` §44). En móvil todo diálogo sube desde abajo, a todo el
+ * ancho y con su botón donde llega el pulgar; en escritorio sigue siendo la
+ * caja centrada de siempre.
+ */
+test.describe('hojas', () => {
+  test('en movil el dialogo sube desde abajo, y en escritorio se centra', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/trainings/routine-3')
+
+    await page.getByRole('button', { name: 'Eliminar' }).first().click()
+    const hoja = page.getByRole('dialog')
+    await expect(hoja).toBeVisible()
+    // La hoja ENTRA deslizando: medir antes de que termine da la posición de
+    // partida, que está fuera de la pantalla.
+    await page.waitForTimeout(500)
+
+    const enMovil = await hoja.evaluate((elemento) => {
+      const caja = elemento.getBoundingClientRect()
+      const pie = elemento.querySelector('[data-slot="dialog-footer"]')
+      const botones = pie === null ? [] : [...pie.querySelectorAll('button')]
+      return {
+        pegadaAbajo: Math.round(window.innerHeight - caja.bottom),
+        aTodoElAncho: Math.round(window.innerWidth - caja.width),
+        esquina: getComputedStyle(elemento).borderTopLeftRadius,
+        // El primario ARRIBA: es el que se pulsa. Lo hace `flex-col-reverse`,
+        // sin tocar el orden del DOM, que sigue siendo el de lectura.
+        primeroEnPantalla: botones
+          .slice()
+          .sort((uno, otro) => uno.getBoundingClientRect().top - otro.getBoundingClientRect().top)[0]
+          ?.textContent?.trim(),
+        anchoDeLosBotones: botones.map((boton) => Math.round(boton.getBoundingClientRect().width)),
+      }
+    })
+
+    expect(enMovil.pegadaAbajo, 'pegada al borde de abajo').toBe(0)
+    expect(enMovil.aTodoElAncho, 'a todo el ancho').toBe(0)
+    expect(enMovil.esquina, 'esquina superior redondeada').toBe('16px')
+    expect(enMovil.primeroEnPantalla, 'el primario, arriba').toBe('Eliminar')
+    // Los dos a todo el ancho de la hoja, no uno al lado del otro.
+    expect(new Set(enMovil.anchoDeLosBotones).size, 'los dos, del mismo ancho').toBe(1)
+    expect(enMovil.anchoDeLosBotones[0]).toBeGreaterThan(300)
+
+    await page.screenshot({ path: 'tests/visual/salida/hoja-eliminar-mobile.png' })
+
+    // Y en escritorio, centrada y sin pegarse a ningún borde.
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.waitForTimeout(400)
+    const enEscritorio = await hoja.evaluate((elemento) => {
+      const caja = elemento.getBoundingClientRect()
+      return {
+        margenIzquierdo: Math.round(caja.left),
+        margenDerecho: Math.round(window.innerWidth - caja.right),
+        separadaDelBorde: Math.round(window.innerHeight - caja.bottom),
+      }
+    })
+
+    expect(enEscritorio.margenIzquierdo).toBe(enEscritorio.margenDerecho)
+    expect(enEscritorio.margenIzquierdo, 'centrada').toBeGreaterThan(100)
+    expect(enEscritorio.separadaDelBorde, 'sin pegarse abajo').toBeGreaterThan(50)
+  })
+
+  test('la hoja de pago dice hasta cuando cubre antes de escribir', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/students/student-1?seccion=cuota')
+
+    await page.getByRole('button', { name: 'Registrar pago' }).click()
+    const hoja = page.getByRole('dialog')
+
+    /*
+     * El dinero se recibe un día y se registra otro: la fecha se cambia, y lo
+     * que cubre se recalcula con la MISMA regla que escribe —`renewedThrough`—,
+     * así que lo que se lee aquí es lo que va a quedar guardado.
+     */
+    const haceCincoDias = new Date()
+    haceCincoDias.setDate(haceCincoDias.getDate() - 5)
+    const clave = haceCincoDias.toISOString().slice(0, 10)
+    await hoja.getByLabel('Pagado el').fill(clave)
+
+    await hoja.getByRole('button', { name: 'Registrar pago' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    // Treinta días desde el día del pago, no desde hoy: quedan veinticinco.
+    await expect(page.getByText('Vence en 25 días')).toBeVisible()
+  })
+})
+
+/**
+ * La ficha en secciones (`CAMBIOS` §40). El resumen dice lo que le toca a cada
+ * alumno y cada fila lleva a donde se resuelve; la sección vive en la
+ * dirección, y el diálogo de agendar también.
+ */
+test.describe('ficha en secciones', () => {
+  test('el resumen dice lo que le toca, y cada fila lleva a donde se resuelve', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/students/student-1')
+
+    // Juan: la cuota vencida, sin cuenta todavia y nada agendado.
+    const leToca = page.getByRole('region', { name: 'Le toca' })
+    await expect(leToca.getByRole('link', { name: /Cuota · Venció hace 5 días/ })).toBeVisible()
+    await expect(leToca.getByRole('button', { name: 'Copiar invitación' })).toBeVisible()
+    await expect(leToca.getByRole('link', { name: /Nada agendado/ })).toBeVisible()
+
+    // La cuota lleva a su seccion, y la direccion lo dice.
+    await leToca.getByRole('link', { name: /Cuota · Venció/ }).click()
+    await expect(page.getByRole('tab', { name: 'Cuota', selected: true })).toBeVisible()
+    await expect(page).toHaveURL(/seccion=cuota/)
+    await expect(page.getByRole('button', { name: 'Registrar pago' })).toBeVisible()
+
+    // «Nada agendado» abre el dialogo de agendar, y cerrarlo limpia la direccion.
+    await abrirSeccion(page, 'Resumen')
+    await page
+      .getByRole('region', { name: 'Le toca' })
+      .getByRole('link', { name: /Nada agendado/ })
+      .click()
+    await expect(page.getByRole('dialog')).toBeVisible()
+    await expect(page).toHaveURL(/agendar/)
+    await page.keyboard.press('Escape')
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(page).not.toHaveURL(/agendar/)
+  })
+
+  test('la seccion abierta sobrevive a recargar', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students/student-1?seccion=sesiones')
+    await expect(page.getByRole('tab', { name: 'Sesiones', selected: true })).toBeVisible()
+
+    await page.reload()
+    await expect(page.getByRole('tab', { name: 'Sesiones', selected: true })).toBeVisible()
+    await expect(page.getByRole('tabpanel', { name: 'Sesiones' })).toContainText('Entrenamiento Personal')
   })
 })
 
@@ -713,13 +1048,14 @@ test('la tarjeta de rutina abre su ficha', async ({ page }) => {
   await page.waitForURL(/\/trainings\/.+/, { timeout: 15_000 })
   await expect(page.getByRole('heading', { level: 1 })).toContainText(titulo!.trim())
 
-  // La ficha se captura DESPLAZADA: los bloques, que son lo que la estructura
-  // aporta, viven por debajo del pliegue.
+  // Se captura desplazada, para ver el pie: la nota de como se asigna.
   await scrollInnerContainerToBottom(page)
   await page.screenshot({ path: 'tests/visual/salida/rutina-detalle-mobile.png' })
 
-  // La duracion es derivada: no existe campo que la almacene.
-  await expect(page.getByText('min estimados')).toBeVisible()
+  // La duracion es derivada: no existe campo que la almacene. Va en la franja.
+  const cifras = page.locator('dl').first()
+  await expect(cifras).toContainText('Duración')
+  await expect(cifras).toContainText(/\d+\s*min/)
   expect(enlace).toBeDefined()
 })
 
@@ -728,7 +1064,7 @@ test('capturas de las fichas nuevas', async ({ page }) => {
   await signIn(page)
   await page.goto('/students')
   await page.waitForTimeout(1200)
-  await page.locator('h3 a[href^="/students/"]').first().click()
+  await page.getByRole('list', { name: 'Estudiantes' }).getByRole('link').first().click()
   await page.waitForURL(/\/students\/.+/, { timeout: 15_000 })
   await page.waitForTimeout(800)
   await page.screenshot({ path: 'tests/visual/salida/estudiante-detalle-mobile.png' })
@@ -760,10 +1096,12 @@ test.describe('calendario: iniciar una sesion', () => {
      * coloca las sesiones sobre una escala de tiempo, asi que la de las 18:00
      * va primera en el DOM aunque se pinte abajo. Lo que distingue a la sesion
      * sobre la que se puede actuar es su ESTADO, no donde caiga en la lista.
+     *
+     * El estado se lee del NOMBRE ACCESIBLE y no del texto de la fila: desde
+     * §47 el dia es una lista y su insignia vive fuera del boton, al lado.
      */
     await page
-      .getByRole('button', { name: /Entrenamiento Personal/ })
-      .filter({ hasText: 'Confirmada' })
+      .getByRole('button', { name: /Entrenamiento Personal\. .*\. Confirmada\./ })
       .first()
       .click()
 
@@ -786,6 +1124,40 @@ test.describe('calendario: iniciar una sesion', () => {
     await expect(page.getByRole('button', { name: 'Pausar la sesión' })).toBeVisible()
   })
 
+  test('el dia cabe entero como lista, y el hueco se cuenta', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/calendar')
+    await page.waitForTimeout(1500)
+
+    // La lista es lo que se ve al entrar (§47).
+    await expect(page.getByRole('button', { name: 'Lista' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+
+    // Lo vacio se dice en una linea, en vez de en setecientos pixeles en blanco.
+    await expect(page.getByText(/Libre hasta las/)).toBeVisible()
+
+    /*
+     * ESTA ES LA MEDIDA que justifica la lista: el dia de la semilla cabe entero
+     * sin desplazar, y la misma jornada en la rejilla son mas de mil pixeles,
+     * casi todos vacios.
+     */
+    const oculto = () =>
+      page.evaluate(() =>
+        [...document.querySelectorAll('main .overflow-auto')]
+          .map((elemento) => elemento.scrollHeight - elemento.clientHeight)
+          .reduce((mayor, actual) => Math.max(mayor, actual), 0)
+      )
+
+    expect(await oculto(), 'desplazamiento del dia en lista').toBe(0)
+
+    await page.getByRole('button', { name: 'Horario' }).click()
+    await page.waitForTimeout(600)
+    expect(await oculto(), 'desplazamiento del dia en rejilla').toBeGreaterThan(800)
+  })
+
   test('los avisos de confirmacion se ven', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await signIn(page)
@@ -803,10 +1175,12 @@ test.describe('calendario: iniciar una sesion', () => {
      * coloca las sesiones sobre una escala de tiempo, asi que la de las 18:00
      * va primera en el DOM aunque se pinte abajo. Lo que distingue a la sesion
      * sobre la que se puede actuar es su ESTADO, no donde caiga en la lista.
+     *
+     * El estado se lee del NOMBRE ACCESIBLE y no del texto de la fila: desde
+     * §47 el dia es una lista y su insignia vive fuera del boton, al lado.
      */
     await page
-      .getByRole('button', { name: /Entrenamiento Personal/ })
-      .filter({ hasText: 'Confirmada' })
+      .getByRole('button', { name: /Entrenamiento Personal\. .*\. Confirmada\./ })
       .first()
       .click()
     await page.getByRole('button', { name: /Recordatorio/ }).click()
@@ -933,9 +1307,14 @@ test.describe('reparto de secciones', () => {
     await page.goto('/progress')
     await page.waitForTimeout(1800)
 
-    await expect(page.getByRole('heading', { name: 'Logros' })).toBeVisible()
+    /*
+     * Progreso va en secciones -Ruta, Logros, Historial (§45)- y lo que se fija
+     * aqui es QUE NO HAY MAS: desafios y rachas se fueron a Entrenamientos,
+     * porque son cosas que el entrenador CREA para asignarlas.
+     */
+    const logros = await abrirSeccion(page, 'Logros')
+    await expect(logros.getByRole('heading', { name: 'Galería' })).toBeVisible()
 
-    // Ya no hay pestanas de navegacion de pagina: con una sola seccion sobran.
     await expect(page.getByRole('tab', { name: /Desafíos/ })).toHaveCount(0)
     await expect(page.getByRole('tab', { name: /Rachas/ })).toHaveCount(0)
   })
@@ -1011,12 +1390,13 @@ test.describe('creacion de rutinas', () => {
     await page.goto('/trainings/new')
 
     await page.getByLabel('Nombre').fill('Torso · Empuje pesado')
+    await pasoDelFormulario(page, 'Bloques')
     await elegirEjercicio(page, 0, 'Press de banca con barra')
     await page.getByRole('button', { name: /Añadir ejercicio al bloque 1/ }).click()
     await expect(desplegables(page, 'Ejercicio')).toHaveCount(2)
     await elegirEjercicio(page, 1, 'Remo con barra')
 
-    const resumen = page.locator('dl').first()
+    const resumen = resumenDeRutina(page)
     const enSerieSimple = extraerMinutos(await resumen.innerText())
 
     await elegirDelDesplegable(page, desplegables(page, 'Método'), 'Superserie')
@@ -1046,9 +1426,10 @@ test.describe('creacion de rutinas', () => {
 
     await page.getByLabel('Nombre').fill('Torso · Empuje pesado')
     await page.getByLabel('Descripción').fill('Sesión de empuje con superserie final.')
+    await pasoDelFormulario(page, 'Bloques')
     await elegirEjercicio(page, 0, 'Press de banca con barra')
 
-    const minutosEnFormulario = extraerMinutos(await page.locator('dl').first().innerText())
+    const minutosEnFormulario = extraerMinutos(await resumenDeRutina(page).innerText())
 
     await page.getByRole('button', { name: 'Guardar rutina' }).click()
 
@@ -1077,34 +1458,48 @@ test.describe('creacion de rutinas', () => {
     await page.goto('/trainings/new')
     await page.waitForTimeout(1200)
 
-    const medidas = await page.evaluate(() => {
-      const ancho = (elemento: Element) => elemento.getBoundingClientRect().width
-      const caja = (elemento: Element) => elemento.getBoundingClientRect()
-
-      return {
-        desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        contenedoresEstrechos: [
-          ...document.querySelectorAll('section, article, [class*="rounded-block"]'),
-        ]
-          .map(ancho)
-          .filter((medida) => medida > 0 && medida < 280).length,
-        controlesPequenos: [
-          ...document.querySelectorAll('button, [role=tab], input, textarea'),
-        ]
-          .map(caja)
-          .filter((rect) => rect.height > 0 && rect.height < 44).length,
-        // Toda etiqueta tiene que apuntar a un control que exista: es un fallo
-        // que este proyecto ya tuvo en el formulario de registro.
-        etiquetasHuerfanas: [...document.querySelectorAll('label[for]')].filter(
-          (etiqueta) => document.getElementById(etiqueta.getAttribute('for') ?? '') === null
-        ).length,
+    // Los DOS pasos, y en el de bloques con «Más ajustes» abierto: son los
+    // campos que más aprietan la fila.
+    for (const paso of ['La rutina', 'Bloques'] as const) {
+      await pasoDelFormulario(page, paso)
+      if (paso === 'Bloques') {
+        await page.getByRole('button', { name: /Más ajustes/ }).first().click()
       }
-    })
 
-    expect(medidas.desborde, 'desbordamiento horizontal').toBe(0)
-    expect(medidas.contenedoresEstrechos, 'contenedores por debajo de 280 px').toBe(0)
-    expect(medidas.controlesPequenos, 'controles por debajo de 44 px').toBe(0)
-    expect(medidas.etiquetasHuerfanas, 'etiquetas sin control').toBe(0)
+      const medidas = await page.evaluate(() => {
+        const ancho = (elemento: Element) => elemento.getBoundingClientRect().width
+        const caja = (elemento: Element) => elemento.getBoundingClientRect()
+
+        return {
+          desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          contenedoresEstrechos: [
+            ...document.querySelectorAll('section, article, [class*="rounded-block"]'),
+          ]
+            .map(ancho)
+            .filter((medida) => medida > 0 && medida < 280).length,
+          controlesPequenos: [
+            ...document.querySelectorAll('button, [role=tab], input, textarea'),
+          ]
+            .map(caja)
+            .filter((rect) => rect.height > 0 && rect.height < 44).length,
+          // Toda etiqueta tiene que apuntar a un control que exista: es un
+          // fallo que este proyecto ya tuvo en el formulario de registro.
+          etiquetasHuerfanas: [...document.querySelectorAll('label[for]')].filter(
+            (etiqueta) => document.getElementById(etiqueta.getAttribute('for') ?? '') === null
+          ).length,
+          // Y ninguna etiqueta se sale de su casilla: «REPETICIONES» no cabía.
+          etiquetasDesbordadas: [...document.querySelectorAll('label')].filter(
+            (etiqueta) => etiqueta.scrollWidth > etiqueta.clientWidth + 1
+          ).length,
+        }
+      })
+
+      expect(medidas.desborde, `desbordamiento horizontal en ${paso}`).toBe(0)
+      expect(medidas.contenedoresEstrechos, `contenedores bajo 280 px en ${paso}`).toBe(0)
+      expect(medidas.controlesPequenos, `controles bajo 44 px en ${paso}`).toBe(0)
+      expect(medidas.etiquetasHuerfanas, `etiquetas sin control en ${paso}`).toBe(0)
+      expect(medidas.etiquetasDesbordadas, `etiquetas desbordadas en ${paso}`).toBe(0)
+    }
   })
 })
 
@@ -1127,9 +1522,9 @@ test('los planes se ven desde entrenamientos', async ({ page }) => {
 
   await expect(page.getByRole('heading', { name: 'Base de fuerza · 4 semanas' })).toBeVisible()
   // El objetivo y la division se resuelven desde el catalogo, que era la otra
-  // mitad muerta: se guardan por identificador, no por nombre.
-  await expect(page.getByText('Acondicionamiento general')).toBeVisible()
-  await expect(page.getByText('Full body', { exact: true })).toBeVisible()
+  // mitad muerta: se guardan por identificador, no por nombre. Desde que la
+  // tarjeta es compacta (§46) comparten linea.
+  await expect(page.getByText('Acondicionamiento general · Full body')).toBeVisible()
 
   const desborde = await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth
@@ -1151,7 +1546,7 @@ test.describe('catalogo del entrenamiento', () => {
 
   async function abrirCatalogo(page: Page): Promise<void> {
     await page.goto('/trainings')
-    await page.getByRole('link', { name: 'Catálogo' }).click()
+    await page.getByRole('link', { name: 'Catálogo', exact: true }).click()
     /*
      * Margen amplio a proposito: la ruta es `lazy`, asi que al pulsar hay que
      * descargar y compilar su fragmento. En el servidor de desarrollo, y con la
@@ -1213,6 +1608,7 @@ test.describe('catalogo del entrenamiento', () => {
     await page.getByRole('link', { name: 'Nueva Rutina' }).click()
     await expect(page.getByRole('heading', { name: 'Nueva rutina' })).toBeVisible()
 
+    await pasoDelFormulario(page, 'Bloques')
     await desplegables(page, 'Ejercicio').first().click()
     await expect(
       page.getByRole('listbox').getByRole('option', { name: EJERCICIO_NUEVO, exact: true })
@@ -1320,6 +1716,7 @@ test.describe('biblioteca de bloques', () => {
   async function componerBloque(page: Page, ejercicio: string): Promise<void> {
     await page.goto('/trainings/new')
     await page.getByLabel('Nombre').fill('Torso · Empuje pesado')
+    await pasoDelFormulario(page, 'Bloques')
     await elegirDelDesplegable(page, desplegables(page, 'Ejercicio').first(), ejercicio)
   }
 
@@ -1365,7 +1762,7 @@ test.describe('biblioteca de bloques', () => {
      * lo devolveria a su semilla, que en esta biblioteca es estar vacia.
      */
     await page.getByRole('link', { name: 'Rutinas' }).first().click()
-    await page.getByRole('link', { name: 'Catálogo' }).click()
+    await page.getByRole('link', { name: 'Catálogo', exact: true }).click()
     await page.getByRole('tab', { name: 'Bloques' }).click()
 
     await expect(page.getByText('Serie simple · Press de banca con barra')).toBeVisible()
@@ -1380,7 +1777,7 @@ test.describe('biblioteca de bloques', () => {
     await page.getByRole('button', { name: /Guardar el bloque 1 en la biblioteca/ }).click()
 
     await page.getByRole('link', { name: 'Rutinas' }).first().click()
-    await page.getByRole('link', { name: 'Catálogo' }).click()
+    await page.getByRole('link', { name: 'Catálogo', exact: true }).click()
     await page.getByRole('tab', { name: 'Bloques' }).click()
 
     // El nombre sale del contenido: guardar no pregunta, para no convertir un
@@ -1413,18 +1810,29 @@ test.describe('edicion de rutinas', () => {
     await page.goto('/trainings/routine-2/edit')
 
     await expect(page.getByRole('heading', { name: 'Editar rutina' })).toBeVisible()
-    await expect(page.getByLabel('Nombre')).toHaveValue('Empuje · Intermedio')
-    // Tres bloques y cuatro ejercicios, ya elegidos.
+
+    /*
+     * Editar abre en los BLOQUES, que es lo que se viene a cambiar: tres, con
+     * sus cuatro ejercicios plegados y con nombre y dosis a la vista. La dosis
+     * lleva «×», que es lo que distingue esas filas de los demás botones.
+     */
+    await expect(page.getByRole('tab', { name: /Bloques/, selected: true })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Bloque', level: 3 })).toHaveCount(3)
-    await expect(desplegables(page, 'Ejercicio')).toHaveCount(4)
-    await expect(desplegables(page, 'Ejercicio').first()).toContainText('Press de banca con barra')
+    const ejercicios = page.getByRole('button', { name: /×/ })
+    await expect(ejercicios).toHaveCount(4)
+    await expect(ejercicios.first()).toContainText('Press de banca con barra')
 
-    const minutosAntes = extraerMinutos(await page.locator('dl').first().innerText())
+    const minutosAntes = extraerMinutos(await resumenDeRutina(page).innerText())
 
+    await pasoDelFormulario(page, 'La rutina')
+    await expect(page.getByLabel('Nombre')).toHaveValue('Empuje · Intermedio')
     await page.getByLabel('Nombre').fill('Empuje · Intermedio (revisado)')
+
     // Mas series: la duracion estimada tiene que subir.
+    await pasoDelFormulario(page, 'Bloques')
+    await ejercicios.first().click()
     await page.getByLabel('Series').first().fill('6')
-    const minutosDespues = extraerMinutos(await page.locator('dl').first().innerText())
+    const minutosDespues = extraerMinutos(await resumenDeRutina(page).innerText())
     expect(minutosDespues).toBeGreaterThan(minutosAntes)
 
     await page.getByRole('button', { name: 'Guardar cambios' }).click()
@@ -1460,7 +1868,45 @@ test.describe('edicion de rutinas', () => {
 
     await page.getByRole('link', { name: 'Editar' }).click()
     await expect(page.getByRole('heading', { name: 'Editar rutina' })).toBeVisible()
+
+    // Abre en los bloques; el nombre cargado está en el primer paso.
+    await pasoDelFormulario(page, 'La rutina')
     await expect(page.getByLabel('Nombre')).toHaveValue('Full body · Principiante')
+  })
+
+  test('guardar con un error en los bloques lleva a ellos', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/trainings/new')
+
+    // El nombre está; lo que falta es el ejercicio, que está en el otro paso.
+    await page.getByLabel('Nombre').fill('Pierna · Fuerza')
+    await page.getByRole('button', { name: 'Guardar rutina' }).click()
+
+    await expect(page.getByRole('tab', { name: /Bloques/, selected: true })).toBeVisible()
+    await expect(page.getByRole('alert')).toContainText('Falta elegir un ejercicio')
+    expect(page.url()).toContain('/trainings/new')
+  })
+
+  test('los ajustes que ya tienen valor no se esconden', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/trainings/routine-2/edit')
+
+    /*
+     * El press de banca de la semilla lleva peso y tempo: al abrirlo, «Más
+     * ajustes» ya está abierto, porque esconder un dato escrito sería
+     * esconder una decisión. El press militar no lleva ninguno.
+     */
+    await page.getByRole('button', { name: /Press de banca con barra/ }).first().click()
+    const masAjustes = page.getByRole('button', { name: /Más ajustes/ })
+    await expect(masAjustes).toHaveCount(1)
+    await expect(masAjustes).toHaveAttribute('aria-expanded', 'true')
+    await expect(page.getByLabel('Tempo')).toHaveValue('3-1-1-0')
+
+    await page.getByRole('button', { name: /Press militar con barra/ }).click()
+    await expect(masAjustes).toHaveCount(2)
+    await expect(masAjustes.nth(1)).toHaveAttribute('aria-expanded', 'false')
   })
 })
 
@@ -1485,13 +1931,13 @@ test.describe('planes', () => {
     await expect(page.getByRole('link', { name: 'Nueva Rutina' })).toHaveCount(0)
 
     // La pestana viaja en la URL, asi que es enlazable.
-    await expect(page).toHaveURL(/tab=planes/)
+    await expect(page).toHaveURL(/seccion=planes/)
   })
 
   test('un plan nuevo se crea y aparece en su pestana', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
-    await page.goto('/trainings?tab=planes')
+    await page.goto('/trainings?seccion=planes')
 
     await page.getByRole('link', { name: 'Nuevo Plan' }).click()
     await expect(page.getByRole('heading', { name: 'Nuevo plan' })).toBeVisible()
@@ -1527,7 +1973,7 @@ test.describe('planes', () => {
 
     // Y desde la ficha se vuelve a la lista, con el contador ya en dos.
     await page.getByRole('link', { name: 'Planes' }).first().click()
-    await page.waitForURL(/tab=planes/)
+    await page.waitForURL(/seccion=planes/)
     await expect(page.getByRole('tab', { name: /Planes/ })).toContainText('(2)')
   })
 
@@ -1553,8 +1999,14 @@ test.describe('planes', () => {
     await expect(page.getByRole('heading', { name: 'Semana', level: 3 })).toHaveCount(4)
     await expect(desplegables(page, 'Objetivo')).toContainText('Acondicionamiento general')
 
-    // La cuarta semana viene marcada como descarga, y el formulario dice la
-    // verdad sobre lo que eso hace hoy.
+    // Plegadas salvo la primera; la cuarta lo dice en su fila.
+    const cuarta = page.getByRole('button', { name: /^Semana 04/ })
+    await expect(cuarta).toHaveAttribute('aria-expanded', 'false')
+    await expect(cuarta).toContainText('Descarga')
+
+    // Abierta, viene marcada como descarga, y el formulario dice la verdad
+    // sobre lo que eso hace hoy.
+    await cuarta.click()
     await expect(page.getByRole('button', { name: 'Descarga', pressed: true })).toHaveCount(1)
     await expect(page.getByText('no reduce el volumen por sí solo')).toBeVisible()
   })
@@ -1603,7 +2055,7 @@ test.describe('ficha de plan', () => {
   test('la tarjeta lleva a la ficha, y la ficha a la rutina de cada dia', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
-    await page.goto('/trainings?tab=planes')
+    await page.goto('/trainings?seccion=planes')
 
     await page.getByRole('link', { name: 'Base de fuerza · 4 semanas' }).click()
     await page.waitForURL(/\/trainings\/plans\/plan-1$/)
@@ -1612,15 +2064,24 @@ test.describe('ficha de plan', () => {
     const resumen = page.locator('dl').first()
     await expect(resumen).toContainText('11')
 
-    // Las cuatro semanas, con sus siete dias cada una y los descansos a la
-    // vista: ocultar los huecos haria que «lunes, miercoles y viernes» y «tres
-    // dias seguidos» se vieran igual.
-    await expect(page.locator('ol > li')).toHaveCount(4)
-    await expect(page.locator('ol > li').first().locator('ul > li')).toHaveCount(7)
-    await expect(page.getByText('Descanso').first()).toBeVisible()
+    /*
+     * Las cuatro semanas, PLEGADAS Y CON SU RESUMEN. La fila cerrada nombra los
+     * dias: es lo que distingue «lunes, miercoles y viernes» de «tres dias
+     * seguidos», el motivo por el que antes se listaban los siete.
+     */
+    const microciclos = page.getByRole('region', { name: 'Microciclos' })
+    const semanas = microciclos.getByRole('button', { name: /^Semana \d\d/ })
+    await expect(semanas).toHaveCount(4)
+    await expect(semanas.first()).toContainText('3 sesiones · lunes, miércoles y viernes')
 
-    // La cuarta semana esta marcada como descarga.
-    await expect(page.getByText('Descarga').first()).toBeVisible()
+    // Abierta la primera: sus dias con rutina, y los descansos contados.
+    await expect(semanas.first()).toHaveAttribute('aria-expanded', 'true')
+    await expect(microciclos.getByText('Descanso')).toBeVisible()
+    await expect(microciclos.getByText('4 días')).toBeVisible()
+
+    // La cuarta semana esta marcada como descarga, y se ve cerrada.
+    await expect(semanas.nth(3)).toHaveAttribute('aria-expanded', 'false')
+    await expect(semanas.nth(3)).toContainText('Descarga')
 
     // Y cada dia con rutina lleva a su ficha.
     await page.getByRole('link', { name: 'Full body · Principiante' }).first().click()
@@ -1651,7 +2112,9 @@ test.describe('ficha de plan', () => {
          * leer. Con el sangrado de escritorio se quedaba en 99 px cuando
          * necesita 136.
          */
-        nombresTruncados: [...document.querySelectorAll('ol li ul li a')].filter(
+        nombresTruncados: [
+          ...document.querySelectorAll('section[aria-labelledby="microciclos-titulo"] li a'),
+        ].filter(
           (enlace) => enlace.scrollWidth > enlace.clientWidth + 1
         ).length,
       }
@@ -1746,8 +2209,9 @@ test.describe('borrado', () => {
     await page.getByRole('button', { name: 'Eliminar' }).click()
     await page.getByRole('dialog').getByRole('button', { name: 'Eliminar' }).click()
 
-    await page.waitForURL(/tab=planes/)
-    await expect(page.getByText('Aún no has creado ningún plan.')).toBeVisible()
+    await page.waitForURL(/seccion=planes/)
+    // El vacío ENSEÑA lo que va ahí (§50), en vez de constatar que no hay nada.
+    await expect(page.getByRole('heading', { name: 'Tu primer plan' })).toBeVisible()
 
     /*
      * Y la rutina que ese plan programaba pasa a poder borrarse: la regla mira
@@ -1858,9 +2322,9 @@ test.describe('sesiones del alumno', () => {
     await signIn(page)
     await page.goto('/students/student-2')
 
-    await expect(page.getByRole('heading', { name: 'Sesiones' })).toBeVisible()
-    await expect(page.getByText('Entrenamiento Personal')).toBeVisible()
-    await expect(page.getByText('Gimnasio Principal')).toBeVisible()
+    const sesiones = await abrirSeccion(page, 'Sesiones')
+    await expect(sesiones.getByText('Entrenamiento Personal')).toBeVisible()
+    await expect(sesiones.getByText('Gimnasio Principal')).toBeVisible()
 
     /*
      * Y NO las de otros. La semilla decia «María García» donde el padron dice
@@ -1908,7 +2372,8 @@ test.describe('sesiones del alumno', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0)
 
     // Aparece en la lista del alumno sin recargar.
-    await expect(page.getByText('Sala Grupal')).toBeVisible()
+    const sesiones = await abrirSeccion(page, 'Sesiones')
+    await expect(sesiones.getByText('Sala Grupal')).toBeVisible()
 
     /*
      * Y EN EL CALENDARIO, que es lo que se pedia. No comparten estado: comparten
@@ -1933,29 +2398,35 @@ test.describe('sesiones del alumno', () => {
     await page.goto('/students/student-2')
     await page.waitForTimeout(1200)
 
-    const medidas = await page.evaluate(() => {
-      const caja = (elemento: Element) => elemento.getBoundingClientRect()
+    // Las CUATRO secciones: cada una pinta lo suyo, y la regla es de la ficha.
+    for (const seccion of ['Resumen', 'Progreso', 'Sesiones', 'Cuota'] as const) {
+      await abrirSeccion(page, seccion)
+      await page.waitForTimeout(400)
 
-      return {
-        desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        contenedoresEstrechos: [
-          ...document.querySelectorAll('section, article, [class*="rounded-block"]'),
-        ]
-          .map((elemento) => caja(elemento).width)
-          .filter((ancho) => ancho > 0 && ancho < 280).length,
-        controlesPequenos: [...document.querySelectorAll('button, a, input, textarea')]
-          .map(caja)
-          .filter((rect) => rect.height > 0 && rect.height < 44).length,
-        etiquetasHuerfanas: [...document.querySelectorAll('label[for]')].filter(
-          (etiqueta) => document.getElementById(etiqueta.getAttribute('for') ?? '') === null
-        ).length,
-      }
-    })
+      const medidas = await page.evaluate(() => {
+        const caja = (elemento: Element) => elemento.getBoundingClientRect()
 
-    expect(medidas.desborde, 'desbordamiento horizontal').toBe(0)
-    expect(medidas.contenedoresEstrechos, 'contenedores bajo 280 px').toBe(0)
-    expect(medidas.controlesPequenos, 'controles bajo 44 px').toBe(0)
-    expect(medidas.etiquetasHuerfanas, 'etiquetas sin control').toBe(0)
+        return {
+          desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          contenedoresEstrechos: [
+            ...document.querySelectorAll('section, article, [class*="rounded-block"]'),
+          ]
+            .map((elemento) => caja(elemento).width)
+            .filter((ancho) => ancho > 0 && ancho < 280).length,
+          controlesPequenos: [...document.querySelectorAll('button, a, input, textarea')]
+            .map(caja)
+            .filter((rect) => rect.height > 0 && rect.height < 44).length,
+          etiquetasHuerfanas: [...document.querySelectorAll('label[for]')].filter(
+            (etiqueta) => document.getElementById(etiqueta.getAttribute('for') ?? '') === null
+          ).length,
+        }
+      })
+
+      expect(medidas.desborde, `desbordamiento horizontal en ${seccion}`).toBe(0)
+      expect(medidas.contenedoresEstrechos, `contenedores bajo 280 px en ${seccion}`).toBe(0)
+      expect(medidas.controlesPequenos, `controles bajo 44 px en ${seccion}`).toBe(0)
+      expect(medidas.etiquetasHuerfanas, `etiquetas sin control en ${seccion}`).toBe(0)
+    }
 
     await page.screenshot({ path: 'tests/visual/salida/alumno-sesiones-mobile.png' })
   })
@@ -2147,13 +2618,11 @@ test.describe('asignaciones del alumno', () => {
      * llegan del puerto, asi que leer el texto nada mas cargar capturaba la
      * seccion todavia vacia y luego «cambiaba» sola.
      */
-    const filasDeSesion = page
-      .locator('section')
-      .filter({ hasText: 'Sesiones' })
-      .locator('ul > li')
+    const filasDeSesion = (await abrirSeccion(page, 'Sesiones')).locator('li')
     // Ana tiene dos en la semilla: la de mañana y la que quedo sin cerrar.
     await expect(filasDeSesion).toHaveCount(2)
 
+    await abrirSeccion(page, 'Resumen')
     await page.getByRole('button', { name: 'Asignar' }).first().click()
     const dialogo = page.getByRole('dialog')
     await expect(dialogo).toContainText('Asignar no agenda nada')
@@ -2171,6 +2640,7 @@ test.describe('asignaciones del alumno', () => {
      * son dos compromisos distintos, y mezclarlos obligaria a fijar horarios
      * para poder asignar.
      */
+    await abrirSeccion(page, 'Sesiones')
     await expect(filasDeSesion).toHaveCount(2)
   })
 
@@ -2200,12 +2670,10 @@ test.describe('asignaciones del alumno', () => {
     await signIn(page)
     await page.goto('/students/student-2')
 
-    const filasDeSesion = page
-      .locator('section')
-      .filter({ hasText: 'Sesiones' })
-      .locator('ul > li')
+    const filasDeSesion = (await abrirSeccion(page, 'Sesiones')).locator('li')
     await expect(filasDeSesion).toHaveCount(1)
 
+    await abrirSeccion(page, 'Resumen')
     await page.getByRole('button', { name: /Quitar la asignación de Empuje/ }).click()
     await expect(page.getByRole('link', { name: 'Empuje · Intermedio' })).toHaveCount(0)
 
@@ -2214,6 +2682,7 @@ test.describe('asignaciones del alumno', () => {
      * haber comunicado ya: desasignar dice «esto deja de ser tuyo de aqui en
      * adelante», no «nunca ocurrio».
      */
+    await abrirSeccion(page, 'Sesiones')
     await expect(filasDeSesion).toHaveCount(1)
   })
 
@@ -2362,32 +2831,29 @@ test.describe('volcar un plan a la agenda', () => {
 
     await page.goto('/students/student-2')
 
-    // Por el texto con el que EMPIEZA la seccion -su encabezado-: desde que la
-    // lista de asignaciones dice «11 sesiones en la agenda», un `hasText`
-    // suelto la contaba tambien. No por rol, porque con el dialogo abierto el
-    // resto de la pagina queda oculto para la accesibilidad.
-    const filasDeSesion = page
-      .locator('section')
-      .filter({ hasText: /^\s*Sesiones/ })
-      .locator('ul > li')
+    // Las filas de su seccion, contadas antes de volcar y despues. El volcado
+    // se abre desde «Asignado», que esta en el resumen.
+    const sesiones = await abrirSeccion(page, 'Sesiones')
+    const filasDeSesion = sesiones.locator('li')
+    await expect(filasDeSesion).toHaveCount(1)
+    await abrirSeccion(page, 'Resumen')
 
     const dialogo = await abrirVolcado(page)
-    await expect(filasDeSesion).toHaveCount(1)
-
     await ponerHoras(page, '08:00')
     await dialogo.getByRole('button', { name: 'Agendar 11 sesiones' }).click()
     await expect(page.getByRole('dialog')).toHaveCount(0)
 
     // Una que ya habia mas las once volcadas.
+    await abrirSeccion(page, 'Sesiones')
     await expect(filasDeSesion).toHaveCount(12)
 
     /*
      * La duracion sale de la rutina, no de un valor fijo: es el motivo de que
      * `estimateRoutineMinutes` subiera a `shared/domain`. Full body estima 25.
      */
-    await expect(page.getByText('08:00 · 25 min').first()).toBeVisible()
+    await expect(sesiones.getByText('08:00 · 25 min').first()).toBeVisible()
     // Y nacen pendientes: confirmarlas es un acto aparte.
-    await expect(page.getByText('PENDIENTE').first()).toBeVisible()
+    await expect(sesiones.getByText('PENDIENTE').first()).toBeVisible()
   })
 
   test('volcar dos veces avisa de las once colisiones, y no lo impide', async ({ page }) => {
@@ -2463,8 +2929,8 @@ test.describe('estado de la sesion', () => {
      * el cambio de estado mueve la sesion de un contador al otro, y eso se dice
      * en diferencias.
      */
-    const completadasAntes = await leerCifra(contador(page, 'Completadas'))
-    const confirmadasAntes = await leerCifra(contador(page, 'Confirmadas'))
+    const completadasAntes = await leerPildora(page, /completada/)
+    const confirmadasAntes = await leerPildora(page, /confirmada/)
 
     await sesionSinCompletar(page).first().click()
     const dialogo = page.getByRole('dialog')
@@ -2477,9 +2943,13 @@ test.describe('estado de la sesion', () => {
      * El cambio PERSISTE. Antes esto lanzaba un aviso y no tocaba nada: es la
      * diferencia entre que la aplicacion diga que ha pasado algo y que pase.
      */
-    await expect(contador(page, 'Completadas')).toContainText(String(completadasAntes + 1))
+    await expect
+      .poll(() => leerPildora(page, /completada/))
+      .toBe(completadasAntes + 1)
     // Y sale de donde estaba: no se suma, se mueve.
-    await expect(contador(page, 'Confirmadas')).toContainText(String(confirmadasAntes - 1))
+    await expect
+      .poll(() => leerPildora(page, /confirmada/))
+      .toBe(confirmadasAntes - 1)
   })
 
   test('el desplegable ofrece los cuatro estados, en orden de ciclo de vida', async ({
@@ -2845,7 +3315,8 @@ test.describe('sesion en vivo', () => {
     await page.goto('/calendar')
     await page.waitForTimeout(1500)
 
-    await expect(contador(page, 'Completadas')).toContainText('0')
+    // El cambio, no el valor: la semilla decide cuantas hay cerradas ya.
+    const completadasAntes = await leerPildora(page, /completada/)
 
     // Se entra a la sesion desde su detalle, que es el camino real. Una que
     // se pueda empezar: las cerradas ya no se ejecutan otra vez.
@@ -2876,7 +3347,9 @@ test.describe('sesion en vivo', () => {
     await page.goBack()
     await page.waitForURL(/\/calendar$/)
 
-    await expect(contador(page, 'Completadas')).toContainText('1')
+    await expect
+      .poll(() => leerPildora(page, /completada/))
+      .toBe(completadasAntes + 1)
   })
 
   test('lo hecho en la sesion llega al progreso del alumno', async ({ page }) => {
@@ -2928,19 +3401,21 @@ test.describe('sesion en vivo', () => {
     await page.getByRole('link', { name: /Estudiantes/ }).first().click()
     await page.waitForURL(/\/students$/, { timeout: 15_000 })
 
-    // En la TARJETA, de un vistazo: base 20 + 5 series = 25, por la adherencia
-    // al suelo -5 de 14 series- 0,80, y por la cohorte de una adulta de nivel
-    // avanzado, 0,85: 17 puntos. La formula es del servidor; aqui la aplica su
-    // espejo.
-    const tarjeta = page.getByRole('article').filter({ hasText: 'María Gómez' })
-    await expect(tarjeta).toContainText('17 / 100 XP')
-    await expect(tarjeta).toContainText('1 sesión')
+    // En la FILA, de un vistazo: la sesion ya cuenta.
+    const fila = page
+      .getByRole('list', { name: 'Estudiantes' })
+      .getByRole('listitem')
+      .filter({ hasText: 'María Gómez' })
+    await expect(fila).toContainText('1 sesión')
 
-    // Y en su ficha, con la misma cifra: sale del mismo agregado, asi que las
-    // dos no pueden discrepar.
-    await tarjeta.getByRole('link', { name: 'María Gómez' }).click()
+    // Y en su ficha, los puntos: base 20 + 5 series = 25, por la adherencia al
+    // suelo -5 de 14 series- 0,80, y por la cohorte de una adulta de nivel
+    // avanzado, 0,85: 17 puntos. La formula es del servidor; aqui la aplica su
+    // espejo, y la fila y la ficha salen del mismo agregado.
+    await fila.getByRole('link', { name: 'María Gómez' }).click()
     await page.waitForURL(/\/students\/student-2/, { timeout: 15_000 })
-    await expect(page.getByText('17 / 100 XP')).toBeVisible()
+    const progreso = await abrirSeccion(page, 'Progreso')
+    await expect(progreso.getByText('17 / 100 XP')).toBeVisible()
   })
 
   test('terminar una sesion no lleva al entrenador a progreso', async ({ page }) => {
@@ -3161,10 +3636,9 @@ test.describe('alumnos', () => {
   test('un alumno con sesiones agendadas no se puede borrar', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
-    await page.goto('/students')
+    await page.goto('/students/student-1')
 
-    const tarjeta = page.locator('article').filter({ hasText: 'Juan Pérez' })
-    await tarjeta.getByRole('button').first().click()
+    await page.getByRole('button', { name: 'Acciones para Juan Pérez' }).click()
     await page.getByRole('menuitem', { name: 'Eliminar' }).click()
 
     /*
@@ -3186,31 +3660,28 @@ test.describe('alumnos', () => {
  * y era el mismo para cualquier alumno.
  */
 test.describe('progreso', () => {
-  test('la tarjeta de cada alumno lleva su progreso', async ({ page }) => {
+  test('la fila de cada alumno dice cuanto ha entrenado', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
     await page.goto('/students')
 
     /*
-     * EN LA TARJETA, no en un modulo aparte. Es la pregunta que un entrenador se
-     * hace mirando la lista -quien esta entrenando y quien se ha caido- y hasta
-     * ahora exigia abrir otra pantalla y elegir a la persona en un desplegable.
+     * EN LA FILA, en palabras: cuantas sesiones lleva. Es lo que distingue a
+     * quien entrena de quien se ha caido, que es la pregunta que se hace
+     * mirando la lista. El nivel y los puntos estan a un toque, en la ficha, y
+     * los comprueba la prueba siguiente.
      *
-     * Las cifras se comprueban contra la regla, no contra un numero copiado: la
-     * semilla de `student-1` son diez sesiones cerradas que el espejo de la regla
-     * del servidor puntua en 326; descontando 100 del nivel 1 y 150 del 2,
-     * quedan 76 dentro del nivel 3, que cuesta 200.
+     * La semilla de `student-1` son diez sesiones cerradas.
      */
-    const juan = page.getByRole('article').filter({ hasText: 'Juan Pérez' })
-    await expect(juan).toContainText('Nivel 3')
-    await expect(juan).toContainText('76 / 200 XP')
-    await expect(juan).toContainText('10 sesiones')
+    const filas = page.getByRole('list', { name: 'Estudiantes' }).getByRole('listitem')
+    const juan = filas.filter({ hasText: 'Juan Pérez' })
+    await expect(juan).toContainText('Intermedio · 10 sesiones')
+    await expect(juan).not.toContainText('XP')
 
-    // Quien no ha entrenado no lleva una barra a cero -se lee como un mal
-    // resultado- sino lo que de verdad significa.
-    const maria = page.getByRole('article').filter({ hasText: 'María Gómez' })
-    await expect(maria).toContainText('Todavía no ha completado ninguna sesión')
-    await expect(maria).not.toContainText('XP')
+    // Quien no ha entrenado no lleva un cero, que se lee como un mal
+    // resultado: lleva lo que significa.
+    const maria = filas.filter({ hasText: 'María Gómez' })
+    await expect(maria).toContainText('Avanzado · sin sesiones')
   })
 
   test('la ficha lleva la medida, no el registro motivacional', async ({ page }) => {
@@ -3218,15 +3689,15 @@ test.describe('progreso', () => {
     await signIn(page)
     await page.goto('/students/student-1')
 
-    await expect(page.getByRole('heading', { name: 'Progreso' })).toBeVisible()
-    await expect(page.getByText('Nivel 3')).toBeVisible()
-    await expect(page.getByText('76 / 200 XP')).toBeVisible()
+    const progreso = await abrirSeccion(page, 'Progreso')
+    await expect(progreso.getByText('Nivel 3')).toBeVisible()
+    await expect(progreso.getByText('76 / 200 XP')).toBeVisible()
 
     /*
-     * SIN «TU CAMINO» NI RACHA. Llegaron aqui reutilizando la cabecera de la
-     * pantalla del alumno, y son suyas: el sendero es el registro que empuja a
-     * seguir, escrito para quien lo recorre. Al entrenador le sirve la medida, y
-     * la tiene en la misma forma que en la lista.
+     * SIN «TU CAMINO» NI RACHA MOTIVACIONAL. Llegaron aqui reutilizando la
+     * cabecera de la pantalla del alumno, y son suyas: el sendero es el
+     * registro que empuja a seguir, escrito para quien lo recorre. Al
+     * entrenador le sirve la medida.
      */
     await expect(page.getByText('Tu camino')).toHaveCount(0)
     await expect(page.getByText('días de racha')).toHaveCount(0)
@@ -3310,8 +3781,11 @@ test.describe('progreso', () => {
   test('el progreso cumple las reglas de 375 px', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await signIn(page)
-    await page.goto('/progress?student=student-1')
+    await page.goto('/progress')
     await page.waitForTimeout(1500)
+    // El unico desplegable de esta pantalla es el filtro de rareza, y desde que
+    // Progreso va en secciones (§45) vive en «Logros».
+    await abrirSeccion(page, 'Logros')
     await scrollInnerContainerToBottom(page)
 
     const medidas = await page.evaluate(() => {
@@ -3322,7 +3796,7 @@ test.describe('progreso', () => {
         contenedoresEstrechos: [...document.querySelectorAll('main section, main .grid:not(dl) > div')]
           .map((elemento) => elemento.getBoundingClientRect().width)
           .filter((ancho) => ancho > 0 && ancho < 280).length,
-        // El selector de alumno es el control nuevo de esta pantalla.
+        // El filtro de rareza, que es el unico control con desplegable.
         altoSelector: (() => {
           const selector = document.querySelector('main select')
           return selector instanceof HTMLElement ? selector.offsetHeight : 0
@@ -3332,7 +3806,7 @@ test.describe('progreso', () => {
 
     expect(medidas.desborde, 'desbordamiento horizontal').toBe(0)
     expect(medidas.contenedoresEstrechos, 'contenedores bajo 280 px').toBe(0)
-    expect(medidas.altoSelector, 'objetivo tactil del selector de alumno').toBeGreaterThanOrEqual(44)
+    expect(medidas.altoSelector, 'objetivo tactil del filtro de rareza').toBeGreaterThanOrEqual(44)
   })
 })
 
@@ -3451,11 +3925,16 @@ test.describe('equipo', () => {
     // Los cuatro de la semilla: tienen ficha, asi que son del equipo aunque
     // todavia no tengan cuenta con la que entrar.
     await expect(page.getByText('Crew · 4 miembros')).toBeVisible()
-    await expect(page.getByText('Sin cuenta')).toHaveCount(4)
+
+    // Cada cosa en su seccion (§45): se entra por el muro, que es lo que hace
+    // volver a esta pantalla, y el padron esta a un toque.
+    const miembros = await abrirSeccion(page, 'Miembros')
+    await expect(miembros.getByText('Sin cuenta')).toHaveCount(4)
 
     // El codigo se enseña escrito ademas de en el QR: es la salida cuando la
     // camara no colabora -permiso denegado, mala luz, pantalla rota-.
-    await expect(page.getByText('HIER-RO24')).toBeVisible()
+    const invitar = await abrirSeccion(page, 'Invitar')
+    await expect(invitar.getByText('HIER-RO24')).toBeVisible()
   })
 
   test('una cuenta sin equipo no ve NADA de ningun equipo', async ({ page }) => {
@@ -3497,7 +3976,9 @@ test.describe('equipo', () => {
     await expect(page.getByText('Ruta Hybrid')).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Consolidación' })).toBeVisible()
     await expect(page.getByText('0/300')).toBeVisible()
-    await expect(page.getByText('0 / 21 logros conseguidos')).toBeVisible()
+
+    const logros = await abrirSeccion(page, 'Logros')
+    await expect(logros.getByText('0 de 21 logros conseguidos')).toBeVisible()
   })
 
   test('el QR mete a alguien en el equipo, con el visto bueno del entrenador', async ({
@@ -3555,7 +4036,9 @@ test.describe('equipo', () => {
     await expect(page.getByRole('heading', { name: 'La Tribu del Cerro' })).toBeVisible()
     // La denominacion que eligio: solo cambia como aparece escrito.
     await expect(page.getByText('Tribu · 0 miembros')).toBeVisible()
-    await expect(page.getByText('Todavía no entrena nadie aquí.')).toBeVisible()
+
+    const miembros = await abrirSeccion(page, 'Miembros')
+    await expect(miembros.getByText('Todavía no entrena nadie aquí.')).toBeVisible()
   })
 })
 
@@ -3787,6 +4270,7 @@ test.describe('plataforma', () => {
      * meter gente se lee como que la aplicacion esta rota, y el entrenador se
      * pone a buscar el boton.
      */
+    await abrirSeccion(page, 'Invitar')
     await expect(page.getByRole('heading', { name: 'Todavía no puedes invitar' })).toBeVisible()
     await expect(page.getByText('Suscripción pendiente')).toBeVisible()
     await expect(page.getByText('Copiar enlace')).toHaveCount(0)
@@ -3800,7 +4284,20 @@ test.describe('plataforma', () => {
      * suscripcion. Es la trampa documentada en el traspaso.
      */
     await page.getByRole('link', { name: 'Estudiantes' }).first().click()
-    await expect(page.getByRole('button', { name: /Añadir alumno/ })).toBeDisabled()
+
+    /*
+     * EL VACIO EXPLICA QUE VA AHI Y COMO SE CONSIGUE (§50). La linea de antes
+     * —«Aún no tienes alumnos»— decia lo que ya se veia; esto cuenta que la
+     * cuenta se enlaza con la ficha por el correo, que es lo que nadie adivina.
+     */
+    await expect(page.getByRole('heading', { name: 'Todavía no hay nadie' })).toBeVisible()
+    await expect(page.getByText(/su cuenta queda enlazada a la ficha sola/)).toBeVisible()
+
+    // Y no lo esconde: el boton de dar de alta esta, apagado -en la cabecera y
+    // en el propio vacio-, con el porque debajo.
+    const alta = page.getByRole('button', { name: /Añadir alumno/ })
+    await expect(alta.first()).toBeDisabled()
+    await expect(alta.last()).toBeDisabled()
     await expect(page.getByText(/hace falta activar la suscripción/)).toBeVisible()
   })
 
@@ -3818,6 +4315,7 @@ test.describe('plataforma', () => {
     await page.getByLabel('Nombre').fill('La Tribu del Cerro')
     await page.getByRole('button', { name: 'Crear equipo' }).click()
     await page.waitForURL(/\/crew$/, { timeout: 20_000 })
+    await abrirSeccion(page, 'Invitar')
     await expect(page.getByRole('heading', { name: 'Todavía no puedes invitar' })).toBeVisible()
 
     // Se pasa a administrador sin recargar.
@@ -3849,7 +4347,8 @@ test.describe('plataforma', () => {
     await page.getByRole('button', { name: /La Tribu del Cerro/ }).first().click()
     await page.getByRole('menuitem', { name: 'Ver el equipo' }).click()
 
-    await expect(page.getByRole('button', { name: /Copiar enlace/ })).toBeVisible()
+    const invitar = await abrirSeccion(page, 'Invitar')
+    await expect(invitar.getByRole('button', { name: /Copiar enlace/ })).toBeVisible()
   })
 })
 
@@ -3865,7 +4364,7 @@ test.describe('muro', () => {
     await signIn(page)
     await page.goto('/crew')
 
-    const muro = page.locator('section').filter({ hasText: 'Muro' }).first()
+    const muro = await abrirSeccion(page, 'Muro')
     await muro.getByLabel('Escribe un anuncio para tu equipo').fill('Mañana cerramos a las 20:00.')
     await page.getByRole('button', { name: 'Publicar' }).click()
 
@@ -3882,7 +4381,8 @@ test.describe('muro', () => {
     await signIn(page)
     await page.goto('/crew')
 
-    const primero = page.locator('section').filter({ hasText: 'Muro' }).first().getByRole('listitem').first()
+    const muro = await abrirSeccion(page, 'Muro')
+    const primero = muro.getByRole('listitem').first()
 
     /*
      * El cero NO se pinta: «0» junto a un corazon se lee como un reproche, y
@@ -3903,7 +4403,7 @@ test.describe('muro', () => {
     await signIn(page)
     await page.goto('/crew')
 
-    const muro = page.locator('section').filter({ hasText: 'Muro' }).first()
+    const muro = await abrirSeccion(page, 'Muro')
 
     /*
      * Se comprueba que DESAPARECE ESE, no que la lista mengua.
@@ -3934,7 +4434,7 @@ test.describe('ranking', () => {
     await signIn(page)
     await page.goto('/crew')
 
-    const ranking = page.locator('section').filter({ hasText: 'Ranking' }).first()
+    const ranking = await abrirSeccion(page, 'Ranking')
 
     /*
      * ARRANCA EN LA SEMANA, y no es un detalle: un ranking por experiencia total
@@ -3991,7 +4491,12 @@ test.describe('ranking', () => {
 
     await page.getByRole('button', { name: /Hierro y Asfalto/ }).first().click()
     await page.getByRole('menuitem', { name: 'Ver el equipo' }).click()
-    await page.getByRole('button', { name: /^Aceptar a / }).click()
+
+    // LO QUE ESPERA UNA DECISION SE ANUNCIA EN SU PESTAÑA: moverlo a «Miembros»
+    // sin avisar habria sido esconderlo.
+    await expect(page.getByRole('tab', { name: 'Miembros 1 esperando' })).toBeVisible()
+    const miembros = await abrirSeccion(page, 'Miembros')
+    await miembros.getByRole('button', { name: /^Aceptar a / }).click()
 
     // Y vuelve la alumna.
     await page.getByRole('button', { name: 'Menú de usuario' }).click()
@@ -4009,7 +4514,7 @@ test.describe('ranking', () => {
      * sus sesiones en la agenda. Las dos cosas a la vez son justo el punto: la
      * clasificacion cruza la frontera de privacidad porque llega ya resuelta.
      */
-    const ranking = page.locator('section').filter({ hasText: 'Ranking' }).first()
+    const ranking = await abrirSeccion(page, 'Ranking')
     await expect(ranking.getByText('Juan Pérez')).toBeVisible()
 
     // Y no puede publicar: el muro es del entrenador.
@@ -4092,7 +4597,8 @@ test.describe('roles del equipo', () => {
 
     await page.getByRole('button', { name: /Hierro y Asfalto/ }).first().click()
     await page.getByRole('menuitem', { name: 'Ver el equipo' }).click()
-    await page.getByRole('button', { name: /^Aceptar a / }).click()
+    const miembros = await abrirSeccion(page, 'Miembros')
+    await miembros.getByRole('button', { name: /^Aceptar a / }).click()
 
     await page.getByRole('button', { name: 'Menú de usuario' }).click()
     await page.getByRole('menuitem', { name: 'Cerrar sesión' }).click()
@@ -4254,6 +4760,8 @@ test.describe('capacidades', () => {
     await page.waitForURL(/\/crew$/, { timeout: 20_000 })
     await expect(page.getByRole('heading', { name: 'Hierro y Asfalto Norte' })).toBeVisible()
     await expect(page.getByText('Tribu · 4 miembros')).toBeVisible()
+    // Sin ranking no hay pestaña de ranking: una seccion apagada no existe.
+    await expect(page.getByRole('tab', { name: 'Ranking' })).toHaveCount(0)
     await expect(page.getByRole('heading', { name: 'Ranking' })).toHaveCount(0)
   })
 
@@ -4308,7 +4816,8 @@ test.describe('capacidades', () => {
     await entrarComo(page, 'entrenador@indepsoft.com', /\/dashboard/)
     await page.getByRole('button', { name: /Hierro y Asfalto/ }).first().click()
     await page.getByRole('menuitem', { name: 'Ver el equipo' }).click()
-    await page.getByRole('button', { name: /^Aceptar a / }).click()
+    const miembros = await abrirSeccion(page, 'Miembros')
+    await miembros.getByRole('button', { name: /^Aceptar a / }).click()
 
     // Sin la concesion, no alcanza el catalogo.
     await cerrarSesion(page)
@@ -4347,7 +4856,8 @@ test.describe('capacidades', () => {
     await entrarComo(page, 'entrenador@indepsoft.com', /\/dashboard/)
     await page.getByRole('button', { name: /Hierro y Asfalto/ }).first().click()
     await page.getByRole('menuitem', { name: 'Ver el equipo' }).click()
-    await page.getByRole('button', { name: /^Aceptar a / }).click()
+    const miembros = await abrirSeccion(page, 'Miembros')
+    await miembros.getByRole('button', { name: /^Aceptar a / }).click()
 
     /*
      * Antes esto fallaba con «todavia no esta implementado»: `crewStaff.add`
@@ -4388,7 +4898,7 @@ test.describe('cuotas', () => {
   test('la ficha dice hasta cuando tiene pagado, y en palabras', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
-    await page.goto('/students/student-1')
+    await page.goto('/students/student-1?seccion=cuota')
 
     /*
      * La semilla deja a Juan vencido hace cinco dias. Se comprueba contra la
@@ -4396,7 +4906,7 @@ test.describe('cuotas', () => {
      * desde `paidThrough`, y la semilla los pone relativos a hoy justo para que
      * la prueba no caduque.
      */
-    await expect(page.getByRole('heading', { name: 'Cuota' })).toBeVisible()
+    await expect(page.getByRole('region', { name: 'Cuota' })).toBeVisible()
     await expect(page.getByText('Venció hace 5 días')).toBeVisible()
 
     // Los dias dicen si corre prisa; la fecha dice que dia es. Las dos cosas.
@@ -4406,14 +4916,18 @@ test.describe('cuotas', () => {
   test('registrar un pago mueve la fecha, y cambiar el periodo no cobra', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
-    await page.goto('/students/student-1')
+    await page.goto('/students/student-1?seccion=cuota')
 
     /*
      * Juan esta vencido, asi que renovar cuenta DESDE HOY y no desde la fecha
      * vieja: quien lleva dias sin pagar no compra dias de pasado. Treinta dias
      * desde hoy caen dentro de «activa», no de «vence pronto».
      */
-    await page.getByRole('button', { name: 'Registrar pago' }).click()
+    /*
+     * Cobrar pasa por su hoja (`CAMBIOS` §44): dice hasta cuándo cubre ANTES
+     * de escribir, porque mover la fecha pagada no se deshace desde aquí.
+     */
+    await registrarPago(page)
     await expect(page.getByText('Vence en 30 días')).toBeVisible()
 
     // Cambiar el periodo NO cobra: la fecha pagada se queda donde estaba.
@@ -4421,14 +4935,14 @@ test.describe('cuotas', () => {
     await expect(page.getByText('Vence en 30 días')).toBeVisible()
 
     // Y el siguiente pago ya dura tres meses.
-    await page.getByRole('button', { name: 'Registrar pago' }).click()
+    await registrarPago(page)
     await expect(page.getByText('Vence en 120 días')).toBeVisible()
   })
 
   test('el aviso llega a la campana del alumno, no al muro', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
-    await page.goto('/students/student-2')
+    await page.goto('/students/student-2?seccion=cuota')
 
     /*
      * TODO EN LA MISMA CARGA: los adaptadores falsos viven en memoria, y un
@@ -4455,15 +4969,22 @@ test.describe('cuotas', () => {
     await page.getByRole('button', { name: 'Crear cuenta' }).click()
     await page.waitForURL(/\/progress/, { timeout: 20_000 })
 
-    // Le llega, y el contador lo dice.
-    await page.getByRole('button', { name: 'Avisos, 1 sin leer' }).click()
-    await expect(page.getByText(/tu cuota vence en 3 días/)).toBeVisible()
+    // Le llega, y el contador lo dice. La campana LLEVA a la bandeja (§48):
+    // era un desplegable de 320 px colgando de la esquina.
+    await page.getByRole('link', { name: 'Avisos, 1 sin leer' }).click()
+    await page.waitForURL(/\/notices/, { timeout: 20_000 })
+
+    // Agrupado por cuando llego, y con su motivo.
+    const hoy = page.getByRole('region', { name: 'Hoy' })
+    await expect(hoy.getByText(/tu cuota vence en 3 días/)).toBeVisible()
+    // El rotulo dice de que es, y lleva dentro el «sin leer» que solo oye un
+    // lector de pantalla: el punto de color no dice nada por si solo.
+    await expect(hoy.getByText('Tu cuota sin leer')).toBeVisible()
 
     /*
      * Y NO ESTA EN EL MURO. Es la mitad que importa: un recordatorio de dinero
      * publicado donde lo ven sus compañeros seria exponer a alguien por deber.
      */
-    await page.keyboard.press('Escape')
     await page.getByRole('button', { name: /Hierro y Asfalto/ }).first().click()
     await page.getByRole('menuitem', { name: 'Ver el equipo' }).click()
     await expect(page.getByText(/tu cuota vence en 3 días/)).toHaveCount(0)
@@ -4481,7 +5002,7 @@ test.describe('progresion de cargas', () => {
   test('lo levantado en la sesion aparece en la ficha del alumno', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
-    await page.goto('/students/student-2')
+    await page.goto('/students/student-2?seccion=progreso')
 
     // De partida no hay nada: `student-2` no tiene historial en la semilla.
     await expect(page.getByText(/Todavía no hay pesos anotados/)).toBeVisible()
@@ -4532,6 +5053,7 @@ test.describe('progresion de cargas', () => {
     await page.waitForURL(/\/students$/, { timeout: 15_000 })
     await page.getByRole('link', { name: 'María Gómez' }).click()
     await page.waitForURL(/\/students\/student-2/, { timeout: 15_000 })
+    await abrirSeccion(page, 'Progreso')
 
     const cargas = page.locator('section').filter({ hasText: 'Cargas' })
     await expect(cargas.getByText('Press de banca con barra')).toBeVisible()
@@ -4590,7 +5112,7 @@ test.describe('grafica de cargas', () => {
   test('el detalle de un ejercicio dibuja la linea y estima el maximo', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await signIn(page)
-    await page.goto('/students/student-1')
+    await page.goto('/students/student-1?seccion=progreso')
 
     const cargas = page.locator('section[aria-labelledby="cargas-titulo"]')
     const sentadilla = cargas.getByRole('button', { name: /Sentadilla con barra/ })
@@ -4723,6 +5245,122 @@ test.describe('reportes', () => {
  * «Perfil» del menu de usuario no tenia ni `onClick` ni enlace: dos puertas
  * pintadas en la pared.
  */
+/**
+ * El contraste del texto, MEDIDO en la página y en los dos temas (§51).
+ *
+ * Se mide el color que se pinta de verdad contra el fondo que tiene detrás
+ * —compuestas las capas semitransparentes, que un tinte al 18 % no es un
+ * fondo sino un velo—, y no se deduce de los tokens: un `text-ink/45` daba
+ * 2,99:1 en claro y 4,07 en oscuro, y ninguna lectura de clases lo decía.
+ *
+ * El listón es AA: 4,5:1 para texto normal y 3:1 para el grande. Queda fuera
+ * lo decorativo —`aria-hidden`— y lo que no es texto.
+ */
+async function textosFlojos(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const canales = (color: string): number[] => (color.match(/[\d.]+/g) ?? []).map(Number)
+
+    const mezcla = (delante: string, detras: string): string => {
+      const [fr, fg, fb, fa = 1] = canales(delante)
+      const [br, bg, bb] = canales(detras)
+      return `rgb(${fr * fa + br * (1 - fa)}, ${fg * fa + bg * (1 - fa)}, ${fb * fa + bb * (1 - fa)})`
+    }
+
+    const luminancia = (color: string): number => {
+      const lineal = (valor: number): number => {
+        const proporcion = valor / 255
+        return proporcion <= 0.03928
+          ? proporcion / 12.92
+          : Math.pow((proporcion + 0.055) / 1.055, 2.4)
+      }
+      const [r, g, b] = canales(color)
+      return 0.2126 * lineal(r) + 0.7152 * lineal(g) + 0.0722 * lineal(b)
+    }
+
+    const fondoDe = (elemento: Element): string => {
+      const capas: string[] = []
+      let actual: Element | null = elemento
+      while (actual !== null) {
+        const color = window.getComputedStyle(actual).backgroundColor
+        const alfa = canales(color)[3] ?? 1
+        if (color !== 'rgba(0, 0, 0, 0)' && alfa > 0) {
+          capas.push(color)
+          if (alfa >= 1) break
+        }
+        actual = actual.parentElement
+      }
+      const ultima = capas[capas.length - 1]
+      if (ultima === undefined || (canales(ultima)[3] ?? 1) < 1) {
+        capas.push(window.getComputedStyle(document.body).backgroundColor)
+      }
+      let compuesto = capas.pop() ?? 'rgb(255, 255, 255)'
+      while (capas.length > 0) compuesto = mezcla(capas.pop() ?? compuesto, compuesto)
+      return compuesto
+    }
+
+    const flojos: string[] = []
+    for (const elemento of document.querySelectorAll('p, span, h1, h2, h3, li, button, a, dt, dd')) {
+      const texto = (elemento.textContent ?? '').trim()
+      if (texto === '' || elemento.children.length > 0) continue
+      if (elemento.closest('[aria-hidden="true"]') !== null) continue
+
+      const caja = elemento.getBoundingClientRect()
+      if (caja.width === 0 || caja.height === 0) continue
+
+      const estilo = window.getComputedStyle(elemento)
+      const fondo = fondoDe(elemento)
+      const primero = luminancia(mezcla(estilo.color, fondo))
+      const segundo = luminancia(fondo)
+      const contraste =
+        (Math.max(primero, segundo) + 0.05) / (Math.min(primero, segundo) + 0.05)
+
+      const tamano = Number.parseFloat(estilo.fontSize)
+      const grande = tamano >= 24 || (tamano >= 18.66 && Number(estilo.fontWeight) >= 700)
+      if (contraste < (grande ? 3 : 4.5)) {
+        flojos.push(`«${texto.slice(0, 24)}» ${contraste.toFixed(2)}:1`)
+      }
+    }
+    return flojos
+  })
+}
+
+test.describe('contraste', () => {
+  for (const tema of ['light', 'dark'] as const) {
+    test(`ningun texto baja de AA en tema ${tema === 'light' ? 'claro' : 'oscuro'}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 375, height: 812 })
+      // Antes de que la aplicacion arranque: el tema lo lee un guion en linea
+      // de `index.html` antes del primer pintado.
+      await page.addInitScript((elegido) => {
+        window.localStorage.setItem('theme', elegido)
+      }, tema)
+      await page.emulateMedia({ colorScheme: tema })
+      await signIn(page)
+
+      const pantallas = [
+        '/dashboard',
+        '/calendar',
+        '/students',
+        '/students/student-1',
+        '/students/student-2?seccion=cuota',
+        '/crew?seccion=miembros',
+        '/trainings',
+        '/settings',
+      ]
+
+      const hallazgos: string[] = []
+      for (const ruta of pantallas) {
+        await page.goto(ruta)
+        await page.waitForTimeout(1200)
+        for (const flojo of await textosFlojos(page)) hallazgos.push(`${ruta} ${flojo}`)
+      }
+
+      expect(hallazgos, 'textos por debajo de AA').toEqual([])
+    })
+  }
+})
+
 test.describe('configuracion', () => {
   test('«Perfil» de la cabecera lleva a Configuracion', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
@@ -4746,14 +5384,20 @@ test.describe('configuracion', () => {
      * guardar escribe en ella. Por eso el cambio se ve en la cabecera, que lee
      * la misma ficha.
      */
-    await page.getByLabel('Nombre').fill('Marcos')
-    await page.getByLabel('Apellidos').fill('Salas Ruiz')
-    // Exacto: desde que la cuenta tiene contraseña, en esta pantalla hay
-    // tambien un «Guardar la contraseña» y el nombre a secas casaba con los dos.
-    await page.getByRole('button', { name: 'Guardar', exact: true }).click()
+    // El perfil se edita en una hoja (§49): la pantalla enseña quién eres, y
+    // los seis campos se abren al pulsar «Editar».
+    await page.getByRole('button', { name: 'Editar' }).click()
+    const hoja = page.getByRole('dialog')
+    await hoja.getByLabel('Nombre').fill('Marcos')
+    await hoja.getByLabel('Apellidos').fill('Salas Ruiz')
+    await hoja.getByRole('button', { name: 'Guardar', exact: true }).click()
 
-    await expect(page.getByRole('button', { name: 'Guardar', exact: true })).toHaveCount(0)
-    await expect(page.getByRole('button', { name: 'Perfil guardado' })).toBeVisible()
+    await expect(hoja.getByRole('button', { name: 'Guardar', exact: true })).toHaveCount(0)
+    await expect(hoja.getByRole('button', { name: 'Perfil guardado' })).toBeVisible()
+
+    // Y se cierra: la cabecera esta detras.
+    await page.keyboard.press('Escape')
+    await expect(page.getByRole('dialog')).toHaveCount(0)
 
     /*
      * En la cabecera, por su TEXTO y no por el nombre accesible: el boton del
@@ -4801,12 +5445,16 @@ test.describe('configuracion', () => {
     await page.goto('/settings')
 
     /*
-     * Un ajuste entra cuando hay algo detras que ajustar. La contraseña no la
-     * expone `AuthPort` y no hay mas canal de avisos que la campana, que no se
-     * apaga: ofrecer cualquiera de las dos seria un control que no controla nada.
+     * Un ajuste entra cuando hay algo detras que ajustar. No hay mas canal de
+     * avisos que la campana, y esa no se apaga: un interruptor de
+     * notificaciones seria un control que no controla nada.
+     *
+     * La contraseña SI esta, desde que `AuthPort` expone `updatePassword`.
      */
-    await expect(page.getByText('Contraseña')).toHaveCount(0)
     await expect(page.getByText('Notificaciones')).toHaveCount(0)
+    // Por el principio del nombre: la fila dice ademas para que sirve, y el
+     // nombre accesible es el de sus dos lineas.
+     await expect(page.getByRole('button', { name: /^Contraseña/ })).toBeVisible()
 
     // Y los ajustes del EQUIPO no estan aqui: son de la casa, no de la persona.
     await expect(page.getByText('Aprobar quién entra')).toHaveCount(0)
@@ -4817,13 +5465,14 @@ test.describe('configuracion', () => {
     await signIn(page)
     await page.goto('/settings')
 
-    const oscuro = page.getByRole('button', { name: 'Oscuro' })
-    await oscuro.click()
+    const tema = await abrirAjuste(page, 'Tema')
+    await page.getByRole('radio', { name: 'Oscuro' }).click()
 
     // La clase en <html> es lo que activa el bloque `.dark`; sin ella los tokens
     // no cambian de valor y no cambia nada mas.
     await expect(page.locator('html')).toHaveClass(/dark/)
-    await expect(oscuro).toHaveAttribute('aria-pressed', 'true')
+    // Y la fila dice cual esta puesto, que es para lo que existe.
+    await expect(tema).toContainText('Oscuro')
 
     // Y el fondo de verdad cambia: la clase por si sola no demuestra que la
     // paleta oscura exista.
@@ -4841,7 +5490,8 @@ test.describe('configuracion', () => {
     await page.reload()
     await expect(page.locator('html')).toHaveClass(/dark/)
 
-    await page.getByRole('button', { name: 'Claro' }).click()
+    await abrirAjuste(page, 'Tema')
+    await page.getByRole('radio', { name: 'Claro' }).click()
     await expect(page.locator('html')).not.toHaveClass(/dark/)
   })
 
@@ -4852,7 +5502,8 @@ test.describe('configuracion', () => {
 
     // Cada idioma se ofrece EN SU PROPIO IDIOMA: quien abre esta pantalla porque
     // la aplicacion esta en una lengua que no entiende necesita reconocer la suya.
-    await page.getByRole('button', { name: 'English' }).click()
+    await abrirAjuste(page, 'Idioma')
+    await page.getByRole('radio', { name: 'English' }).click()
 
     await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible()
     await expect(page.getByRole('link', { name: 'Students' }).first()).toBeVisible()
@@ -4868,7 +5519,8 @@ test.describe('configuracion', () => {
     await page.reload()
     await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible()
 
-    await page.getByRole('button', { name: 'Português' }).click()
+    await abrirAjuste(page, 'Language')
+    await page.getByRole('radio', { name: 'Português' }).click()
     await expect(page.getByRole('heading', { name: 'Configurações' })).toBeVisible()
     await expect(page.locator('html')).toHaveAttribute('lang', 'pt-BR')
   })
@@ -4877,7 +5529,8 @@ test.describe('configuracion', () => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
     await page.goto('/settings')
-    await page.getByRole('button', { name: 'English' }).click()
+    await abrirAjuste(page, 'Idioma')
+    await page.getByRole('radio', { name: 'English' }).click()
 
     /*
      * La linea es la que dice el propio selector: cambia lo que escribe la
@@ -4898,13 +5551,15 @@ test.describe('configuracion', () => {
     // En una PWA instalada esta etiqueta tiñe la barra de estado del sistema.
     // Con un valor fijo, el tema oscuro dejaba una franja azul sobre una
     // aplicacion negra.
-    await page.getByRole('button', { name: 'Oscuro' }).click()
+    await abrirAjuste(page, 'Tema')
+    await page.getByRole('radio', { name: 'Oscuro' }).click()
     await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute(
       'content',
       '#0d1017'
     )
 
-    await page.getByRole('button', { name: 'Claro' }).click()
+    await abrirAjuste(page, 'Tema')
+    await page.getByRole('radio', { name: 'Claro' }).click()
     await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute(
       'content',
       '#0b4bcc'
@@ -4949,14 +5604,19 @@ test.describe('cuenta', () => {
     await signIn(page)
     await page.goto('/settings')
 
-    await page.getByLabel('Contraseña nueva').fill('nueva-123')
-    await page.getByLabel('Repite la contraseña').fill('otra-123')
-    await page.getByRole('button', { name: 'Guardar la contraseña' }).click()
-    await expect(page.getByText('Las dos contraseñas no coinciden')).toBeVisible()
+    await page.getByRole('button', { name: /^Contraseña/ }).click()
+    const hoja = page.getByRole('dialog')
 
-    await page.getByLabel('Repite la contraseña').fill('nueva-123')
-    await page.getByRole('button', { name: 'Guardar la contraseña' }).click()
-    await expect(page.getByRole('button', { name: 'Contraseña cambiada' })).toBeVisible()
+    await hoja.getByLabel('Contraseña nueva').fill('nueva-123')
+    await hoja.getByLabel('Repite la contraseña').fill('otra-123')
+    await hoja.getByRole('button', { name: 'Guardar la contraseña' }).click()
+    await expect(hoja.getByText('Las dos contraseñas no coinciden')).toBeVisible()
+
+    await hoja.getByLabel('Repite la contraseña').fill('nueva-123')
+    await hoja.getByRole('button', { name: 'Guardar la contraseña' }).click()
+
+    // Cambiada, la hoja se cierra: dejarla abierta invita a cambiarla otra vez.
+    await expect(page.getByRole('dialog')).toHaveCount(0)
 
     // Sin desbordamiento a 375 px: el formulario nuevo cabe.
     const overflow = await page.evaluate(
@@ -5015,34 +5675,38 @@ test.describe('huecos cerrados', () => {
     await page.setViewportSize({ width: 375, height: 812 })
     await signIn(page)
     await page.goto('/students')
-    await page.waitForTimeout(1200)
 
-    const tarjetas = page.locator('article')
-    const antes = await tarjetas.count()
+    const filas = page.getByRole('list', { name: 'Estudiantes' }).getByRole('listitem')
+    await expect(filas.first()).toBeVisible()
+    const antes = await filas.count()
     expect(antes).toBeGreaterThan(1)
 
     // Sin tilde a proposito: la busqueda no distingue acentos ni mayusculas.
     await page.getByLabel('Buscar estudiante...').fill('ana')
-    await expect(tarjetas).not.toHaveCount(antes)
-    await expect(tarjetas.first()).toContainText(/ana/i)
+    await expect(filas).not.toHaveCount(antes)
+    await expect(filas.first()).toContainText(/ana/i)
 
     await page.getByLabel('Buscar estudiante...').fill('nadie-con-este-nombre')
     await expect(page.getByText('Ningún alumno coincide con la búsqueda.')).toBeVisible()
     await page.getByLabel('Buscar estudiante...').fill('')
 
-    await elegirDelDesplegable(page, page.getByRole('combobox', { name: 'Filtros' }), 'Avanzado')
-    const avanzados = await tarjetas.count()
+    const nivel = page.getByRole('combobox', { name: 'Nivel' })
+    await elegirDelDesplegable(page, nivel, 'Avanzado')
+    // El disparador dice que filtra y por que valor, en pantalla y al lector.
+    await expect(nivel).toHaveText('Avanzado')
+    await expect(nivel).toHaveAccessibleName('Nivel: Avanzado')
+    await expect(filas).not.toHaveCount(antes)
+    const avanzados = await filas.count()
     expect(avanzados).toBeGreaterThan(0)
-    expect(avanzados).toBeLessThan(antes)
-    for (const tarjeta of await tarjetas.all()) {
-      await expect(tarjeta).toContainText('Avanzado')
+    for (const fila of await filas.all()) {
+      await expect(fila).toContainText('Avanzado')
     }
   })
 
   test('los filtros de rutinas filtran, y sin resultados lo dicen', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
-    await page.goto('/trainings?tab=rutinas')
+    await page.goto('/trainings?seccion=rutinas')
     await page.waitForTimeout(1200)
 
     const tarjetas = page.locator('article')
@@ -5057,10 +5721,35 @@ test.describe('huecos cerrados', () => {
     await expect(page.getByText('Ninguna rutina coincide con la búsqueda.')).toBeVisible()
   })
 
+  test('las tres rutinas caben en una pantalla de movil', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await signIn(page)
+    await page.goto('/trainings')
+    await page.waitForTimeout(1500)
+
+    /*
+     * ESTA ES LA MEDIDA QUE JUSTIFICA LA TARJETA COMPACTA (§46). Con la cuña
+     * diagonal, la rejilla de dos cifras y los tres primeros ejercicios en
+     * filas, cada rutina medía 320 px: una y media por pantalla. Se cuenta lo
+     * que cabe ENTERO, que es lo que de verdad se puede comparar de un vistazo.
+     */
+    const alturas = await page.evaluate(() =>
+      [...document.querySelectorAll('article')].map((tarjeta) => {
+        const caja = tarjeta.getBoundingClientRect()
+        return { alto: Math.round(caja.height), abajo: Math.round(caja.bottom) }
+      })
+    )
+
+    expect(alturas).toHaveLength(3)
+    for (const { alto } of alturas) expect(alto).toBeLessThanOrEqual(200)
+    const enteras = alturas.filter(({ abajo }) => abajo <= 812).length
+    expect(enteras, 'rutinas visibles enteras a 375 px').toBe(3)
+  })
+
   test('el tempo y las notas de un ejercicio se editan y sobreviven al guardar', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
-    await page.goto('/trainings?tab=rutinas')
+    await page.goto('/trainings?seccion=rutinas')
     await page.waitForTimeout(1200)
 
     // La primera rutina de la lista, a su edicion por la interfaz.
@@ -5068,6 +5757,9 @@ test.describe('huecos cerrados', () => {
     await page.getByRole('menuitem', { name: 'Editar' }).click()
     await page.waitForURL(/\/trainings\/[\w-]+\/edit/)
 
+    // El primer ejercicio, y detrás de «Más ajustes», el tempo y las notas.
+    await page.getByRole('button', { name: /×/ }).first().click()
+    await page.getByRole('button', { name: /Más ajustes/ }).first().click()
     await page.getByLabel('Tempo').first().fill('3-1-1-0')
     await page.getByLabel('Indicaciones').first().fill('Sin rebote abajo')
     // Al editar, el boton dice «Guardar cambios»; «Guardar rutina» es el del alta.
@@ -5320,6 +6012,7 @@ test.describe('fugas de secuencia', () => {
     await page.getByRole('button', { name: 'Crear equipo' }).click()
     await page.waitForURL(/\/crew$/, { timeout: 20_000 })
 
+    await abrirSeccion(page, 'Invitar')
     await page.getByRole('button', { name: 'Solicitar la activación' }).click()
     await expect(page.getByText(/Activación solicitada el/)).toBeVisible()
     await expect(page.getByRole('button', { name: 'Solicitar la activación' })).toHaveCount(0)
@@ -5330,6 +6023,7 @@ test.describe('fugas de secuencia', () => {
     await signIn(page)
     await page.goto('/crew')
 
+    await abrirSeccion(page, 'Invitar')
     await expect(page.getByText('HIER-RO24')).toBeVisible()
     await page.getByRole('button', { name: 'Generar uno nuevo' }).click()
     // Todavia no ha pasado nada: el codigo sigue, y se avisa de lo que va a pasar.
@@ -5410,7 +6104,7 @@ test.describe('rutas de desarrollo', () => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
     // `student-2` tiene asignado `plan-1`, de acondicionamiento: Vitality.
-    await page.goto('/students/student-2')
+    await page.goto('/students/student-2?seccion=progreso')
 
     const ruta = page.locator('section').filter({ hasText: 'Ruta de desarrollo' })
     await expect(ruta.getByRole('combobox', { name: 'Ruta' })).toContainText('Vitality')
@@ -5427,7 +6121,7 @@ test.describe('rutas de desarrollo', () => {
   test('cambiar la ruta a mano se refleja en el progreso del alumno', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
-    await page.goto('/students/student-2')
+    await page.goto('/students/student-2?seccion=progreso')
 
     const ruta = page.locator('section').filter({ hasText: 'Ruta de desarrollo' })
     await elegirDelDesplegable(page, ruta.getByRole('combobox', { name: 'Ruta' }), 'Apex')
@@ -5442,7 +6136,7 @@ test.describe('rachas protegidas', () => {
   test('el entrenador pausa la racha desde la ficha, y la pausa queda escrita', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
-    await page.goto('/students/student-1')
+    await page.goto('/students/student-1?seccion=progreso')
 
     const ruta = page.locator('section').filter({ hasText: 'Ruta de desarrollo' })
     await ruta.getByLabel('Desde').fill('2026-09-01')
@@ -5486,20 +6180,31 @@ test.describe('ciclos de vida y bandeja', () => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
     await page.goto('/students')
+    const padron = page.getByRole('list', { name: 'Estudiantes' })
+    const ana = padron.getByRole('listitem').filter({ hasText: 'Ana Torres' })
+    await expect(ana).toBeVisible()
 
+    // La baja se da desde la ficha, que es donde se decide sobre una persona.
+    await ana.getByRole('link', { name: 'Ana Torres' }).click()
     await page.getByRole('button', { name: 'Acciones para Ana Torres' }).click()
     await page.getByRole('menuitem', { name: 'Dar de baja' }).click()
     const dialogo = page.getByRole('dialog')
     await expect(dialogo.getByText('¿Dar de baja a Ana Torres?')).toBeVisible()
     await dialogo.getByRole('button', { name: 'Dar de baja' }).click()
+    await expect(dialogo).toHaveCount(0)
 
-    await expect(page.getByRole('heading', { name: 'Ana Torres' })).toHaveCount(0)
+    // De vuelta por la interfaz y no con `goto`: los datos simulados viven en
+    // memoria, y recargar devolveria la semilla.
+    await page.getByRole('link', { name: 'Estudiantes' }).first().click()
+    await page.waitForURL(/\/students$/)
+    await expect(padron.getByRole('listitem').first()).toBeVisible()
+    await expect(ana).toHaveCount(0)
 
     // Las bajas, plegadas bajo el padron; reactivar la devuelve.
     await page.getByRole('button', { name: 'Ver bajas (1)' }).click()
     await expect(page.getByText('Bajas · 1')).toBeVisible()
     await page.getByRole('button', { name: 'Reactivar' }).click()
-    await expect(page.getByRole('heading', { name: 'Ana Torres' })).toBeVisible()
+    await expect(ana).toBeVisible()
   })
 
   test('una sesion abierta con el dia pasado se enseña como «no ocurrio» y se cuenta aparte', async ({ page }) => {
@@ -5507,13 +6212,24 @@ test.describe('ciclos de vida y bandeja', () => {
     await signIn(page)
     await page.goto('/calendar')
 
-    // El resumen tiene el tile propio, con la de la semilla que quedo sin cerrar.
-    const noOcurrieron = contador(page, 'No ocurrieron')
+    /*
+     * El resumen tiene su propia píldora. La sesion sin cerrar de la semilla es
+     * de hace diez dias, y el resumen habla de LA SEMANA QUE SE MIRA (§47): se
+     * retrocede hasta dar con su semana, que segun el dia de hoy es la anterior
+     * o la de antes.
+     */
+    await page.waitForTimeout(1200)
+    const noOcurrieron = contador(page, /no ocurr/)
+    for (let intento = 0; intento < 3 && (await noOcurrieron.count()) === 0; intento += 1) {
+      await page.getByRole('button', { name: 'Periodo anterior' }).click()
+      await page.waitForTimeout(500)
+    }
+
     await expect(noOcurrieron).toBeVisible()
     expect(await leerCifra(noOcurrieron)).toBeGreaterThanOrEqual(1)
 
     // Y en la ficha de su alumna, la insignia lo dice en vez de «pendiente».
-    await page.goto('/students/student-4')
+    await page.goto('/students/student-4?seccion=sesiones')
     await expect(page.getByText('No ocurrió').first()).toBeVisible()
   })
 

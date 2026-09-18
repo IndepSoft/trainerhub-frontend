@@ -10,14 +10,12 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import type { TrainingLevel } from '../types/training.types'
+import { TRAINING_LEVELS, isTrainingLevel } from '@/shared/domain/entities/routine'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { STUDENT_LEVEL_LABEL_KEY } from '@/shared/i18n/domainLabels'
 
 /** Registro de etiqueta del formulario, igual que el de las métricas. */
-const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50'
-
-/** De menos a más exigente, que es como se lee una escala. */
-const TRAINING_LEVELS: TrainingLevel[] = ['Principiante', 'Intermedio', 'Avanzado']
+const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
 
 interface RoutineIdentityFieldsProps {
   title: string
@@ -32,6 +30,9 @@ interface RoutineIdentityFieldsProps {
 
 /**
  * Lo que identifica a la rutina: nombre, descripción y nivel. Sólo presentación.
+ *
+ * Sin encabezado propio: es el primer paso del formulario, y la pestaña ya
+ * dice «La rutina».
  */
 export function RoutineIdentityFields({
   title,
@@ -51,12 +52,11 @@ export function RoutineIdentityFields({
   const levelFieldId = `${fieldId}-level`
 
   return (
-    <section className="rounded-block border border-cobalt-tint-3 bg-surface p-4 sm:p-5">
-      <h2 className="border-b border-cobalt-tint-3 pb-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-        {t('routine.identity')}
-      </h2>
-
-      <div className="mt-4">
+    <section
+      aria-label={t('routine.identity')}
+      className="rounded-block border border-cobalt-tint-3 bg-surface p-4 sm:p-5"
+    >
+      <div>
         <Label htmlFor={titleFieldId} className={FIELD_LABEL}>
           {t('exercise.name')}
         </Label>
@@ -103,7 +103,12 @@ export function RoutineIdentityFields({
         <Label htmlFor={levelFieldId} className={FIELD_LABEL}>
           {t('routine.level')}
         </Label>
-        <Select value={level} onValueChange={(value) => onLevelChange(value as TrainingLevel)}>
+        <Select
+          value={level}
+          onValueChange={(value) => {
+            if (isTrainingLevel(value)) onLevelChange(value)
+          }}
+        >
           <SelectTrigger id={levelFieldId} className="mt-1.5 w-full">
             <SelectValue />
           </SelectTrigger>

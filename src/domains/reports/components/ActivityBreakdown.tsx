@@ -21,7 +21,7 @@ export function ActivityBreakdown() {
 
   if (byHour.length === 0) {
     return (
-      <p className="py-8 text-sm text-ink/45">
+      <p className="py-8 text-sm text-ink/60">
         {t('reports.activity.empty')}
       </p>
     )
@@ -47,7 +47,7 @@ export function ActivityBreakdown() {
             />
           </span>
 
-          <span className="metric-figures w-8 shrink-0 text-end text-sm text-ink/45">
+          <span className="metric-figures w-8 shrink-0 text-end text-sm text-ink/60">
             {slot.completed}
           </span>
         </li>

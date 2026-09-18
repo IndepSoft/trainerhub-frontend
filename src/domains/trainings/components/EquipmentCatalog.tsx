@@ -19,7 +19,7 @@ import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { catalogEnumLabel, catalogLabel } from '@/shared/i18n/domainLabels'
 
 /** Registro de etiqueta del formulario, igual que en el resto del dominio. */
-const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50'
+const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
 
 /**
  * Se llama EQUIPAMIENTO y no «máquinas» a propósito: barra, mancuernas, polea,
@@ -96,7 +96,7 @@ export function EquipmentCatalog() {
   }
 
   return (
-    <section className="px-4 pb-6">
+    <section className="px-5 pb-6">
       <form onSubmit={handleCreate} className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="min-w-0 flex-1">
           <Label htmlFor={`${fieldId}-name`} className={FIELD_LABEL}>
@@ -191,7 +191,7 @@ export function EquipmentCatalog() {
                     type="button"
                     onClick={confirmEditing}
                     aria-label={t('equipment.saveName')}
-                    className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-cobalt-tint hover:text-cobalt"
+                    className="inline-flex size-11 items-center justify-center rounded-action text-ink/50 transition-colors hover:bg-cobalt-tint hover:text-cobalt"
                   >
                     <Check className="size-4" />
                   </button>
@@ -199,7 +199,7 @@ export function EquipmentCatalog() {
                     type="button"
                     onClick={() => setEditingId(null)}
                     aria-label={t('equipment.discard')}
-                    className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:text-ink"
+                    className="inline-flex size-11 items-center justify-center rounded-action text-ink/50 transition-colors hover:text-ink"
                   >
                     <X className="size-4" />
                   </button>
@@ -212,7 +212,7 @@ export function EquipmentCatalog() {
             <li key={item.id} className="flex items-center gap-3 py-4">
               <div className="min-w-0 flex-1">
                 <p className="font-semibold text-ink">{catalogLabel(item.id, item.name, t)}</p>
-                <p className="mt-0.5 text-xs text-ink/45">
+                <p className="mt-0.5 text-xs text-ink/60">
                   {catalogEnumLabel(item.kind, t)}
                   {usedIn > 0 && ` · en ${usedIn} ${usedIn === 1 ? 'ejercicio' : 'ejercicios'}`}
                 </p>
@@ -223,7 +223,7 @@ export function EquipmentCatalog() {
                   type="button"
                   onClick={() => startEditing(item)}
                   aria-label={t('exercise.editLabel', { name: item.name })}
-                  className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-cobalt-tint hover:text-cobalt"
+                  className="inline-flex size-11 items-center justify-center rounded-action text-ink/50 transition-colors hover:bg-cobalt-tint hover:text-cobalt"
                 >
                   <Pencil className="size-4" />
                 </button>
@@ -231,7 +231,7 @@ export function EquipmentCatalog() {
                   type="button"
                   onClick={() => handleDelete(item)}
                   aria-label={t('exercise.deleteLabel', { name: item.name })}
-                  className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-danger-surface hover:text-danger"
+                  className="inline-flex size-11 items-center justify-center rounded-action text-ink/50 transition-colors hover:bg-danger-surface hover:text-danger"
                 >
                   <Trash2 className="size-4" />
                 </button>

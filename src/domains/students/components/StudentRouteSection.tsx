@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { useStudentRoute } from '../hooks/useStudentRoute'
-import { ROUTE_NAME_KEY } from '@/domains/progress/libs/routePath'
+import { NODE_TITLE_KEY, ROUTE_NAME_KEY } from '@/domains/progress/libs/routePath'
 import { badgeCatalog } from '@/domains/progress/data/badgeCatalog'
 import {
   PROGRESS_ROUTES,
@@ -28,13 +28,6 @@ const PAUSE_REASON_KEY: Record<'injury' | 'travel' | 'wildcard', TranslationKey>
   injury: 'studentRoute.reason.injury',
   travel: 'studentRoute.reason.travel',
   wildcard: 'studentRoute.reason.wildcard',
-}
-
-const NODE_TITLE_KEY: Record<number, TranslationKey> = {
-  1: 'route.node.initiation',
-  2: 'route.node.consolidation',
-  3: 'route.node.mastery',
-  4: 'route.node.master',
 }
 
 /**
@@ -91,7 +84,7 @@ export function StudentRouteSection({ studentId }: StudentRouteSectionProps) {
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <div>
-          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/55">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
             {t('studentRoute.route')}
           </span>
           {/* Se elige a mano cuando el objetivo del plan no la dice, o cuando
@@ -115,26 +108,26 @@ export function StudentRouteSection({ studentId }: StudentRouteSectionProps) {
               ))}
             </SelectContent>
           </Select>
-          <p className="mt-1 text-xs text-ink/50">{t('studentRoute.routeHint')}</p>
+          <p className="mt-1 text-xs text-ink/60">{t('studentRoute.routeHint')}</p>
         </div>
 
         <dl className="space-y-1 text-sm">
           <div className="flex justify-between gap-3">
-            <dt className="text-ink/55">{t('studentRoute.node')}</dt>
+            <dt className="text-ink/60">{t('studentRoute.node')}</dt>
             <dd className="font-semibold text-ink">{t(NODE_TITLE_KEY[progress.position])}</dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-ink/55">{t('route.criterion.points')}</dt>
+            <dt className="text-ink/60">{t('route.criterion.points')}</dt>
             <dd className="metric-figures font-semibold text-ink">
               {progress.points}
-              {nextNode !== undefined && <span className="text-ink/45">/{nextNode.pointsRequired}</span>}
+              {nextNode !== undefined && <span className="text-ink/60">/{nextNode.pointsRequired}</span>}
             </dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-ink/55">{t('route.criterion.weeks')}</dt>
+            <dt className="text-ink/60">{t('route.criterion.weeks')}</dt>
             <dd className="metric-figures font-semibold text-ink">
               {progress.adherentWeeks}
-              {nextNode !== undefined && <span className="text-ink/45">/{nextNode.weeksRequired}</span>}
+              {nextNode !== undefined && <span className="text-ink/60">/{nextNode.weeksRequired}</span>}
             </dd>
           </div>
         </dl>
@@ -152,8 +145,8 @@ export function StudentRouteSection({ studentId }: StudentRouteSectionProps) {
             </p>
           ) : (
             <>
-              <p className="mt-1 text-xs text-ink/55">{t('studentRoute.validateHint')}</p>
-              <label className="mt-3 block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/55">
+              <p className="mt-1 text-xs text-ink/60">{t('studentRoute.validateHint')}</p>
+              <label className="mt-3 block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
                 {t('studentRoute.notes')}
                 <input
                   value={notes}
@@ -177,7 +170,7 @@ export function StudentRouteSection({ studentId }: StudentRouteSectionProps) {
 
       {pendingBadges.length > 0 && (
         <div className="mt-6">
-          <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/55">
+          <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
             {t('studentRoute.pendingBadges')}
           </h3>
           <ul className="mt-2 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3">
@@ -208,9 +201,9 @@ export function StudentRouteSection({ studentId }: StudentRouteSectionProps) {
           <PauseCircle className="size-4" />
           {t('studentRoute.pauseTitle')}
         </p>
-        <p className="mt-1 text-xs text-ink/55">{t('studentRoute.pauseHint')}</p>
+        <p className="mt-1 text-xs text-ink/60">{t('studentRoute.pauseHint')}</p>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/55">
+          <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
             {t('studentRoute.pauseFrom')}
             <input
               type="date"
@@ -219,7 +212,7 @@ export function StudentRouteSection({ studentId }: StudentRouteSectionProps) {
               className="mt-1.5 block h-11 w-full rounded-action border border-cobalt-tint-3 bg-surface px-3 text-sm font-normal normal-case tracking-normal text-ink"
             />
           </label>
-          <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/55">
+          <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
             {t('studentRoute.pauseTo')}
             <input
               type="date"
@@ -229,7 +222,7 @@ export function StudentRouteSection({ studentId }: StudentRouteSectionProps) {
             />
           </label>
           <div>
-            <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/55">
+            <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
               {t('studentRoute.pauseReason')}
             </span>
             <Select value={pauseReason} onValueChange={(value) => setPauseReason(value === 'travel' ? 'travel' : 'injury')}>
@@ -260,7 +253,7 @@ export function StudentRouteSection({ studentId }: StudentRouteSectionProps) {
                   {pause.fromDay}
                   {pause.toDay !== pause.fromDay && ` – ${pause.toDay}`}
                 </span>
-                <span className="text-xs uppercase tracking-wider text-ink/55">
+                <span className="text-xs uppercase tracking-wider text-ink/60">
                   {t(PAUSE_REASON_KEY[pause.reason])}
                 </span>
               </li>
@@ -274,7 +267,7 @@ export function StudentRouteSection({ studentId }: StudentRouteSectionProps) {
           <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ember-deep">
             {t('studentRoute.flagged')}
           </h3>
-          <p className="mt-1 text-xs text-ink/55">{t('studentRoute.flaggedHint')}</p>
+          <p className="mt-1 text-xs text-ink/60">{t('studentRoute.flaggedHint')}</p>
           <ul className="mt-2 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3">
             {flagged.map((score) => (
               <li key={score.sessionId} className="flex items-center justify-between gap-3 py-3">

@@ -72,8 +72,8 @@ export function CrewRanking({ viewerStudentId, viewerCohort }: CrewRankingProps)
               className={cn(
                 'inline-flex min-h-11 items-center rounded-action px-3 text-xs font-semibold uppercase tracking-wider transition-colors',
                 candidate === period
-                  ? 'bg-cobalt text-white'
-                  : 'text-ink/45 hover:bg-cobalt-tint hover:text-cobalt'
+                  ? 'bg-cobalt text-cobalt-foreground'
+                  : 'text-ink/60 hover:bg-cobalt-tint hover:text-cobalt'
               )}
             >
               {t(PERIOD_LABEL_KEY[candidate])}
@@ -96,7 +96,7 @@ export function CrewRanking({ viewerStudentId, viewerCohort }: CrewRankingProps)
                 'inline-flex min-h-11 items-center rounded-action px-3 text-xs font-semibold uppercase tracking-wider transition-colors',
                 only === ownCohortOnly
                   ? 'bg-ink text-bone'
-                  : 'text-ink/45 hover:bg-cobalt-tint hover:text-cobalt'
+                  : 'text-ink/60 hover:bg-cobalt-tint hover:text-cobalt'
               )}
             >
               {only ? t(COHORT_LABEL_KEY[viewerCohort]) : t('crew.rankingWholeCrew')}
@@ -106,7 +106,7 @@ export function CrewRanking({ viewerStudentId, viewerCohort }: CrewRankingProps)
       )}
 
       {!loading && withEffort.length === 0 ? (
-        <p className="py-6 text-sm text-ink/45">
+        <p className="py-6 text-sm text-ink/60">
           {/* Se distingue «nadie ha entrenado ESTE tramo» de «nadie ha entrenado
               nunca»: en un ranking semanal, el lunes por la mañana está vacío
               siempre y eso no es un fallo. */}
@@ -129,7 +129,7 @@ export function CrewRanking({ viewerStudentId, viewerCohort }: CrewRankingProps)
                   isViewer && '-mx-2 rounded-block bg-cobalt-tint px-2'
                 )}
               >
-                <span className="metric-figures w-6 shrink-0 text-center font-display text-lg font-extrabold text-ink/30">
+                <span className="metric-figures w-6 shrink-0 text-center font-display text-lg font-extrabold text-ink/60">
                   {index + 1}
                 </span>
 
@@ -144,7 +144,7 @@ export function CrewRanking({ viewerStudentId, viewerCohort }: CrewRankingProps)
                   <p className="truncate font-semibold text-ink">
                     {getShortName(entry.firstName, entry.lastName)}
                   </p>
-                  <p className="text-xs text-ink/45">
+                  <p className="text-xs text-ink/60">
                     {plural(
                       'crew.sessionCount.one',
                       'crew.sessionCount.other',

@@ -1,5 +1,5 @@
 import { cn } from '@/shared/lib/utils'
-import { describeStanding } from '@/shared/i18n/duesWording'
+import { describeStanding, describeStandingBriefly } from '@/shared/i18n/duesWording'
 import type { SubscriptionStanding } from '@/shared/domain/entities/studentSubscription'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 
@@ -14,12 +14,22 @@ import { useTranslation } from '@/shared/i18n/LanguageContext'
 const STANDING_BADGE: Record<SubscriptionStanding['state'], string> = {
   overdue: 'border-danger/40 bg-danger/5 text-danger',
   dueSoon: 'border-ember/40 bg-ember/10 text-ember-deep',
-  active: 'border-cobalt-tint-3 text-ink/45',
-  never: 'border-cobalt-tint-3 text-ink/40',
+  active: 'border-cobalt-tint-3 text-ink/60',
+  never: 'border-cobalt-tint-3 text-ink/60',
 }
 
 interface SubscriptionBadgeProps {
   standing: SubscriptionStanding
+  /**
+   * Una palabra en vez de los días. Para las filas de una lista, donde la
+   * insignia le quita el sitio al nombre. Ver `describeStandingBriefly`.
+   */
+  brief?: boolean
+  /**
+   * El texto, cuando el contexto pide otro: en la cabecera de la ficha la
+   * insignia va sola y tiene que decir de qué habla —«Cuota vencida»—.
+   */
+  label?: string
   className?: string
 }
 
@@ -33,7 +43,12 @@ interface SubscriptionBadgeProps {
  * calendario para saber si eso es pronto; «faltan 3 días» no. La fecha exacta se
  * enseña al lado, para quien la necesite.
  */
-export function SubscriptionBadge({ standing, className }: SubscriptionBadgeProps) {
+export function SubscriptionBadge({
+  standing,
+  brief = false,
+  label,
+  className,
+}: SubscriptionBadgeProps) {
   const { t } = useTranslation()
   return (
     <span
@@ -43,7 +58,7 @@ export function SubscriptionBadge({ standing, className }: SubscriptionBadgeProp
         className
       )}
     >
-      {describeStanding(standing, t)}
+      {label ?? (brief ? describeStandingBriefly(standing, t) : describeStanding(standing, t))}
     </span>
   )
 }

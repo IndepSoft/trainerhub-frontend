@@ -241,7 +241,7 @@ export function SessionScheduleFields({
           {notesOptionalHint && (
             <>
               {' '}
-              <span className="font-normal normal-case text-ink/35">{t('newSession.optional')}</span>
+              <span className="font-normal normal-case text-ink/60">{t('newSession.optional')}</span>
             </>
           )}
         </Label>

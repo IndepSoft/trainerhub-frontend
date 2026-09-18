@@ -57,7 +57,7 @@ const ICONS: Record<BadgeIcon, LucideIcon> = {
 const PLATE_FINISH: Record<BadgeRarity, string> = {
   bronze: 'bg-bone border-ink/20 text-ink',
   silver: 'bg-cobalt-tint-2 border-cobalt/35 text-cobalt',
-  gold: 'bg-cobalt border-cobalt text-white',
+  gold: 'bg-cobalt border-cobalt text-cobalt-foreground',
   platinum: 'bg-ink border-ink text-bone',
   diamond: 'bg-ink border-ember text-ember',
   mythic: 'bg-ember border-ember text-ink',
@@ -129,7 +129,7 @@ export function AchievementBadge({
         PLATE_SIZES[size],
         unlocked
           ? PLATE_FINISH[achievement.rarity]
-          : 'border-dashed border-ink/20 bg-transparent text-ink/30',
+          : 'border-dashed border-ink/20 bg-transparent text-ink/60',
         // Sin `hover:scale`: agrandar al pasar por encima es el efecto por
         // defecto de cualquier plantilla. El canto se aviva, que es como
         // responde una pieza de metal a la luz.

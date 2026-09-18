@@ -92,7 +92,7 @@ export function StudentRegisterForm({ onBack }: StudentRegisterFormProps) {
           <Button
             type="button"
             variant="ghost"
-            className="w-full rounded-action text-ink/55"
+            className="w-full rounded-action text-ink/60"
             onClick={onBack}
           >
             {t('register.student.backToTrainer')}

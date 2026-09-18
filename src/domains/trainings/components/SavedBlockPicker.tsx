@@ -42,13 +42,13 @@ export function SavedBlockPicker({
           <DialogTitle className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
             {t('block.insert')}
           </DialogTitle>
-          <DialogDescription className="text-sm text-ink/50">
+          <DialogDescription className="text-sm text-ink/60">
             {t('block.insertHint')}
           </DialogDescription>
         </DialogHeader>
 
         {savedBlocks.length === 0 ? (
-          <p className="px-5 pb-6 text-sm text-ink/45">
+          <p className="px-5 pb-6 text-sm text-ink/60">
             Tu biblioteca está vacía. Guarda un bloque desde cualquier rutina con el botón de
             marcador y aparecerá aquí.
           </p>
@@ -74,7 +74,7 @@ export function SavedBlockPicker({
                         <span className="min-w-0 truncate text-ink/70">
                           {exercisesById.get(prescribed.exerciseId)?.name ?? t('exercise.fallback')}
                         </span>
-                        <span className="metric-figures shrink-0 text-ink/45">
+                        <span className="metric-figures shrink-0 text-ink/60">
                           {formatPrescription(prescribed)}
                         </span>
                       </span>

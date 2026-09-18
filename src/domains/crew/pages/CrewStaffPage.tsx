@@ -12,11 +12,12 @@ import { useViewerContext } from '@/app/ViewerContext'
 import { useCrewStaff } from '../hooks/useCrewStaff'
 import { NotAllowedHere } from '@/shared/components/NotAllowedHere'
 import type { CrewRole, CrewStaff } from '@/shared/domain/entities/crew'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
 const ROLE_BADGE: Record<CrewRole, string> = {
   admin: 'border-cobalt/40 bg-cobalt-tint text-cobalt',
-  trainer: 'border-cobalt-tint-3 text-ink/55',
-  student: 'border-cobalt-tint-3 text-ink/40',
+  trainer: 'border-cobalt-tint-3 text-ink/60',
+  student: 'border-cobalt-tint-3 text-ink/60',
 }
 
 /**
@@ -52,7 +53,7 @@ export default function CrewStaffPage() {
         <PageHeader.Title>{t('crew.staff')}</PageHeader.Title>
       </PageHeader>
 
-      <div className="flex-1 overflow-auto">
+      <div className={PAGE_SCROLL}>
         <div className="mx-auto max-w-2xl space-y-4 px-5 py-6">
           <p className="text-sm text-ink/60">
             {/* La diferencia, dicha donde se decide: es lo único que separa a un
@@ -68,7 +69,7 @@ export default function CrewStaffPage() {
           )}
 
           {!loading && staff.length === 0 ? (
-            <p className="py-8 text-sm text-ink/45">
+            <p className="py-8 text-sm text-ink/60">
               {t('crew.staffEmpty')}
             </p>
           ) : (
@@ -83,7 +84,7 @@ export default function CrewStaffPage() {
                   >
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-semibold text-ink">{post.displayName}</p>
-                      <p className="truncate text-xs text-ink/45">{post.email}</p>
+                      <p className="truncate text-xs text-ink/60">{post.email}</p>
                       {post.extraCapabilities.length > 0 && (
                         <p className="truncate text-xs text-cobalt">
                           +{' '}
@@ -123,7 +124,7 @@ export default function CrewStaffPage() {
                         title={removalBlocker}
                         disabled={removalBlocker !== undefined}
                         onClick={() => setRemoving(post)}
-                        className="inline-flex size-11 shrink-0 items-center justify-center rounded-action text-ink/30 transition-colors hover:text-danger disabled:pointer-events-none disabled:opacity-25"
+                        className="inline-flex size-11 shrink-0 items-center justify-center rounded-action text-ink/50 transition-colors hover:text-danger disabled:pointer-events-none disabled:opacity-25"
                       >
                         <Trash2 className="size-4" />
                       </button>

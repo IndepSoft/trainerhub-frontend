@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import { ArrowUpRight, CalendarRange } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import { LEVEL_BADGE } from '../libs/levelBadge'
 import { countDeloadWeeks, countPlanSessions } from '../libs/plan.utils'
@@ -13,9 +12,13 @@ interface PlanCardProps {
 }
 
 /**
- * Tarjeta de plan, en el mismo registro editorial que la de rutina.
+ * Tarjeta de plan, compacta como la de rutina y por lo mismo: las dos viven en
+ * la misma pantalla y una alta al lado de una baja se lee como dos listas.
  *
- * Lleva a la ficha del plan, donde se lee; editar es una acción de dentro.
+ * Lo que queda es lo que distingue un mesociclo de otro —cuánto dura, cuánto
+ * trabajo tiene dentro, con qué frecuencia y para qué—; la descripción, las
+ * semanas y el detalle son de la ficha. Sin rótulo «PLAN» encima, por lo mismo
+ * que la de rutina: la pestaña en la que está ya lo dice.
  *
  * El enlace es estirado —`after:absolute after:inset-0`— para que toda la
  * tarjeta sea el objetivo táctil y no sólo el título, igual que en la de rutina.
@@ -27,91 +30,43 @@ export function PlanCard({ plan }: PlanCardProps) {
   const objective = objectivesById.get(plan.objectiveId)
   const split = splitsById.get(plan.splitId)
   const deloadWeeks = countDeloadWeeks(plan)
+  const sessions = countPlanSessions(plan)
 
   return (
-    <article className="group relative isolate flex flex-col overflow-hidden rounded-block border border-cobalt-tint-3 bg-surface transition-colors hover:border-cobalt/40 focus-within:border-cobalt">
-      <div
-        aria-hidden="true"
-        className="absolute inset-x-[-15%] top-[13%] -z-10 h-[5.5rem] bg-cobalt-tint-2 transition-transform duration-300 group-hover:-translate-y-0.5"
-        style={{ clipPath: 'polygon(0 40%, 100% 0, 100% 60%, 0 100%)' }}
-      />
-
-      <div className="p-5 pb-0">
-        <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-ink/45">
-          <CalendarRange className="size-3.5" />
-          {t('plan.title')}
-        </span>
-      </div>
-
-      <h3 className="mt-2 px-5 font-display text-[1.75rem] font-extrabold uppercase leading-[0.94] tracking-tight text-ink">
+    <article className="group relative flex flex-col gap-2 rounded-block border border-cobalt-tint-3 bg-surface p-4 transition-colors hover:border-cobalt/40 focus-within:border-cobalt">
+      <h3 className="min-w-0 font-display text-[1.375rem] font-extrabold uppercase leading-none tracking-tight text-ink">
         <Link
           to={`/trainings/plans/${plan.id}`}
-          className="outline-none after:absolute after:inset-0 focus-visible:underline"
+          className="flex min-h-11 items-center outline-none after:absolute after:inset-0 focus-visible:underline"
         >
           {plan.title}
         </Link>
       </h3>
 
-      <p className="mt-2 px-5 text-sm text-ink/50">{plan.description}</p>
+      <p className="text-[13px] text-ink/60">
+        {plural('plan.weekCount.one', 'plan.weekCount.other', plan.weeks.length, {
+          count: plan.weeks.length,
+        })}
+        {' · '}
+        {plural('plan.sessionCount.one', 'plan.sessionCount.other', sessions, {
+          count: sessions,
+        })}
+        {` · ${plan.weeklyFrequency}${t('plan.perWeek')}`}
+        {/* La descarga sólo se nombra si la hay: «0 de descarga» es ruido. */}
+        {deloadWeeks > 0 && ` · ${t('plan.deloadCount', { count: deloadWeeks })}`}
+      </p>
 
-      {/* Las tres cifras que definen un mesociclo: cuánto dura, cuánto trabajo
-          tiene dentro y con qué frecuencia se toca cada músculo. */}
-      <dl className="mt-5 grid grid-cols-3 divide-x divide-cobalt-tint-3 border-y border-cobalt-tint-3">
-        <div className="px-4 py-3">
-          <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">
-            {t('plan.weeks')}
-          </dt>
-          <dd className="metric-figures font-display text-xl font-bold text-ink">
-            {plan.weeks.length}
-          </dd>
-        </div>
-        <div className="px-4 py-3">
-          <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">
-            {t('plan.sessions')}
-          </dt>
-          <dd className="metric-figures font-display text-xl font-bold text-ink">
-            {countPlanSessions(plan)}
-          </dd>
-        </div>
-        <div className="px-4 py-3">
-          <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">
-            {t('plan.frequency')}
-          </dt>
-          <dd className="metric-figures font-display text-xl font-bold text-ink">
-            {plan.weeklyFrequency}
-            <span className="ml-1 text-xs font-semibold text-ink/40">/sem</span>
-          </dd>
-        </div>
-      </dl>
+      {/* Para qué es y cómo reparte la semana: es lo que se compara entre dos
+          planes al elegir uno. */}
+      <p className="truncate text-[13px] text-ink/85">
+        {objective === undefined
+          ? t('plan.noObjective')
+          : catalogLabel(objective.id, objective.name, t)}
+        {' · '}
+        {split === undefined ? t('plan.noSplit') : catalogLabel(split.id, split.name, t)}
+      </p>
 
-      <dl className="space-y-2 px-5 py-4 text-sm">
-        <div className="flex items-baseline justify-between gap-4">
-          <dt className="text-ink/45">{t('plan.objective')}</dt>
-          <dd className="min-w-0 truncate text-end text-ink/70">
-            {objective === undefined
-              ? t('plan.noObjective')
-              : catalogLabel(objective.id, objective.name, t)}
-          </dd>
-        </div>
-        <div className="flex items-baseline justify-between gap-4">
-          <dt className="text-ink/45">{t('plan.split')}</dt>
-          <dd className="min-w-0 truncate text-end text-ink/70">
-            {split === undefined ? t('plan.noSplit') : catalogLabel(split.id, split.name, t)}
-          </dd>
-        </div>
-        {deloadWeeks > 0 && (
-          <div className="flex items-baseline justify-between gap-4">
-            <dt className="text-ink/45">{t('plan.deload')}</dt>
-            <dd className="metric-figures text-end text-ink/70">
-              {plural('plan.weekCount.one', 'plan.weekCount.other', deloadWeeks, {
-                count: deloadWeeks,
-              })}
-            </dd>
-          </div>
-        )}
-      </dl>
-
-      <div className="mt-auto flex items-center gap-2 px-5 pb-5">
+      <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
         <span
           className={cn(
             'rounded-action border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]',
@@ -120,11 +75,6 @@ export function PlanCard({ plan }: PlanCardProps) {
         >
           {t(STUDENT_LEVEL_LABEL_KEY[plan.level])}
         </span>
-
-        <ArrowUpRight
-          aria-hidden="true"
-          className="ms-auto size-5 text-ink/25 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-ember"
-        />
       </div>
     </article>
   )

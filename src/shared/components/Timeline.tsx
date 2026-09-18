@@ -55,7 +55,7 @@ export function TimelineEntry({
 
       <div className="min-w-0 flex-1 pb-1">
         {stamp && (
-          <p className="metric-figures text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/40">
+          <p className="metric-figures text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/60">
             {stamp}
           </p>
         )}

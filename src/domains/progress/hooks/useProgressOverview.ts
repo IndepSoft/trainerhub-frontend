@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Flame, Target, Trophy } from 'lucide-react'
+import { Target, Trophy } from 'lucide-react'
 import { unlockedAchievements } from '../libs/badges'
 import type { Achievement } from '../types/achievement.types'
 import type { ProgressOverview } from '../types/progress.types'
@@ -23,10 +23,14 @@ interface UseProgressOverviewResult {
  * No recibe sesiones ni las vuelve a pedir: toma lo ya calculado por
  * `useGamificationProfile`. Volver a leerlas aquí significaría dos consultas
  * para lo mismo y dos oportunidades de discrepar.
+ *
+ * QUEDAN DOS, y eran tres: el recuento de sesiones se fue al historial, que es
+ * la sección que lo explica —cuántas, cuáles y de qué mes—. La misma cifra en
+ * dos secciones de la misma pantalla es una cifra que algún día discrepará de
+ * sí misma.
  */
 export function useProgressOverview(
   achievements: Achievement[],
-  completedCount: number,
   totalPoints: number
 ): UseProgressOverviewResult {
   const { t } = useTranslation()
@@ -41,7 +45,6 @@ export function useProgressOverview(
           label: t('progress.stat.achievements'),
           value: `${unlocked}/${achievements.length}`,
         },
-        { id: 'sessions', icon: Flame, label: t('progress.stat.sessions'), value: completedCount },
         {
           id: 'points',
           icon: Target,
@@ -52,7 +55,7 @@ export function useProgressOverview(
         },
       ],
     }
-  }, [achievements, completedCount, totalPoints, t])
+  }, [achievements, totalPoints, t])
 
   return { overview }
 }

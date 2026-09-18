@@ -4,7 +4,7 @@ import { RARITY_LABEL_KEY as PLATE_RARITY_LABEL_KEY } from '../libs/badgeLabels'
 import { cn } from '@/shared/lib/utils'
 import { unlockedAchievements } from '../libs/badges'
 import type { Achievement } from '../types/achievement.types'
-import type { BadgeCategory } from '@/shared/domain/entities/progress'
+import { isBadgeRarity, type BadgeCategory } from '@/shared/domain/entities/progress'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 import { activeLocale } from '@/shared/i18n/activeLocale'
@@ -85,12 +85,15 @@ export function AchievementSystem({ achievements }: AchievementSystemProps) {
 
   return (
     <div className="space-y-8">
-      <p className="text-sm text-ink/50">
-        <span className="metric-figures font-display text-2xl font-extrabold text-ink">
-          {unlocked.length}
-        </span>
-        <span className="metric-figures text-ink/40"> / {achievements.length}</span>
-        {' logros conseguidos · '}
+      {/* En los tres idiomas: la frase estaba escrita en español dentro del
+          componente, así que el recuento seguía diciendo «logros conseguidos»
+          con la aplicación en inglés. */}
+      <p className="text-sm text-ink/60">
+        {t('progress.achievementsWon', {
+          unlocked: unlocked.length,
+          total: achievements.length,
+        })}
+        {' · '}
         <span className="metric-figures font-semibold text-cobalt">
           {achievements.length === 0 ? 0 : Math.round((unlocked.length / achievements.length) * 100)}%
         </span>
@@ -102,11 +105,14 @@ export function AchievementSystem({ achievements }: AchievementSystemProps) {
             {t('achievement.gallery')}
           </h3>
 
-          <label className="flex items-center gap-2 text-xs text-ink/50">
+          <label className="flex items-center gap-2 text-xs text-ink/60">
             <span className="sr-only">{t('achievement.filterByRarity')}</span>
             <select
               value={rarity}
-              onChange={(event) => setRarity(event.target.value as RarityFilter)}
+              onChange={(event) => {
+                const chosen = event.target.value
+                if (chosen === 'all' || isBadgeRarity(chosen)) setRarity(chosen)
+              }}
               className="h-11 rounded-none border-b border-cobalt-tint-3 bg-transparent pe-6 text-xs font-semibold uppercase tracking-wider text-ink/70"
             >
               {Object.entries(RARITY_LABEL_KEY).map(([value, key]) => (
@@ -142,7 +148,7 @@ export function AchievementSystem({ achievements }: AchievementSystemProps) {
                 className={cn(
                   'flex h-11 shrink-0 items-center gap-1.5 rounded-action border px-4 text-xs font-semibold uppercase tracking-wider transition-colors',
                   isActive
-                    ? 'border-cobalt bg-cobalt text-white'
+                    ? 'border-cobalt bg-cobalt text-cobalt-foreground'
                     : 'border-cobalt-tint-3 text-ink/60 hover:border-cobalt/40'
                 )}
               >
@@ -167,7 +173,7 @@ export function AchievementSystem({ achievements }: AchievementSystemProps) {
         </div>
 
         {filtered.length === 0 && (
-          <p className="py-8 text-center text-sm text-ink/40">
+          <p className="py-8 text-center text-sm text-ink/60">
             {t('achievement.noneMatch')}
           </p>
         )}
@@ -179,7 +185,7 @@ export function AchievementSystem({ achievements }: AchievementSystemProps) {
         </h3>
 
         {recent.length === 0 && (
-          <p className="py-6 text-sm text-ink/40">
+          <p className="py-6 text-sm text-ink/60">
             {t('achievement.noneYet')}
           </p>
         )}
@@ -191,8 +197,8 @@ export function AchievementSystem({ achievements }: AchievementSystemProps) {
 
               <div className="min-w-0 flex-1">
                 <p className="font-semibold text-ink">{t(achievement.nameKey)}</p>
-                <p className="text-sm text-ink/50">{t(achievement.descriptionKey)}</p>
-                <p className="metric-figures mt-1 text-[11px] uppercase tracking-wider text-ink/35">
+                <p className="text-sm text-ink/60">{t(achievement.descriptionKey)}</p>
+                <p className="metric-figures mt-1 text-[11px] uppercase tracking-wider text-ink/60">
                   {achievement.unlockedAt?.toLocaleDateString(activeLocale())}
                 </p>
               </div>

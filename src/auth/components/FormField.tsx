@@ -49,7 +49,7 @@ export function FormField({
         >
           {label}
           {optional && (
-            <span className="ml-1 font-medium tracking-[0.08em] text-ink/40">
+            <span className="ml-1 font-medium tracking-[0.08em] text-ink/60">
               · {t('register.optional')}
             </span>
           )}
@@ -57,7 +57,7 @@ export function FormField({
         {trailing}
       </div>
       {children}
-      {hint !== undefined && <p className="text-xs leading-relaxed text-ink/45">{hint}</p>}
+      {hint !== undefined && <p className="text-xs leading-relaxed text-ink/60">{hint}</p>}
     </div>
   )
 }

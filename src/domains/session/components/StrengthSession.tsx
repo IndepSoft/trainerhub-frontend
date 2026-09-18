@@ -11,6 +11,7 @@ import { formatDuration } from '../libs/session.utils'
 import type { Routine } from '@/shared/domain/entities/routine'
 import type { Session, SessionResult } from '@/shared/domain/entities/session'
 import { useLastWeights } from '../hooks/useLastWeights'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
 interface StrengthSessionProps {
   session: Session
@@ -111,7 +112,7 @@ export function StrengthSession({
     <div className="flex flex-1 flex-col overflow-hidden bg-bone">
       <header className="shrink-0 px-5 pt-5 pb-3">
         <div className="flex items-center justify-between gap-3">
-          <p className="min-w-0 truncate text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/45">
+          <p className="min-w-0 truncate text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
             {studentName}
           </p>
           <LeaveSessionLink to={exitTo} />
@@ -124,7 +125,7 @@ export function StrengthSession({
             {routine?.title ?? session.title}
           </h1>
           {hasPlan && (
-            <p className="metric-figures shrink-0 text-xs font-semibold text-ink/40">
+            <p className="metric-figures shrink-0 text-xs font-semibold text-ink/60">
               {formatDuration(elapsedSeconds)}
             </p>
           )}
@@ -135,12 +136,12 @@ export function StrengthSession({
         <>
           <div className="shrink-0 border-y border-cobalt-tint-3 px-5 py-3">
             <div className="flex items-baseline justify-between gap-3">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
                 {t('liveSession.sets')}
               </span>
               <span className="metric-figures font-display text-xl font-bold text-ink">
                 {doneSets}
-                <span className="text-sm font-semibold text-ink/40"> / {totalSets}</span>
+                <span className="text-sm font-semibold text-ink/60"> / {totalSets}</span>
               </span>
             </div>
             {/* A mano y no con `Progress`: el de Radix informa un porcentaje
@@ -167,7 +168,7 @@ export function StrengthSession({
               <p className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
                 {t('liveSession.allDone')}
               </p>
-              <p className="mt-2 text-sm text-ink/55">{t('liveSession.allDoneHint')}</p>
+              <p className="mt-2 text-sm text-ink/60">{t('liveSession.allDoneHint')}</p>
             </section>
           ) : (
             <SetTracker
@@ -192,7 +193,7 @@ export function StrengthSession({
             />
           )}
 
-          <div className="flex-1 overflow-auto">
+          <div className={PAGE_SCROLL}>
             <SessionPlanList
               steps={steps}
               currentIndex={currentIndex}
@@ -204,8 +205,8 @@ export function StrengthSession({
       ) : (
         <>
           <SessionDuration elapsedSeconds={elapsedSeconds} state={state} />
-          <div className="flex-1 overflow-auto">
-            <p className="px-5 py-12 text-center text-sm text-ink/40">
+          <div className={PAGE_SCROLL}>
+            <p className="px-5 py-12 text-center text-sm text-ink/60">
               {t('liveSession.noRoutine')}
             </p>
           </div>

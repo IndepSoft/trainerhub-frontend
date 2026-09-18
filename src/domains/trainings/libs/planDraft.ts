@@ -29,6 +29,16 @@ export function weekdayName(dayOfWeek: number): string {
   return date.toLocaleDateString(activeLocale(), { weekday: 'long', timeZone: 'UTC' })
 }
 
+/**
+ * `[1, 3, 5]` → «lunes, miércoles y viernes». La conjunción la pone `Intl`,
+ * que sabe que en inglés es «and» y en portugués «e».
+ */
+export function formatWeekdayList(daysOfWeek: number[]): string {
+  return new Intl.ListFormat(activeLocale(), { type: 'conjunction' }).format(
+    daysOfWeek.map(weekdayName)
+  )
+}
+
 function createRestingWeek(): PlanWeekDraft {
   return {
     id: crypto.randomUUID(),

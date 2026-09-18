@@ -22,7 +22,7 @@ const STATUS_LABEL_KEY: Record<SubscriptionStatus, TranslationKey> = {
  */
 const STATUS_BADGE: Record<SubscriptionStatus, string> = {
   pending: 'border-ember/40 bg-ember/10 text-ember-deep',
-  active: 'border-cobalt-tint-3 text-ink/45',
+  active: 'border-cobalt-tint-3 text-ink/60',
   suspended: 'border-danger/40 bg-danger/5 text-danger',
 }
 
@@ -111,7 +111,7 @@ function CrewSection({
       </h2>
 
       {crews.length === 0 ? (
-        <p className="py-6 text-sm text-ink/45">{emptyMessage}</p>
+        <p className="py-6 text-sm text-ink/60">{emptyMessage}</p>
       ) : (
         <ul className="divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3">
           {/*
@@ -128,7 +128,7 @@ function CrewSection({
                 <p className="truncate font-semibold text-ink">
                   {entry.crew.name}
                 </p>
-                <p className="truncate text-xs text-ink/45">
+                <p className="truncate text-xs text-ink/60">
                   {/* Sin dueño identificable se dice, en vez de dejar el hueco:
                       un equipo cuyo entrenador ya no tiene ficha es raro y
                       merece verse. */}

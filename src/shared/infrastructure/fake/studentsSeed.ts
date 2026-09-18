@@ -8,7 +8,7 @@ import { DEV_CREW_ID } from './crewsSeed'
  * disposición de la página.
  *
  * Ojo con `age` y `bodyFatPercentage`: antes no venían del dato, estaban
- * escritos a fuego dentro de `StudentCard`, asi que las cuatro tarjetas
+ * escritos a fuego dentro de la tarjeta del padrón, asi que los cuatro alumnos
  * mostraban "10 años" y "22 %". Ahora cada estudiante tiene los suyos, que es lo
  * que se veria con datos reales.
  *

@@ -1,4 +1,4 @@
-import { useMemo, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { AlertCircle, ArrowLeft, CalendarPlus, Check, X } from 'lucide-react'
 import { toast } from 'sonner'
@@ -15,6 +15,7 @@ import { PlanSummary } from '../components/PlanSummary'
 import type { TrainingPlan } from '@/shared/domain/entities/plan'
 import { activeLocale } from '@/shared/i18n/activeLocale'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
 /**
  * Crear y editar un plan. Sólo composición.
@@ -43,9 +44,9 @@ export default function PlanForm() {
         <p className="font-display text-2xl font-extrabold uppercase text-ink">
           {t('plan.notFound')}
         </p>
-        <p className="text-sm text-ink/50">{t('plan.notFoundHint')}</p>
+        <p className="text-sm text-ink/60">{t('plan.notFoundHint')}</p>
         <Button asChild variant="outline">
-          <Link to="/trainings?tab=planes">{t('plan.back')}</Link>
+          <Link to="/trainings?seccion=planes">{t('plan.back')}</Link>
         </Button>
       </div>
     )
@@ -88,6 +89,15 @@ function PlanFormFields({ plan }: PlanFormFieldsProps) {
     submit,
   } = usePlanDraft(plan)
 
+  /*
+   * Las semanas que había al abrir arrancan plegadas, salvo la primera; las
+   * que se añaden, abiertas, porque son las que se están programando. Se toma
+   * una vez: añadir una semana no debe replegar las que se abrieron a mano.
+   */
+  const [initialWeekIds] = useState<ReadonlySet<string>>(
+    () => new Set(draft.weeks.map((week) => week.id))
+  )
+
   // Alfabético, para que elegir la rutina de un día no sea buscar en el orden
   // en que se crearon.
   const sortedRoutines = useMemo(
@@ -128,9 +138,9 @@ function PlanFormFields({ plan }: PlanFormFieldsProps) {
       <PageHeader>
         <Link
           to={
-            isEditing ? `/trainings/plans/${planId}` : '/trainings?tab=planes'
+            isEditing ? `/trainings/plans/${planId}` : '/trainings?seccion=planes'
           }
-          className="-ms-2 mb-3 inline-flex h-11 items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/45 transition-colors hover:text-cobalt"
+          className="-ms-2 mb-3 inline-flex h-11 items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60 transition-colors hover:text-cobalt"
         >
           <ArrowLeft className="size-4" />
           {isEditing ? t('routine.backToRecord') : t('plan.plural')}
@@ -150,7 +160,7 @@ function PlanFormFields({ plan }: PlanFormFieldsProps) {
                 navigate(
                   isEditing
                     ? `/trainings/plans/${planId}`
-                    : '/trainings?tab=planes'
+                    : '/trainings?seccion=planes'
                 )
               }
             />
@@ -164,7 +174,7 @@ function PlanFormFields({ plan }: PlanFormFieldsProps) {
         </PageHeader.Content>
       </PageHeader>
 
-      <div className="flex-1 overflow-auto">
+      <div className={PAGE_SCROLL}>
         <PlanSummary plan={preview} />
 
         <div className="space-y-6 px-5 py-6">
@@ -201,14 +211,16 @@ function PlanFormFields({ plan }: PlanFormFieldsProps) {
                 </Link>
               </p>
             ) : (
-              <ul className="space-y-4">
+              <ul className="border-t border-cobalt-tint-3">
                 {draft.weeks.map((week, index) => (
                   <li key={week.id}>
                     <PlanWeekEditor
                       week={week}
+                      preview={preview.weeks[index]}
                       position={index + 1}
                       routines={sortedRoutines}
                       canRemove={canRemoveWeek}
+                      defaultOpen={index === 0 || !initialWeekIds.has(week.id)}
                       onRemove={() => removeWeek(week.id)}
                       onToggleDeload={() => toggleDeload(week.id)}
                       onChangeDay={(dayOfWeek, routineId) =>

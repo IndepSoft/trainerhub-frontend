@@ -65,7 +65,7 @@ export function UserMenu({ person, loading }: UserMenuProps) {
 
           <div className="hidden md:flex flex-col gap-0.5 leading-none text-left">
             {loading ? (
-              <span className="text-sm text-ink/40">{t('common.loading')}</span>
+              <span className="text-sm text-ink/60">{t('common.loading')}</span>
             ) : (
               <span className="font-semibold text-sm">{displayName}</span>
             )}

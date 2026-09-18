@@ -11,10 +11,12 @@ interface StudentProgressStripProps {
 /**
  * Cuánto ha entrenado un alumno, en una franja.
  *
- * VA EN LA TARJETA porque es la pregunta que un entrenador se hace mirando la
- * lista —quién está entrenando y quién se ha caído—, y hasta ahora exigía abrir
- * una pantalla aparte y elegir a la persona en un desplegable. Un dato que se
- * consulta de un vistazo no puede vivir a dos clics.
+ * VA EN LA FICHA, a la altura del pulgar. Estuvo en la tarjeta del padrón, y de
+ * ahí salió con ella: el padrón se recorre para ENCONTRAR a alguien, y una
+ * franja con nivel, XP y barra por cada alumno era la mitad de los 320 px que
+ * hacían falta desplazar para dar con el siguiente. La fila dice cuántas
+ * sesiones lleva, que es lo que distingue a quien entrena de quien se ha caído;
+ * el nivel y los puntos están a un toque.
  *
  * SIN ENTRENAR NO SE PINTA UNA BARRA A CERO. Una barra vacía con «Nivel 1» se
  * lee como un mal resultado, y lo que dice es que todavía no ha pasado nada. Se
@@ -28,7 +30,7 @@ export function StudentProgressStrip({ progress }: StudentProgressStripProps) {
 
   if (progress === null || progress.completedSessions === 0) {
     return (
-      <p className="px-5 pt-4 text-xs text-ink/40">{t('studentProgress.noSessions')}</p>
+      <p className="px-5 pt-4 text-xs text-ink/60">{t('studentProgress.noSessions')}</p>
     )
   }
 
@@ -37,10 +39,10 @@ export function StudentProgressStrip({ progress }: StudentProgressStripProps) {
   return (
     <div className="px-5 pt-4">
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/60">
           {t('progress.level', { level: progress.level.level })}
         </span>
-        <span className="metric-figures text-xs text-ink/45">
+        <span className="metric-figures text-xs text-ink/60">
           {plural(
             'studentProgress.sessionCount.one',
             'studentProgress.sessionCount.other',
@@ -59,7 +61,7 @@ export function StudentProgressStrip({ progress }: StudentProgressStripProps) {
         className="mt-1.5 h-1.5 bg-cobalt-tint-2 [&>[data-slot=progress-indicator]]:bg-cobalt"
       />
 
-      <p className="metric-figures mt-1 text-[11px] text-ink/40">
+      <p className="metric-figures mt-1 text-[11px] text-ink/60">
         {progress.level.currentExperience} / {progress.level.experienceForNextLevel} XP
       </p>
     </div>

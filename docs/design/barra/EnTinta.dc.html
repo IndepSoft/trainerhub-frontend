@@ -1,0 +1,111 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Barlow:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; background: #FAF8F5; font-family: 'Barlow', system-ui, sans-serif; -webkit-font-smoothing: antialiased; color: #0A1224; }
+    a { color: #0B4BCC; text-decoration: none; }
+    a:hover { color: #0A3FAE; }
+    input::placeholder { color: rgba(10,18,36,0.35); }
+  </style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; display: flex; flex-direction: column; background: #FAF8F5; overflow: hidden;">
+  <header style="height: 64px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 16px; border-bottom: 1px solid rgba(11,75,204,0.24); background: #FAF8F5;">
+    <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;">
+      <span style="position: relative; width: 40px; height: 40px; border-radius: 999px; background: #0B4BCC; color: #fff; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 800; font-size: 15px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">HY<span style="position: absolute; top: -4px; right: -6px; min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 999px; background: #FF4F1A; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;">5</span></span>
+      <span style="display: flex; flex-direction: column; min-width: 0;">
+        <span style="font-size: 15px; font-weight: 600; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Hierro y Asfalto</span>
+        <span style="font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(10,18,36,0.45); line-height: 1.4;">Crew · Administrador</span>
+      </span>
+      <span style="color: rgba(10,18,36,0.45); display: flex;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="m7 15 5 5 5-5"></path><path d="m7 9 5-5 5 5"></path></svg></span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+      <button type="button" aria-label="Avisos" style="width: 44px; height: 44px; border: 0; background: transparent; color: #0A1224; display: flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg></button>
+      <span style="width: 40px; height: 40px; border-radius: 999px; background: rgba(11,75,204,0.12); color: #0B4BCC; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center;">MS</span>
+    </div>
+  </header><main style="flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column;">
+    <header style="flex-shrink: 0; padding: 12px 20px 14px; display: flex; flex-direction: column; gap: 6px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: auto;">
+        <p style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(10,18,36,0.45);">Tu actividad</p>
+        
+      </div>
+      <h1 style="margin: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-size: 36px; font-weight: 800; line-height: 1; letter-spacing: -0.01em; text-transform: uppercase; color: #0A1224;">Dashboard</h1>
+    </header>
+    <dl style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: rgba(11,75,204,0.24); border-top: 1px solid rgba(11,75,204,0.24); border-bottom: 1px solid rgba(11,75,204,0.24);">
+      <div style="padding: 14px 16px; background: #FAF8F5;"><dt style="display: flex; justify-content: space-between; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(10,18,36,0.6);">Estudiantes <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0B4BCC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></dt><dd style="margin: 8px 0 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-size: 34px; font-weight: 800; line-height: 1;">4</dd></div>
+      <div style="padding: 14px 16px; background: #FAF8F5;"><dt style="display: flex; justify-content: space-between; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(10,18,36,0.6);">Sesiones esta semana <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0B4BCC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4"></path><path d="M8 2v4"></path><path d="M3 10h18"></path></svg></dt><dd style="margin: 8px 0 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-size: 34px; font-weight: 800; line-height: 1;">6</dd></div>
+      <div style="grid-column: span 2; padding: 10px 16px; background: #FAF8F5; display: flex; align-items: center; justify-content: space-between;"><dt style="display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(10,18,36,0.6);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0B4BCC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M12.4 3.2c-1.6-.7-3.4 0-4.2 1.5L5 11l-1.5 1c-1.3.9-1.9 2.5-1.4 4l.6 1.7c.6 1.7 2.2 2.8 4 2.8h5.6c2.6 0 5-1.6 5.9-4.1l1.3-3.5c.6-1.6-.2-3.4-1.8-4l-1.7-.6c-.9-.3-1.4-1.3-1.1-2.2l.5-1.5c.3-.9-.2-1.8-1-2.1Z"></path></svg>Rutinas creadas</dt><dd style="margin: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-size: 26px; font-weight: 800; line-height: 1;">3</dd></div>
+    </dl>
+    <div style="flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 24px; padding: 0 20px 20px;">
+      <section style="padding-top: 20px; display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 0 0 8px; border-bottom: 1px solid rgba(11,75,204,0.24);"><span style="font-size: 11px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(10,18,36,0.6);">Pendientes</span><span style="font-size: 13px; font-weight: 600; color: #0B4BCC;">5</span></div>
+        <ul style="margin: 0; padding: 0; list-style: none;">
+          
+        <li style="display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 0; border-bottom: 1px solid rgba(11,75,204,0.24);">
+          <span style="color: #FF4F1A; display: flex;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg></span>
+          <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+            <span style="font-size: 15px; font-weight: 600; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">1 cuota vencida</span>
+            <span style="font-size: 13px; color: rgba(10,18,36,0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Juan Pérez · venció hace 5 días</span>
+          </span>
+          
+          <span style="color: rgba(10,18,36,0.35); display: flex;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="m9 18 6-6-6-6"></path></svg></span>
+        </li>
+          
+        <li style="display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 0; border-bottom: 1px solid rgba(11,75,204,0.24);">
+          <span style="color: #FF4F1A; display: flex;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M19 8v6"></path><path d="M22 11h-6"></path></svg></span>
+          <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+            <span style="font-size: 15px; font-weight: 600; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">4 alumnos sin cuenta</span>
+            <span style="font-size: 13px; color: rgba(10,18,36,0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Envíales la invitación desde su ficha</span>
+          </span>
+          
+          <span style="color: rgba(10,18,36,0.35); display: flex;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="m9 18 6-6-6-6"></path></svg></span>
+        </li>
+        </ul>
+      </section>
+
+      <!-- Próximas sesiones y actividad reciente son dos listas que se miran,
+           no se atienden; juntas doblaban la página. Una a la vista, la otra a un toque. -->
+      <section style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; gap: 2px; padding: 3px; border-radius: 6px; background: #F1F5F9;">
+          <button type="button" style="flex: 1; min-height: 40px; border: 0; border-radius: 4px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(10,18,36,0.08); font-family: 'Barlow', system-ui, sans-serif; font-size: 13px; font-weight: 600; color: #0A1224;">Próximas sesiones · 3</button>
+          <button type="button" style="flex: 1; min-height: 40px; border: 0; border-radius: 4px; background: transparent; font-family: 'Barlow', system-ui, sans-serif; font-size: 13px; font-weight: 600; color: rgba(10,18,36,0.6);">Actividad reciente</button>
+        </div>
+        <ul style="margin: 8px 0 0; padding: 0; list-style: none;">
+          
+        <li style="display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 64px; padding: 8px 0; border-bottom: 1px solid rgba(11,75,204,0.24); ">
+          <span style="font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-size: 18px; font-weight: 800; color: #0A1224;">09:00</span>
+          <span style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+            <span style="font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">María Gómez</span>
+            <span style="font-size: 13px; color: rgba(10,18,36,0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Entrenamiento personal · Gimnasio</span>
+          </span>
+          <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border: 1px solid #1B6E3C; border-radius: 999px; background: transparent; color: #1B6E3C; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap;">Confirmada</span>
+        </li>
+          
+        <li style="display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 64px; padding: 8px 0; border-bottom: 1px solid rgba(11,75,204,0.24); ">
+          <span style="font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-size: 18px; font-weight: 800; color: #0A1224;">10:30</span>
+          <span style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+            <span style="font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Carlos López</span>
+            <span style="font-size: 13px; color: rgba(10,18,36,0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Evaluación inicial · Sala de evaluación</span>
+          </span>
+          <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border: 1px solid #B05A00; border-radius: 999px; background: transparent; color: #B05A00; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap;">Pendiente</span>
+        </li>
+          
+        <li style="display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 64px; padding: 8px 0; border-bottom: 1px solid rgba(11,75,204,0.24); ">
+          <span style="font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-size: 18px; font-weight: 800; color: #0A1224;">18:00</span>
+          <span style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+            <span style="font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Clase grupal</span>
+            <span style="font-size: 13px; color: rgba(10,18,36,0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Entrenamiento grupal · Sala grupal</span>
+          </span>
+          <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border: 1px solid #1B6E3C; border-radius: 999px; background: transparent; color: #1B6E3C; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap;">Confirmada</span>
+        </li>
+        </ul>
+        <a href="#" style="display: inline-flex; align-items: center; gap: 4px; min-height: 44px; font-size: 13px; font-weight: 600;">Ver la agenda <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M7 7h10v10"></path><path d="M7 17 17 7"></path></svg></a>
+      </section></div></main><div aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: 0; height: 120px; pointer-events: none; background: linear-gradient(to top, #FAF8F5 35%, rgba(250,248,245,0));"></div><nav aria-label="Navegación principal" style="position: absolute; left: 12px; right: 12px; bottom: 12px;"><ul style="margin: 0; padding: 0 4px; list-style: none; display: flex; align-items: center; border-radius: 999px; border: 1px solid rgba(250,248,245,0.12); background: #0A1224; box-shadow: 0 8px 24px rgba(10,18,36,0.12);"><li style="flex: 1 0 auto; display: flex; justify-content: center;"><a href="#" aria-label="Dashboard" style="display: flex; align-items: center; justify-content: center; height: 56px; padding: 0 2px; color: #fff;"><span style="display: flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 999px; background: #0B4BCC;"><span style="position: relative; display: flex;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path><path d="M10 21v-6h4v6"></path></svg><span style="position: absolute; top: -6px; right: -10px; min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box; border-radius: 999px; background: #FF4F1A; color: #fff; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">5</span></span><span style="font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap;">Dashboard</span></span></a></li><li style="flex: 1; display: flex; justify-content: center;"><a href="#" aria-label="Estudiantes" style="display: flex; align-items: center; justify-content: center; height: 56px; padding: 0 2px; color: rgba(250,248,245,0.6);"><span style="display: flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 999px; "><span style="position: relative; display: flex;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span></span></a></li><li style="flex: 1; display: flex; justify-content: center;"><a href="#" aria-label="Entrenamientos" style="display: flex; align-items: center; justify-content: center; height: 56px; padding: 0 2px; color: rgba(250,248,245,0.6);"><span style="display: flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 999px; "><span style="position: relative; display: flex;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6.5 6.5 17.5 17.5"></path><path d="m21 21-1-1"></path><path d="m3 3 1 1"></path><path d="m18 22 4-4"></path><path d="m2 6 4-4"></path><path d="m3 10 7-7"></path><path d="m14 21 7-7"></path></svg></span></span></a></li><li style="flex: 1; display: flex; justify-content: center;"><a href="#" aria-label="Calendario" style="display: flex; align-items: center; justify-content: center; height: 56px; padding: 0 2px; color: rgba(250,248,245,0.6);"><span style="display: flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 999px; "><span style="position: relative; display: flex;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4"></path><path d="M8 2v4"></path><path d="M3 10h18"></path></svg></span></span></a></li><li style="flex: 1; display: flex; justify-content: center;"><a href="#" aria-label="Equipo" style="display: flex; align-items: center; justify-content: center; height: 56px; padding: 0 2px; color: rgba(250,248,245,0.6);"><span style="display: flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 999px; "><span style="position: relative; display: flex;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span></span></a></li></ul></nav></div></x-dc>
+</body>
+</html>

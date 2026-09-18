@@ -16,15 +16,15 @@ interface RouteNodeProps {
 }
 
 const NODE_STYLES: Record<PathNodeState, string> = {
-  completed: 'bg-cobalt border-cobalt text-white',
-  active: 'bg-ember border-ember text-white',
+  completed: 'bg-cobalt border-cobalt text-cobalt-foreground',
+  active: 'bg-ember border-ember text-ember-foreground',
   locked: 'bg-bone border-cobalt-tint-3 text-ink/25',
 }
 
 const TITLE_STYLES: Record<PathNodeState, string> = {
   completed: 'text-ink',
   active: 'text-ink',
-  locked: 'text-ink/35',
+  locked: 'text-ink/60',
 }
 
 function fraction(current: number, target: number): number {
@@ -92,7 +92,7 @@ export function RouteNode({ node, isLast, leadsToLocked }: RouteNodeProps) {
 
       <div className="min-w-0 flex-1 pt-1">
         <h3 className={cn('font-semibold', TITLE_STYLES[node.state])}>{t(node.titleKey)}</h3>
-        <p className={cn('text-sm', isLocked ? 'text-ink/30' : 'text-ink/50')}>
+        <p className={cn('text-sm', isLocked ? 'text-ink/60' : 'text-ink/60')}>
           {t(node.descriptionKey)}
         </p>
 
@@ -111,7 +111,7 @@ export function RouteNode({ node, isLast, leadsToLocked }: RouteNodeProps) {
             {node.needsValidation && (
               <div className="flex items-center gap-2 text-xs">
                 <ShieldCheck className={cn('size-3.5', node.validated ? 'text-cobalt' : 'text-ink/35')} />
-                <span className={node.validated ? 'text-ink' : 'text-ink/55'}>
+                <span className={node.validated ? 'text-ink' : 'text-ink/60'}>
                   {node.validated ? t('route.criterion.validated') : t('route.criterion.pendingValidation')}
                 </span>
               </div>
@@ -133,8 +133,8 @@ function Criterion({ label, current, target }: CriterionProps) {
   return (
     <div>
       <div className="flex items-baseline justify-between gap-3 text-[11px]">
-        <dt className="font-semibold uppercase tracking-[0.14em] text-ink/55">{label}</dt>
-        <dd className="metric-figures font-semibold text-ink/45">
+        <dt className="font-semibold uppercase tracking-[0.14em] text-ink/60">{label}</dt>
+        <dd className="metric-figures font-semibold text-ink/60">
           {current}/{target}
         </dd>
       </div>

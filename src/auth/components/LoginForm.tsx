@@ -95,7 +95,7 @@ export function LoginForm() {
             {loading ? t('auth.signingIn') : t('auth.signIn')}
           </Button>
 
-          <p className="flex min-h-11 items-center justify-center gap-1.5 text-sm text-ink/55">
+          <p className="flex min-h-11 items-center justify-center gap-1.5 text-sm text-ink/60">
             {t('auth.noAccount')}
             {/* El estado viaja con el enlace: es donde va la ruta pretendida,
                 y el alta la necesita para rellenar el código del QR. */}

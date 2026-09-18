@@ -11,6 +11,7 @@ import { DuesQueue } from '../components/DuesQueue'
 import { RetentionList } from '../components/RetentionList'
 import { ActivityBreakdown } from '../components/ActivityBreakdown'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
 /**
  * Reportes. Sólo composición.
@@ -54,7 +55,7 @@ export default function Reports() {
           RootLayout, y anidar uno dentro de otro es HTML invalido -solo se
           admite uno por documento- ademas de confundir a los lectores de
           pantalla. */}
-      <div className="flex-1 overflow-auto">
+      <div className={PAGE_SCROLL}>
         {/*
           Cuatro cifras, y las tres primeras son cosas que hay que atender hoy.
           Sin tendencias: comparar con el periodo anterior exige un historico que
@@ -87,21 +88,21 @@ export default function Reports() {
             </TabsList>
 
             <TabsContent value="cobros" className="mt-6 space-y-3">
-              <p className="text-sm text-ink/55">
+              <p className="text-sm text-ink/60">
                 {loadingDues ? t('common.loading') : t('reports.dues.hint')}
               </p>
               <DuesQueue />
             </TabsContent>
 
             <TabsContent value="retencion" className="mt-6 space-y-3">
-              <p className="text-sm text-ink/55">
+              <p className="text-sm text-ink/60">
                 {t('reports.retention.hint')}
               </p>
               <RetentionList />
             </TabsContent>
 
             <TabsContent value="actividad" className="mt-6 space-y-3">
-              <p className="text-sm text-ink/55">
+              <p className="text-sm text-ink/60">
                 {t('reports.activity.hint', { count: completedThisWeek })}
               </p>
               <ActivityBreakdown />

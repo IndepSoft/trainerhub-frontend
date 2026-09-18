@@ -30,7 +30,10 @@
     --cobalt: 220 90% 42%;
     --cobalt-lift: 215 88% 54%;
     --ember: 14 100% 55%;
-    --ember-deep: 8 82% 44%;
+    --ember-deep: 8 82% 40%;
+    /* El texto sobre Ember es TINTA y no blanco: el blanco daba 3,29:1 y lo
+       que va encima son contadores de 9 px, que es donde menos se perdona. */
+    --ember-foreground: 222 55% 9%;
     --ink: 222 55% 9%;
     --bone: 36 33% 97%;
 
@@ -52,11 +55,16 @@
        hecho. Sin estos tokens, los verdes y amarillos de estado acababan
        escritos a mano en cada tabla de configuracion. `--destructive` ya
        existia y hace de tercer estado. */
-    --success: 142 71% 36%;
-    --success-surface: 142 71% 36% / 0.12;
-    --warning: 38 92% 42%;
-    --warning-surface: 38 92% 42% / 0.14;
-    --destructive-surface: 0 84% 60% / 0.12;
+    /* Los estados son TEXTO además de color —«Confirmada», «Pendiente»,
+       «Cuota vencida»—, y a 10 px sobre Bone daban 3,32, 2,84 y 3,33:1. Los
+       de la propuesta de vistas (`docs/design/vistas`) ya venían oscurecidos
+       para esto; aviso y peligro bajan un punto más porque también se leen
+       sobre su propia superficie teñida, que es un poco más oscura que Bone. */
+    --success: 144 61% 27%;
+    --success-surface: 144 61% 27% / 0.12;
+    --warning: 31 100% 32%;
+    --warning-surface: 31 100% 32% / 0.14;
+    --destructive-surface: 4 74% 44% / 0.12;
 
     /* Escala de dificultad, DELIBERADAMENTE fuera de la marca: si
        «Intermedio» usara Cobalt, una etiqueta de nivel se leeria como un
@@ -99,10 +107,12 @@
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* El gris de shadcn daba 4,34:1 sobre su propia pista y 4,49 sobre Bone:
+       es el texto de la barra lateral y de las descripciones de los diálogos. */
+    --muted-foreground: 215 16% 42%;
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 4 74% 44%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
@@ -169,6 +179,7 @@
     --warning: 38 92% 58%;
     --warning-surface: 38 92% 58% / 0.18;
     --destructive: 0 84% 65%;
+    --ember-foreground: 222 30% 7%;
     --destructive-surface: 0 84% 65% / 0.16;
 
     --scale-1: 43 96% 60%;
@@ -225,6 +236,37 @@
 @layer base {
   body {
     font-feature-settings: 'cv11';
+  }
+
+  /*
+   * El hueco que la pildora flotante deja libre abajo, en CERO por defecto.
+   *
+   * Lo sube `RootLayout` solo donde la pildora existe -bajo `md`, y en las
+   * rutas que llevan barras-, y lo consume `PAGE_SCROLL` como relleno y como
+   * `scroll-padding` del contenedor que desplaza. Declararlo aqui es lo que
+   * permite que una pagina no sepa nada de la barra: hereda cero y no pasa
+   * nada, que es justo el caso de la sesion en vivo.
+   */
+  :root {
+    --bottom-bar-space: 0px;
+  }
+
+  /*
+   * Sin rebote del documento. La aplicacion ya desplaza cada lista DENTRO de
+   * su contenedor -la raiz es `h-dvh overflow-hidden`-, asi que el documento
+   * nunca tiene nada que desplazar; y aun asi, instalada como PWA, el
+   * navegador tiraba del viewport entero -cabecera y barra de pestanas
+   * incluidas- cuando el gesto empezaba sobre algo que no desplaza o cuando
+   * una lista llegaba a su tope y el gesto encadenaba hacia arriba. En
+   * Android ese tiron es ademas el «tirar para recargar» nativo, que
+   * reinicia la aplicacion. `none` en la raiz corta las dos cosas; el
+   * rebote de cada lista sigue vivo dentro de la lista, que es donde se
+   * espera. El tirar-para-actualizar del panel es propio (`usePullToRefresh`)
+   * y no depende de esto.
+   */
+  html,
+  body {
+    overscroll-behavior: none;
   }
 
   /* Cifras tabulares para toda metrica animada. Sin ancho fijo, un contador
