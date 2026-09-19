@@ -23,21 +23,21 @@ export function AssignedRepertoire({ studentId }: AssignedRepertoireProps) {
   if (loading) return null
 
   return (
-    <section className="space-y-4 px-4 pt-6">
+    <section className="space-y-4 px-5 pt-6">
       <div>
         <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
           {t('progress.assigned')}
         </h2>
-        <p className="mt-1 text-xs text-ink/45">{t('progress.assignedHint')}</p>
+        <p className="mt-1 text-xs text-ink/60">{t('progress.assignedHint')}</p>
       </div>
 
       {entries.length === 0 ? (
-        <p className="text-sm text-ink/40">{t('progress.assignedEmpty')}</p>
+        <p className="text-sm text-ink/60">{t('progress.assignedEmpty')}</p>
       ) : (
         <ul className="divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3">
           {entries.map(({ assignment, title }) => (
             <li key={assignment.id} className="py-3">
-              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-ink/45">
+              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-ink/60">
                 {assignment.kind === 'plan' ? (
                   <CalendarRange className="size-3.5" />
                 ) : (
@@ -46,7 +46,7 @@ export function AssignedRepertoire({ studentId }: AssignedRepertoireProps) {
                 {assignment.kind === 'plan' ? t('assign.plan') : t('assign.routine')}
               </span>
               {title === null ? (
-                <p className="mt-1 flex min-h-11 items-center font-semibold text-ink/45">
+                <p className="mt-1 flex min-h-11 items-center font-semibold text-ink/60">
                   {t('assignments.gone')}
                 </p>
               ) : (
@@ -57,8 +57,8 @@ export function AssignedRepertoire({ studentId }: AssignedRepertoireProps) {
                   {title}
                 </Link>
               )}
-              <p className="text-xs text-ink/45">{describeWhen(assignment, t)}</p>
-              {assignment.notes !== '' && <p className="mt-1 text-xs text-ink/40">{assignment.notes}</p>}
+              <p className="text-xs text-ink/60">{describeWhen(assignment, t)}</p>
+              {assignment.notes !== '' && <p className="mt-1 text-xs text-ink/60">{assignment.notes}</p>}
             </li>
           ))}
         </ul>

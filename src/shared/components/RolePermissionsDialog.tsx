@@ -4,6 +4,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
@@ -78,7 +79,7 @@ export function RolePermissionsDialog({
               <DialogTitle className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
                 {subject.displayName}
               </DialogTitle>
-              <DialogDescription className="text-sm text-ink/50">
+              <DialogDescription className="text-sm text-ink/60">
                 {subject.subtitle}
               </DialogDescription>
             </DialogHeader>
@@ -154,7 +155,7 @@ function MembershipFields({
               )}
             >
               <span className="text-sm font-semibold text-ink">{t(ROLE_LABEL_KEY[candidate])}</span>
-              <span className="text-xs text-ink/50">{t(ROLE_DESCRIPTION_KEY[candidate])}</span>
+              <span className="text-xs text-ink/60">{t(ROLE_DESCRIPTION_KEY[candidate])}</span>
             </button>
           ))}
         </div>
@@ -164,7 +165,7 @@ function MembershipFields({
         <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
           {t('roleDialog.permissions')}
         </span>
-        <p className="mt-1 text-xs text-ink/45">
+        <p className="mt-1 text-xs text-ink/60">
           {/* El invariante, dicho donde se decide: es lo que hace que la
               pregunta «¿qué puede hacer éste?» siga teniendo respuesta corta. */}
           {t('roleDialog.permissionsHint')}
@@ -184,7 +185,7 @@ function MembershipFields({
                   onClick={() => toggleExtra(capability)}
                   className={cn(
                     'flex w-full min-h-11 items-center justify-between gap-3 rounded-block px-3 text-sm transition-colors',
-                    granted ? 'text-ink' : 'text-ink/45',
+                    granted ? 'text-ink' : 'text-ink/60',
                     fromRole
                       ? // Los del rol se ven concedidos pero apagados: quitarlos
                         // exigiría poder restar, que es justo lo que no se hace.
@@ -213,7 +214,7 @@ function MembershipFields({
         </p>
       )}
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+      <DialogFooter>
         <Button type="button" variant="outline" onClick={onCancel}>
           {t('common.cancel')}
         </Button>
@@ -224,7 +225,7 @@ function MembershipFields({
         >
           {saving ? t('common.saving') : t('common.save')}
         </Button>
-      </div>
+      </DialogFooter>
     </div>
   )
 }

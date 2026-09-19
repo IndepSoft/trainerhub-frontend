@@ -54,7 +54,7 @@ export function ForgotPasswordForm({ initialEmail, onBack }: ForgotPasswordFormP
           <p className="text-sm leading-relaxed text-ink/70">
             {t('auth.reset.sentTo', { email: sentTo })}
           </p>
-          <p className="text-xs leading-relaxed text-ink/45">{t('register.confirm.spam')}</p>
+          <p className="text-xs leading-relaxed text-ink/60">{t('register.confirm.spam')}</p>
         </div>
 
         <div className="mt-auto pt-3">
@@ -68,7 +68,7 @@ export function ForgotPasswordForm({ initialEmail, onBack }: ForgotPasswordFormP
 
   return (
     <AuthScreen hero={hero}>
-      <p className="text-sm leading-relaxed text-ink/55">{t('auth.reset.hint')}</p>
+      <p className="text-sm leading-relaxed text-ink/60">{t('auth.reset.hint')}</p>
 
       {error !== null && (
         <Alert variant="destructive">
@@ -97,7 +97,7 @@ export function ForgotPasswordForm({ initialEmail, onBack }: ForgotPasswordFormP
           <Button
             type="button"
             variant="ghost"
-            className="w-full rounded-action text-ink/55"
+            className="w-full rounded-action text-ink/60"
             onClick={onBack}
           >
             {t('auth.reset.back')}

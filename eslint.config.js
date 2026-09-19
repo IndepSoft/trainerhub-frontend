@@ -5,6 +5,26 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 import { globalIgnores } from 'eslint/config'
 
+// El desacoplamiento de Supabase se sostiene aqui, no en la buena fe: fuera de
+// shared/infrastructure/supabase nadie puede importar el SDK ni el cliente. Si
+// migras a un backend propio, esta regla te garantiza que no queda ninguna
+// fuga escondida en un componente.
+const supabaseImports = {
+  group: ['@supabase/*', '**/infrastructure/supabase/client'],
+  message:
+    'No importes Supabase directamente. Usa los puertos de @/shared/domain/ports via el container (@/app/container).',
+}
+
+// La presentacion no toca datos: un componente o una pagina piden lo que
+// necesitan a un hook, y el hook al puerto a traves del contenedor. Ocho
+// componentes y paginas -y la campana- lo importaban directamente y se
+// saltaban la capa sin que nada lo senalara; ahora falla el lint, como el SDK.
+const containerImports = {
+  group: ['@/app/container', '**/app/container', '../container'],
+  message:
+    'Un componente o una pagina no importa el container: pide la operacion a un hook de su dominio, o de @/shared/hooks si la comparten varios.',
+}
+
 export default tseslint.config([
   globalIgnores(['dist']),
   {
@@ -23,22 +43,7 @@ export default tseslint.config([
       // Alinea eslint con noUnusedParameters de tsconfig: el prefijo `_` marca
       // un binding intencionadamente sin usar (firma impuesta por un callback,
       // prop declarada pero aun no cableada).
-      // El desacoplamiento de Supabase se sostiene aqui, no en la buena fe:
-      // fuera de shared/infrastructure/supabase nadie puede importar el SDK ni
-      // el cliente. Si migras a un backend propio, esta regla te garantiza que
-      // no queda ninguna fuga escondida en un componente.
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            {
-              group: ['@supabase/*', '**/infrastructure/supabase/client'],
-              message:
-                'No importes Supabase directamente. Usa los puertos de @/shared/domain/ports via el container (@/app/container).',
-            },
-          ],
-        },
-      ],
+      'no-restricted-imports': ['error', { patterns: [supabaseImports] }],
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
@@ -47,6 +52,19 @@ export default tseslint.config([
           caughtErrorsIgnorePattern: '^_',
         },
       ],
+    },
+  },
+  {
+    files: [
+      'src/**/components/**',
+      'src/**/pages/**',
+      'src/app/layouts/**',
+      'src/shared/ui/**',
+    ],
+    rules: {
+      // Se repite el patron de Supabase: un bloque posterior REEMPLAZA las
+      // opciones de la regla, no las suma.
+      'no-restricted-imports': ['error', { patterns: [supabaseImports, containerImports] }],
     },
   },
   {

@@ -4,15 +4,12 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from '@/shared/ui/select'
 import { Search } from 'lucide-react'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { STUDENT_LEVEL_LABEL_KEY } from '@/shared/i18n/domainLabels'
-import type { StudentLevel } from '@/shared/domain/entities/student'
+import { STUDENT_LEVELS, isStudentLevel } from '@/shared/domain/entities/student'
 import type { StudentFilterState } from '../libs/filterStudents'
-
-const LEVELS: StudentLevel[] = ['Principiante', 'Intermedio', 'Avanzado']
 
 interface StudentFiltersProps {
   filters: StudentFilterState
@@ -29,10 +26,12 @@ interface StudentFiltersProps {
  */
 export function StudentFilters({ filters, onChange }: StudentFiltersProps) {
   const { t } = useTranslation()
+  const selectedLevel =
+    filters.level === 'all' ? null : t(STUDENT_LEVEL_LABEL_KEY[filters.level])
 
   return (
     // Buscador y filtro en UNA fila tambien en movil. Apilados se llevaban
-    // 100 px antes de la primera tarjeta; el filtro es corto y cabe al lado.
+    // 100 px antes de la primera fila; el filtro es corto y cabe al lado.
     <div className="flex items-center gap-2 sm:justify-between sm:gap-3">
       <div className="min-w-0 flex-1 sm:max-w-sm">
         <InputWithIcon
@@ -50,12 +49,30 @@ export function StudentFilters({ filters, onChange }: StudentFiltersProps) {
           if (level === 'all' || isStudentLevel(level)) onChange({ ...filters, level })
         }}
       >
-        <SelectTrigger className="w-auto shrink-0 sm:w-48" aria-label={t('students.filters')}>
-          <SelectValue />
+        {/*
+          EL DISPARADOR DICE «NIVEL», no «Todos los niveles». Con `SelectValue`
+          el boton medía lo que midiera la opcion elegida, asi que el filtro sin
+          usar se llevaba media fila del buscador. Apagado no necesita nombrar
+          su valor, sino QUE filtra; puesto, enseña el nivel, que es corto.
+
+          El `aria-label` no es opcional: `combobox` no toma el nombre de su
+          contenido. Y CONTIENE siempre el texto visible —«Nivel», o «Nivel:
+          Intermedio»—, porque quien dicta por voz lo que ve tiene que dar con
+          el control (WCAG 2.5.3).
+        */}
+        <SelectTrigger
+          className="w-auto shrink-0"
+          aria-label={
+            selectedLevel === null
+              ? t('filters.level.label')
+              : t('filters.level.selected', { level: selectedLevel })
+          }
+        >
+          {selectedLevel ?? t('filters.level.label')}
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">{t('filters.level.all')}</SelectItem>
-          {LEVELS.map((level) => (
+          {STUDENT_LEVELS.map((level) => (
             <SelectItem key={level} value={level}>
               {t(STUDENT_LEVEL_LABEL_KEY[level])}
             </SelectItem>
@@ -64,8 +81,4 @@ export function StudentFilters({ filters, onChange }: StudentFiltersProps) {
       </Select>
     </div>
   )
-}
-
-function isStudentLevel(value: string): value is StudentLevel {
-  return LEVELS.some((level) => level === value)
 }

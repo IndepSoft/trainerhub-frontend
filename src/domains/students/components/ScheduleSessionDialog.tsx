@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type FormEvent } from 'react'
+import { useId, useState, type FormEvent } from 'react'
 import { CalendarCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/shared/ui/button'
@@ -6,10 +6,12 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
-import { container } from '@/app/container'
+import { useSessionsOfDay } from '@/shared/hooks/useSessionsOfDay'
+import { useSessionScheduling } from '@/shared/hooks/useSessionScheduling'
 import { describeError } from '@/shared/i18n/errorMessages'
 import { activeLocale } from '@/shared/i18n/activeLocale'
 import { ScheduleConflictNotice } from '@/shared/components/ScheduleConflictNotice'
@@ -19,10 +21,9 @@ import {
   type SessionFieldName,
   type SessionScheduleValue,
 } from '@/shared/components/SessionScheduleFields'
-import { describeOverlap, findOverlappingSessions } from '@/shared/domain/sessionScheduling'
+import { describeOverlap } from '@/shared/domain/sessionScheduling'
 import { useAssignableRoutines } from '../hooks/useAssignableRoutines'
 import { toDateKey } from '../libs/dateKey'
-import type { Session } from '@/shared/domain/entities/session'
 import type { Student } from '@/shared/domain/entities/student'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 
@@ -67,29 +68,8 @@ export function ScheduleSessionDialog({
   const [missing, setMissing] = useState<SessionFieldName[]>([])
   /** Con qué choca, o `null` si no choca o ya se decidió agendar igual. */
   const [conflict, setConflict] = useState<string | null>(null)
-  /** Lo que ya hay ese día, para marcar los tramos ocupados. */
-  const [sessionsOfDay, setSessionsOfDay] = useState<Session[]>([])
-
-  /*
-   * Se cargan las sesiones del dia elegido, no la agenda entera: `findByDate` es
-   * una consulta acotada, y con backend real comprobar un choque no puede
-   * significar descargar todo.
-   */
-  useEffect(() => {
-    if (value.date === undefined) {
-      setSessionsOfDay([])
-      return
-    }
-
-    let active = true
-    container.sessions.findByDate(toDateKey(value.date)).then((result) => {
-      if (active) setSessionsOfDay(result)
-    })
-
-    return () => {
-      active = false
-    }
-  }, [value.date])
+  const sessionsOfDay = useSessionsOfDay(value.date)
+  const { findConflicts, createSession } = useSessionScheduling()
 
   /** Un choque deja de serlo en cuanto cambia alguna de las tres piezas. */
   const handleChange = (changes: Partial<SessionScheduleValue>) => {
@@ -114,13 +94,8 @@ export function ScheduleSessionDialog({
     setMissing(faltan)
     if (faltan.length > 0 || value.date === undefined) return
 
-    /*
-     * Se relee del puerto en vez de usar `sessionsOfDay`: entre elegir la hora y
-     * pulsar puede haberse agendado algo, y ademas la lista se cargo con la
-     * duracion de entonces. Esta es la comprobacion que vale.
-     */
-    const sameDay = await container.sessions.findByDate(toDateKey(value.date))
-    const choques = findOverlappingSessions(sameDay, {
+    // Se relee del puerto en vez de usar `sessionsOfDay`: ver `useSessionScheduling`.
+    const choques = await findConflicts({
       date: toDateKey(value.date),
       time: value.time,
       durationMinutes: Number(value.duration),
@@ -147,7 +122,7 @@ export function ScheduleSessionDialog({
     const routine = routines.find((candidate) => candidate.id === value.routineId)
 
     try {
-      await container.sessions.create({
+      await createSession({
         // El titulo lo pone la rutina cuando la hay. No lleva el nombre del
         // alumno dentro: se resuelve desde `studentId`, y meterlo aqui seria
         // una copia que envejece en cuanto el alumno se renombre.
@@ -200,7 +175,7 @@ export function ScheduleSessionDialog({
           <DialogTitle className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
             {t('scheduleSession.title')}
           </DialogTitle>
-          <DialogDescription className="text-sm text-ink/50">
+          <DialogDescription className="text-sm text-ink/60">
             {t('scheduleSession.hint', { name: `${student.firstName} ${student.lastName}` })}
           </DialogDescription>
         </DialogHeader>
@@ -220,13 +195,17 @@ export function ScheduleSessionDialog({
             <ScheduleConflictNotice message={conflict} onOverride={() => void scheduleSession()} />
           )}
 
-          <Button
-            type="submit"
-            className="h-14 w-full gap-2 font-display text-base font-extrabold uppercase tracking-[0.14em]"
-          >
-            <CalendarCheck className="size-5" />
-            {t('scheduleSession.title')}
-          </Button>
+          {/* En el pie, que en movil se queda pegado abajo: el boton no puede
+              depender de que se desplace hasta el final. */}
+          <DialogFooter className="-mx-5 border-t border-cobalt-tint-3 px-5 py-3 md:mx-0 md:border-0 md:p-0">
+            <Button
+              type="submit"
+              className="h-14 w-full gap-2 font-display text-base font-extrabold uppercase tracking-[0.14em]"
+            >
+              <CalendarCheck className="size-5" />
+              {t('scheduleSession.title')}
+            </Button>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

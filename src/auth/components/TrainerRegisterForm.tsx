@@ -113,7 +113,7 @@ export function TrainerRegisterForm({ onBack }: TrainerRegisterFormProps) {
             <Button
               type="button"
               variant="ghost"
-              className="w-full rounded-action text-ink/55"
+              className="w-full rounded-action text-ink/60"
               onClick={onBack}
             >
               {t('register.trainer.backToStudent')}
@@ -177,7 +177,7 @@ export function TrainerRegisterForm({ onBack }: TrainerRegisterFormProps) {
             <span className="block">{t('register.trainer.step2.line1')}</span>
             <span className="block">{t('register.trainer.step2.line2')}</span>
           </h1>
-          <p className="mt-1.5 max-w-[30ch] text-sm leading-relaxed text-ink/55">
+          <p className="mt-1.5 max-w-[30ch] text-sm leading-relaxed text-ink/60">
             {t('register.trainer.subscriptionHint')}
           </p>
         </div>
@@ -190,7 +190,7 @@ export function TrainerRegisterForm({ onBack }: TrainerRegisterFormProps) {
       */}
       <div className="hidden flex-col gap-4 lg:flex">
         <StepIndicator current={2} total={TOTAL_STEPS} />
-        <p className="max-w-[34ch] text-sm leading-relaxed text-ink/55">
+        <p className="max-w-[34ch] text-sm leading-relaxed text-ink/60">
           {t('register.trainer.subscriptionHint')}
         </p>
       </div>
@@ -260,7 +260,7 @@ export function TrainerRegisterForm({ onBack }: TrainerRegisterFormProps) {
           <Button
             type="button"
             variant="ghost"
-            className="w-full rounded-action text-ink/55"
+            className="w-full rounded-action text-ink/60"
             onClick={() => setStep(1)}
           >
             {t('common.previous')}

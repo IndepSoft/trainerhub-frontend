@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Button } from '@/shared/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
@@ -22,7 +23,8 @@ import { describeError } from '@/shared/i18n/errorMessages'
 import { getShortName } from '@/shared/lib/personName'
 import { useSchedulableStudents } from '../hooks/useSchedulableStudents'
 import { useSchedulableRoutines } from '../hooks/useSchedulableRoutines'
-import { container } from '@/app/container'
+import { useSessionsOfDay } from '@/shared/hooks/useSessionsOfDay'
+import { useSessionScheduling } from '@/shared/hooks/useSessionScheduling'
 import { toLocalDateKey } from '@/shared/lib/dateKey'
 import { activeLocale } from '@/shared/i18n/activeLocale'
 import { ScheduleConflictNotice } from '@/shared/components/ScheduleConflictNotice'
@@ -34,7 +36,7 @@ import {
 } from '@/shared/components/SessionScheduleFields'
 import { parseLocalDateKey } from '../libs/calendar.utils'
 import type { Translate } from '@/shared/i18n/LanguageContext'
-import { describeOverlap, findOverlappingSessions } from '@/shared/domain/sessionScheduling'
+import { describeOverlap } from '@/shared/domain/sessionScheduling'
 import type { Session } from '@/shared/domain/entities/session'
 import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
@@ -157,25 +159,8 @@ export function CreateSessionModal({
   const [missing, setMissing] = useState<FieldName[]>([])
   /** Con qué choca, o `null` si no choca o ya se decidió agendar igual. */
   const [conflict, setConflict] = useState<string | null>(null)
-  /** Lo que ya hay ese día, para marcar los tramos ocupados. */
-  const [sessionsOfDay, setSessionsOfDay] = useState<Session[]>([])
-
-  // Sólo el día elegido, no la agenda entera: ver `SessionRepository.findByDate`.
-  useEffect(() => {
-    if (value.date === undefined) {
-      setSessionsOfDay([])
-      return
-    }
-
-    let active = true
-    container.sessions.findByDate(toLocalDateKey(value.date)).then((result) => {
-      if (active) setSessionsOfDay(result)
-    })
-
-    return () => {
-      active = false
-    }
-  }, [value.date])
+  const sessionsOfDay = useSessionsOfDay(value.date)
+  const { findConflicts, createSession, updateSession } = useSessionScheduling()
 
   /** Un choque deja de serlo en cuanto cambia alguna de las tres piezas. */
   const handleChange = (changes: Partial<SessionScheduleValue>) => {
@@ -212,22 +197,17 @@ export function CreateSessionModal({
       return
     }
 
-    const dateKey = toLocalDateKey(value.date)
+    const slot = {
+      date: toLocalDateKey(value.date),
+      time: value.time,
+      durationMinutes: Number(value.duration),
+    }
 
     /*
-     * Se relee del puerto en vez de usar `sessionsOfDay`: entre elegir la hora y
-     * pulsar puede haberse agendado algo, y la lista se cargo con la duracion de
-     * entonces. Esta es la comprobacion que vale.
+     * Se relee del puerto en vez de usar `sessionsOfDay`: ver
+     * `useSessionScheduling`. Al editar, la sesion no choca consigo misma.
      */
-    void container.sessions.findByDate(dateKey).then((sameDay) => {
-      // Al editar, la sesion no choca consigo misma.
-      const others = sameDay.filter((candidate) => candidate.id !== editing?.id)
-      const choques = findOverlappingSessions(others, {
-        date: dateKey,
-        time: value.time,
-        durationMinutes: Number(value.duration),
-      })
-
+    void findConflicts(slot, editing?.id).then((choques) => {
       if (choques.length > 0) {
         setConflict(describeOverlap(choques))
         return
@@ -292,7 +272,7 @@ export function CreateSessionModal({
        * le corrija el lugar.
        */
       try {
-        await container.sessions.update(editing.id, {
+        await updateSession(editing.id, {
           ...data,
           status: editing.status,
           result: editing.result,
@@ -307,7 +287,7 @@ export function CreateSessionModal({
     }
 
     try {
-      await container.sessions.create({
+      await createSession({
         ...data,
         // Recien creada esta pendiente, no confirmada: confirmarla es un acto
         // aparte y fingirlo aqui vaciaria de sentido el estado.
@@ -351,7 +331,7 @@ export function CreateSessionModal({
           <DialogTitle className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
             {editing === undefined ? t('newSession.title') : t('newSession.editTitle')}
           </DialogTitle>
-          <DialogDescription className="text-sm text-ink/50">
+          <DialogDescription className="text-sm text-ink/60">
             {editing === undefined ? t('newSession.hint') : t('newSession.editHint')}
           </DialogDescription>
         </DialogHeader>
@@ -431,13 +411,17 @@ export function CreateSessionModal({
             <ScheduleConflictNotice message={conflict} onOverride={scheduleSession} />
           )}
 
-          <Button
-            onClick={handleSubmit}
-            className="h-14 w-full gap-2 font-display text-base font-extrabold uppercase tracking-[0.14em]"
-          >
-            <CalendarCheck className="size-5" />
-            {editing === undefined ? t('newSession.submit') : t('newSession.saveChanges')}
-          </Button>
+          {/* En el pie: en móvil se queda pegado abajo, para que el botón no
+              dependa de que se desplace hasta el final del formulario. */}
+          <DialogFooter className="-mx-5 border-t border-cobalt-tint-3 px-5 py-3 md:mx-0 md:border-0 md:p-0">
+            <Button
+              onClick={handleSubmit}
+              className="h-14 w-full gap-2 font-display text-base font-extrabold uppercase tracking-[0.14em]"
+            >
+              <CalendarCheck className="size-5" />
+              {editing === undefined ? t('newSession.submit') : t('newSession.saveChanges')}
+            </Button>
+          </DialogFooter>
         </div>
       </DialogContent>
     </Dialog>

@@ -5,6 +5,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
@@ -53,7 +54,7 @@ export function NoticeDialog({
           <DialogTitle className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
             {t('notice.title', { name: studentFirstName })}
           </DialogTitle>
-          <DialogDescription className="text-sm text-ink/50">
+          <DialogDescription className="text-sm text-ink/60">
             {t('notice.hint', { name: studentFirstName })}
           </DialogDescription>
         </DialogHeader>
@@ -128,7 +129,7 @@ function NoticeFields({ draft, kind, onSend, onCancel }: NoticeFieldsProps) {
         </p>
       )}
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+      <DialogFooter>
         <Button type="button" variant="outline" onClick={onCancel}>
           {t('common.cancel')}
         </Button>
@@ -136,7 +137,7 @@ function NoticeFields({ draft, kind, onSend, onCancel }: NoticeFieldsProps) {
           <Send className="size-4" />
           {sending ? t('notice.sending') : t('notice.send')}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   )
 }

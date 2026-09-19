@@ -18,11 +18,11 @@ export default function NotFound() {
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-bone px-6 py-16 text-center">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/45">404</p>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">404</p>
       <h1 className="font-display text-3xl font-extrabold uppercase leading-none tracking-tight text-ink">
         {t('notFound.title')}
       </h1>
-      <p className="max-w-sm text-sm text-ink/55">{t('notFound.body')}</p>
+      <p className="max-w-sm text-sm text-ink/60">{t('notFound.body')}</p>
       <Button asChild variant="outline">
         <Link to="/">{t('notFound.home')}</Link>
       </Button>

@@ -57,7 +57,7 @@ export function RegisterIntentChooser({ onChoose }: RegisterIntentChooserProps) 
         />
       </div>
 
-      <p className="mt-auto flex min-h-11 items-center justify-center gap-1.5 text-sm text-ink/55">
+      <p className="mt-auto flex min-h-11 items-center justify-center gap-1.5 text-sm text-ink/60">
         {t('auth.haveAccount')}
         <Link
           to={{ search: authViewSearch('login') }}
@@ -105,7 +105,7 @@ function IntentBlock({ title, description, filled = false, onClick }: IntentBloc
         <span className="font-display text-[1.625rem] font-extrabold uppercase leading-none tracking-tight">
           {title}
         </span>
-        <span className={cn('text-sm leading-snug', filled ? 'text-bone/60' : 'text-ink/55')}>
+        <span className={cn('text-sm leading-snug', filled ? 'text-bone/60' : 'text-ink/60')}>
           {description}
         </span>
       </span>

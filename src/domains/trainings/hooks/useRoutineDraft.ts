@@ -21,6 +21,14 @@ import type { Block, Routine, TrainingLevel } from '../types/training.types'
 import type { NewRoutine } from '@/shared/domain/ports/RoutineRepository'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 
+/**
+ * Lo que devuelve intentar guardar: los datos listos, o en qué falla. Quien
+ * llama necesita lo segundo para llevar al usuario al paso que tiene el error.
+ */
+export type RoutineSubmission =
+  | { valid: true; data: NewRoutine }
+  | { valid: false; errors: RoutineDraftErrors }
+
 interface UseRoutineDraftResult {
   draft: RoutineDraft
   /** Vacío mientras no se ha intentado guardar. */
@@ -44,8 +52,8 @@ interface UseRoutineDraftResult {
     exerciseId: string,
     changes: PrescribedExerciseDraftChanges
   ) => void
-  /** Los datos listos para guardar, o `null` si el borrador no es válido. */
-  submit: () => NewRoutine | null
+  /** Los datos listos para guardar, o los errores si el borrador no es válido. */
+  submit: () => RoutineSubmission
   /** Si el borrador se recuperó de una sesión anterior sin guardar. */
   restored: boolean
   /** Olvida el borrador guardado. Se llama al guardar, al cancelar y a mano. */
@@ -190,13 +198,13 @@ export function useRoutineDraft(initial: Routine | null): UseRoutineDraftResult 
    * formulario sirve para las dos cosas sin una condicion dentro. Mismo patron
    * que `useExerciseDraft`.
    */
-  const submit = useCallback((): NewRoutine | null => {
+  const submit = useCallback((): RoutineSubmission => {
     setWasSubmitted(true)
 
     const validation = validateRoutineDraft(draft, t)
-    if (hasErrors(validation)) return null
+    if (hasErrors(validation)) return { valid: false, errors: validation }
 
-    return toRoutineData(draft)
+    return { valid: true, data: toRoutineData(draft) }
   }, [draft, t])
 
   return {

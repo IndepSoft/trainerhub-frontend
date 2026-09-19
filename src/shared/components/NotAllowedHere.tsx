@@ -28,7 +28,7 @@ export function NotAllowedHere({
       <h1 className="font-display text-3xl font-extrabold uppercase leading-none tracking-tight text-ink">
         {t('crew.notAllowed')}
       </h1>
-      <p className="max-w-sm text-sm text-ink/55">{description}</p>
+      <p className="max-w-sm text-sm text-ink/60">{description}</p>
       <Button asChild variant="outline">
         <Link to={backTo}>
           {backTo === '/crew' ? t('crew.backToCrew') : t('notFound.home')}

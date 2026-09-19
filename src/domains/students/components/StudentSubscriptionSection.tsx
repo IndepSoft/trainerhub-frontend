@@ -1,14 +1,19 @@
 import { useState } from 'react'
-import { BellRing, Check } from 'lucide-react'
+import { BellRing, Check, CreditCard } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { SubscriptionBadge } from '@/shared/components/SubscriptionBadge'
 import { cn } from '@/shared/lib/utils'
-import { container } from '@/app/container'
+import { useSendNotice } from '@/shared/hooks/useSendNotice'
 import { useViewerContext } from '@/app/ViewerContext'
 import { describeError } from '@/shared/i18n/errorMessages'
-import { SUBSCRIPTION_PERIOD_DAYS } from '@/shared/domain/entities/studentSubscription'
+import {
+  DEFAULT_PERIOD_DAYS,
+  SUBSCRIPTION_PERIOD_DAYS,
+  type SubscriptionStanding,
+} from '@/shared/domain/entities/studentSubscription'
 import { SUBSCRIPTION_PERIOD_LABEL_KEY } from '@/shared/i18n/domainLabels'
 import { formatDateKey } from '../libs/dateKey'
+import { DuesPaymentDialog } from './DuesPaymentDialog'
 import { duesReminderDraft } from '../libs/duesReminder'
 import { useSubscriptions } from '../hooks/useSubscriptions'
 import { NoticeDialog } from './NoticeDialog'
@@ -21,11 +26,27 @@ interface StudentSubscriptionSectionProps {
 }
 
 /**
+ * El borde de la tarjeta de estado, del mismo color que su insignia. Sólo las
+ * dos que reclaman algo lo llevan de color; al día y sin cuota, la regla del
+ * sistema, para que lo urgente siga destacando.
+ */
+const STANDING_CARD: Record<SubscriptionStanding['state'], string> = {
+  overdue: 'border-danger',
+  dueSoon: 'border-ember',
+  active: 'border-cobalt-tint-3',
+  never: 'border-cobalt-tint-3',
+}
+
+/**
  * La cuota de un alumno, en su ficha.
  *
  * AQUÍ ES DONDE SE PREGUNTA. «¿Hasta cuándo tiene pagado?» se responde mirando a
  * la persona, no abriendo un módulo de facturación: quien lo consulta ya está en
  * su ficha porque está hablando con ella o va a agendarle algo.
+ *
+ * PRIMERO EL ESTADO, DESPUÉS LO QUE SE PUEDE HACER. La tarjeta dice en qué
+ * punto está y hasta cuándo; debajo, cobrar y avisar, que son las dos cosas que
+ * se vienen a hacer; y al final la periodicidad, que se toca una vez.
  *
  * Y AQUÍ SE AVISA, por lo mismo. El recordatorio sale con el texto escrito según
  * el estado —no es igual avisar de lo que va a pasar que reclamar lo que ya
@@ -39,8 +60,11 @@ export function StudentSubscriptionSection({ student }: StudentSubscriptionSecti
   const { t } = useTranslation()
   const { can } = useViewerContext()
   const { byStudent, standingOf, renew, setPeriod, loading } = useSubscriptions()
+  const { sendNotice } = useSendNotice()
 
   const [noticeOpen, setNoticeOpen] = useState(false)
+  const [paymentOpen, setPaymentOpen] = useState(false)
+  const [registering, setRegistering] = useState(false)
   const [justRenewed, setJustRenewed] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -49,6 +73,9 @@ export function StudentSubscriptionSection({ student }: StudentSubscriptionSecti
   const subscription = byStudent.get(student.id)
   const standing = standingOf(student.id)
   const canManage = can('students.manage')
+  const paidThrough = subscription?.paidThrough ?? null
+  const periodKey =
+    subscription === undefined ? undefined : SUBSCRIPTION_PERIOD_LABEL_KEY[subscription.periodDays]
   /*
    * Sin cuenta no hay campana TODAVIA: el aviso se guarda con la ficha y lo
    * lee cuando se registre con ese correo. Se dice, en vez de dar por leido lo
@@ -58,18 +85,22 @@ export function StudentSubscriptionSection({ student }: StudentSubscriptionSecti
   const hasAccount = student.profileId !== null
 
   const handleSend = async (body: string, kind: NoticeKind) => {
-    await container.notices.send({ studentId: student.id, kind, body })
+    await sendNotice({ studentId: student.id, kind, body })
   }
 
   // Cobrar y cambiar el periodo se esperan y se dicen: eran promesas sueltas.
-  const handleRenew = async () => {
+  const handleRenew = async (paidOn: string) => {
     setError(null)
+    setRegistering(true)
     try {
-      await renew(student.id, student.crewId)
+      await renew(student.id, student.crewId, paidOn)
     } catch (caught) {
       setError(describeError(caught, t, 'dues.error'))
       return
+    } finally {
+      setRegistering(false)
     }
+    setPaymentOpen(false)
     // Confirmación breve y en el sitio: cobrar mueve una fecha, y sin acuse el
     // botón parece no haber hecho nada.
     setJustRenewed(true)
@@ -86,60 +117,67 @@ export function StudentSubscriptionSection({ student }: StudentSubscriptionSecti
   }
 
   return (
-    <section className="px-5 py-8" aria-labelledby="cuota-titulo">
-      <h2
-        id="cuota-titulo"
-        className="mb-4 border-b border-cobalt-tint-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60"
-      >
-        {t('dues.title')}
-      </h2>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <SubscriptionBadge standing={standing} />
-
-        {subscription?.paidThrough !== undefined && subscription.paidThrough !== null && (
-          /* La fecha exacta al lado de los días: la insignia dice si corre
-             prisa, esto dice qué día es. Las dos cosas se necesitan. */
-          <span className="text-xs text-ink/45">
-            {t('reports.paidThrough', { date: formatDateKey(subscription.paidThrough) })}
-          </span>
+    <div className="flex flex-col gap-4 px-5 pb-8 pt-2">
+      <section
+        aria-label={t('dues.title')}
+        className={cn(
+          'flex flex-col gap-1.5 rounded-block border bg-surface px-4 py-3.5',
+          STANDING_CARD[standing.state]
         )}
-      </div>
+      >
+        <div className="flex items-center justify-between gap-3">
+          <SubscriptionBadge standing={standing} />
+          {periodKey !== undefined && (
+            <span className="text-xs text-ink/60">{t(periodKey)}</span>
+          )}
+        </div>
+
+        {/* La fecha exacta, grande: la insignia dice si corre prisa, esto dice
+            qué día es. Las dos cosas se necesitan. */}
+        <p className="font-display text-[1.375rem] font-extrabold uppercase leading-tight text-ink">
+          {paidThrough === null
+            ? t('dues.none')
+            : t('reports.paidThrough', { date: formatDateKey(paidThrough) })}
+        </p>
+
+        {!hasAccount && <p className="text-[13px] text-ink/60">{t('notice.noAccount')}</p>}
+      </section>
 
       {canManage && (
         <>
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-            <Button className="gap-2" onClick={() => void handleRenew()}>
-              {justRenewed ? <Check className="size-4" /> : null}
+          <div className="flex flex-wrap gap-2">
+            {/* Abre la hoja en vez de escribir al pulsar: cobrar mueve una
+                fecha y no se deshace desde aquí. Ver `DuesPaymentDialog`. */}
+            <Button
+              className="min-w-[9.5rem] flex-1 gap-2 rounded-action"
+              onClick={() => setPaymentOpen(true)}
+            >
+              {justRenewed ? <Check className="size-4" /> : <CreditCard className="size-4" />}
               {justRenewed ? t('dues.renewed') : t('dues.registerPayment')}
             </Button>
 
-            <Button variant="outline" className="gap-2" onClick={() => setNoticeOpen(true)}>
+            <Button
+              variant="outline"
+              className="min-w-[9.5rem] flex-1 gap-2 rounded-action"
+              onClick={() => setNoticeOpen(true)}
+            >
               <BellRing className="size-4" />
               {t('reports.notify')}
             </Button>
           </div>
 
-          {!hasAccount && <p className="mt-2 text-xs text-ink/50">{t('notice.noAccount')}</p>}
-
           {error !== null && (
-            <p role="alert" className="mt-2 text-sm text-danger">
+            <p role="alert" className="text-sm text-danger">
               {error}
             </p>
           )}
 
-          <div role="group" aria-label={t('dues.period')} className="mt-6">
-            <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
+          <section role="group" aria-label={t('dues.period')} className="mt-2 flex flex-col gap-2.5">
+            <h2 className="border-b border-cobalt-tint-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
               {t('dues.period')}
-            </span>
-            <p className="mt-1 text-xs text-ink/45">
-              {/* El porqué de que esto exista: lo normal es mensual, pero no
-                  siempre, y sin esto habría que falsear la fecha para cuadrar
-                  un bono trimestral. */}
-              {t('dues.periodHint')}
-            </p>
+            </h2>
 
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {SUBSCRIPTION_PERIOD_DAYS.map((days) => {
                 const isSelected = subscription?.periodDays === days
 
@@ -150,10 +188,10 @@ export function StudentSubscriptionSection({ student }: StudentSubscriptionSecti
                     aria-pressed={isSelected}
                     onClick={() => void handleSetPeriod(days)}
                     className={cn(
-                      'inline-flex min-h-11 items-center rounded-action border px-3 text-xs font-semibold transition-colors',
+                      'inline-flex min-h-11 items-center rounded-action border px-3.5 text-[13px] font-medium transition-colors',
                       isSelected
-                        ? 'border-cobalt/50 bg-cobalt-tint text-cobalt'
-                        : 'border-cobalt-tint-3 text-ink/50 hover:border-cobalt/40 hover:text-ink'
+                        ? 'border-cobalt bg-cobalt text-cobalt-foreground'
+                        : 'border-cobalt-tint-3 bg-surface text-ink hover:border-cobalt/40'
                     )}
                   >
                     {t(SUBSCRIPTION_PERIOD_LABEL_KEY[days])}
@@ -161,9 +199,33 @@ export function StudentSubscriptionSection({ student }: StudentSubscriptionSecti
                 )
               })}
             </div>
-          </div>
+
+            {/* El porqué de que esto exista: lo normal es mensual, pero no
+                siempre, y sin esto habría que falsear la fecha para cuadrar un
+                bono trimestral. */}
+            <p className="text-[13px] text-ink/60">{t('dues.periodHint')}</p>
+          </section>
         </>
       )}
+
+      <DuesPaymentDialog
+        open={paymentOpen}
+        studentName={student.firstName}
+        /* Sin cuota registrada se parte de una en blanco, la misma que crearía
+           el propio cobro: el alumno puede entrenar antes de pagar. */
+        subscription={
+          subscription ?? {
+            studentId: student.id,
+            crewId: student.crewId,
+            periodDays: DEFAULT_PERIOD_DAYS,
+            paidThrough: null,
+          }
+        }
+        busy={registering}
+        error={error}
+        onOpenChange={setPaymentOpen}
+        onConfirm={(paidOn) => void handleRenew(paidOn)}
+      />
 
       <NoticeDialog
         open={noticeOpen}
@@ -173,6 +235,6 @@ export function StudentSubscriptionSection({ student }: StudentSubscriptionSecti
         onOpenChange={setNoticeOpen}
         onSend={handleSend}
       />
-    </section>
+    </div>
   )
 }

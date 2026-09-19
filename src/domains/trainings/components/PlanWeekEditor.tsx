@@ -8,14 +8,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
+import { CollapsibleRow } from '@/shared/components/CollapsibleRow'
 import { cn } from '@/shared/lib/utils'
-import { weekdayName } from '../libs/planDraft'
+import { formatWeekdayList, weekdayName } from '../libs/planDraft'
+import { summarizeWeek } from '../libs/plan.utils'
 import type { PlanWeekDraft } from '../types/planDraft.types'
-import type { Routine } from '../types/training.types'
+import type { PlanWeek, Routine } from '../types/training.types'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
-
-/** Registro de etiqueta del formulario, igual que en el resto del dominio. */
-const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50'
 
 /**
  * Valor del día sin rutina.
@@ -29,95 +28,110 @@ const REST_VALUE = 'descanso'
 
 interface PlanWeekEditorProps {
   week: PlanWeekDraft
+  /**
+   * La misma semana tal y como quedaría guardada. De ahí sale el resumen de la
+   * fila cerrada, con la misma función que la ficha del plan.
+   */
+  preview: PlanWeek
   /** Número de la semana, empezando en 1. Sale de la posición. */
   position: number
   routines: Routine[]
   canRemove: boolean
+  /** Abierta al montar. Quien compone decide cuáles: ver `PlanForm`. */
+  defaultOpen: boolean
   onRemove: () => void
   onToggleDeload: () => void
   onChangeDay: (dayOfWeek: number, routineId: string) => void
 }
 
 /**
- * Una semana del mesociclo. Sólo presentación.
+ * Una semana del mesociclo, plegada con su resumen. Sólo presentación.
  *
- * Los siete días se listan siempre, incluidos los de descanso: un microciclo son
- * siete días y ver los huecos es parte de programar. Ocultar los vacíos haría
- * que «entreno lunes, miércoles y viernes» y «entreno tres días seguidos» se
- * vieran igual.
+ * Cerrada dice lo mismo que en la ficha —«3 sesiones · lunes, miércoles y
+ * viernes»—, que es lo que hace falta para encontrar la semana que se quiere
+ * tocar. Abierta, los siete días, descansos incluidos: al PROGRAMAR sí hay que
+ * ver los huecos, porque cada uno es una elección.
  */
 export function PlanWeekEditor({
   week,
+  preview,
   position,
   routines,
   canRemove,
+  defaultOpen,
   onRemove,
   onToggleDeload,
   onChangeDay,
 }: PlanWeekEditorProps) {
-  const { t } = useTranslation()
+  const { t, plural } = useTranslation()
   const fieldId = useId()
+  const { trainingDays } = summarizeWeek(preview)
+  const sessions = plural('plan.sessionCount.one', 'plan.sessionCount.other', trainingDays.length, {
+    count: trainingDays.length,
+  })
 
   return (
-    <section className="rounded-block border border-cobalt-tint-3 bg-surface p-4 sm:p-5">
-      <header className="flex items-center gap-3 border-b border-cobalt-tint-3 pb-4">
-        <span className="metric-figures font-display text-2xl font-extrabold leading-none text-cobalt">
-          {String(position).padStart(2, '0')}
-        </span>
-        <h3 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
-          {t('plan.week')}
-        </h3>
+    <CollapsibleRow
+      headingLevel={3}
+      title={t('plan.weekLabel', { number: String(position).padStart(2, '0') })}
+      meta={
+        trainingDays.length === 0
+          ? t('plan.noSessionsWeek')
+          : `${sessions} · ${formatWeekdayList(trainingDays)}`
+      }
+      trailing={
+        week.isDeload ? (
+          <span className="shrink-0 rounded-action border border-ember/40 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-ember-deep">
+            {t('plan.deload')}
+          </span>
+        ) : undefined
+      }
+      defaultOpen={defaultOpen}
+    >
+      <div className="flex items-center gap-1">
+        {/*
+          Conmutador con `aria-pressed`, no una casilla: son dos estados de la
+          semana y se lee mejor como una marca que como un formulario dentro
+          de otro.
+        */}
+        <button
+          type="button"
+          aria-pressed={week.isDeload}
+          onClick={onToggleDeload}
+          className={cn(
+            'inline-flex min-h-11 items-center rounded-action border px-3 text-[10px] font-bold uppercase tracking-[0.12em] transition-colors',
+            week.isDeload
+              ? 'border-ember/50 bg-ember/10 text-ember-deep'
+              : 'border-cobalt-tint-3 text-ink/60 hover:border-cobalt/40 hover:text-ink'
+          )}
+        >
+          {t('plan.deload')}
+        </button>
 
-        <div className="ms-auto flex shrink-0 items-center gap-1">
-          {/*
-            Conmutador con `aria-pressed`, no una casilla: son dos estados de la
-            semana y se lee mejor como una marca que como un formulario dentro
-            de otro.
-          */}
+        {canRemove && (
           <button
             type="button"
-            aria-pressed={week.isDeload}
-            onClick={onToggleDeload}
-            className={cn(
-              'inline-flex min-h-11 items-center rounded-action border px-3 text-[10px] font-bold uppercase tracking-[0.12em] transition-colors',
-              week.isDeload
-                ? 'border-ember/50 bg-ember/10 text-ember-deep'
-                : 'border-cobalt-tint-3 text-ink/45 hover:border-cobalt/40 hover:text-ink'
-            )}
+            onClick={onRemove}
+            aria-label={t('plan.deleteWeekLabel', { position })}
+            className="ms-auto inline-flex size-11 items-center justify-center rounded-action text-ink/50 transition-colors hover:bg-danger-surface hover:text-danger"
           >
-            {t('plan.deload')}
+            <Trash2 className="size-4" />
           </button>
-
-          {canRemove && (
-            <button
-              type="button"
-              onClick={onRemove}
-              aria-label={t('plan.deleteWeekLabel', { position })}
-              className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-danger-surface hover:text-danger"
-            >
-              <Trash2 className="size-4" />
-            </button>
-          )}
-        </div>
-      </header>
+        )}
+      </div>
 
       {/*
         La marca de descarga es HOY SOLO UN ROTULO: el modelo no puede expresar
         «lo mismo con menos volumen», porque la prescripcion vive dentro de la
         rutina y la semana solo apunta a ella. Para descargar de verdad hay que
-        asignar una rutina mas ligera. Esta anotado como deuda en el traspaso.
+        asignar una rutina mas ligera.
+
+        Nota al margen con una regla, no una caja: con caja quedaba bajo el
+        minimo de 280 px de la regla 1.6, que mide contenedores.
       */}
       {week.isDeload && (
-        /*
-          Nota al margen con una regla, no una caja. Con caja quedaba en 269 px
-          -la pagina pone 20, la tarjeta de semana 16- y caia bajo el minimo de
-          280 de la regla 1.6, que mide contenedores. Un parrafo no es un
-          contenedor, y en cuanto deja de parecerlo tampoco lo aparenta: son
-          245 px de texto, unos cuarenta caracteres por linea.
-        */
-        <p className="mt-4 border-s-2 border-ember/40 ps-3 text-xs text-ink/60">
-          Marcarla como descarga no reduce el volumen por sí solo: asigna rutinas más
-          ligeras a estos días.
+        <p className="mt-3 border-s-2 border-ember/40 ps-3 text-xs text-ink/60">
+          {t('plan.deloadNote')}
         </p>
       )}
 
@@ -132,7 +146,7 @@ export function PlanWeekEditor({
             >
               <Label
                 htmlFor={dayFieldId}
-                className={cn(FIELD_LABEL, 'sm:w-28 sm:shrink-0 sm:normal-case sm:tracking-normal sm:text-sm sm:text-ink/70')}
+                className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60 sm:w-28 sm:shrink-0 sm:text-sm sm:normal-case sm:tracking-normal sm:text-ink/70"
               >
                 {weekdayName(day.dayOfWeek)}
               </Label>
@@ -159,6 +173,6 @@ export function PlanWeekEditor({
           )
         })}
       </ul>
-    </section>
+    </CollapsibleRow>
   )
 }

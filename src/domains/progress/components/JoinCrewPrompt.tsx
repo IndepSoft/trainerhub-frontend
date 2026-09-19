@@ -72,7 +72,7 @@ export function JoinCrewPrompt() {
     return (
       <section className="border-b border-cobalt-tint-3 bg-bone px-5 py-6">
         <div className="mx-auto flex max-w-xl flex-col items-start gap-3">
-          <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/45">
+          <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
             <Clock aria-hidden="true" className="size-3.5" />
             {t('joinCrew.requestSent')}
           </p>

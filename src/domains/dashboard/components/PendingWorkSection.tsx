@@ -33,10 +33,10 @@ export function PendingWorkSection({ enabled }: PendingWorkSectionProps) {
   return (
     <section>
       <SectionHeading count={work.total}>{t('dashboard.pending')}</SectionHeading>
-      <p className="pt-2 text-xs text-ink/45">{t('dashboard.pendingHint')}</p>
+      <p className="pt-2 text-xs text-ink/60">{t('dashboard.pendingHint')}</p>
 
       {rows.length === 0 ? (
-        <p className="pt-5 text-sm text-ink/40">{t('dashboard.pendingEmpty')}</p>
+        <p className="pt-5 text-sm text-ink/60">{t('dashboard.pendingEmpty')}</p>
       ) : (
         <ul className="mt-3 divide-y divide-cobalt-tint-3 border-y border-cobalt-tint-3">
           {rows.map((row) => (
@@ -74,7 +74,9 @@ function rowsFrom(
       label: plural('pending.requests.one', 'pending.requests.other', work.requests.length, {
         count: work.requests.length,
       }),
-      to: '/crew',
+      // A la sección donde se aceptan, no a la pantalla del equipo: desde que
+      // va en secciones (`CAMBIOS` §45), «/crew» a secas abre el muro.
+      to: '/crew?seccion=miembros',
     })
   }
 

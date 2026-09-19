@@ -17,28 +17,23 @@ interface StudentProgressSectionProps {
  * camino»— y la racha, reutilizando la cabecera de la pantalla del alumno. Eran
  * de él, no de quien le entrena: el sendero es el registro motivacional que
  * empuja a seguir, y está escrito para quien lo recorre. Al entrenador le sirve
- * la medida, y la tiene aquí en la misma forma que en la lista.
+ * la medida, y la tiene aquí.
  *
- * Y ES LA MISMA FRANJA QUE LA TARJETA, no una copia con otro tamaño: si las dos
- * pintaran el nivel por su cuenta acabarían discrepando el día que cambie la
- * regla. Sale además del mismo agregado, así que abrir una ficha no cuesta una
- * consulta más.
+ * Sale del MISMO AGREGADO que la lista —`useStudentsProgress`—, así que abrir
+ * una ficha no cuesta una consulta más: el padrón ya lo ha pedido para escribir
+ * cuántas sesiones lleva cada uno.
  */
 export function StudentProgressSection({ studentId }: StudentProgressSectionProps) {
   const { t } = useTranslation()
   const { progressById, loading } = useStudentsProgress()
 
   return (
-    <section className="px-5 py-8" aria-labelledby="progreso-titulo">
-      <h2
-        id="progreso-titulo"
-        className="mb-4 border-b border-cobalt-tint-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60"
-      >
-        {t('studentProgress.title')}
-      </h2>
-
-      {/* Sin el relleno lateral de la tarjeta: aquí la sección ya lo pone, y
-          duplicarlo dejaría la barra más estrecha que el resto de la ficha. */}
+    /* Sin título propio: va dentro de la sección «Progreso» de la ficha, y un
+       «PROGRESO» bajo la pestaña que ya lo dice se lee como un error. El nombre
+       sigue en `aria-label` para quien recorre la página por regiones. */
+    <section className="px-5 pb-6 pt-2" aria-label={t('studentProgress.title')}>
+      {/* Sin el relleno lateral propio de la franja: aquí la sección ya lo pone,
+          y duplicarlo dejaría la barra más estrecha que el resto de la ficha. */}
       <div className="[&>*]:px-0 [&>*]:pt-0">
         <StudentProgressStrip
           progress={loading ? undefined : (progressById.get(studentId) ?? null)}

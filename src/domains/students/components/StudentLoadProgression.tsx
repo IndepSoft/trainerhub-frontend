@@ -40,7 +40,7 @@ export function StudentLoadProgression({ studentId }: StudentLoadProgressionProp
       </h2>
 
       {histories.length === 0 ? (
-        <p className="py-6 text-sm text-ink/45">
+        <p className="py-6 text-sm text-ink/60">
           {/* Se distingue «no ha entrenado» de «entrenó y no se anotó el peso»:
               lo segundo tiene arreglo y merece decirse. */}
           {t('loads.empty')}
@@ -90,7 +90,7 @@ function ExerciseLoads({ history }: ExerciseLoadsProps) {
       >
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold text-ink">{history.exerciseName}</p>
-          <p className="metric-figures text-xs text-ink/45">
+          <p className="metric-figures text-xs text-ink/60">
             {t('loads.lastEntry', {
               date: formatDateKey(latest.date),
               reps: latest.reps,
@@ -101,7 +101,7 @@ function ExerciseLoads({ history }: ExerciseLoadsProps) {
         <div className="shrink-0 text-end">
           <p className="metric-figures font-display text-xl font-bold leading-none text-ink">
             {formatKilos(latest.topWeightKg)}
-            <span className="ml-1 text-xs font-semibold text-ink/40">{t('loads.kilos')}</span>
+            <span className="ml-1 text-xs font-semibold text-ink/60">{t('loads.kilos')}</span>
           </p>
 
           {/*
@@ -156,17 +156,17 @@ function ExerciseLoads({ history }: ExerciseLoadsProps) {
           {oneRepMax !== null && (
             <div className="mt-3 border-t border-cobalt-tint-3 pt-3">
               <div className="flex items-baseline justify-between gap-3">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60">
                   {t('loads.oneRepMax')}
                 </span>
                 <span className="metric-figures font-display text-lg font-bold text-ink">
                   {formatKilos(oneRepMax)}
-                  <span className="ml-1 text-xs font-semibold text-ink/40">
+                  <span className="ml-1 text-xs font-semibold text-ink/60">
                     {t('loads.kilos')}
                   </span>
                 </span>
               </div>
-              <p className="mt-1 text-[11px] leading-relaxed text-ink/40">
+              <p className="mt-1 text-[11px] leading-relaxed text-ink/60">
                 {t('loads.oneRepMaxHint')}
               </p>
             </div>
@@ -179,7 +179,7 @@ function ExerciseLoads({ history }: ExerciseLoadsProps) {
                 key={point.date}
                 className="metric-figures flex items-baseline justify-between gap-3 py-1 text-xs"
               >
-                <span className="text-ink/45">{formatDateKey(point.date)}</span>
+                <span className="text-ink/60">{formatDateKey(point.date)}</span>
                 <span className="text-ink/70">
                   {t('loads.point', {
                     weight: formatKilos(point.topWeightKg),

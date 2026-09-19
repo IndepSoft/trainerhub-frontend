@@ -10,7 +10,7 @@ import { cn } from '@/shared/lib/utils'
  * de 16 px.
  */
 export const LINE_CONTROL_CLASS =
-  'h-11 w-full rounded-none border-0 border-b border-ink/20 bg-transparent px-0 text-base text-ink outline-none transition-colors placeholder:text-ink/35 focus:border-cobalt disabled:opacity-50'
+  'h-11 w-full rounded-none border-0 border-b border-ink/20 bg-transparent px-0 text-base text-ink outline-none transition-colors placeholder:text-ink/60 focus:border-cobalt disabled:opacity-50'
 
 interface FormInputProps {
   id: string

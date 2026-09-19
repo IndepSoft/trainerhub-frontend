@@ -15,8 +15,13 @@ interface UseSubscriptionsResult {
   today: string
   loading: boolean
   standingOf: (studentId: string) => SubscriptionStanding
-  /** Cobra un periodo: mueve la fecha pagada hacia delante. */
-  renew: (studentId: string, crewId: string) => Promise<void>
+  /**
+   * Cobra un periodo: mueve la fecha pagada hacia delante.
+   *
+   * `paidOn` es el día en que se recibió el dinero, que no siempre es hoy —se
+   * cobra el lunes y se registra el miércoles—. Por defecto, hoy.
+   */
+  renew: (studentId: string, crewId: string, paidOn?: string) => Promise<void>
   /** Cambia cada cuánto paga, sin cobrar nada. */
   setPeriod: (studentId: string, crewId: string, periodDays: number) => Promise<void>
 }
@@ -55,7 +60,7 @@ export function useSubscriptions(): UseSubscriptionsResult {
   )
 
   const renew = useCallback(
-    async (studentId: string, crewId: string) => {
+    async (studentId: string, crewId: string, paidOn: string = today) => {
       /*
        * Sin cuota previa se crea una desde hoy. `renewedThrough` necesita algo
        * de lo que partir, y el alta de un alumno no crea su cuota: puede
@@ -70,7 +75,7 @@ export function useSubscriptions(): UseSubscriptionsResult {
 
       await container.subscriptions.save({
         ...current,
-        paidThrough: renewedThrough(current, today),
+        paidThrough: renewedThrough(current, paidOn),
       })
     },
     [byStudent, today]

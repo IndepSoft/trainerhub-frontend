@@ -50,7 +50,7 @@ export function BlockLibrary() {
         <h3 className="font-display text-2xl font-extrabold uppercase tracking-tight text-ink">
           {t('block.libraryEmpty')}
         </h3>
-        <p className="mt-2 max-w-sm text-sm text-ink/50">
+        <p className="mt-2 max-w-sm text-sm text-ink/60">
           Al componer una rutina, guarda un bloque con el botón de marcador y aparecerá aquí
           para volver a insertarlo cuando quieras.
         </p>
@@ -59,7 +59,7 @@ export function BlockLibrary() {
   }
 
   return (
-    <section className="px-4 pb-6">
+    <section className="px-5 pb-6">
       <p className="rounded-block border border-cobalt-tint-3 bg-cobalt-tint px-4 py-3 text-sm text-ink/60">
         {t('block.libraryHint')}
         Editarla allí no toca esta entrada, y borrar esta entrada no rompe ninguna rutina.
@@ -81,7 +81,7 @@ export function BlockLibrary() {
                     type="button"
                     onClick={confirmRenaming}
                     aria-label={t('block.saveName')}
-                    className="inline-flex size-11 shrink-0 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-cobalt-tint hover:text-cobalt"
+                    className="inline-flex size-11 shrink-0 items-center justify-center rounded-action text-ink/50 transition-colors hover:bg-cobalt-tint hover:text-cobalt"
                   >
                     <Check className="size-4" />
                   </button>
@@ -89,7 +89,7 @@ export function BlockLibrary() {
                     type="button"
                     onClick={() => setEditingId(null)}
                     aria-label={t('block.discardName')}
-                    className="inline-flex size-11 shrink-0 items-center justify-center rounded-action text-ink/35 transition-colors hover:text-ink"
+                    className="inline-flex size-11 shrink-0 items-center justify-center rounded-action text-ink/50 transition-colors hover:text-ink"
                   >
                     <X className="size-4" />
                   </button>
@@ -100,7 +100,7 @@ export function BlockLibrary() {
                     <p className="font-semibold text-ink">{saved.name}</p>
                     <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-[10px] font-bold uppercase tracking-[0.14em] text-ember-deep">
                       {t(BLOCK_METHOD_LABEL_KEY[saved.block.method])}
-                      <span className="metric-figures font-semibold tracking-normal text-ink/40">
+                      <span className="metric-figures font-semibold tracking-normal text-ink/60">
                         descanso {formatRest(saved.block.restAfterSeconds)}
                       </span>
                     </p>
@@ -111,7 +111,7 @@ export function BlockLibrary() {
                       type="button"
                       onClick={() => startRenaming(saved)}
                       aria-label={`Renombrar ${saved.name}`}
-                      className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-cobalt-tint hover:text-cobalt"
+                      className="inline-flex size-11 items-center justify-center rounded-action text-ink/50 transition-colors hover:bg-cobalt-tint hover:text-cobalt"
                     >
                       <Pencil className="size-4" />
                     </button>
@@ -119,7 +119,7 @@ export function BlockLibrary() {
                       type="button"
                       onClick={() => deleteBlock(saved.id)}
                       aria-label={t('block.deleteNamed', { name: saved.name })}
-                      className="inline-flex size-11 items-center justify-center rounded-action text-ink/35 transition-colors hover:bg-danger-surface hover:text-danger"
+                      className="inline-flex size-11 items-center justify-center rounded-action text-ink/50 transition-colors hover:bg-danger-surface hover:text-danger"
                     >
                       <Trash2 className="size-4" />
                     </button>
@@ -137,7 +137,7 @@ export function BlockLibrary() {
                   <span className="min-w-0 truncate text-ink/70">
                     {exercisesById.get(prescribed.exerciseId)?.name ?? t('exercise.fallback')}
                   </span>
-                  <span className="metric-figures shrink-0 text-ink/45">
+                  <span className="metric-figures shrink-0 text-ink/60">
                     {formatPrescription(prescribed)}
                   </span>
                 </li>

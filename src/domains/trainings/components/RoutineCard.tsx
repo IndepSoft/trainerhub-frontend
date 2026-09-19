@@ -7,15 +7,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
-import { ArrowUpRight, Copy, Dumbbell, MoreVertical } from 'lucide-react'
+import { Copy, Dumbbell, MoreVertical } from 'lucide-react'
 import { useLongPress } from '@/shared/hooks/useLongPress'
 import { cn } from '@/shared/lib/utils'
 import { LEVEL_BADGE } from '../libs/levelBadge'
 import {
   countExercises,
+  countTotalSets,
   estimateRoutineMinutes,
   flattenPrescribedExercises,
-  formatPrescription,
 } from '../libs/routine.utils'
 import { useTrainingCatalog } from '../hooks/useTrainingCatalog'
 import { useTrainingDeletion } from '../hooks/useTrainingDeletion'
@@ -31,16 +31,14 @@ interface RoutineCardProps {
   routine: Routine
 }
 
-/** Cuántos ejercicios se listan antes de resumir el resto. */
-const VISIBLE_EXERCISES = 3
-
 /**
- * Tarjeta de rutina, en registro editorial.
+ * Tarjeta de rutina: el título, lo que mide y qué lleva dentro.
  *
- * Mismo lenguaje que la de estudiante: rasgos editoriales -Condensed grande,
- * corte diagonal, rejilla de metricas, flecha de destino- en tono claro y con
- * el borde del sistema. La cuna va a la altura del titulo porque es donde el
- * corte parte algo.
+ * COMPACTA, y antes no. Tenía cuña diagonal, rejilla de dos cifras y los tres
+ * primeros ejercicios con su prescripción, uno por fila: 320 px por rutina, una
+ * y media por pantalla de teléfono. La prescripción —series, repeticiones,
+ * RIR— es de la ficha; aquí sólo hace falta lo que distingue una rutina de
+ * otra, que son los ejercicios que lleva, y caben en una línea.
  *
  * El enlace estirado envuelve el título y el menú queda por encima con `z-10`.
  */
@@ -60,14 +58,18 @@ export function RoutineCard({ routine }: RoutineCardProps) {
   const [blockedReason, setBlockedReason] = useState<string | undefined>(undefined)
 
   const prescribed = flattenPrescribedExercises(routine)
-  const visible = prescribed.slice(0, VISIBLE_EXERCISES)
-  const remaining = prescribed.length - visible.length
+  const exerciseCount = countExercises(routine)
+  const sets = countTotalSets(routine)
 
   /*
-   * Los metodos distintos de `simple` se muestran porque una superserie cambia
-   * COMO se ejecuta la sesion, no solo su contenido, y es informacion que el
-   * entrenador busca al elegir una rutina.
+   * Los ejercicios EN UNA LÍNEA, separados por puntos, y truncada: es lo que
+   * distingue una rutina de otra de un vistazo. Listarlos en filas convertía la
+   * tarjeta en un índice de la ficha.
    */
+  const exerciseNames = prescribed
+    .map((item) => exercisesById.get(item.exerciseId)?.name ?? t('exercise.fallback'))
+    .join(' · ')
+
   const methods = [
     ...new Set(
       routine.blocks
@@ -78,26 +80,20 @@ export function RoutineCard({ routine }: RoutineCardProps) {
 
   return (
     <article
-      className="group relative isolate flex flex-col overflow-hidden rounded-block border border-cobalt-tint-3 bg-surface transition-colors hover:border-cobalt/40 focus-within:border-cobalt"
+      className="group relative flex flex-col gap-2 rounded-block border border-cobalt-tint-3 bg-surface p-4 transition-colors hover:border-cobalt/40 focus-within:border-cobalt"
       {...longPressHandlers}
     >
-      <div
-        aria-hidden="true"
-        className="absolute inset-x-[-15%] top-[13%] -z-10 h-[5.5rem] bg-ember/10 transition-transform duration-300 group-hover:-translate-y-0.5"
-        style={{ clipPath: 'polygon(0 40%, 100% 0, 100% 60%, 0 100%)' }}
-      />
-
-      <div className="flex items-start justify-between gap-3 p-5 pb-0">
-        {/*
-          El rotulo distinguia rutina de plantilla. La marca `isTemplate` ya no
-          existe -no gobernaba nada y, sin asignacion a estudiantes, todas las
-          rutinas eran igualmente plantillas-, asi que queda como etiqueta de
-          tipo, que sigue orientando junto a la de plan.
-        */}
-        <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-ink/45">
-          <Dumbbell className="size-3.5" />
-          {t('routine.title')}
-        </span>
+      <div className="flex items-start justify-between gap-2">
+        {/* Sin rótulo «RUTINA» encima: la pestaña en la que está ya lo dice, y
+            se llevaba una línea entera de cada tarjeta. */}
+        <h3 className="min-w-0 font-display text-[1.375rem] font-extrabold uppercase leading-none tracking-tight text-ink">
+          <Link
+            to={`/trainings/${routine.id}`}
+            className="flex min-h-11 items-center outline-none after:absolute after:inset-0 focus-visible:underline"
+          >
+            {routine.title}
+          </Link>
+        </h3>
 
         {/* `relative z-10` para quedar por encima del enlace estirado. */}
         <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
@@ -105,7 +101,7 @@ export function RoutineCard({ routine }: RoutineCardProps) {
             <button
               type="button"
               aria-label={`Acciones para ${routine.title}`}
-              className="relative z-10 -me-2 -mt-2 inline-flex size-11 shrink-0 items-center justify-center rounded-action text-ink/35 transition-colors hover:text-ink"
+              className="relative z-10 -me-2 -mt-2 inline-flex size-11 shrink-0 items-center justify-center rounded-action text-ink/50 transition-colors hover:text-ink"
             >
               <MoreVertical className="size-5" />
             </button>
@@ -115,9 +111,7 @@ export function RoutineCard({ routine }: RoutineCardProps) {
               <Dumbbell className="me-2 size-4" />
               {t('routine.view')}
             </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={() => navigate(`/calendar?routine=${routine.id}`)}
-            >
+            <DropdownMenuItem onSelect={() => navigate(`/calendar?routine=${routine.id}`)}>
               <Copy className="me-2 size-4" />
               {t('routine.useInSession')}
             </DropdownMenuItem>
@@ -152,57 +146,20 @@ export function RoutineCard({ routine }: RoutineCardProps) {
         </DropdownMenu>
       </div>
 
-      <h3 className="mt-2 px-5 font-display text-[1.75rem] font-extrabold uppercase leading-[0.94] tracking-tight text-ink">
-        <Link
-          to={`/trainings/${routine.id}`}
-          className="outline-none after:absolute after:inset-0 focus-visible:underline"
-        >
-          {routine.title}
-        </Link>
-      </h3>
+      <p className="text-[13px] text-ink/60">
+        {plural('routine.exerciseCount.one', 'routine.exerciseCount.other', exerciseCount, {
+          count: exerciseCount,
+        })}
+        {' · '}
+        {plural('routine.figures.one', 'routine.figures.other', sets, {
+          minutes: estimateRoutineMinutes(routine),
+          sets,
+        })}
+      </p>
 
-      <dl className="mt-5 grid grid-cols-2 divide-x divide-cobalt-tint-3 border-y border-cobalt-tint-3">
-        <div className="px-5 py-3">
-          <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">
-            {t('routine.exercises')}
-          </dt>
-          <dd className="metric-figures font-display text-xl font-bold text-ink">
-            {countExercises(routine)}
-          </dd>
-        </div>
-        <div className="px-5 py-3">
-          <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">
-            {t('routine.duration')}
-          </dt>
-          <dd className="metric-figures font-display text-xl font-bold text-ink">
-            {estimateRoutineMinutes(routine)}
-            <span className="ml-1 text-xs font-semibold text-ink/40">{t('routine.minutes')}</span>
-          </dd>
-        </div>
-      </dl>
+      <p className="truncate text-[13px] text-ink/85">{exerciseNames}</p>
 
-      {/* Solo los primeros. La tarjeta es un avance, no la ficha: listarlos
-          todos hacia que dos rutinas largas ocuparan la pantalla entera. */}
-      <ul className="space-y-2 px-5 py-4">
-        {visible.map((item) => (
-          <li key={item.id} className="flex items-baseline justify-between gap-4 text-sm">
-            <span className="min-w-0 truncate text-ink/70">
-              {exercisesById.get(item.exerciseId)?.name ?? t('exercise.fallback')}
-            </span>
-            <span className="metric-figures shrink-0 text-ink/40">
-              {formatPrescription(item)}
-            </span>
-          </li>
-        ))}
-
-        {remaining > 0 && (
-          <li className="metric-figures text-xs text-ink/35">
-            {plural('routine.moreOne', 'routine.moreOther', remaining, { count: remaining })}
-          </li>
-        )}
-      </ul>
-
-      <div className="mt-auto flex items-center gap-2 px-5 pb-5">
+      <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
         <span
           className={cn(
             'rounded-action border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]',
@@ -212,6 +169,11 @@ export function RoutineCard({ routine }: RoutineCardProps) {
           {t(STUDENT_LEVEL_LABEL_KEY[routine.level])}
         </span>
 
+        {/*
+         * Los metodos distintos de `simple` se muestran porque una superserie
+         * cambia COMO se ejecuta la sesion, no solo su contenido, y es
+         * informacion que el entrenador busca al elegir una rutina.
+         */}
         {methods.map((method) => (
           <span
             key={method}
@@ -220,11 +182,6 @@ export function RoutineCard({ routine }: RoutineCardProps) {
             {method}
           </span>
         ))}
-
-        <ArrowUpRight
-          aria-hidden="true"
-          className="ms-auto size-5 text-ink/25 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-ember"
-        />
       </div>
 
       <ConfirmDeleteDialog

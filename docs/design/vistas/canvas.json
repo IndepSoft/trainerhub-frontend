@@ -1,0 +1,487 @@
+{
+  "pages": [
+    {
+      "id": "pantallas",
+      "name": "Pantallas · propuesta"
+    },
+    {
+      "id": "secciones",
+      "name": "Secciones ocultas y hojas"
+    },
+    {
+      "id": "estados",
+      "name": "Vacíos, oscuro y contraste"
+    },
+    {
+      "id": "escritorio",
+      "name": "Escritorio · 1440"
+    },
+    {
+      "id": "patrones",
+      "name": "Los seis patrones"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "title": "Dashboard",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "pantallas"
+    },
+    {
+      "file": "Estudiantes.dc.html",
+      "title": "Estudiantes",
+      "x": 470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "pantallas"
+    },
+    {
+      "file": "FichaAlumno.dc.html",
+      "title": "Ficha del alumno · Resumen",
+      "x": 940,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "pantallas"
+    },
+    {
+      "file": "FichaAlumnoProgreso.dc.html",
+      "title": "Ficha del alumno · Progreso",
+      "x": 1410,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "pantallas"
+    },
+    {
+      "file": "Agenda.dc.html",
+      "title": "Agenda",
+      "x": 1880,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "pantallas"
+    },
+    {
+      "file": "Entrenamientos.dc.html",
+      "title": "Entrenamientos",
+      "x": 0,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "pantallas"
+    },
+    {
+      "file": "Rutina.dc.html",
+      "title": "Ficha de rutina",
+      "x": 470,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "pantallas"
+    },
+    {
+      "file": "NuevaRutina.dc.html",
+      "title": "Nueva rutina · paso 2",
+      "x": 940,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "pantallas"
+    },
+    {
+      "file": "Plan.dc.html",
+      "title": "Ficha de plan",
+      "x": 1410,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "pantallas"
+    },
+    {
+      "file": "Equipo.dc.html",
+      "title": "Equipo · Muro",
+      "x": 0,
+      "y": 2080,
+      "w": 390,
+      "h": 844,
+      "page": "pantallas"
+    },
+    {
+      "file": "EquipoMiembros.dc.html",
+      "title": "Equipo · Miembros",
+      "x": 470,
+      "y": 2080,
+      "w": 390,
+      "h": 844,
+      "page": "pantallas"
+    },
+    {
+      "file": "Progreso.dc.html",
+      "title": "Progreso (alumno) · Ruta",
+      "x": 940,
+      "y": 2080,
+      "w": 390,
+      "h": 844,
+      "page": "pantallas"
+    },
+    {
+      "file": "Insignias.dc.html",
+      "title": "Progreso (alumno) · Insignias",
+      "x": 1410,
+      "y": 2080,
+      "w": 390,
+      "h": 844,
+      "page": "pantallas"
+    },
+    {
+      "file": "Configuracion.dc.html",
+      "title": "Configuración",
+      "x": 1880,
+      "y": 2080,
+      "w": 390,
+      "h": 844,
+      "page": "pantallas"
+    },
+    {
+      "file": "Patrones.dc.html",
+      "title": "Los seis patrones",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 1900,
+      "print": "flow",
+      "page": "patrones"
+    },
+    {
+      "file": "FichaAlumnoSesiones.dc.html",
+      "title": "Ficha del alumno · Sesiones",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "secciones"
+    },
+    {
+      "file": "FichaAlumnoCuota.dc.html",
+      "title": "Ficha del alumno · Cuota",
+      "x": 470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "secciones"
+    },
+    {
+      "file": "EquipoRanking.dc.html",
+      "title": "Equipo · Ranking",
+      "x": 940,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "secciones"
+    },
+    {
+      "file": "EquipoInvitar.dc.html",
+      "title": "Equipo · Invitar",
+      "x": 1410,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "secciones"
+    },
+    {
+      "file": "ProgresoHistorial.dc.html",
+      "title": "Progreso (alumno) · Historial",
+      "x": 1880,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "secciones"
+    },
+    {
+      "file": "HojaSesion.dc.html",
+      "title": "Hoja · Nueva sesión",
+      "x": 0,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "secciones"
+    },
+    {
+      "file": "HojaPago.dc.html",
+      "title": "Hoja · Registrar pago",
+      "x": 470,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "secciones"
+    },
+    {
+      "file": "HojaAsignar.dc.html",
+      "title": "Hoja · Asignar un plan",
+      "x": 940,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "secciones"
+    },
+    {
+      "file": "HojaEliminar.dc.html",
+      "title": "Hoja · Confirmar borrado",
+      "x": 1410,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "secciones"
+    },
+    {
+      "file": "EscritorioEstudiantes.dc.html",
+      "title": "Estudiantes · 1440",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "escritorio"
+    },
+    {
+      "file": "EscritorioFicha.dc.html",
+      "title": "Ficha del alumno · 1440",
+      "x": 1540,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "escritorio"
+    },
+    {
+      "file": "EscritorioEquipo.dc.html",
+      "title": "Equipo · 1440",
+      "x": 0,
+      "y": 1060,
+      "w": 1440,
+      "h": 900,
+      "page": "escritorio"
+    },
+    {
+      "file": "EscritorioProgreso.dc.html",
+      "title": "Progreso (alumno) · 1440",
+      "x": 1540,
+      "y": 1060,
+      "w": 1440,
+      "h": 900,
+      "page": "escritorio"
+    },
+    {
+      "file": "EscritorioNuevaRutina.dc.html",
+      "title": "Nueva rutina · 1440",
+      "x": 0,
+      "y": 2120,
+      "w": 1440,
+      "h": 900,
+      "page": "escritorio"
+    },
+    {
+      "file": "EscritorioConfiguracion.dc.html",
+      "title": "Configuración · 1440",
+      "x": 1540,
+      "y": 2120,
+      "w": 1440,
+      "h": 900,
+      "page": "escritorio"
+    },
+    {
+      "file": "HojaSesionDetalle.dc.html",
+      "title": "Hoja · Ficha de sesión",
+      "x": 1880,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "secciones"
+    },
+    {
+      "file": "Avisos.dc.html",
+      "title": "Avisos (la campana, en móvil)",
+      "x": 0,
+      "y": 2080,
+      "w": 390,
+      "h": 844,
+      "page": "secciones"
+    },
+    {
+      "file": "EstudiantesVacio.dc.html",
+      "title": "Estudiantes · vacío",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "estados"
+    },
+    {
+      "file": "EntrenamientosVacio.dc.html",
+      "title": "Entrenamientos · vacío",
+      "x": 470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "estados"
+    },
+    {
+      "file": "AgendaVacia.dc.html",
+      "title": "Agenda · sin sesiones",
+      "x": 940,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "estados"
+    },
+    {
+      "file": "OscuroDashboard.dc.html",
+      "title": "Dashboard · oscuro",
+      "x": 0,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "estados"
+    },
+    {
+      "file": "OscuroFicha.dc.html",
+      "title": "Ficha del alumno · oscuro",
+      "x": 470,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "estados"
+    },
+    {
+      "file": "OscuroAgenda.dc.html",
+      "title": "Agenda · oscuro",
+      "x": 940,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "estados"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "criterios",
+      "x": 0,
+      "y": -300,
+      "w": 620,
+      "page": "pantallas",
+      "text": "Criterios que ordenan la propuesta:\n\n1. Una pantalla responde UNA pregunta. Lo primero que se ve es lo que se vino a hacer; lo demás está a un toque, no a un desplazamiento.\n2. Secciones internas con botones donde una pantalla junta más de tres bloques: el selector fijo bajo la cabecera (el `Tabs` que ya existe). Nunca más de cuatro secciones; la primera es siempre el resumen.\n3. Lo excepcional no vive abierto en la página: validar un hito, pausar la racha, registrar un pago son botones que abren una hoja.\n4. Listas para encontrar → filas de 64 px; tarjeta sólo donde el objeto ES el contenido.\n5. Lo largo y repetido se pliega con su resumen en la fila cerrada (semanas, bloques).\n6. Un color, un significado: Cobalt acción y estructura, Ember lo que espera algo de ti, verde hecho, ámbar en espera, rojo vencido.\n7. Lo que ya está: 44 px táctiles, 20 px de margen, una acción primaria por pantalla, Barlow Condensed para lo que se lee de un vistazo."
+    },
+    {
+      "id": "medido",
+      "x": 700,
+      "y": -300,
+      "w": 620,
+      "page": "pantallas",
+      "text": "Medido en la app real a 390 px: alto total de cada pantalla desplazándola entera (la ventana son 844).\n\nFicha del alumno   4.332 px → 4 secciones, cada una en una pantalla\nFicha de plan      2.545 px → franja + 4 semanas plegadas: 844\nProgreso (alumno)  2.542 px → 3 secciones; las 21 insignias ya no son la pantalla\nAgenda             2.302 px → lista del día, lo vacío en una línea: 844\nNueva rutina       2.189 px → 2 pasos, ajustes avanzados plegados\nConfiguración      2.189 px → lista de ajustes con su valor: 844\nEstudiantes        1.945 px → 4 filas: los cuatro alumnos a la vista\nEquipo             1.920 px → 4 secciones; la lista de miembros ya no sale dos veces\nEntrenamientos     1.490 px → de rutina y media por pantalla a tres\nDashboard          1.305 px → próximas y actividad, una a la vista y otra a un toque"
+    },
+    {
+      "id": "sin-cambios",
+      "x": 1400,
+      "y": -300,
+      "w": 520,
+      "page": "pantallas",
+      "text": "Lo que NO cambia, y por qué:\n\n· Catálogo: ya tiene pestañas (ejercicios, equipamiento, bloques, referencias) y filas; sólo hereda la fila con chevron en vez de dos iconos de acción por línea.\n· Reportes: la franja de cifras ya está aplicada y las pestañas Cobros · Retención · Actividad son justo el patrón 1.\n· Equipo técnico y Ajustes del equipo: caben en una pantalla.\n· Acceso, alta y onboarding: rediseñados en §32–33.\n· Sesión en vivo y celebración: pantallas completas con su propio lenguaje; no se tocan aquí.\n· Nuevo plan sigue el mismo esquema que Nueva rutina: paso 1 el mesociclo, paso 2 las semanas plegadas.\n\nLos formularios de la ficha del alumno que pasan a hoja: registrar pago, avisar, cambiar periodicidad (Cuota); validar hito, pausar racha, cambiar ruta (Progreso); asignar plan (Resumen)."
+    },
+    {
+      "id": "fila-1",
+      "x": 2360,
+      "y": 0,
+      "w": 300,
+      "page": "pantallas",
+      "text": "Gestión diaria. Ficha del alumno: dos de sus cuatro secciones; Sesiones es la lista actual en filas y Cuota son las tres acciones de cobro con el estado arriba."
+    },
+    {
+      "id": "fila-2",
+      "x": 1880,
+      "y": 1040,
+      "w": 390,
+      "page": "pantallas",
+      "text": "Lo que se asigna. La ficha de rutina y la de plan comparten la franja de cifras arriba; el formulario parte en dos pasos lo que hoy es una página de 2.189 px, y los ajustes que se tocan a veces —peso, tempo, indicaciones— quedan detrás de «Más ajustes» por ejercicio."
+    },
+    {
+      "id": "fila-3",
+      "x": 2360,
+      "y": 2080,
+      "w": 300,
+      "page": "pantallas",
+      "text": "Equipo, alumno y cuenta. Progreso e Insignias son la vista del alumno (barra de dos pestañas). Configuración deja de ser formularios abiertos: cada fila enseña su valor y abre su pantalla."
+    },
+    {
+      "id": "nota-patrones",
+      "x": 470,
+      "y": 0,
+      "w": 440,
+      "page": "patrones",
+      "text": "Para implementar: cuatro de los seis patrones ya existen en el código —`Tabs` (shared/ui), `MetricStrip`, las píldoras de `PageHeader`, los diálogos—. Faltan dos piezas compartidas: la fila de lista (`ListRow`) y el pliegue con resumen (`Disclosure`), más una hoja desde abajo (`Sheet` de shadcn, ya en el catálogo de componentes). Las secciones internas se enlazan con `?seccion=` en la URL, como ya hace Entrenamientos con `?tab=`, para que atrás y compartir funcionen."
+    },
+    {
+      "id": "secciones-nota",
+      "x": 0,
+      "y": -260,
+      "w": 620,
+      "page": "secciones",
+      "text": "Lo que no se ve de primeras, dibujado. Arriba, las secciones que en la página «Pantallas» quedaban tras un botón: Sesiones y Cuota de la ficha, Ranking e Invitar del equipo, Historial del alumno. Ninguna necesita desplazarse más de una pantalla.\n\nCada sección tiene su dirección —`/students/juan?seccion=cuota`— como ya hace Entrenamientos con `?tab=`: atrás vuelve a la sección anterior y un enlace desde el panel («1 cuota vencida») aterriza directamente en ella."
+    },
+    {
+      "id": "hojas-nota",
+      "x": 700,
+      "y": -260,
+      "w": 620,
+      "page": "secciones",
+      "text": "Las hojas (los modales). Criterio: en móvil, TODO diálogo sube desde abajo —asa, título en Condensed, el botón primario abajo del todo, a todo el ancho y donde llega el pulgar—, ocupa como mucho el 90 % y desplaza por dentro. En escritorio siguen siendo diálogos centrados, como ahora.\n\nSon los diálogos que ya existen, con esa forma: Nueva sesión, Agendar desde la ficha, Alta de alumno, Asignar plan, Confirmar borrado, Detalle de sesión. Y los tres formularios que hoy van abiertos en la ficha del alumno y pasan a hoja: Registrar pago, Validar hito, Pausar racha.\n\nEl borrado es la única hoja roja, y dice QUÉ se lleva por delante antes de pedir la confirmación."
+    },
+    {
+      "id": "escritorio-nota",
+      "x": 0,
+      "y": -300,
+      "w": 720,
+      "page": "escritorio",
+      "text": "Escritorio a 1440 px: la regla del proyecto es que lo compuesto para el teléfono se abre después en ancho, y si la composición no cambia es que no hay composición de escritorio. Aquí cambia así:\n\n· Las SECCIONES con botones se convierten en COLUMNAS: lo que en el móvil se elige, aquí cabe a la vez. La ficha del alumno tiene el Resumen como columna de identidad siempre a la vista y las otras tres secciones a la derecha; el equipo pone el muro a la izquierda y miembros/ranking/invitar en un panel lateral con las mismas pestañas; el progreso reparte ruta, insignias e historial en tres columnas.\n· Las LISTAS para encontrar se vuelven TABLAS: los mismos datos de la fila móvil, cada uno en su columna.\n· Los FORMULARIOS pierden los pasos: la rutina fija a la izquierda, los bloques a la derecha, y los seis campos del ejercicio en una fila —«Más ajustes» sólo existe en el teléfono—.\n· La lista de ajustes es un CARRIL a la izquierda con el grupo elegido a la derecha.\n· Las hojas vuelven a ser diálogos centrados.\n\nMismo shell que hoy: barra lateral de 256 px, barra superior de 64, contenido con 36 px de margen. La agenda no está aquí porque su escritorio —la semana en rejilla— ya existe y no cambia."
+    },
+    {
+      "id": "campana-nota",
+      "x": 470,
+      "y": 2080,
+      "w": 440,
+      "page": "secciones",
+      "text": "La campana. Hoy abre un desplegable de 320 px también en el teléfono. En móvil pasa a ser una pantalla —`/avisos`— con los avisos agrupados por día, el punto Ember en los no leídos y «marcar todos» arriba; en escritorio sigue siendo el desplegable. La ficha de sesión (a la derecha, arriba) es la hoja más usada de la app: cuatro acciones, la primaria arriba y la destructiva en rojo pero pequeña."
+    },
+    {
+      "id": "vacios-nota",
+      "x": 1410,
+      "y": 0,
+      "w": 520,
+      "page": "estados",
+      "text": "Estados vacíos. Un entrenador recién registrado ve estas tres pantallas sin nada, y ahí es donde «fácil de entender» se juega. Cada vacío dice tres cosas, siempre en el mismo orden: que no hay nada (título), qué hacer primero (una frase) y por dónde (un botón primario y un enlace). Sin ilustración ni humor: el sistema es sobrio. El panel ya lo hace con «Primeros pasos»; esto es lo mismo, en cada pantalla.\n\nLo mismo vale para una búsqueda sin resultados («Ninguna rutina se llama así»), pero con un solo enlace: «Quitar el filtro»."
+    },
+    {
+      "id": "oscuro-nota",
+      "x": 1410,
+      "y": 1040,
+      "w": 520,
+      "page": "estados",
+      "text": "Modo oscuro, con los tokens que ya define `index.css` (`.dark`): bone e ink intercambian papel, Cobalt sube al 62 % de luminosidad, los tintes suben de opacidad y los estados se aclaran. Nada de la propuesta necesita un color nuevo: las reglas de 1 px, las píldoras y la franja de cifras salen del mismo `cobalt-tint-3`, que en oscuro es más opaco a propósito.\n\nUna decisión que hay que tomar: el texto blanco sobre el Cobalt claro de los botones queda en ~3,5:1. Vale para texto grande y para los botones de 14 px en negrita; si se quiere AA estricto, el texto del botón en oscuro pasa a ink oscuro (como en un botón amarillo)."
+    },
+    {
+      "id": "contraste-nota",
+      "x": 0,
+      "y": -280,
+      "w": 720,
+      "page": "estados",
+      "text": "CONTRASTE — una decisión pendiente que la propuesta hereda de la app.\n\nLos eyebrows, las líneas de apoyo y las etiquetas de la franja van en `text-ink/45`: tinta al 45 % sobre Bone da ~3,2:1. WCAG AA pide 4,5:1 para texto normal y 3:1 sólo para texto grande (≥ 18 px, o 14 px en negrita). A 11–13 px, `ink/45` no cumple.\n\n`ink/60` da ~5,2:1 y cumple. Es un cambio de token, no de diseño: la jerarquía se mantiene porque sigue siendo más claro que el texto principal.\n\nPropuesta: texto secundario a `ink/60`; `ink/45` se reserva para lo que no es texto —iconos decorativos, separadores, marcas de posición de los campos—. En estos artboards las líneas de apoyo ya van a `ink/60`; los eyebrows siguen a `ink/45` para que se vea la diferencia y se decida."
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "estados"
+  }
+}

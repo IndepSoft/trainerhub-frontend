@@ -60,7 +60,7 @@ export function CrewSwitcher({ memberships, active, loading, onSelect }: CrewSwi
         </span>
         <span className="min-w-0">
           <span className="block text-sm font-semibold text-ink">{t('crewSwitcher.noCrew')}</span>
-          <span className="block text-xs text-ink/45">
+          <span className="block text-xs text-ink/60">
             {trainer !== null ? t('crewSwitcher.createToStart') : t('crewSwitcher.joinToStart')}
           </span>
         </span>
@@ -80,7 +80,7 @@ export function CrewSwitcher({ memberships, active, loading, onSelect }: CrewSwi
           {unread > 0 && (
             <span
               aria-label={t('crewSwitcher.unread', { count: unread })}
-              className="metric-figures absolute -end-1.5 -top-1.5 flex min-w-5 items-center justify-center rounded-full bg-ember px-1 text-[10px] font-bold leading-5 text-white"
+              className="metric-figures absolute -end-1.5 -top-1.5 flex min-w-5 items-center justify-center rounded-full bg-ember px-1 text-[10px] font-bold leading-5 text-ember-foreground"
             >
               {unread > 9 ? '9+' : unread}
             </span>
@@ -89,7 +89,7 @@ export function CrewSwitcher({ memberships, active, loading, onSelect }: CrewSwi
 
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-semibold text-ink">{crew.name}</span>
-          <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/45">
+          <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/60">
             {/* La denominación que eligió su entrenador: «tribu», «box»… */}
             {crew.denomination}
             {/* El papel, salvo el de entrenador: es el corriente y decirlo en
@@ -167,7 +167,7 @@ function CrewBadge({ name, photoUrl }: CrewBadgeProps) {
   }
 
   return (
-    <span className="flex size-9 shrink-0 items-center justify-center rounded-action bg-cobalt text-xs font-bold uppercase text-white">
+    <span className="flex size-9 shrink-0 items-center justify-center rounded-action bg-cobalt text-xs font-bold uppercase text-cobalt-foreground">
       {crewInitials(name)}
     </span>
   )

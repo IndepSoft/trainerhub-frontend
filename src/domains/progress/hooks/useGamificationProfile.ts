@@ -4,6 +4,7 @@ import { calculateLevelCompletion, experienceRemaining } from '../libs/gamificat
 import { completedSessions, levelFromExperience, streakFrom } from '../libs/progressRules'
 import { achievementsFrom } from '../data/badgeCatalog'
 import { emptyRoutePath, routePathFrom } from '../libs/routePath'
+import { historyFrom, type HistoryEntry } from '../libs/sessionHistory'
 import { cohortOf, type Cohort, type ProgressRouteCode, type StreakPause } from '@/shared/domain/entities/progress'
 import { shiftDateKey, toLocalDateKey } from '@/shared/lib/dateKey'
 import type { Achievement } from '../types/achievement.types'
@@ -31,6 +32,8 @@ const EMPTY_PATH: PathNode[] = emptyRoutePath()
 
 const EMPTY_ACHIEVEMENTS: Achievement[] = achievementsFrom([])
 
+const EMPTY_HISTORY: HistoryEntry[] = []
+
 interface UseGamificationProfileResult {
   profile: GamificationProfile
   /** La ruta de desarrollo y su sendero. Hybrid a cero sin equipo. */
@@ -44,6 +47,8 @@ interface UseGamificationProfileResult {
   achievements: Achievement[]
   /** Sesiones cerradas. */
   completedCount: number
+  /** Lo cerrado con su puntuación, de lo más reciente a lo más antiguo. */
+  history: HistoryEntry[]
   /** La suma de puntos de todas sus sesiones. De aquí sale el nivel. */
   totalPoints: number
   /** Fracción de 0 a 1 del nivel en curso. Derivada, nunca almacenada. */
@@ -75,6 +80,7 @@ export function useGamificationProfile(studentId?: string, birthDate: string | n
   const [wildcards, setWildcards] = useState(0)
   const [canCoverYesterday, setCanCoverYesterday] = useState(false)
   const [completedCount, setCompletedCount] = useState(0)
+  const [history, setHistory] = useState<HistoryEntry[]>(EMPTY_HISTORY)
   const [totalPoints, setTotalPoints] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -88,6 +94,7 @@ export function useGamificationProfile(studentId?: string, birthDate: string | n
       setWildcards(0)
       setCanCoverYesterday(false)
       setCompletedCount(0)
+      setHistory(EMPTY_HISTORY)
       setTotalPoints(0)
       setLoading(false)
       return
@@ -118,6 +125,7 @@ export function useGamificationProfile(studentId?: string, birthDate: string | n
       setRoute(routeProgress.routeCode)
       setPath(routePathFrom(routeProgress))
       setCompletedCount(completedSessions(sessions).length)
+      setHistory(historyFrom(sessions, scores))
       setTotalPoints(points)
     } catch (caught) {
       setError(describeError(caught, t, 'progress.error'))
@@ -160,6 +168,7 @@ export function useGamificationProfile(studentId?: string, birthDate: string | n
     cohort: cohortOf(birthDate),
     achievements,
     completedCount,
+    history,
     totalPoints,
     levelCompletion: calculateLevelCompletion(profile.level),
     experienceToNextLevel: experienceRemaining(profile.level),

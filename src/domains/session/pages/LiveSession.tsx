@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/shared/ui/button'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
-import { container } from '@/app/container'
 import { describeError } from '@/shared/i18n/errorMessages'
 import { readIntendedPath } from '@/auth/libs/intendedPath'
 import { CardioSession } from '../components/CardioSession'
 import { StrengthSession } from '../components/StrengthSession'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { useSessionToRun } from '../hooks/useSessionToRun'
+import { useCompleteSession } from '../hooks/useCompleteSession'
 import type { SessionResult } from '@/shared/domain/entities/session'
 
 /**
@@ -40,6 +40,7 @@ export default function LiveSession() {
   const origin = readIntendedPath(location.state)
   const [finishError, setFinishError] = useState<string | null>(null)
   const { session, routine, studentName, loading } = useSessionToRun(sessionId)
+  const { completeSession } = useCompleteSession()
 
   // Mientras carga no se pinta nada: `session === null` no significa «no existe»
   // hasta que `loading` es falso.
@@ -51,7 +52,7 @@ export default function LiveSession() {
         <p className="font-display text-2xl font-extrabold uppercase text-ink">
           {t('liveSession.notFound')}
         </p>
-        <p className="text-sm text-ink/50">{t('liveSession.notFoundHint')}</p>
+        <p className="text-sm text-ink/60">{t('liveSession.notFoundHint')}</p>
         <Button asChild variant="outline">
           <Link to="/calendar">{t('liveSession.backToCalendar')}</Link>
         </Button>
@@ -73,7 +74,7 @@ export default function LiveSession() {
             ? t('liveSession.alreadyDone')
             : t('liveSession.cancelled')}
         </p>
-        <p className="text-sm text-ink/50">{t('liveSession.closedHint')}</p>
+        <p className="text-sm text-ink/60">{t('liveSession.closedHint')}</p>
         <Button asChild variant="outline">
           <Link to={origin ?? '/calendar'}>{t('liveSession.back')}</Link>
         </Button>
@@ -100,7 +101,7 @@ export default function LiveSession() {
      * queda aqui y lo dice, en vez de celebrar algo que no ocurrio.
      */
     try {
-      await container.sessions.complete(session.id, result)
+      await completeSession(session.id, result)
     } catch (caught) {
       setFinishError(describeError(caught, t, 'liveSession.finishError'))
       return

@@ -44,6 +44,9 @@ export default {
         // repartidos por los dominios.
         cobalt: {
           DEFAULT: 'hsl(var(--cobalt))',
+          // El texto que va ENCIMA de Cobalt. Blanco en claro y tinta en
+          // oscuro, donde Cobalt sube y el blanco se queda en 3,2:1.
+          foreground: 'hsl(var(--primary-foreground))',
           lift: 'hsl(var(--cobalt-lift))',
           tint: 'hsl(var(--cobalt-tint-1))',
           'tint-2': 'hsl(var(--cobalt-tint-2))',
@@ -51,6 +54,9 @@ export default {
         },
         ember: {
           DEFAULT: 'hsl(var(--ember))',
+          // Tinta en los dos temas: blanco sobre Ember da 3,29 en claro y
+          // 2,78 en oscuro, y son justo las cifras de los contadores de 9 px.
+          foreground: 'hsl(var(--ember-foreground))',
           deep: 'hsl(var(--ember-deep))',
         },
         ink: 'hsl(var(--ink))',

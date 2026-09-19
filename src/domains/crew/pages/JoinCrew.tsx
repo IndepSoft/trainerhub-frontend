@@ -11,6 +11,7 @@ import { useJoinCrew, type JoinOutcome } from '../hooks/useJoinCrew'
 import { JOIN_CODE_PARAM } from '@/shared/lib/joinLink'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 
 /**
  * Unirse a un equipo con el código del QR.
@@ -76,7 +77,7 @@ export default function JoinCrew() {
         <PageHeader.Title>{t('join.title')}</PageHeader.Title>
       </PageHeader>
 
-      <div className="flex-1 overflow-auto">
+      <div className={PAGE_SCROLL}>
         <div className="mx-auto max-w-md space-y-6 px-5 py-6">
           <p className="text-sm text-ink/60">{t('join.intro')}</p>
 
@@ -149,13 +150,13 @@ function JoinResult({ outcome, onEnter }: JoinResultProps) {
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-bone px-6 text-center">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/45">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
         {outcome.crew.denomination} · {outcome.crew.name}
       </p>
       <h1 className="font-display text-3xl font-extrabold uppercase leading-none tracking-tight text-ink">
         {t(titleKeys[outcome.kind])}
       </h1>
-      <p className="max-w-sm text-sm text-ink/55">{t(descriptionKeys[outcome.kind])}</p>
+      <p className="max-w-sm text-sm text-ink/60">{t(descriptionKeys[outcome.kind])}</p>
 
       <Button className="mt-2" onClick={onEnter}>
         {outcome.kind === 'pending' ? t('common.understood') : t('join.seeProgress')}

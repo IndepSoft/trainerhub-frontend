@@ -1,7 +1,12 @@
 import type { ReactNode } from 'react'
-import type { LucideIcon } from 'lucide-react'
+import { MoreHorizontal, type LucideIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/shared/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/shared/ui/dropdown-menu'
 import { cn } from '@/shared/lib/utils'
 
 /**
@@ -50,7 +55,7 @@ function PageHeaderEyebrow({ children, className }: PageHeaderSlotProps) {
   return (
     <p
       className={cn(
-        '[grid-area:eyebrow] min-w-0 self-center truncate text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/45',
+        '[grid-area:eyebrow] min-w-0 self-center truncate text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60',
         className
       )}
     >
@@ -80,7 +85,7 @@ function PageHeaderTitle({ children, className }: PageHeaderSlotProps) {
  * páginas sin descripción —que son casi todas— habrían pagado esos píxeles.
  */
 function PageHeaderDescription({ children, className }: PageHeaderSlotProps) {
-  return <p className={cn('mt-2 text-sm text-ink/50', className)}>{children}</p>
+  return <p className={cn('mt-2 text-sm text-ink/60', className)}>{children}</p>
 }
 
 /**
@@ -288,6 +293,59 @@ function PageHeaderSecondaryAction({
   )
 }
 
+interface PageHeaderOverflowMenuProps {
+  /**
+   * El nombre completo del menu, con a quien o a que se refiere: «Mas acciones
+   * para Juan Perez». Es lo unico que lee un lector de pantalla, porque el
+   * disparador no tiene texto.
+   */
+  label: string
+  /** `DropdownMenuItem`s. El menu no los envuelve ni los ordena. */
+  children: ReactNode
+  /**
+   * Abierto o cerrado, cuando lo decide quien lo usa. Hace falta en cuanto una
+   * entrada abre un dialogo: ver `StudentActions`.
+   */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}
+
+/**
+ * Lo que no cabe en la fila: un circulo de 44 px con tres puntos.
+ *
+ * TERCERA CATEGORIA, no una secundaria mas. La primaria es lo que se hace a
+ * diario y la secundaria lo que se hace de vez en cuando; aqui va lo que se
+ * hace una vez en la vida de un objeto —editarlo, darlo de baja, borrarlo— y
+ * que ademas conviene que cueste un toque de mas.
+ *
+ * Existe porque esas acciones se quedaron sin sitio al pasar el padron de
+ * tarjetas a filas: vivian en el menu de cada tarjeta, y la fila no tiene menu
+ * a proposito —lo unico que hace una fila es llevar a la ficha—. Estan en la
+ * ficha, que es donde se decide sobre una persona.
+ */
+function PageHeaderOverflowMenu({
+  label,
+  children,
+  open,
+  onOpenChange,
+}: PageHeaderOverflowMenuProps) {
+  return (
+    <DropdownMenu open={open} onOpenChange={onOpenChange}>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          aria-label={label}
+          className="w-11 rounded-action px-0"
+        >
+          <MoreHorizontal />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">{children}</DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
 export const PageHeader = Object.assign(PageHeaderRoot, {
   Eyebrow: PageHeaderEyebrow,
   Title: PageHeaderTitle,
@@ -296,4 +354,5 @@ export const PageHeader = Object.assign(PageHeaderRoot, {
   Content: PageHeaderContent,
   PrimaryAction: PageHeaderPrimaryAction,
   SecondaryAction: PageHeaderSecondaryAction,
+  OverflowMenu: PageHeaderOverflowMenu,
 })

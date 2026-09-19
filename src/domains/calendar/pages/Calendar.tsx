@@ -7,17 +7,22 @@ import {
 } from '@/shared/ui/select'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Plus } from 'lucide-react'
+import { CalendarDays, Plus } from 'lucide-react'
+import { Button } from '@/shared/ui/button'
+import { EmptyState } from '@/shared/components/EmptyState'
+import { todayKey, toLocalDateKey } from '@/shared/lib/dateKey'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { CreateSessionModal } from '../components/CreateSessionModal'
-import { SessionDetailsModal, type SessionDetailsChanges } from '../components/SessionDetailsModal'
+import { SessionDetailsModal } from '../components/SessionDetailsModal'
 import { CalendarDirectionControls, CalendarTodayButton } from '../components/CalendarNavigation'
 import { WeekView } from '../components/WeekView'
 import { DayView } from '../components/DayView'
+import { DayList } from '../components/DayList'
 import { SessionSummary } from '../components/SessionSummary'
 import { useCalendar } from '../hooks/useCalendar'
 import { useSchedulableStudents } from '../hooks/useSchedulableStudents'
-import { container } from '@/app/container'
+import { useSessionDetailsActions } from '../hooks/useSessionDetailsActions'
+import { useSendNotice } from '@/shared/hooks/useSendNotice'
 import { useViewerContext } from '@/app/ViewerContext'
 import { activeLocale } from '@/shared/i18n/activeLocale'
 import {
@@ -27,8 +32,24 @@ import {
   formatWeekRange,
   parseLocalDateKey,
 } from '../libs/calendar.utils'
-import type { CalendarViewMode, Session } from '../types/calendar.types'
+import { cn } from '@/shared/lib/utils'
+import type {
+  CalendarViewMode,
+  DayLayout,
+  Session,
+  SessionDetailsChanges,
+} from '../types/calendar.types'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
+import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
+import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
+
+/** Las dos formas de ver un día, en el orden en que se ofrecen. */
+const DAY_LAYOUTS = ['list', 'schedule'] as const
+
+const DAY_LAYOUT_LABEL_KEY: Record<DayLayout, TranslationKey> = {
+  list: 'calendar.layout.list',
+  schedule: 'calendar.layout.schedule',
+}
 
 export default function Calendar() {
   const { t } = useTranslation()
@@ -73,10 +94,13 @@ export default function Calendar() {
   )
 
   const {
+    loading: loadingSessions,
     currentDate,
     weekDates,
     viewMode,
     canChooseViewMode,
+    dayLayout,
+    setDayLayout,
     selectedSession,
     countByStatus,
     setViewMode,
@@ -93,6 +117,9 @@ export default function Calendar() {
     : formatCompactDate(currentDate)
   const fullPeriodLabel = isWeek ? formatWeekRange(weekDates) : formatFullDate(currentDate)
 
+  const { saveDetails, removeSession } = useSessionDetailsActions()
+  const { sendNotice } = useSendNotice()
+
   /*
    * Ahora cambia de verdad. Antes lanzaba un aviso y no tocaba nada: la sesion
    * nacia pendiente y moria pendiente, asi que los contadores de la agenda solo
@@ -101,17 +128,7 @@ export default function Calendar() {
    */
   const handleSave = async (sessionId: string, changes: SessionDetailsChanges) => {
     if (selectedSession === null || selectedSession.id !== sessionId) return
-    /*
-     * Una sola escritura con la sesion entera y lo cambiado encima. `update`
-     * pide la sesion completa -es lo que el formulario de edicion manda-, y
-     * reutilizarlo evita un metodo del puerto solo para las notas.
-     */
-    const { id: _sessionId, crewId: _crewId, ...current } = selectedSession
-    await container.sessions.update(sessionId, { ...current, ...changes })
-  }
-
-  const handleDelete = async (sessionId: string) => {
-    await container.sessions.remove(sessionId)
+    await saveDetails(selectedSession, changes)
   }
 
   /*
@@ -121,7 +138,7 @@ export default function Calendar() {
    */
   const handleSendReminder = async (session: Session) => {
     if (session.studentId === null) return
-    await container.notices.send({
+    await sendNotice({
       studentId: session.studentId,
       kind: 'general',
       body: t('sessionDetails.reminderBody', {
@@ -225,36 +242,110 @@ export default function Calendar() {
         />
       )}
 
+      {/*
+        CÓMO SE VE EL DÍA, fijo bajo la cabecera y sólo cuando hay un día que
+        ver: en la rejilla semanal no hay nada que elegir. Va aquí y no dentro
+        del contenedor que desplaza porque se cambia de vista mirando la misma
+        franja horaria.
+      */}
+      {viewMode === 'day' && (
+        <div
+          role="group"
+          aria-label={t('calendar.dayLayout')}
+          className="flex shrink-0 gap-1 rounded-action bg-cobalt-tint/60 p-0.5 px-5 md:mx-5 md:max-w-xs md:px-0.5"
+        >
+          {DAY_LAYOUTS.map((candidate) => (
+            <button
+              key={candidate}
+              type="button"
+              aria-pressed={candidate === dayLayout}
+              onClick={() => setDayLayout(candidate)}
+              className={cn(
+                'inline-flex min-h-11 flex-1 items-center justify-center rounded-action text-[13px] font-semibold transition-colors',
+                candidate === dayLayout
+                  ? 'bg-surface text-ink shadow-sm'
+                  : 'text-ink/60 hover:text-cobalt'
+              )}
+            >
+              {t(DAY_LAYOUT_LABEL_KEY[candidate])}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Contenedor de scroll de la pagina. Es un div y no un <main> a
           proposito: el landmark <main> ya lo pinta SidebarInset desde
           RootLayout, y anidar uno dentro de otro es HTML invalido -solo se
           admite uno por documento- ademas de confundir a los lectores de
           pantalla. */}
-      <div className="flex-1 overflow-auto">
+      <div className={PAGE_SCROLL}>
         <div className="max-w-8xl mx-auto pb-4">
           {/* Sin envoltura <Card>, por el mismo motivo que en Reportes y
               Progreso: su relleno se sumaba al de la pagina y al de cada tramo
               horario, y dejaba el bloque de una sesion en 173 px a 375 px de
               ancho. La pagina ya es el marco. */}
           <section>
-            {viewMode === 'week' ? (
+            {viewMode === 'week' && (
               <WeekView
                 weekDates={weekDates}
                 getSessionsOfDay={getSessionsOfDay}
                 onSelectSession={selectSession}
-              studentsById={studentsById}
+                studentsById={studentsById}
               />
-            ) : (
+            )}
+
+            {viewMode === 'day' && dayLayout === 'list' && (
+              <DayList
+                date={currentDate}
+                /* Mientras carga, nada: el vacío diría «hoy no hay sesiones» a
+                   quien tiene cuatro. */
+                empty={
+                  loadingSessions ? null : (
+                  <EmptyState
+                    icon={CalendarDays}
+                    title={
+                      toLocalDateKey(currentDate) === todayKey()
+                        ? t('calendar.dayEmptyToday')
+                        : t('calendar.dayEmptyOther')
+                    }
+                    body={t('calendar.dayEmpty')}
+                  >
+                    {can('schedule.manage') && (
+                      <Button type="button" onClick={() => setIsCreateOpen(true)}>
+                        {t('newSession.open')}
+                      </Button>
+                    )}
+                    {/* La salida barata: casi siempre lo que se busca está en
+                        el día siguiente, y volver a la cabecera a pulsar la
+                        flecha es el gesto que esta pantalla ya pide dos veces. */}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-cobalt"
+                      onClick={goToNext}
+                    >
+                      {t('calendar.nextDay')}
+                    </Button>
+                  </EmptyState>
+                  )
+                }
+                getSessionsOfDay={getSessionsOfDay}
+                onSelectSession={selectSession}
+                studentsById={studentsById}
+              />
+            )}
+
+            {viewMode === 'day' && dayLayout === 'schedule' && (
               <DayView
                 date={currentDate}
                 getSessionsOfDay={getSessionsOfDay}
                 onSelectSession={selectSession}
-              studentsById={studentsById}
+                studentsById={studentsById}
               />
             )}
           </section>
 
-          <SessionSummary countByStatus={countByStatus} />
+          <SessionSummary countByStatus={countByStatus} weekDates={weekDates} />
         </div>
       </div>
 
@@ -265,7 +356,7 @@ export default function Calendar() {
           onOpenChange={(open) => !open && selectSession(null)}
           onSave={handleSave}
           onEdit={setEditingSession}
-          onDelete={handleDelete}
+          onDelete={removeSession}
           onSendReminder={handleSendReminder}
         />
       )}

@@ -20,6 +20,9 @@ import { playRestChime, primeRestChime } from '@/shared/lib/restChime'
  * descanso de dos minutos es un ajuste a ciegas: aquí se elige el sonido y aquí
  * se oye. De paso, el toque desbloquea el audio del navegador, así que quien
  * pasa por Ajustes llega a la sesión con el aviso ya listo.
+ *
+ * Es una FILA como las demás (§49), y no una tarjeta con borde: lo que la
+ * distingue es lo que hace, no el marco.
  */
 export function SoundToggle() {
   const { t } = useTranslation()
@@ -38,27 +41,20 @@ export function SoundToggle() {
   const Icon = soundEnabled ? Volume2 : VolumeX
 
   return (
-    <div>
+    <li className="relative flex flex-col border-b border-cobalt-tint-3 py-3">
       <button
         type="button"
         role="switch"
         aria-checked={soundEnabled}
         onClick={handleToggle}
-        className={cn(
-          'flex min-h-11 w-full items-center gap-3 rounded-action border px-3 py-2 text-start transition-colors',
-          soundEnabled
-            ? 'border-cobalt/50 bg-cobalt-tint'
-            : 'border-cobalt-tint-3 hover:border-cobalt/40'
-        )}
+        className="flex min-h-11 items-center gap-3 text-start outline-none"
       >
-        <Icon className={cn('size-4 shrink-0', soundEnabled ? 'text-cobalt' : 'text-ink/40')} />
+        <Icon
+          aria-hidden="true"
+          className={cn('size-4 shrink-0', soundEnabled ? 'text-cobalt' : 'text-ink/40')}
+        />
 
-        <span
-          className={cn(
-            'min-w-0 flex-1 text-xs font-semibold',
-            soundEnabled ? 'text-cobalt' : 'text-ink/50'
-          )}
-        >
+        <span className="min-w-0 flex-1 text-[15px] font-semibold leading-tight text-ink">
           {t('settings.sound.restChime')}
         </span>
 
@@ -80,13 +76,13 @@ export function SoundToggle() {
         </span>
       </button>
 
-      <p className="mt-2 text-xs text-ink/45">
+      <p className="ms-7 mt-1 text-xs text-ink/60">
         {/* Las dos limitaciones que no se pueden arreglar desde aquí, dichas
             donde se decide: el silenciador del teléfono manda por encima de
             esto, y en iOS el sonido es el ÚNICO aviso que llega porque Apple
             nunca implementó la vibración en el navegador. */}
         {t('settings.sound.hint')}
       </p>
-    </div>
+    </li>
   )
 }

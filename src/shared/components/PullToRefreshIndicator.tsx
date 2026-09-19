@@ -38,7 +38,7 @@ export function PullToRefreshIndicator({
       <RefreshCw
         className={cn(
           'size-5',
-          willRefresh || isRefreshing ? 'text-cobalt' : 'text-ink/30',
+          willRefresh || isRefreshing ? 'text-cobalt' : 'text-ink/60',
           // `motion-safe` para que con movimiento reducido no gire.
           isRefreshing && 'motion-safe:animate-spin'
         )}

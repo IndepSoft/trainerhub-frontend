@@ -70,7 +70,9 @@ export function useFirstSteps(crew: Crew | null): UseFirstStepsResult {
       labelKey: 'firstSteps.activation',
       done: crew.subscriptionStatus === 'active',
       noteKey: activationRequested ? 'firstSteps.activationPending' : undefined,
-      to: '/crew',
+      // Donde se explica y se pide: es la sección que ocupa el sitio del QR
+      // mientras la suscripción no está activa.
+      to: '/crew?seccion=invitar',
     },
     { id: 'routine', labelKey: 'firstSteps.routine', done: counts.routines > 0, to: '/trainings/new' },
     { id: 'student', labelKey: 'firstSteps.student', done: counts.students > 0, to: '/students' },

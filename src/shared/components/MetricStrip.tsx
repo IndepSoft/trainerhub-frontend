@@ -4,11 +4,13 @@ import { cn } from '@/shared/lib/utils'
 interface MetricStripProps {
   children: ReactNode
   /** Columnas desde `sm`. En móvil son siempre dos. */
-  columns: 3 | 4
+  columns: 2 | 3 | 4
   className?: string
 }
 
 const COLUMNS_CLASS: Record<MetricStripProps['columns'], string> = {
+  // Dos en todas partes: no es que no crezca, es que sólo hay dos cifras.
+  2: 'sm:grid-cols-2',
   3: 'sm:grid-cols-3',
   4: 'sm:grid-cols-2 lg:grid-cols-4',
 }

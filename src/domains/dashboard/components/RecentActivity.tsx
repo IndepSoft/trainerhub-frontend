@@ -24,7 +24,7 @@ export function RecentActivity({ activities }: RecentActivityProps) {
       {/* Vacia se explica, en vez de dejar un titulo suelto: al empezar no hay
           nada completado todavia, y un hueco mudo se lee como un fallo. */}
       {activities.length === 0 && (
-        <p className="pt-5 text-sm text-ink/40">
+        <p className="pt-5 text-sm text-ink/60">
           {t('dashboard.recentEmpty')}
         </p>
       )}

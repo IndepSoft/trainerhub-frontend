@@ -113,6 +113,14 @@ veinte caracteres por línea el texto deja de leerse con comodidad.
 de plataforma para una app instalable —44 pt en Apple HIG, 48 dp en Material— y
 va por encima del mínimo de 24 px que exige WCAG 2.2 AA.
 
+**Contraste AA en los dos temas, medido** (`CAMBIOS` §51). Todo texto que se lee
+va a 4,5:1 —3:1 si es grande— contra el fondo que tiene detrás de verdad. En la
+práctica: el suelo del texto es `text-ink/60` —de `/55` para abajo no pasa en
+claro—, un botón de sólo icono no baja de `/50`, y el texto encima de un color va
+en su `-foreground` (`text-cobalt-foreground`, `text-ember-foreground`), nunca en
+`text-white`. Lo decorativo con `aria-hidden` queda fuera. Lo vigila la prueba
+`contraste`, que recorre ocho pantallas en claro y en oscuro.
+
 **Seguimiento del trabajo:** [`docs/PWA-SEGUIMIENTO.md`](docs/PWA-SEGUIMIENTO.md)
 lleva la lista de pasos con su estado.
 
@@ -334,6 +342,12 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   sobre `/students`, `/trainings`, `/dashboard` y `/reports`. No es la
   seguridad, que sigue siendo RLS: es no abrir una pantalla vacía con controles
   que fallan uno a uno.
+- La AGENDA enseña el día como LISTA de filas (`CAMBIOS` §47) y guarda la
+  rejilla de horas detrás de «Horario»: el día entero cabe sin desplazar, y lo
+  vacío se cuenta en una línea —«Libre hasta las 18:00», desde dos horas de
+  hueco y medido desde que TERMINA la anterior—. El resumen de estados habla de
+  LA SEMANA QUE SE MIRA, no de todas las sesiones que existen, y un estado sin
+  sesiones no se pinta.
 - NINGÚN AVISO ANTES DE ESCRIBIR. El `toast` de éxito va después de que el
   puerto resuelva, y el fallo se dice donde se hizo la acción. Antes la agenda
   celebraba cambios que la base había rechazado.
@@ -360,12 +374,63 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   viaje por el correo. Con sesión abierta, `claim_membership` hace lo mismo con
   el código tecleado. El retorno a la ruta pretendida tras confirmar el correo
   sigue sin existir: el enlace aterriza en `/`.
-- La página del equipo tiene miembros, solicitudes, QR, muro y ranking.
-  **Faltan los eventos.** Los entrenamientos grupales NO son una entidad nueva
-  —`Session` ya tiene `kind: 'group'`—; un evento, una carrera o una quedada, sí.
+- La página del equipo tiene miembros, solicitudes, QR, muro y ranking, en
+  CUATRO SECCIONES y con el muro de entrada (`CAMBIOS` §45): las solicitudes
+  viven en «Miembros» con su cuenta en la pestaña, y el ranking apagado o el QR
+  sin suscripción no tienen sección. **Faltan los eventos.** Los entrenamientos
+  grupales NO son una entidad nueva —`Session` ya tiene `kind: 'group'`—; un
+  evento, una carrera o una quedada, sí.
+- El progreso va en RUTA, LOGROS e HISTORIAL (§45), con el nivel y la racha
+  fuera del contenedor que desplaza. El historial sale de lo que
+  `useGamificationProfile` ya lee, no de una consulta nueva. **Falta «las más
+  cerca»**: el avance hacia una insignia por conseguir no lo publica el
+  servidor, y dibujarlo en el cliente sería inventarse la barra.
 - El muro cuenta lo no leído sobre la insignia del equipo —`countUnread` y
   `markAllRead` en el puerto, `crew_wall_reads` detrás— y abrir el muro lo da
   por leído. Las notificaciones push son otro trabajo.
+- La NAVEGACIÓN DE MÓVIL es una **píldora que flota sobre el contenido**
+  (`CAMBIOS` §36 la decide, §37 la hace). La etiqueta la lleva SÓLO la pestaña
+  activa —cinco en versalitas no caben, está medido— y el nombre de las demás
+  viaja en `aria-label`. Como la píldora ya no ocupa sitio en el reparto flex,
+  **el hueco para que no tape nada se declara una vez**: `RootLayout` fija
+  `--bottom-bar-space` y cada contenedor de desplazamiento lo hereda por
+  `PAGE_SCROLL`, que es también el único sitio donde vive `flex-1
+  overflow-auto`. Una página nueva usa `PAGE_SCROLL` y no se entera de la
+  barra; si escribe las clases a mano, su última fila quedará tapada.
+- El MARGEN DE PÁGINA en móvil lo pone la página, UNA vez: `px-5`, el de
+  `PageHeader` (`CAMBIOS` §39). `RootLayout` no pone relleno bajo `md`;
+  una página que no ponga el suyo pega el texto al borde.
+- Una lista para ENCONTRAR algo son FILAS, no tarjetas (`CAMBIOS` §38):
+  `ListRow`, 64 px, toda la fila es el enlace y no lleva menú. Lo que se
+  decide sobre el objeto —editar, dar de baja, borrar— vive en su ficha, en
+  `PageHeader.OverflowMenu`; si una entrada abre un diálogo, el menú se
+  controla y se cierra a mano (ver `StudentActions`). La tarjeta se queda
+  para donde el objeto ES el contenido. Una PANTALLA LARGA va en secciones
+  fijas bajo la cabecera, con la sección en la dirección (`?seccion=`, siempre
+  con `replace`): lo hace `useUrlSection`, que lo comparten la ficha, el equipo,
+  el progreso, los entrenamientos y su catálogo, y recibe la lista de las
+  secciones que EXISTEN AHORA —una dirección que nombre otra cae en la primera—
+  (`CAMBIOS` §40, §45 y §46). Una TARJETA de lista es compacta: título, una
+  línea de medidas y una línea de lo que la distingue, truncada (§46). El
+  detalle es de la ficha, y su título mide 44 px aunque el enlace estirado
+  cubra la tarjeta entera. Lo LARGO Y REPETIDO
+  —semanas de un plan— se pliega con `CollapsibleRow`, y la fila cerrada
+  resume lo que hay dentro (§41). Las cifras de un objeto van en
+  `MetricStrip` con `MetricFigure`, no apiladas. Un FORMULARIO LARGO va en
+  pasos, con los errores visibles desde todos; en cada elemento repetido, lo
+  que se decide siempre a la vista y lo de a veces detrás de «Más ajustes»,
+  abierto si ya tiene valor (§42). El valor de un desplegable se estrecha con
+  la guarda de su entidad (`isTrainingLevel`, `isBlockMethod`…), nunca con
+  `as`. Y en MÓVIL TODO DIÁLOGO ES UNA HOJA que sube desde abajo (§44): lo
+  hace `shared/ui/dialog.tsx`, así que un diálogo nuevo ya nace siéndolo. Sus
+  botones van en `DialogFooter`, que los apila con el primario arriba y lo
+  deja pegado abajo mientras el cuerpo se desplaza. Una PANTALLA DE AJUSTES
+  son filas que dicen cómo está cada cosa, con lo que se rellena en una hoja
+  y las opciones de una sola respuesta en `ChoiceRow` (§49); lo que hay que
+  saber antes de elegir se lee DONDE se elige, no en la fila. Un VACÍO de
+  pantalla es `EmptyState` (§50): dice qué va ahí y por dónde se empieza, con
+  hasta dos salidas. «Ningún resultado» NO es un vacío: ahí lo que hace falta
+  es quitar el filtro.
 - TIEMPO REAL en **todo lo que la aplicación escucha**, por `postgres_changes`
   con `subscribeToTable` / `subscribeToTables`. Quince tablas publicadas: las
   de pertenencia e identidad —`crews`, `crew_staff`, `students`, `profiles`—
@@ -502,7 +567,9 @@ Registrada para que no se confunda con trabajo nuevo. Detalle y contexto en
   cuándo**, no cuánto. Poner precio exige decidir moneda y modelo de tarifas, y
   nada de eso está decidido. Ver `StudentSubscription`.
 - Los avisos son una bandeja **dentro** de la aplicación: quien no la abra no se
-  entera. Correo o push son otro trabajo, y otro consentimiento.
+  entera. Correo o push son otro trabajo, y otro consentimiento. Viven en su
+  PANTALLA —`/notices`, agrupada en hoy y antes (`CAMBIOS` §48)—, a la que lleva
+  la campana; no tienen entrada en la navegación a propósito.
 - El lint esta en cero. `react-refresh/only-export-components` queda desactivada
   **solo** en `src/shared/ui/**`, porque el patron de shadcn -componente y
   variantes de `cva` en el mismo fichero- choca con ella y no es corregible sin

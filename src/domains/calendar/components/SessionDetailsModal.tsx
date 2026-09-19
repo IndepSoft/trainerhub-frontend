@@ -39,14 +39,8 @@ import { SESSION_STATUS, SESSION_STATUS_ENTRIES, presentationOf } from '../libs/
 import { isMissedSession } from '@/shared/domain/sessionLifecycle'
 import { todayKey } from '@/shared/lib/dateKey'
 import { getStudentInitials, parseLocalDateKey } from '../libs/calendar.utils'
-import type { Session, SessionStatus } from '../types/calendar.types'
+import type { Session, SessionDetailsChanges, SessionStatus } from '../types/calendar.types'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
-
-/** Lo que esta ficha puede cambiar sin abrir el formulario entero. */
-export interface SessionDetailsChanges {
-  status: SessionStatus
-  notes: string
-}
 
 interface SessionDetailsModalProps {
   session: Session
@@ -233,7 +227,7 @@ export function SessionDetailsModal({
               <DialogTitle className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight text-ink">
                 {session.title}
               </DialogTitle>
-              <p className="mt-1.5 text-sm text-ink/50">{session.category}</p>
+              <p className="mt-1.5 text-sm text-ink/60">{session.category}</p>
             </div>
 
             <span
@@ -260,7 +254,7 @@ export function SessionDetailsModal({
           </Button>
 
           {!canStart && (
-            <p className="mt-2 text-center text-xs text-ink/55">
+            <p className="mt-2 text-center text-xs text-ink/60">
               {session.status === 'completed'
                 ? t('sessionDetails.alreadyDone')
                 : t('sessionDetails.cannotStart')}
@@ -270,22 +264,22 @@ export function SessionDetailsModal({
           {/* Su dia paso sin cerrarla: se dice, y se dice que hacer. Iniciarla
               sigue valiendo -una sesion del martes se cierra el miercoles-. */}
           {isMissed && (
-            <p className="mt-2 text-center text-xs text-ink/55">{t('sessionDetails.missedHint')}</p>
+            <p className="mt-2 text-center text-xs text-ink/60">{t('sessionDetails.missedHint')}</p>
           )}
         </div>
 
         <dl className="grid grid-cols-2 divide-x divide-cobalt-tint-3 border-y border-cobalt-tint-3">
           <div className="px-5 py-4">
-            <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">
+            <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/60">
               {t('sessionDetails.when')}
             </dt>
             <dd className="metric-figures mt-1 text-sm font-semibold text-ink">
               {session.time}
-              <span className="ml-1.5 font-normal text-ink/50">
+              <span className="ml-1.5 font-normal text-ink/60">
                 {session.durationMinutes} min
               </span>
             </dd>
-            <dd className="mt-0.5 text-xs text-ink/45">
+            <dd className="mt-0.5 text-xs text-ink/60">
               {parseLocalDateKey(session.date).toLocaleDateString(
                 activeLocale(),
                 {
@@ -298,14 +292,14 @@ export function SessionDetailsModal({
           </div>
 
           <div className="px-5 py-4">
-            <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">
+            <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/60">
               {t('sessionDetails.whereWho')}
             </dt>
             <dd className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-ink">
               <MapPin className="size-3.5 shrink-0 text-cobalt" />
               <span className="truncate">{session.location}</span>
             </dd>
-            <dd className="mt-0.5 flex items-center gap-1.5 text-xs text-ink/45">
+            <dd className="mt-0.5 flex items-center gap-1.5 text-xs text-ink/60">
               <User className="size-3 shrink-0" />
               <span className="truncate">{studentName}</span>
             </dd>
