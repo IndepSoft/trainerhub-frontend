@@ -4221,3 +4221,93 @@ de esta tanda, falla con exactamente las cifras de la tabla.
 **Los marcadores de posición también cuentan** para WCAG. Los de shadcn
 pasan con el gris nuevo, y el único que iba a `/35` sube al suelo de texto:
 sigue distinguiéndose de un valor escrito, que va en tinta entera.
+
+## 52. La composición de escritorio (22 sep 2026)
+
+Rama `feature/escritorio`. Lo propuesto en la página «Escritorio · 1440» del
+lienzo de vistas, hecho. Era lo único del rediseño que quedaba entero: a
+1440 px las once pantallas cumplían las cinco reglas del móvil y seguían
+siendo, literalmente, la pantalla del teléfono estirada. Es el caso que §1.6
+nombra desde el rediseño del acceso —«si ahí la composición no cambia, es que
+no hay composición de escritorio»— y el que ninguna prueba puede pillar: cero
+desbordamiento, objetivos de 44 px y contraste AA salían en verde en las dos
+anchuras.
+
+**Lo que decide en JAVASCRIPT y por qué.** En este sistema la regla es que
+elija el CSS: se pintan las dos formas y `md:hidden` esconde una. Aquí no
+sirve, y el motivo es de hooks, no de estilo: una pantalla en columnas
+montaría sus secciones DOS veces —dos veces el progreso del alumno, dos el
+ranking del equipo, dos consultas por pantalla ancha— y un formulario en dos
+formas daría dos juegos de campos con los mismos `id`, que es HTML inválido y
+rompe cada `<label for>`. Así que `useWideViewport` —leído síncrono para que
+no haya parpadeo— y el componente monta una sola. No es `useIsMobile`: aquél
+vive en 768 y es de la barra lateral de shadcn.
+
+El punto de corte son **1152 px, medidos**: con la barra lateral de 256 y los
+márgenes, a 1024 quedan 770 px de contenido y partirlos dejaba la ruta de la
+ficha con «Puntos en la ruta · 326/300» en tres líneas. A 1152 quedan 824 y las
+columnas respiran; entre 1024 y 1151 —una tableta apaisada— se ve la
+composición de una columna, con más aire.
+
+**Las seis composiciones.**
+
+- *El padrón, en TABLA* (`StudentTable`). La línea de apoyo de la fila
+  —«Intermedio · 10 sesiones · cuota vencida»— existe porque a 390 px no cabe
+  otra cosa; a 1024 cada dato va en su columna y la de «Cuota» se recorre de
+  un vistazo. Mismo destino y mismo objetivo táctil que `ListRow`: el enlace
+  se estira sobre la `<tr>`. No sustituye a la fila, la elige el ancho.
+- *La ficha del alumno, con COLUMNA DE IDENTIDAD.* El resumen deja de ser una
+  sección y se queda a la vista: es el contexto con el que se leen las otras
+  tres —el progreso de quién, las sesiones de quién—. Las pestañas bajan a
+  tres (`DETAIL_SECTIONS`) y encabezan la columna derecha; con «resumen» en la
+  dirección, que es como se entra, la derecha abre por «progreso».
+- *El equipo, MURO A LA IZQUIERDA.* Es lo único de esa pantalla que cambia
+  cada día; miembros, ranking e invitar se consultan, y van a un panel de
+  420 px con sus mismas pestañas. Sólo cuando hay panel: a un alumno de un
+  equipo sin ranking le queda el muro solo, y una columna vacía al lado sería
+  peor que ninguna.
+- *El progreso, en TRES COLUMNAS y sin pestañas.* Ruta, logros e historial
+  caben a la vez, y juntos se comparan: lo que falta para el siguiente nodo,
+  lo conseguido y lo entrenado. En el teléfono comparar obliga a recordar la
+  pestaña anterior.
+- *Los formularios, SIN PASOS.* Los pasos existen porque a 390 px el nombre,
+  la descripción y el nivel llenan la pantalla. En 1440 la rutina —o el
+  mesociclo— se queda fija a la izquierda, que es donde se consulta mientras
+  se montan los bloques o las semanas, y el contenido de cada paso se escribe
+  UNA vez y lo monta la rama que toque.
+- *Configuración, en DOS COLUMNAS de grupos.* Y aquí la propuesta se
+  cambió: el lienzo pedía un carril de navegación con el grupo elegido al
+  lado, y con cuatro grupos de dos o tres filas elegir uno para ver tres filas
+  es más gesto que contenido. Las dos columnas lo enseñan todo a la vez. Queda
+  dicho porque la decisión estaba dibujada de otra manera.
+
+**Lo que se aprendió al montarlo: una rejilla no sabe en qué columna está.**
+`MetricStrip` y la galería de insignias suben de columnas por punto de ruptura
+del VIEWPORT, así que dentro de una columna de 380 px aplicaban la forma más
+ancha: «Edad» quedaba en «2…» y «Primera sesión» partida a media palabra. Las
+dos reciben ahora dónde se pintan (`placement`) y la eligen. Es la trampa
+conocida de componer en columnas sin *container queries*, y la solución es
+decirle a la pieza dónde está, no adivinarlo.
+
+**Un defecto real, encontrado al probarlo.** El muro quedó envuelto en una
+región llamada «Muro» cuando `CrewWall` YA era una: dos regiones con el mismo
+nombre, y la prueba que abre el muro por su nombre resolvía a dos elementos.
+Se quitó la envoltura. Antes de eso, el muro vivía dentro de un `TabsContent`
+con `forceMount`, y al abrir «Ranking» DESAPARECÍA —una pestaña inactiva se
+oculta aunque se fuerce su montaje—; por eso está fuera de las pestañas.
+
+**Lo que hubo que tocar en la suite, y por qué no es trampa.** Siete pruebas
+afirmaban la composición de una columna, no el comportamiento: pulsaban el paso
+«Bloques» de un formulario que en ancho no tiene pasos, abrían la sección
+«Resumen» por una pestaña que en ancho es una columna, o buscaban un texto
+suelto que ahora sale dos veces porque el resumen convive con la sección. Los
+ayudantes `abrirSeccion` y `pasoDelFormulario` preguntan ahora si la pestaña
+EXISTE —no miran el ancho—, así que la misma prueba vale en los tres tamaños;
+las aserciones de cuota se acotan a su sección; y la del padrón se partió en
+dos, una por composición, que es cobertura nueva y no menos. Una trampa de
+Playwright de paso: `count()` no espera, así que en una página todavía cargando
+decía «no hay pestaña» y se tomaba la rama equivocada.
+
+**Medido a 1440 en las seis**: cero desbordamiento horizontal, y a 390 × 844
+las siete pantallas tocadas quedan como estaban —la composición de móvil no se
+toca—. Suite de interfaz: 229 en verde, 50 unitarias, lint y build limpios.

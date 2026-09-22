@@ -9,6 +9,15 @@ import { StudentUpNext } from './StudentUpNext'
 
 interface StudentSummaryProps {
   student: Student
+  /**
+   * Dónde se está pintando.
+   *
+   * `section` es la primera sección de la ficha, a todo el ancho de la
+   * pantalla. `column` es la columna de identidad de escritorio, de 380 px:
+   * ahí las cuatro cifras no caben en una fila —«Edad» quedaba en «2…»— y van
+   * de dos en dos.
+   */
+  placement?: 'section' | 'column'
 }
 
 /**
@@ -20,13 +29,13 @@ interface StudentSummaryProps {
  * recorrido, entre formularios. Aquí está a la primera pantalla, y el detalle
  * de cada cosa en su sección.
  */
-export function StudentSummary({ student }: StudentSummaryProps) {
+export function StudentSummary({ student, placement = 'section' }: StudentSummaryProps) {
   const { t } = useTranslation()
   const summary = useStudentSummary(student.id)
 
   return (
     <div>
-      <MetricStrip columns={4} className="mx-5 mt-2">
+      <MetricStrip columns={placement === 'column' ? 2 : 4} className="mx-5 mt-2">
         {/* Sin fecha se dice «—», no cero: nadie tiene cero años. */}
         <MetricFigure
           label={t('studentCard.age')}

@@ -5,6 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { ListRow } from '@/shared/components/ListRow'
 import { useSwipe } from '@/shared/hooks/useSwipe'
 import { useUrlSection } from '@/shared/hooks/useUrlSection'
+import { useWideViewport } from '@/shared/hooks/useWideViewport'
+import { cn } from '@/shared/lib/utils'
 import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 import { toast } from 'sonner'
 import { describeError } from '@/shared/i18n/errorMessages'
@@ -89,6 +91,7 @@ function CrewBoard({ membership }: CrewBoardProps) {
   const { members, pending, loading, approve, reject } = useCrewMembers()
   const { rotateJoinToken, requestActivation, saving, error: editorError } = useCrewEditor()
   const scrollerRef = useRef<HTMLDivElement>(null)
+  const isWide = useWideViewport()
 
   /*
    * CADA CONTROL PREGUNTA POR SU PROPIA CAPACIDAD, no por el rol.
@@ -109,6 +112,33 @@ function CrewBoard({ membership }: CrewBoardProps) {
   )
   const { section, select: selectSection } = useUrlSection(sections)
   const pendingCount = can('crew.members') ? pending.length : 0
+
+  /*
+   * EN ANCHO EL MURO DEJA DE SER UNA PESTAÑA Y PASA A SER LA COLUMNA. Es lo
+   * único de esta pantalla que cambia cada día —lo demás se consulta—, así que
+   * se queda a la vista y las otras secciones van a un panel al lado. Con
+   * «muro» en la dirección, el panel abre por la primera de ellas.
+   *
+   * Sólo cuando hay panel que enseñar: a un alumno de un equipo sin ranking le
+   * queda el muro solo, y una columna vacía al lado sería peor que ninguna.
+   */
+  const panelSections = sections.filter((candidate) => candidate !== 'muro')
+  const inColumns = isWide && panelSections.length > 0
+  const activeTab = inColumns && section === 'muro' ? panelSections[0] : section
+
+  /*
+   * El muro, escrito una vez: en ancho es la columna izquierda y en el
+   * teléfono la primera pestaña. Se firma con el nombre de quien entrena el
+   * equipo; si su ficha no está —cuenta sin perfil—, con el nombre del propio
+   * equipo, porque un anuncio sin autor se lee como un aviso del sistema.
+   */
+  const wall = (
+    <CrewWall
+      isStaff={isStaff}
+      canPublish={can('crew.wall')}
+      authorName={trainer === null ? crew.name : `${trainer.firstName} ${trainer.lastName}`}
+    />
+  )
 
   // Aceptar y rechazar se esperan y se dicen: eran dos `void` mudos.
   const decide = async (decision: () => Promise<void>) => {
@@ -180,14 +210,14 @@ function CrewBoard({ membership }: CrewBoardProps) {
       </PageHeader>
 
       <Tabs
-        value={section}
+        value={activeTab}
         onValueChange={(value) => {
           const chosen = sections.find((candidate) => candidate === value)
           if (chosen !== undefined) selectSection(chosen)
         }}
         className="min-h-0 flex-1 gap-0"
       >
-        <div className="shrink-0 px-5 pb-3">
+        <div className={cn('shrink-0 px-5 pb-3', inColumns && 'hidden')}>
           <TabsList aria-label={t('crew.sectionsLabel')} className="w-full md:max-w-lg">
             {sections.map((candidate) => (
               <TabsTrigger
@@ -218,20 +248,62 @@ function CrewBoard({ membership }: CrewBoardProps) {
           </TabsList>
         </div>
 
-        <div ref={scrollerRef} className={PAGE_SCROLL} {...swipeHandlers}>
-          <div className="mx-auto max-w-3xl px-5 pb-6">
-            <TabsContent value="muro">
-              {/* Se firma con el nombre de quien entrena el equipo. Si su ficha
-                  no está —cuenta sin perfil—, con el nombre del propio equipo:
-                  un anuncio sin autor se lee como un aviso del sistema. */}
-              <CrewWall
-                isStaff={isStaff}
-                canPublish={can('crew.wall')}
-                authorName={
-                  trainer === null ? crew.name : `${trainer.firstName} ${trainer.lastName}`
-                }
-              />
-            </TabsContent>
+        <div ref={scrollerRef} className={PAGE_SCROLL} {...(inColumns ? {} : swipeHandlers)}>
+          <div
+            className={cn(
+              'mx-auto px-5 pb-6',
+              inColumns
+                ? 'grid max-w-7xl grid-cols-[minmax(0,1fr)_minmax(0,420px)] items-start gap-x-10'
+                : 'max-w-3xl'
+            )}
+          >
+            {/*
+              EL MURO, FUERA DE LAS PESTAÑAS EN ANCHO. Es su columna, no una
+              sección que se elige: dentro de `TabsContent` desaparecía al
+              abrir «Ranking», porque una pestaña inactiva se oculta aunque se
+              fuerce su montaje. Medido: al cambiar de pestaña el muro se iba.
+            */}
+            {/* Sin envoltura con nombre: `CrewWall` YA es una región llamada
+                «Muro» —su `<section aria-labelledby>`—, y añadirle otra igual
+                daba dos con el mismo nombre. Medido: la prueba que abre el
+                muro por su nombre resolvía a dos elementos. */}
+            {inColumns ? (
+              <div className="min-w-0">{wall}</div>
+            ) : (
+              <TabsContent value="muro">{wall}</TabsContent>
+            )}
+
+            <div className="min-w-0">
+              {/* La lista de pestañas encabeza el panel, no la pantalla: en
+                  ancho lo que eligen es la columna derecha. */}
+              {inColumns && (
+                <TabsList aria-label={t('crew.sectionsLabel')} className="mb-4 w-full">
+                  {panelSections.map((candidate) => (
+                    <TabsTrigger
+                      key={candidate}
+                      value={candidate}
+                      className="gap-1.5 px-2 text-[13px] font-semibold"
+                    >
+                      {t(CREW_SECTION_LABEL_KEY[candidate])}
+                      {candidate === 'miembros' && pendingCount > 0 && (
+                        <span
+                          aria-label={t('crew.pendingWaiting', { count: pendingCount })}
+                          className="metric-figures rounded-action bg-cobalt px-1.5 text-[11px] font-bold text-cobalt-foreground"
+                        >
+                          {pendingCount}
+                        </span>
+                      )}
+                      {candidate === 'invitar' && !canInvite && (
+                        <span
+                          role="img"
+                          aria-label={t('crew.needsActivation')}
+                          className="size-2 shrink-0 rounded-full bg-ember"
+                        />
+                      )}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              )}
 
             <TabsContent value="miembros" className="flex flex-col gap-6 pt-2">
               {/* Lo que pide una decisión va primero: es lo único de esta
@@ -364,6 +436,7 @@ function CrewBoard({ membership }: CrewBoardProps) {
                 )}
               </TabsContent>
             )}
+            </div>
           </div>
         </div>
       </Tabs>

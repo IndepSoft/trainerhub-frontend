@@ -1274,6 +1274,13 @@ export const spanish = {
   'students.emptyShareCode': 'O comparte el código del equipo',
   'students.emptyTitle': 'Todavía no hay nadie',
   'students.noMatches': 'Ningún alumno coincide con la búsqueda.',
+  'studentTable.student': 'Alumno',
+  'studentTable.level': 'Nivel',
+  'studentTable.sessions': 'Sesiones',
+  'studentTable.dues': 'Cuota',
+  'studentTable.account': 'Cuenta',
+  'studentTable.hasAccount': 'Con cuenta',
+  'studentTable.open': 'Abrir la ficha',
   'students.rowHint':
     'Toca un alumno para ver su ficha, agendarle o asignarle un plan.',
   'trainings.noMatches': 'Ninguna rutina coincide con la búsqueda.',

@@ -1263,6 +1263,13 @@ export const portuguese: Dictionary = {
   'students.emptyShareCode': 'Ou compartilhe o código da equipe',
   'students.emptyTitle': 'Ainda não há ninguém',
   'students.noMatches': 'Nenhum aluno corresponde à pesquisa.',
+  'studentTable.student': 'Aluno',
+  'studentTable.level': 'Nível',
+  'studentTable.sessions': 'Sessões',
+  'studentTable.dues': 'Mensalidade',
+  'studentTable.account': 'Conta',
+  'studentTable.hasAccount': 'Com conta',
+  'studentTable.open': 'Abrir a ficha',
   'students.rowHint':
     'Toque em um aluno para ver a ficha, agendar uma sessão ou atribuir um plano.',
   'trainings.noMatches': 'Nenhuma rotina corresponde à pesquisa.',
