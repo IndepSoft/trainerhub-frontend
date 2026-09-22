@@ -324,6 +324,16 @@ aquí las once pantallas eran la del móvil estirada. Detalle en `CAMBIOS` §52.
 - [x] `useWideViewport`: se monta UNA composición, no dos
 - [x] Verificado a 1440: 0 desborde; y a 390 × 844 el móvil queda intacto
 
+### ✅ 12 · El panel en secciones, y los últimos objetivos táctiles
+
+Cierra la propuesta de vistas y los tres destinos bajo 44 px que quedaban.
+Detalle en `CAMBIOS` §53.
+
+- [x] Panel: «Próximas sesiones» y «Actividad reciente» en secciones; 1.157 → 834 px
+- [x] El «me gusta» del muro, 40 → 44 px de ancho
+- [x] Los nombres de Reportes: el enlace envuelve las dos líneas, 19 → 44 px de alto
+- [x] Medido en las diecinueve rutas a 390 × 844: ningún destino bajo 44 px
+
 ---
 
 ## Deuda anotada de paso

@@ -7,6 +7,16 @@ import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type { UpcomingSession } from '../types/dashboard.types'
 
 interface UpcomingSessionsProps {
+  /**
+   * Si la sección pinta su propio encabezado.
+   *
+   * En móvil las dos listas del panel se eligen con un selector, y el
+   * nombre de la sección ya lo dice la pestaña: repetirlo debajo es la
+   * misma palabra dos veces en veinte píxeles. En ancho van lado a lado
+   * y cada una necesita el suyo.
+   */
+  withHeading?: boolean
+
   sessions: UpcomingSession[]
 }
 
@@ -15,12 +25,14 @@ interface UpcomingSessionsProps {
  * de apilar una caja por sesion: el orden temporal se lee de un vistazo, que es
  * justo lo que una lista de cajas iguales no comunica.
  */
-export function UpcomingSessions({ sessions }: UpcomingSessionsProps) {
+export function UpcomingSessions({ sessions, withHeading = true }: UpcomingSessionsProps) {
   const { t } = useTranslation()
 
   return (
     <section className="flex-1">
-      <SectionHeading count={sessions.length}>{t('dashboard.upcoming')}</SectionHeading>
+      {withHeading && (
+        <SectionHeading count={sessions.length}>{t('dashboard.upcoming')}</SectionHeading>
+      )}
 
       {sessions.length === 0 && (
         <p className="pt-5 text-sm text-ink/60">

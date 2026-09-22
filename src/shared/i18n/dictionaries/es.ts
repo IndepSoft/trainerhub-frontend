@@ -246,6 +246,7 @@ export const spanish = {
   'dashboard.metric.students': 'Estudiantes',
   'dashboard.metric.sessionsThisWeek': 'Sesiones esta semana',
   'dashboard.metric.routinesCreated': 'Rutinas creadas',
+  'dashboard.sectionsLabel': 'Qué mirar',
   'dashboard.recentActivity': 'Actividad reciente',
   'dashboard.recentEmpty': 'Aún no hay sesiones completadas. Al terminar una, aparecerá aquí.',
   'dashboard.upcoming': 'Próximas sesiones',

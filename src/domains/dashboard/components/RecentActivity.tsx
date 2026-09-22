@@ -4,6 +4,16 @@ import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type { RecentActivityEntry } from '../types/dashboard.types'
 
 interface RecentActivityProps {
+  /**
+   * Si la sección pinta su propio encabezado.
+   *
+   * En móvil las dos listas del panel se eligen con un selector, y el
+   * nombre de la sección ya lo dice la pestaña: repetirlo debajo es la
+   * misma palabra dos veces en veinte píxeles. En ancho van lado a lado
+   * y cada una necesita el suyo.
+   */
+  withHeading?: boolean
+
   activities: RecentActivityEntry[]
 }
 
@@ -14,12 +24,12 @@ interface RecentActivityProps {
  * lo mismo pasara lo que pasara. Ahora es exactamente lo que ha ocurrido, que es
  * lo que la seccion promete.
  */
-export function RecentActivity({ activities }: RecentActivityProps) {
+export function RecentActivity({ activities, withHeading = true }: RecentActivityProps) {
   const { t } = useTranslation()
 
   return (
     <section className="flex-1">
-      <SectionHeading>{t('dashboard.recentActivity')}</SectionHeading>
+      {withHeading && <SectionHeading>{t('dashboard.recentActivity')}</SectionHeading>}
 
       {/* Vacia se explica, en vez de dejar un titulo suelto: al empezar no hay
           nada completado todavia, y un hueco mudo se lee como un fallo. */}
