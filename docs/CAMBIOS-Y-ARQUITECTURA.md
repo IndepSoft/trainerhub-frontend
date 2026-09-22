@@ -4311,3 +4311,39 @@ decía «no hay pestaña» y se tomaba la rama equivocada.
 **Medido a 1440 en las seis**: cero desbordamiento horizontal, y a 390 × 844
 las siete pantallas tocadas quedan como estaban —la composición de móvil no se
 toca—. Suite de interfaz: 229 en verde, 50 unitarias, lint y build limpios.
+
+## 53. El panel, y tres destinos por debajo de 44 px (22 sep 2026)
+
+Rama `feature/panel-y-tactiles`. Lo que quedaba de la propuesta de vistas
+(§35–§52) y tres objetivos táctiles que la auditoría de §52 encontró de paso.
+
+**El panel: las dos listas que se miran, una a la vez.** «Próximas sesiones» y
+«Actividad reciente» iban apiladas, y entre las dos eran el grueso de los
+1.157 px que el panel desplazaba en un teléfono: dos líneas de tiempo seguidas,
+con la segunda —lo que YA pasó— siempre por debajo del pliegue. Ninguna de las
+dos pide una decisión, así que se eligen con el selector de secciones, igual
+que en la ficha o en el equipo; la bandeja de pendientes, que sí la pide, se
+queda arriba y a la vista. Medido: 1.157 → 834 px, el panel cabe casi entero
+sin desplazar. En ancho no hay nada que elegir y las tres van lado a lado,
+como estaban.
+
+La sección viaja en la dirección (`?seccion=`) como en el resto, así que
+`/dashboard?seccion=actividad` es enlazable. Y las dos secciones aceptan
+quedarse sin encabezado (`withHeading`): en móvil el nombre lo dice la
+pestaña, y repetirlo debajo es la misma palabra dos veces en veinte píxeles.
+
+**Tres destinos que no llegaban a 44 × 44.** Los tres pasaban el lint y las
+pruebas: la regla se mide en el navegador, no en las clases.
+
+- El «me gusta» del muro llevaba `min-h-11` pero no mínimo de ancho, así que
+  sin cuenta que pintar —que es lo normal— era sólo el corazón y medía 40 px.
+  Ahora `min-w-11` acompaña a `min-h-11`.
+- Los nombres de alumno de Reportes —la cola de cobros y la lista de
+  retención— eran enlaces alrededor del texto, con caja de 19 px de alto. Se
+  aplica el patrón que `ListRow` ya documentaba: **el enlace envuelve las dos
+  líneas**, así el objetivo es la fila y el nombre accesible es nombre y
+  apoyo, que es lo que un lector de pantalla debe decir al pasar por ella.
+
+Con esto, las diecinueve rutas quedan sin un solo destino por debajo de 44 px
+en móvil. Desde `md` los controles vuelven a la altura compacta a propósito
+(`button.tsx`): la regla es de plataforma para una PWA instalada, no de ratón.

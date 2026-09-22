@@ -47,26 +47,28 @@ export function DuesQueue() {
             key={entry.student.id}
             className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:gap-3"
           >
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold text-ink">
-                <Link
-                  to={`/students/${entry.student.id}`}
-                  className="outline-none hover:text-cobalt focus-visible:underline"
-                >
-                  {getShortName(entry.student.firstName, entry.student.lastName)}
-                </Link>
-              </p>
+            {/* El enlace envuelve TODO lo que describe al alumno, no sólo su
+                nombre: con el nombre solo, la caja del destino medía 19 px de
+                alto y no llegaba al objetivo táctil de 44 (regla 1.6). Es el
+                patrón de `ListRow`. */}
+            <Link
+              to={`/students/${entry.student.id}`}
+              className="group flex min-h-11 min-w-0 flex-1 flex-col justify-center outline-none"
+            >
+              <span className="truncate font-semibold text-ink group-hover:text-cobalt group-focus-visible:underline">
+                {getShortName(entry.student.firstName, entry.student.lastName)}
+              </span>
               {entry.paidThrough !== null && (
-                <p className="truncate text-xs text-ink/60">
+                <span className="truncate text-xs text-ink/60">
                   {t('reports.paidThrough', { date: formatDateKey(entry.paidThrough) })}
-                </p>
+                </span>
               )}
               {/* Sin cuenta el aviso espera en su ficha: se dice, en vez de
                   dar por leido lo que todavia no tiene campana. */}
               {entry.student.profileId === null && (
-                <p className="truncate text-xs text-ink/60">{t('notice.noAccount')}</p>
+                <span className="truncate text-xs text-ink/60">{t('notice.noAccount')}</span>
               )}
-            </div>
+            </Link>
 
             <div className="flex items-center gap-3">
               <SubscriptionBadge standing={entry.standing} />

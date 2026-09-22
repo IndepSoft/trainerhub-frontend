@@ -235,6 +235,7 @@ export const english: Dictionary = {
   'dashboard.metric.students': 'Students',
   'dashboard.metric.sessionsThisWeek': 'Sessions this week',
   'dashboard.metric.routinesCreated': 'Routines created',
+  'dashboard.sectionsLabel': 'What to look at',
   'dashboard.recentActivity': 'Recent activity',
   'dashboard.recentEmpty': 'No completed sessions yet. Finish one and it shows up here.',
   'dashboard.upcoming': 'Upcoming sessions',
