@@ -17,6 +17,7 @@ import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
 import { useSwipe } from '@/shared/hooks/useSwipe'
 import { useUrlSection } from '@/shared/hooks/useUrlSection'
+import { useWideViewport } from '@/shared/hooks/useWideViewport'
 import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 
 /** Las secciones del progreso, en el orden en que se miran. */
@@ -50,6 +51,7 @@ export default function Progress() {
   const { active, loading } = useViewerContext()
   const student = active?.student ?? null
   const scrollerRef = useRef<HTMLDivElement>(null)
+  const isWide = useWideViewport()
 
   const {
     profile,
@@ -117,6 +119,41 @@ export default function Progress() {
         onCoverYesterday={() => void coverYesterday()}
       />
 
+      {/*
+        EN ANCHO NO HAY PESTAÑAS: las tres secciones caben a la vez, en
+        columnas. Y es lo que además las hace comparables —lo que falta para
+        el siguiente nodo, lo conseguido y lo entrenado se leen juntos—, que
+        en un teléfono obliga a recordar la pestaña anterior.
+      */}
+      {isWide ? (
+        <div className={PAGE_SCROLL}>
+          <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,360px)] items-start gap-x-8 px-5 pb-6">
+            <section aria-label={t(PROGRESS_SECTION_LABEL_KEY.ruta)} className="min-w-0">
+              <RoutePath route={route} nodes={path} />
+              {student !== null && <AssignedRepertoire studentId={student.id} />}
+              <MetricStrip columns={2} className="mt-8">
+                {overview.stats.map((stat, index) => (
+                  <MetricBlock
+                    key={stat.id}
+                    title={stat.label}
+                    indicator={stat.value}
+                    icon={stat.icon}
+                    mobileLayout={closesRowAlone(index, overview.stats.length) ? 'wide' : 'stacked'}
+                  />
+                ))}
+              </MetricStrip>
+            </section>
+
+            <section aria-label={t(PROGRESS_SECTION_LABEL_KEY.logros)} className="min-w-0">
+              <AchievementSystem achievements={achievements} placement="column" />
+            </section>
+
+            <section aria-label={t(PROGRESS_SECTION_LABEL_KEY.historial)} className="min-w-0">
+              <SessionHistory entries={history} />
+            </section>
+          </div>
+        </div>
+      ) : (
       <Tabs
         value={section}
         onValueChange={(value) => {
@@ -177,6 +214,7 @@ export default function Progress() {
           </TabsContent>
         </div>
       </Tabs>
+      )}
     </div>
   )
 }

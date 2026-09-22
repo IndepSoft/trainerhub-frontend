@@ -1263,6 +1263,13 @@ export const english: Dictionary = {
   'students.emptyShareCode': 'Or share the team code',
   'students.emptyTitle': 'Nobody here yet',
   'students.noMatches': 'No student matches the search.',
+  'studentTable.student': 'Student',
+  'studentTable.level': 'Level',
+  'studentTable.sessions': 'Sessions',
+  'studentTable.dues': 'Dues',
+  'studentTable.account': 'Account',
+  'studentTable.hasAccount': 'Has account',
+  'studentTable.open': 'Open the record',
   'students.rowHint':
     'Tap a student to open their record, schedule a session or assign a plan.',
   'trainings.noMatches': 'No routine matches the search.',

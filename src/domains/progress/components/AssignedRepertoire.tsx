@@ -17,15 +17,21 @@ interface AssignedRepertoireProps {
  * hay, no se pone en la agenda.
  */
 export function AssignedRepertoire({ studentId }: AssignedRepertoireProps) {
+  const headingId = 'repertorio-asignado-titulo'
   const { t } = useTranslation()
   const { entries, loading } = useAssignedRepertoire(studentId)
 
   if (loading) return null
 
   return (
-    <section className="space-y-4 px-5 pt-6">
+    // Con nombre —una región—: en ancho esta sección vive dentro de la columna
+    // de la ruta, y «la sección que contiene este encabezado» resolvía a dos.
+    <section className="space-y-4 px-5 pt-6" aria-labelledby={headingId}>
       <div>
-        <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
+        <h2
+          id={headingId}
+          className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60"
+        >
           {t('progress.assigned')}
         </h2>
         <p className="mt-1 text-xs text-ink/60">{t('progress.assignedHint')}</p>

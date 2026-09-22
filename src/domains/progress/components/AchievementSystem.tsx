@@ -11,6 +11,15 @@ import { activeLocale } from '@/shared/i18n/activeLocale'
 
 interface AchievementSystemProps {
   /**
+   * Cuántas insignias caben por fila.
+   *
+   * `page` es la sección a todo el ancho, donde la rejilla sube hasta siete.
+   * `column` es la columna de escritorio, de unos 360 px: ahí la rejilla se
+   * queda en tres, como en el teléfono, porque las etiquetas —«Primera
+   * sesión», «Arquitecto de la sobrecarga»— se cortaban a media palabra.
+   */
+  placement?: 'page' | 'column'
+  /**
    * Los logros del alumno, YA EVALUADOS.
    *
    * Se reciben en vez de leerlos aquí. Antes el componente importaba el
@@ -40,7 +49,7 @@ const RARITY_LABEL_KEY: Record<RarityFilter, TranslationKey> = {
 
 
 
-export function AchievementSystem({ achievements }: AchievementSystemProps) {
+export function AchievementSystem({ achievements, placement = 'page' }: AchievementSystemProps) {
   const { t } = useTranslation()
   const [category, setCategory] = useState<CategoryFilter>('all')
   const [rarity, setRarity] = useState<RarityFilter>('all')
@@ -161,7 +170,12 @@ export function AchievementSystem({ achievements }: AchievementSystemProps) {
           })}
         </div>
 
-        <div className="grid grid-cols-3 gap-3 pt-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7">
+        <div
+          className={cn(
+            'grid grid-cols-3 gap-3 pt-2',
+            placement === 'page' && 'sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7'
+          )}
+        >
           {filtered.map((achievement) => (
             <AchievementBadge
               key={achievement.code}

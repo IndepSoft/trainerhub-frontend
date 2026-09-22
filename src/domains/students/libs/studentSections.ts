@@ -12,6 +12,17 @@ export const STUDENT_SECTIONS = ['resumen', 'progreso', 'sesiones', 'cuota'] as 
 
 export type StudentSection = (typeof STUDENT_SECTIONS)[number]
 
+/**
+ * Las secciones que quedan cuando el resumen deja de ser una de ellas.
+ *
+ * En ancho el resumen es la columna de identidad —siempre a la vista— y las
+ * pestañas cubren sólo el detalle. Se escriben, no se derivan con `slice`:
+ * derivarlas daba un tipo sin primer elemento garantizado y obligaba a un
+ * `as` de conveniencia. Van al lado de `STUDENT_SECTIONS` para que las dos
+ * listas se lean juntas.
+ */
+export const DETAIL_SECTIONS = ['progreso', 'sesiones', 'cuota'] as const
+
 /** El parámetro que abre el diálogo de agendar al entrar. */
 export const SCHEDULE_PARAM = 'agendar'
 

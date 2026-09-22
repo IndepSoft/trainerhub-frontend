@@ -24,6 +24,7 @@ import { useTranslation } from '@/shared/i18n/LanguageContext'
 import type { TranslationKey } from '@/shared/i18n/dictionaries/es'
 import { cn } from '@/shared/lib/utils'
 import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
+import { useWideViewport } from '@/shared/hooks/useWideViewport'
 
 /**
  * Crear y editar una rutina. Sólo composición.
@@ -134,6 +135,7 @@ function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
   } = useRoutineDraft(routine)
   const { savedBlocks, saveFromDraft } = useBlockLibrary()
 
+  const isWide = useWideViewport()
   const [step, setStep] = useState<FormStep>(isEditing ? 'blocks' : 'identity')
   const [isPickerOpen, setIsPickerOpen] = useState(false)
   const [lastSavedName, setLastSavedName] = useState<string | null>(null)
@@ -209,6 +211,124 @@ function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
     navigate(isEditing ? `/trainings/${routineId}` : '/trainings')
   }
 
+  /*
+   * Los dos pasos, sacados de la composición: en ancho van en columnas y en el
+   * teléfono en pestañas, y el contenido tiene que ser el MISMO. Escritos aquí
+   * una vez, los monta la rama que toque.
+   */
+  const identityFields = (
+    <RoutineIdentityFields
+      title={draft.title}
+      description={draft.description}
+      level={draft.level}
+      titleError={errors.title}
+      onTitleChange={setTitle}
+      onDescriptionChange={setDescription}
+      onLevelChange={setLevel}
+    />
+  )
+
+  const blocksFields = (
+    <>
+      {/* Sin ejercicios en el catalogo, los desplegables de cada bloque
+          salen vacios y nada dice por que. Se dice, con la puerta. */}
+      {catalog.length === 0 && (
+        <p className="mb-4 rounded-block border border-cobalt-tint-3 bg-surface px-4 py-3 text-sm text-ink/60">
+          {t('routine.emptyCatalogHint')}{' '}
+          <Link
+            to="/trainings/catalog"
+            className="inline-flex min-h-11 items-center font-semibold text-cobalt underline-offset-4 hover:underline"
+          >
+            {t('routine.goToCatalog')}
+          </Link>
+        </p>
+      )}
+
+      <ul className="space-y-4">
+        {draft.blocks.map((block, index) => (
+          <li key={block.id}>
+            <BlockEditor
+              block={block}
+              position={index + 1}
+              catalog={catalog}
+              canRemove={canRemoveBlock}
+              canSaveToLibrary={canSaveBlockDraft(block)}
+              initialExerciseIds={initialExerciseIds}
+              onChange={(changes) => updateBlock(block.id, changes)}
+              onRemove={() => removeBlock(block.id)}
+              onSaveToLibrary={() => handleSaveToLibrary(block)}
+              onAddExercise={() => addExercise(block.id)}
+              onRemoveExercise={(exerciseId) => removeExercise(block.id, exerciseId)}
+              onChangeExercise={(exerciseId, changes) =>
+                updateExercise(block.id, exerciseId, changes)
+              }
+            />
+          </li>
+        ))}
+      </ul>
+
+      {/* `aria-live` y no `role="alert"`: es una confirmacion de algo
+          que el usuario acaba de pedir, no un aviso que interrumpa. */}
+      <p aria-live="polite" className={cn('text-sm text-cobalt', lastSavedName !== null && 'mt-3')}>
+        {lastSavedName !== null && t('routine.savedToLibrary', { name: lastSavedName })}
+      </p>
+
+      {/* Juntos y en fila: son las dos formas de añadir un bloque. */}
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          className="min-w-[9.5rem] flex-1 gap-2 rounded-action"
+          onClick={addBlock}
+        >
+          <Plus className="size-4" />
+          {t('routine.addBlock')}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="min-w-[9.5rem] flex-1 gap-2 rounded-action"
+          onClick={() => setIsPickerOpen(true)}
+        >
+          <Library className="size-4" />
+          {t('routine.insertSaved')}
+        </Button>
+      </div>
+    </>
+  )
+
+  const draftNotice = (
+    <>
+      <RoutineDraftLine routine={preview} />
+
+      {/*
+        `role="alert"` para que un lector de pantalla lo anuncie al
+        aparecer. Fuera de los pasos: el error surge al pulsar Guardar, que
+        está en la cabecera, y tiene que verse desde el paso en que se esté.
+      */}
+      {errors.blocks !== undefined && (
+        <p
+          role="alert"
+          className="flex items-start gap-2 rounded-block border border-danger/40 bg-danger-surface px-4 py-3 text-sm text-danger"
+        >
+          <AlertCircle className="mt-0.5 size-4 shrink-0" />
+          {errors.blocks}
+        </p>
+      )}
+
+      {/* Se dice que lo que se ve es un borrador recuperado, con la
+          salida: quien no lo quiera lo descarta y empieza de cero. */}
+      {restored && (
+        <p className="flex flex-wrap items-center justify-between gap-2 rounded-block border border-cobalt-tint-3 bg-surface px-4 py-3 text-sm text-ink/70">
+          <span>{t('routine.draftRestored')}</span>
+          <Button type="button" variant="ghost" size="sm" onClick={discard}>
+            {t('routine.discardDraft')}
+          </Button>
+        </p>
+      )}
+    </>
+  )
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden bg-bone">
       <PageHeader className="pb-2 md:pb-3">
@@ -238,6 +358,24 @@ function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
         </PageHeader.Content>
       </PageHeader>
 
+      {/*
+        EN ANCHO NO HAY PASOS. Los pasos existen porque a 390 px el nombre, la
+        descripción y el nivel ya llenan la pantalla y los bloques no caben
+        debajo. En 1440 sí: la rutina se queda fija a la izquierda —se consulta
+        mientras se montan los bloques— y los bloques ocupan lo ancho, que es
+        justo lo que necesitan sus seis campos por ejercicio.
+      */}
+      {isWide ? (
+        <div className={PAGE_SCROLL}>
+          <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,380px)_minmax(0,1fr)] items-start gap-x-10 px-5 pb-6">
+            <div className="flex flex-col gap-3 border-e border-cobalt-tint-3 pe-8">
+              {draftNotice}
+              {identityFields}
+            </div>
+            <div className="min-w-0">{blocksFields}</div>
+          </div>
+        </div>
+      ) : (
       <Tabs
         value={step}
         onValueChange={(value) => {
@@ -266,119 +404,17 @@ function RoutineFormFields({ routine }: RoutineFormFieldsProps) {
             ))}
           </TabsList>
 
-          <RoutineDraftLine routine={preview} />
-
-          {/*
-            `role="alert"` para que un lector de pantalla lo anuncie al
-            aparecer. Encima de los pasos y no dentro del de bloques: el error
-            surge al pulsar Guardar, que está en la cabecera, y tiene que verse
-            desde el paso en que se esté.
-          */}
-          {errors.blocks !== undefined && (
-            <p
-              role="alert"
-              className="flex items-start gap-2 rounded-block border border-danger/40 bg-danger-surface px-4 py-3 text-sm text-danger"
-            >
-              <AlertCircle className="mt-0.5 size-4 shrink-0" />
-              {errors.blocks}
-            </p>
-          )}
+          {draftNotice}
         </div>
 
         <div className={PAGE_SCROLL}>
           <div className="px-5 pb-6 pt-1">
-            {/* Se dice que lo que se ve es un borrador recuperado, con la
-                salida: quien no lo quiera lo descarta y empieza de cero. */}
-            {restored && (
-              <p className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-block border border-cobalt-tint-3 bg-surface px-4 py-3 text-sm text-ink/70">
-                <span>{t('routine.draftRestored')}</span>
-                <Button type="button" variant="ghost" size="sm" onClick={discard}>
-                  {t('routine.discardDraft')}
-                </Button>
-              </p>
-            )}
-
-            <TabsContent value="identity">
-              <RoutineIdentityFields
-                title={draft.title}
-                description={draft.description}
-                level={draft.level}
-                titleError={errors.title}
-                onTitleChange={setTitle}
-                onDescriptionChange={setDescription}
-                onLevelChange={setLevel}
-              />
-            </TabsContent>
-
-            <TabsContent value="blocks">
-              {/* Sin ejercicios en el catalogo, los desplegables de cada bloque
-                  salen vacios y nada dice por que. Se dice, con la puerta. */}
-              {catalog.length === 0 && (
-                <p className="mb-4 rounded-block border border-cobalt-tint-3 bg-surface px-4 py-3 text-sm text-ink/60">
-                  {t('routine.emptyCatalogHint')}{' '}
-                  <Link
-                    to="/trainings/catalog"
-                    className="inline-flex min-h-11 items-center font-semibold text-cobalt underline-offset-4 hover:underline"
-                  >
-                    {t('routine.goToCatalog')}
-                  </Link>
-                </p>
-              )}
-
-              <ul className="space-y-4">
-                {draft.blocks.map((block, index) => (
-                  <li key={block.id}>
-                    <BlockEditor
-                      block={block}
-                      position={index + 1}
-                      catalog={catalog}
-                      canRemove={canRemoveBlock}
-                      canSaveToLibrary={canSaveBlockDraft(block)}
-                      initialExerciseIds={initialExerciseIds}
-                      onChange={(changes) => updateBlock(block.id, changes)}
-                      onRemove={() => removeBlock(block.id)}
-                      onSaveToLibrary={() => handleSaveToLibrary(block)}
-                      onAddExercise={() => addExercise(block.id)}
-                      onRemoveExercise={(exerciseId) => removeExercise(block.id, exerciseId)}
-                      onChangeExercise={(exerciseId, changes) =>
-                        updateExercise(block.id, exerciseId, changes)
-                      }
-                    />
-                  </li>
-                ))}
-              </ul>
-
-              {/* `aria-live` y no `role="alert"`: es una confirmacion de algo
-                  que el usuario acaba de pedir, no un aviso que interrumpa. */}
-              <p aria-live="polite" className={cn('text-sm text-cobalt', lastSavedName !== null && 'mt-3')}>
-                {lastSavedName !== null && t('routine.savedToLibrary', { name: lastSavedName })}
-              </p>
-
-              {/* Juntos y en fila: son las dos formas de añadir un bloque. */}
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="min-w-[9.5rem] flex-1 gap-2 rounded-action"
-                  onClick={addBlock}
-                >
-                  <Plus className="size-4" />
-                  {t('routine.addBlock')}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="min-w-[9.5rem] flex-1 gap-2 rounded-action"
-                  onClick={() => setIsPickerOpen(true)}
-                >
-                  <Library className="size-4" />
-                  {t('routine.insertSaved')}
-                </Button>
-              </div>
-            </TabsContent>
+            <TabsContent value="identity">{identityFields}</TabsContent>
+            <TabsContent value="blocks">{blocksFields}</TabsContent>
           </div>
         </div>
       </Tabs>
+      )}
 
       <SavedBlockPicker
         open={isPickerOpen}

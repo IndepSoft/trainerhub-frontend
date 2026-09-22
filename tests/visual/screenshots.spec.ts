@@ -62,9 +62,48 @@ type NombreDeSeccion =
   | 'Logros'
   | 'Historial'
 
+/**
+ * Un alumno del padrón, sea cual sea la composición.
+ *
+ * A 375 el padrón son filas de una lista; desde 1152 es una tabla (§52). Las
+ * dos llevan el mismo nombre y el mismo destino, así que una prueba sobre lo
+ * que le PASA a un alumno —darle de baja, reactivarlo— no tiene por qué saber
+ * cuál de las dos está mirando.
+ */
+function alumnoDelPadron(page: Page, nombre: string): Locator {
+  return page
+    .getByRole('listitem')
+    .filter({ hasText: nombre })
+    .or(page.getByRole('row').filter({ hasText: nombre }))
+}
+
 async function abrirSeccion(page: Page, nombre: NombreDeSeccion): Promise<Locator> {
   const pestana = new RegExp(`^${nombre}`)
-  await page.getByRole('tab', { name: pestana }).click()
+  const disparador = page.getByRole('tab', { name: pestana })
+
+  /*
+   * SIN PESTAÑA, LA SECCIÓN YA ESTÁ ABIERTA. En ancho las pantallas largas se
+   * componen en columnas y la primera sección —el resumen de la ficha, el muro
+   * del equipo— deja de ser una pestaña para quedarse siempre a la vista
+   * (`CAMBIOS` §52). Allí es una región con su nombre, y abrirla es no hacer
+   * nada. Se pregunta por la pestaña en vez de mirar el ancho: la misma prueba
+   * vale en los tres tamaños.
+   */
+  /*
+   * Se espera a que la tira de secciones exista ANTES de contar: `count()` no
+   * espera, así que en una página todavía cargando devolvía cero y se tomaba
+   * la rama equivocada. Las dos composiciones tienen tira; lo que cambia es
+   * cuántas pestañas lleva.
+   */
+  await expect(page.getByRole('tablist').first()).toBeVisible()
+
+  if ((await disparador.count()) === 0) {
+    const region = page.getByRole('region', { name: pestana })
+    await expect(region).toBeVisible()
+    return region
+  }
+
+  await disparador.click()
   const panel = page.getByRole('tabpanel', { name: pestana })
   await expect(panel).toBeVisible()
   return panel
@@ -75,7 +114,32 @@ async function abrirSeccion(page: Page, nombre: NombreDeSeccion): Promise<Locato
  * el primero y los bloques en el segundo, y sólo se pinta el abierto.
  */
 async function pasoDelFormulario(page: Page, nombre: 'La rutina' | 'Bloques'): Promise<void> {
-  await page.getByRole('tab', { name: new RegExp(nombre) }).click()
+  /*
+   * Deja A LA VISTA los campos de un paso, que no siempre es pulsar algo: en
+   * una ventana ancha el formulario NO TIENE PASOS —la rutina a la izquierda y
+   * los bloques a la derecha, `CAMBIOS` §52— y los dos ya están en pantalla.
+   * Se pregunta si la pestaña existe en vez de mirar el ancho: así la misma
+   * prueba vale en los tres tamaños.
+   */
+  const paso = page.getByRole('tab', { name: new RegExp(nombre) })
+  if ((await paso.count()) === 0) return
+
+  await paso.click()
+  await expect(page.getByRole('tab', { name: new RegExp(nombre), selected: true })).toBeVisible()
+}
+
+/**
+ * Comprueba que un paso del formulario está ABIERTO.
+ *
+ * Que lo esté no siempre es que su pestaña esté seleccionada: en ancho el
+ * formulario no tiene pasos y los dos están a la vista a la vez (§52). Donde
+ * no hay pestaña, lo que prueba que el paso está abierto es lo que la prueba
+ * afirma justo después —sus bloques, sus campos—.
+ */
+async function pasoAbierto(page: Page, nombre: 'La rutina' | 'Bloques'): Promise<void> {
+  const paso = page.getByRole('tab', { name: new RegExp(nombre) })
+  if ((await paso.count()) === 0) return
+
   await expect(page.getByRole('tab', { name: new RegExp(nombre), selected: true })).toBeVisible()
 }
 
@@ -1816,7 +1880,7 @@ test.describe('edicion de rutinas', () => {
      * sus cuatro ejercicios plegados y con nombre y dosis a la vista. La dosis
      * lleva «×», que es lo que distingue esas filas de los demás botones.
      */
-    await expect(page.getByRole('tab', { name: /Bloques/, selected: true })).toBeVisible()
+    await pasoAbierto(page, 'Bloques')
     await expect(page.getByRole('heading', { name: 'Bloque', level: 3 })).toHaveCount(3)
     const ejercicios = page.getByRole('button', { name: /×/ })
     await expect(ejercicios).toHaveCount(4)
@@ -3661,7 +3725,9 @@ test.describe('alumnos', () => {
  */
 test.describe('progreso', () => {
   test('la fila de cada alumno dice cuanto ha entrenado', async ({ page }) => {
-    await page.setViewportSize({ width: 1440, height: 900 })
+    // A 375, que es donde el padrón son FILAS: en ancho los mismos datos van
+    // en columnas y los prueba la siguiente (`CAMBIOS` §52).
+    await page.setViewportSize({ width: 375, height: 812 })
     await signIn(page)
     await page.goto('/students')
 
@@ -3682,6 +3748,31 @@ test.describe('progreso', () => {
     // resultado: lleva lo que significa.
     const maria = filas.filter({ hasText: 'María Gómez' })
     await expect(maria).toContainText('Avanzado · sin sesiones')
+  })
+
+  test('en ancho lo mismo va en columnas, una por dato', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page)
+    await page.goto('/students')
+
+    /*
+     * LA MISMA INFORMACIÓN, REPARTIDA. La línea de apoyo de la fila existe
+     * porque a 375 px no cabe otra cosa; aquí cada dato tiene su columna, que
+     * es lo que permite recorrer una sola —«Cuota»— de arriba abajo.
+     */
+    const juan = page.getByRole('row').filter({ hasText: 'Juan Pérez' })
+    await expect(juan.getByRole('cell').nth(1)).toContainText('Intermedio')
+    await expect(juan.getByRole('cell').nth(2)).toContainText('10')
+    await expect(juan.getByRole('cell').nth(3)).toContainText('Venció hace')
+
+    // Y la fila entera sigue llevando a su ficha, como la de móvil.
+    await expect(juan.getByRole('link', { name: 'Juan Pérez' })).toHaveAttribute(
+      'href',
+      '/students/student-1'
+    )
+
+    const maria = page.getByRole('row').filter({ hasText: 'María Gómez' })
+    await expect(maria.getByRole('cell').nth(2)).toContainText('0')
   })
 
   test('la ficha lleva la medida, no el registro motivacional', async ({ page }) => {
@@ -4906,11 +4997,18 @@ test.describe('cuotas', () => {
      * desde `paidThrough`, y la semilla los pone relativos a hoy justo para que
      * la prueba no caduque.
      */
-    await expect(page.getByRole('region', { name: 'Cuota' })).toBeVisible()
-    await expect(page.getByText('Venció hace 5 días')).toBeVisible()
+    /*
+     * DENTRO DE LA SECCIÓN, no en la página: en ancho el resumen se queda a la
+     * vista en su columna (`CAMBIOS` §52) y su «Le toca» dice lo mismo —«Cuota ·
+     * Venció hace 5 días»—, así que buscarlo suelto resolvía a dos elementos.
+     * Lo que esta prueba afirma es que lo dice LA CUOTA.
+     */
+    const cuota = page.getByRole('region', { name: 'Cuota' })
+    await expect(cuota).toBeVisible()
+    await expect(cuota.getByText('Venció hace 5 días')).toBeVisible()
 
     // Los dias dicen si corre prisa; la fecha dice que dia es. Las dos cosas.
-    await expect(page.getByText(/Pagado hasta el/)).toBeVisible()
+    await expect(cuota.getByText(/Pagado hasta el/)).toBeVisible()
   })
 
   test('registrar un pago mueve la fecha, y cambiar el periodo no cobra', async ({ page }) => {
@@ -6180,8 +6278,7 @@ test.describe('ciclos de vida y bandeja', () => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page)
     await page.goto('/students')
-    const padron = page.getByRole('list', { name: 'Estudiantes' })
-    const ana = padron.getByRole('listitem').filter({ hasText: 'Ana Torres' })
+    const ana = alumnoDelPadron(page, 'Ana Torres')
     await expect(ana).toBeVisible()
 
     // La baja se da desde la ficha, que es donde se decide sobre una persona.
@@ -6197,7 +6294,7 @@ test.describe('ciclos de vida y bandeja', () => {
     // memoria, y recargar devolveria la semilla.
     await page.getByRole('link', { name: 'Estudiantes' }).first().click()
     await page.waitForURL(/\/students$/)
-    await expect(padron.getByRole('listitem').first()).toBeVisible()
+    await expect(alumnoDelPadron(page, 'Juan Pérez')).toBeVisible()
     await expect(ana).toHaveCount(0)
 
     // Las bajas, plegadas bajo el padron; reactivar la devuelve.
@@ -6262,7 +6359,7 @@ test.describe('ciclos de vida y bandeja', () => {
     await page.getByRole('button', { name: 'Crear cuenta' }).click()
     await page.waitForURL(/\/progress/, { timeout: 20_000 })
 
-    const repertorio = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Lo que te han asignado' }) })
+    const repertorio = page.getByRole('region', { name: 'Lo que te han asignado' })
     await expect(repertorio).toBeVisible()
     await repertorio.getByRole('link', { name: 'Base de fuerza · 4 semanas' }).click()
 
