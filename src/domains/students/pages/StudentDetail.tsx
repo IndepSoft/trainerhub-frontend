@@ -9,6 +9,7 @@ import { PageSkeleton } from '@/shared/components/PageSkeleton'
 import { SubscriptionBadge } from '@/shared/components/SubscriptionBadge'
 import { useSwipe } from '@/shared/hooks/useSwipe'
 import { useUrlSection } from '@/shared/hooks/useUrlSection'
+import { useWideViewport } from '@/shared/hooks/useWideViewport'
 import { getInitials, getShortName } from '@/shared/lib/personName'
 import { cn } from '@/shared/lib/utils'
 import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
@@ -28,6 +29,7 @@ import { StudentSessions } from '../components/StudentSessions'
 import { ScheduleSessionDialog } from '../components/ScheduleSessionDialog'
 import { LEVEL_BADGE } from '../libs/levelBadge'
 import {
+  DETAIL_SECTIONS,
   SCHEDULE_PARAM,
   STUDENT_SECTIONS,
   STUDENT_SECTION_LABEL_KEY,
@@ -55,6 +57,7 @@ export default function StudentDetail() {
   const { student, loading } = useStudent(studentId)
   const { standingOf, loading: loadingDues } = useSubscriptions()
   const scrollerRef = useRef<HTMLDivElement>(null)
+  const isWide = useWideViewport()
 
   /*
    * La sección y el diálogo de agendar viven en la dirección. Así el «Le toca»
@@ -79,6 +82,14 @@ export default function StudentDetail() {
       { replace: true }
     )
   }
+
+  /*
+   * EN ANCHO SE OFRECEN TRES PESTAÑAS, no cuatro: el resumen está siempre a la
+   * vista en su columna, así que ofrecerlo además como pestaña sería un botón
+   * que no cambia nada. Con «resumen» en la dirección —que es como se entra a
+   * la ficha— la columna derecha abre por la primera de las tres.
+   */
+  const activeTab = isWide && activeSection === 'resumen' ? DETAIL_SECTIONS[0] : activeSection
 
   const moveSection = (offset: number) => {
     const next = STUDENT_SECTIONS.indexOf(activeSection) + offset
@@ -198,51 +209,106 @@ export default function StudentDetail() {
       </PageHeader>
 
       <Tabs
-        value={activeSection}
+        value={activeTab}
         onValueChange={(value) => {
           if (isStudentSection(value)) selectSection(value)
         }}
         className="min-h-0 flex-1 gap-0"
       >
         {/* Las secciones, FIJAS bajo la cabecera: quedan fuera del contenedor
-            que desplaza, así que cambiar de sección no obliga a volver arriba. */}
-        <div className="shrink-0 px-5 pb-3">
-          <TabsList aria-label={t('studentSection.label')} className="w-full md:max-w-md">
-            {STUDENT_SECTIONS.map((section) => (
-              <TabsTrigger key={section} value={section} className="px-2 text-[13px] font-semibold">
-                {t(STUDENT_SECTION_LABEL_KEY[section])}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </div>
+            que desplaza, así que cambiar de sección no obliga a volver arriba.
+            En ancho se van con la columna: la lista de pestañas encabeza la
+            columna derecha, junto a lo que abre. */}
+        {!isWide && (
+          <div className="shrink-0 px-5 pb-3">
+            <TabsList aria-label={t('studentSection.label')} className="w-full md:max-w-md">
+              {STUDENT_SECTIONS.map((section) => (
+                <TabsTrigger
+                  key={section}
+                  value={section}
+                  className="px-2 text-[13px] font-semibold"
+                >
+                  {t(STUDENT_SECTION_LABEL_KEY[section])}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
+        )}
 
         {/* Contenedor de scroll de la pagina. Un div y no un <main>: el
             landmark ya lo pinta SidebarInset desde RootLayout. */}
-        <div ref={scrollerRef} className={PAGE_SCROLL} {...swipeHandlers}>
-          <TabsContent value="resumen">
-            <StudentSummary student={student} />
-          </TabsContent>
+        <div ref={scrollerRef} className={PAGE_SCROLL} {...(isWide ? {} : swipeHandlers)}>
+          {/*
+            EN ANCHO, EL RESUMEN DEJA DE SER UNA SECCIÓN Y PASA A SER UNA
+            COLUMNA. Quién es y qué le toca es el contexto con el que se leen
+            las otras tres —el progreso de quién, las sesiones de quién—, y en
+            1440 px caben las dos cosas a la vez. En el teléfono no: allí
+            sigue siendo la primera sección, porque 340 px de columna no
+            existen.
+          */}
+          <div
+            className={cn(
+              'mx-auto max-w-7xl',
+              isWide && 'grid grid-cols-[minmax(0,380px)_minmax(0,1fr)] items-start gap-x-8 pt-1'
+            )}
+          >
+            {/* `section` con nombre —una región— y no `aside`: esto no es
+                contenido tangencial, es la identidad con la que se lee todo lo
+                demás. Y es lo que la deja alcanzable por su nombre. */}
+            {isWide && (
+              <section
+                aria-label={t('studentSection.summary')}
+                className="border-e border-cobalt-tint-3 pb-6"
+              >
+                <StudentSummary student={student} placement="column" />
+              </section>
+            )}
 
-          <TabsContent value="progreso">
-            <StudentProgressSection studentId={student.id} />
+            <div className="min-w-0">
+              {isWide && (
+                <div className="px-5 pb-4">
+                  <TabsList aria-label={t('studentSection.label')} className="w-full max-w-md">
+                    {DETAIL_SECTIONS.map((section) => (
+                      <TabsTrigger
+                        key={section}
+                        value={section}
+                        className="px-2 text-[13px] font-semibold"
+                      >
+                        {t(STUDENT_SECTION_LABEL_KEY[section])}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </div>
+              )}
 
-            {/* La ruta y las validaciones son decisiones de quien gestiona: a
-                quien no, la base le diria «forbidden» en cada boton. */}
-            {can('students.manage') && <StudentRouteSection studentId={student.id} />}
+              {!isWide && (
+                <TabsContent value="resumen">
+                  <StudentSummary student={student} />
+                </TabsContent>
+              )}
 
-            {/* Debajo del progreso y no dentro: aquello es el juego -nivel,
-                racha, hitos- y esto es la medida de fuerza. Se leen por
-                motivos distintos. */}
-            <StudentLoadProgression studentId={student.id} />
-          </TabsContent>
+              <TabsContent value="progreso">
+                <StudentProgressSection studentId={student.id} />
 
-          <TabsContent value="sesiones">
-            <StudentSessions student={student} />
-          </TabsContent>
+                {/* La ruta y las validaciones son decisiones de quien gestiona: a
+                    quien no, la base le diria «forbidden» en cada boton. */}
+                {can('students.manage') && <StudentRouteSection studentId={student.id} />}
 
-          <TabsContent value="cuota">
-            <StudentSubscriptionSection student={student} />
-          </TabsContent>
+                {/* Debajo del progreso y no dentro: aquello es el juego -nivel,
+                    racha, hitos- y esto es la medida de fuerza. Se leen por
+                    motivos distintos. */}
+                <StudentLoadProgression studentId={student.id} />
+              </TabsContent>
+
+              <TabsContent value="sesiones">
+                <StudentSessions student={student} />
+              </TabsContent>
+
+              <TabsContent value="cuota">
+                <StudentSubscriptionSection student={student} />
+              </TabsContent>
+            </div>
+          </div>
         </div>
       </Tabs>
 

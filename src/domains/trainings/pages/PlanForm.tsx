@@ -16,6 +16,8 @@ import type { TrainingPlan } from '@/shared/domain/entities/plan'
 import { activeLocale } from '@/shared/i18n/activeLocale'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
+import { useWideViewport } from '@/shared/hooks/useWideViewport'
+import { cn } from '@/shared/lib/utils'
 
 /**
  * Crear y editar un plan. Sólo composición.
@@ -67,6 +69,7 @@ interface PlanFormFieldsProps {
 }
 
 function PlanFormFields({ plan }: PlanFormFieldsProps) {
+  const isWide = useWideViewport()
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { routines } = useRoutines()
@@ -177,25 +180,43 @@ function PlanFormFields({ plan }: PlanFormFieldsProps) {
       <div className={PAGE_SCROLL}>
         <PlanSummary plan={preview} />
 
-        <div className="space-y-6 px-5 py-6">
+        {/*
+          EN ANCHO, EL MESOCICLO A LA IZQUIERDA Y LAS SEMANAS A LA DERECHA. El
+          nombre, el objetivo y la frecuencia se consultan MIENTRAS se montan
+          las semanas —«¿esto era tres días o cuatro?»—, y en una columna
+          quedaban arriba, fuera de la vista.
+        */}
+        <div
+          className={cn(
+            'px-5 py-6',
+            isWide
+              ? 'mx-auto grid max-w-7xl grid-cols-[minmax(0,380px)_minmax(0,1fr)] items-start gap-x-10'
+              : 'space-y-6'
+          )}
+        >
           {errors.weeks !== undefined && (
             <p
               role="alert"
-              className="flex items-start gap-2 rounded-block border border-danger/40 bg-danger-surface px-4 py-3 text-sm text-danger"
+              className={cn(
+                'flex items-start gap-2 rounded-block border border-danger/40 bg-danger-surface px-4 py-3 text-sm text-danger',
+                isWide && 'col-span-2 mb-6'
+              )}
             >
               <AlertCircle className="mt-0.5 size-4 shrink-0" />
               {errors.weeks}
             </p>
           )}
 
-          <PlanIdentityFields
-            draft={draft}
-            errors={errors}
-            onChange={update}
-            onLevelChange={setLevel}
-          />
+          <div className={cn(isWide && 'border-e border-cobalt-tint-3 pe-8')}>
+            <PlanIdentityFields
+              draft={draft}
+              errors={errors}
+              onChange={update}
+              onLevelChange={setLevel}
+            />
+          </div>
 
-          <div>
+          <div className="min-w-0">
             <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/60">
               {t('plan.microcycles')}
             </h2>

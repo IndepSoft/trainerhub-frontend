@@ -10,9 +10,20 @@ import { PendingWorkSection } from '../components/PendingWorkSection'
 import { FirstSteps } from '../components/FirstSteps'
 import { useViewerContext } from '@/app/ViewerContext'
 import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
+import { useUrlSection } from '@/shared/hooks/useUrlSection'
+import { useWideViewport } from '@/shared/hooks/useWideViewport'
+
+/**
+ * Las dos listas que se miran, en el orden en que importan: lo que viene antes
+ * que lo que ya pasó. Sólo existen como secciones en el teléfono.
+ */
+const PANEL_SECTIONS = ['proximas', 'actividad'] as const
 
 export default function Dashboard() {
   const { t } = useTranslation()
+  const isWide = useWideViewport()
+  const { section, select: selectSection } = useUrlSection(PANEL_SECTIONS)
   const { active, can } = useViewerContext()
   const { summary, refresh } = useDashboardSummary()
   // La bandeja es de quien gestiona alumnos: es donde se resuelve casi todo.
@@ -49,8 +60,53 @@ export default function Dashboard() {
           {/* La bandeja primero: es lo unico de esta pantalla que espera una
               decision. Lo demas se mira; esto se atiende. */}
           <PendingWorkSection enabled={managesStudents} />
-          <UpcomingSessions sessions={summary.upcomingSessions} />
-          <RecentActivity activities={summary.recentActivity} />
+
+          {/*
+            LAS DOS LISTAS QUE SE MIRAN, UNA A LA VEZ EN EL TELÉFONO. Apiladas
+            eran el grueso de los 1.157 px que el panel desplazaba: dos líneas
+            de tiempo seguidas, y la segunda —lo que YA pasó— siempre por
+            debajo del pliegue. Ninguna de las dos pide una decisión, así que
+            se eligen; la bandeja, que sí la pide, se queda arriba.
+
+            En ancho no hay nada que elegir: caben lado a lado, como estaban.
+          */}
+          {isWide ? (
+            <>
+              <UpcomingSessions sessions={summary.upcomingSessions} />
+              <RecentActivity activities={summary.recentActivity} />
+            </>
+          ) : (
+            <Tabs
+              value={section}
+              onValueChange={(value) => {
+                const chosen = PANEL_SECTIONS.find((candidate) => candidate === value)
+                if (chosen !== undefined) selectSection(chosen)
+              }}
+              className="gap-0"
+            >
+              <TabsList aria-label={t('dashboard.sectionsLabel')} className="w-full">
+                <TabsTrigger value="proximas" className="gap-1.5 px-2 text-[13px] font-semibold">
+                  {t('dashboard.upcoming')}
+                  {summary.upcomingSessions.length > 0 && (
+                    <span className="metric-figures text-cobalt">
+                      {summary.upcomingSessions.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="actividad" className="px-2 text-[13px] font-semibold">
+                  {t('dashboard.recentActivity')}
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="proximas">
+                <UpcomingSessions sessions={summary.upcomingSessions} withHeading={false} />
+              </TabsContent>
+
+              <TabsContent value="actividad">
+                <RecentActivity activities={summary.recentActivity} withHeading={false} />
+              </TabsContent>
+            </Tabs>
+          )}
         </div>
       </div>
     </div>

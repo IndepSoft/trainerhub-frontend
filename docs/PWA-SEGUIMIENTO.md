@@ -313,6 +313,27 @@ Medido en el navegador: a 390, píldora de 366 × 58 con 46 px libres entre la
 —«Entrenamientos»—, las cinco pestañas suman 337 px en 343 de interior. Desde
 `md` la píldora no se pinta y el relleno vuelve a cero.
 
+### ✅ 11 · La composición de escritorio
+
+La regla de §1.6 pide abrir a 1440 lo que se compuso para el teléfono, y hasta
+aquí las once pantallas eran la del móvil estirada. Detalle en `CAMBIOS` §52.
+
+- [x] Padrón en tabla; ficha del alumno con columna de identidad
+- [x] Equipo con el muro a la izquierda; progreso en tres columnas
+- [x] Formularios de rutina y de plan sin pasos; configuración en dos columnas
+- [x] `useWideViewport`: se monta UNA composición, no dos
+- [x] Verificado a 1440: 0 desborde; y a 390 × 844 el móvil queda intacto
+
+### ✅ 12 · El panel en secciones, y los últimos objetivos táctiles
+
+Cierra la propuesta de vistas y los tres destinos bajo 44 px que quedaban.
+Detalle en `CAMBIOS` §53.
+
+- [x] Panel: «Próximas sesiones» y «Actividad reciente» en secciones; 1.157 → 834 px
+- [x] El «me gusta» del muro, 40 → 44 px de ancho
+- [x] Los nombres de Reportes: el enlace envuelve las dos líneas, 19 → 44 px de alto
+- [x] Medido en las diecinueve rutas a 390 × 844: ningún destino bajo 44 px
+
 ---
 
 ## Deuda anotada de paso

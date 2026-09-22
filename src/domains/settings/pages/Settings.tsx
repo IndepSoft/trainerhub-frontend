@@ -32,6 +32,7 @@ import { SoundToggle } from '../components/SoundToggle'
 import { DeleteAccountSection } from '../components/DeleteAccountSection'
 import { ROLE_LABEL_KEY } from '@/shared/i18n/domainLabels'
 import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
+import { useWideViewport } from '@/shared/hooks/useWideViewport'
 
 const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/60'
 
@@ -72,6 +73,7 @@ const FIELD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-
  */
 export default function Settings() {
   const { t } = useTranslation()
+  const isWide = useWideViewport()
   const { owner, profileId, initial, email, saving, error, save } = useProfileEditor()
   const { handleLogout } = useLogout()
   const { active, trainer, can } = useViewerContext()
@@ -117,7 +119,24 @@ export default function Settings() {
       </PageHeader>
 
       <div className={PAGE_SCROLL}>
-        <div className="mx-auto flex max-w-md flex-col gap-6 px-5 pb-6">
+        {/*
+          EN ANCHO, DOS COLUMNAS DE GRUPOS. La columna de lectura de 448 px
+          estirada a 1440 dejaba dos tercios de pantalla en blanco. Los cuatro
+          grupos se reparten en dos y el perfil cruza los dos de arriba, que es
+          la respuesta a «¿de quién es esto?».
+
+          No es un carril de navegación con el grupo elegido al lado, que era
+          lo propuesto: con cuatro grupos de dos o tres filas, elegir uno para
+          ver tres filas es más gesto que contenido. Todo cabe a la vez.
+        */}
+        <div
+          className={cn(
+            'mx-auto px-5 pb-6',
+            isWide
+              ? 'grid max-w-4xl grid-cols-2 items-start gap-x-12 gap-y-8'
+              : 'flex max-w-md flex-col gap-6'
+          )}
+        >
           {error !== null && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
@@ -128,7 +147,10 @@ export default function Settings() {
               es esta aplicación?» y no necesita que se la anuncie. */}
           <section
             aria-label={t('settings.profile')}
-            className="flex items-center gap-4 border-b border-cobalt-tint-3 pb-4"
+            className={cn(
+              'flex items-center gap-4 border-b border-cobalt-tint-3 pb-4',
+              isWide && 'col-span-2'
+            )}
           >
             <Avatar className="size-12 shrink-0">
               <AvatarImage src={initial.photoUrl === '' ? undefined : initial.photoUrl} alt="" />
@@ -227,7 +249,9 @@ export default function Settings() {
 
           {/* El correo no se cambia, y el porqué va donde se lee. Un campo
               apagado sin explicación se lee como un fallo. */}
-          <p className="text-xs text-ink/60">{t('settings.account.emailHint')}</p>
+          <p className={cn('text-xs text-ink/60', isWide && 'col-span-2')}>
+            {t('settings.account.emailHint')}
+          </p>
         </div>
       </div>
 

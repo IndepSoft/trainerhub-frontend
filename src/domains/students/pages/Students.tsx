@@ -5,6 +5,7 @@ import { Button } from '@/shared/ui/button'
 import { Plus, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { StudentRow } from '../components/StudentRow'
+import { StudentTable } from '../components/StudentTable'
 import { StudentFilters } from '../components/StudentFilters'
 import { StudentFormDialog } from '../components/StudentFormDialog'
 import { InactiveStudents } from '../components/InactiveStudents'
@@ -21,9 +22,12 @@ import { canEnrollMembers } from '@/shared/domain/entities/crew'
 import { useViewerContext } from '@/app/ViewerContext'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { PAGE_SCROLL } from '@/shared/lib/pageScroll'
+import { useWideViewport } from '@/shared/hooks/useWideViewport'
+import { cn } from '@/shared/lib/utils'
 
 export default function Students() {
   const { t } = useTranslation()
+  const isWide = useWideViewport()
   const { students, loading } = useStudents()
   const [filters, setFilters] = useState<StudentFilterState>(EMPTY_STUDENT_FILTERS)
   // En memoria: son decenas de fichas ya cargadas. Ver `filterStudents`.
@@ -111,7 +115,9 @@ export default function Students() {
           admite uno por documento- ademas de confundir a los lectores de
           pantalla. */}
       <div className={PAGE_SCROLL}>
-        <div className="mx-auto max-w-4xl px-5 pb-4">
+        {/* En ancho la lista es una tabla y necesita más sitio que la columna
+            de lectura de un teléfono: sus cinco columnas caben en 1120 px. */}
+        <div className={cn('mx-auto px-5 pb-4', isWide ? 'max-w-7xl' : 'max-w-4xl')}>
           {/*
             FILAS Y NO TARJETAS. Esta lista es para ENCONTRAR a alguien, no para
             leer su ficha: cada tarjeta ocupaba 320 px y en un telefono cabia una
@@ -119,23 +125,39 @@ export default function Students() {
             enseñaba —edad, grasa, objetivos, la franja de progreso— esta a un
             toque. Ver `ListRow`.
           */}
-          <ul aria-label={t('students.title')} className="mt-3">
-            {visibleStudents.map((student) => (
-              <StudentRow
-                key={student.id}
-                student={student}
-                /* `undefined` mientras carga y `null` cuando no ha entrenado:
-                   la fila pinta cosas distintas, y confundirlos enseñaria
-                   «sin sesiones» durante un instante a quien si las tiene. */
-                progress={loadingProgress ? undefined : (progressById.get(student.id) ?? null)}
-                standing={standingOf(student.id)}
+          {/* La MISMA lista en dos composiciones, y sólo se monta una. En
+              ancho, cada dato en su columna: la línea de apoyo de la fila
+              —«Intermedio · 10 sesiones · cuota vencida»— existe porque a
+              390 px no cabe otra cosa, y estirada a 900 dejaba la mitad
+              derecha en blanco. Ver `StudentTable` y `useWideViewport`. */}
+          {isWide ? (
+            <div className="mt-3">
+              <StudentTable
+                students={visibleStudents}
+                progressById={progressById}
+                loadingProgress={loadingProgress}
+                standingOf={standingOf}
               />
-            ))}
-          </ul>
+            </div>
+          ) : (
+            <ul aria-label={t('students.title')} className="mt-3">
+              {visibleStudents.map((student) => (
+                <StudentRow
+                  key={student.id}
+                  student={student}
+                  /* `undefined` mientras carga y `null` cuando no ha entrenado:
+                     la fila pinta cosas distintas, y confundirlos enseñaria
+                     «sin sesiones» durante un instante a quien si las tiene. */
+                  progress={loadingProgress ? undefined : (progressById.get(student.id) ?? null)}
+                  standing={standingOf(student.id)}
+                />
+              ))}
+            </ul>
+          )}
 
           {/* Que se hace con la lista, dicho una vez. Una fila que no enseña un
               menu tiene que decir a donde lleva. */}
-          {visibleStudents.length > 0 && (
+          {visibleStudents.length > 0 && !isWide && (
             <p className="pt-3 text-[13px] text-ink/60">{t('students.rowHint')}</p>
           )}
 

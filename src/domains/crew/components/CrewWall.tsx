@@ -160,7 +160,10 @@ function PostCard({
           aria-label={liked ? t('crew.wallUnlike') : t('crew.wallLike')}
           onClick={onToggleLike}
           className={cn(
-            'inline-flex min-h-11 items-center gap-2 rounded-action px-3 text-sm font-semibold transition-colors',
+            // `min-w-11` acompaña a `min-h-11`: sin cuenta que pintar, el
+            // botón es sólo el corazón y medía 40 px de ancho, por debajo del
+            // objetivo táctil de 44 que exige la regla 1.6.
+            'inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-action px-3 text-sm font-semibold transition-colors',
             liked ? 'text-ember' : 'text-ink/60 hover:text-ink'
           )}
         >
