@@ -1,14 +1,16 @@
-import { useEffect, useState } from 'react'
 import { container } from '@/app/container'
+import { crewScope } from '@/app/crewScope'
+import { useCachedQuery } from '@/shared/hooks/useCachedQuery'
 import type { Student } from '@/shared/domain/entities/student'
-import { useTranslation } from '@/shared/i18n/LanguageContext'
-import { describeError } from '@/shared/i18n/errorMessages'
 
 interface UseStudentsResult {
   students: Student[]
   loading: boolean
   error: string | null
 }
+
+/** Referencia estable para el «todavía nada»: un literal nuevo por renderizado haría trabajo de más. */
+const NONE: Student[] = []
 
 /**
  * Lista de estudiantes.
@@ -24,40 +26,19 @@ interface UseStudentsResult {
  * y la raíz de composición es quien decide la implementación.
  */
 export function useStudents(): UseStudentsResult {
-  const { t } = useTranslation()
-  const [students, setStudents] = useState<Student[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { data, loading, error } = useCachedQuery<Student[]>({
+    /*
+     * El equipo activo entra en la clave. Sin él, al cambiar de equipo se
+     * pintaría un instante lo del anterior, que es justo la fuga que el
+     * ámbito existe para evitar.
+     */
+    key: ['students', crewScope.current()],
+    load: () => container.students.findAll(),
+    // Suscrito: un alta tiene que verse sin recargar.
+    subscribe: (reload) => container.students.onChange(reload),
+    initial: NONE,
+    errorKey: 'students.loadError',
+  })
 
-  useEffect(() => {
-    // Bandera de cancelación: si el componente se desmonta antes de que
-    // resuelva, escribir estado provocaría una advertencia y, con red real, una
-    // respuesta vieja podría pisar a una nueva.
-    let active = true
-
-    const load = () => {
-      container.students
-        .findAll()
-        .then((result) => {
-          if (active) setStudents(result)
-        })
-        .catch((cause: unknown) => {
-          if (active) setError(describeError(cause, t, 'students.loadError'))
-        })
-        .finally(() => {
-          if (active) setLoading(false)
-        })
-    }
-
-    load()
-    // Suscrito: dar de alta a un alumno tiene que verse sin recargar.
-    const unsubscribe = container.students.onChange(load)
-
-    return () => {
-      active = false
-      unsubscribe()
-    }
-  }, [t])
-
-  return { students, loading, error }
+  return { students: data, loading, error }
 }

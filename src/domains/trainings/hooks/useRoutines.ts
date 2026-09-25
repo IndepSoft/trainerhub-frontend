@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { container } from '@/app/container'
+import { crewScope } from '@/app/crewScope'
+import { useCachedQuery } from '@/shared/hooks/useCachedQuery'
 import type { Routine } from '@/shared/domain/entities/routine'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { describeError } from '@/shared/i18n/errorMessages'
@@ -9,6 +11,9 @@ interface UseRoutinesResult {
   loading: boolean
   error: string | null
 }
+
+/** Referencia estable para el «todavía nada»: un literal nuevo por renderizado haría trabajo de más. */
+const NONE: Routine[] = []
 
 /**
  * Lista de rutinas.
@@ -24,41 +29,21 @@ interface UseRoutinesResult {
  * por la aplicación una responsabilidad del almacén.
  */
 export function useRoutines(): UseRoutinesResult {
-  const { t } = useTranslation()
-  const [routines, setRoutines] = useState<Routine[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { data, loading, error } = useCachedQuery<Routine[]>({
+    /*
+     * El equipo activo entra en la clave. Sin él, al cambiar de equipo se
+     * pintaría un instante lo del anterior, que es justo la fuga que el
+     * ámbito existe para evitar.
+     */
+    key: ['routines', crewScope.current()],
+    load: () => container.routines.findAll(),
+    // Suscrito: un alta tiene que verse sin recargar.
+    subscribe: (reload) => container.routines.onChange(reload),
+    initial: NONE,
+    errorKey: 'routine.loadError',
+  })
 
-  useEffect(() => {
-    // Bandera de cancelación: si el componente se desmonta antes de que
-    // resuelva, escribir estado provocaría una advertencia y, con red real, una
-    // respuesta vieja podría pisar a una nueva.
-    let active = true
-
-    const load = () => {
-      container.routines
-        .findAll()
-        .then((result) => {
-          if (active) setRoutines(result)
-        })
-        .catch((cause: unknown) => {
-          if (active) setError(describeError(cause, t, 'routine.loadError'))
-        })
-        .finally(() => {
-          if (active) setLoading(false)
-        })
-    }
-
-    load()
-    const unsubscribe = container.routines.onChange(load)
-
-    return () => {
-      active = false
-      unsubscribe()
-    }
-  }, [t])
-
-  return { routines, loading, error }
+  return { routines: data, loading, error }
 }
 
 interface UseRoutineResult {
