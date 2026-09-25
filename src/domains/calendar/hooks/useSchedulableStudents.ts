@@ -1,14 +1,16 @@
-import { useEffect, useState } from 'react'
 import { container } from '@/app/container'
+import { crewScope } from '@/app/crewScope'
+import { useCachedQuery } from '@/shared/hooks/useCachedQuery'
 import type { Student } from '@/shared/domain/entities/student'
-import { useTranslation } from '@/shared/i18n/LanguageContext'
-import { describeError } from '@/shared/i18n/errorMessages'
 
 interface UseSchedulableStudentsResult {
   students: Student[]
   loading: boolean
   error: string | null
 }
+
+/** Referencia estable para el «todavía nada». */
+const NONE: Student[] = []
 
 /**
  * Alumnos que el calendario puede agendar.
@@ -22,37 +24,14 @@ interface UseSchedulableStudentsResult {
  * del otro.
  */
 export function useSchedulableStudents(): UseSchedulableStudentsResult {
-  const { t } = useTranslation()
-  const [students, setStudents] = useState<Student[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { data, loading, error } = useCachedQuery<Student[]>({
+    // El equipo activo, en la clave: lo de un equipo no responde por otro.
+    key: ['students', crewScope.current()],
+    load: () => container.students.findAll(),
+    subscribe: (reload) => container.students.onChange(reload),
+    initial: NONE,
+    errorKey: 'calendar.studentsError',
+  })
 
-  useEffect(() => {
-    let active = true
-
-    const load = () => {
-      container.students
-        .findAll()
-        .then((result) => {
-          if (active) setStudents(result)
-        })
-        .catch((cause: unknown) => {
-          if (active) setError(describeError(cause, t, 'calendar.studentsError'))
-        })
-        .finally(() => {
-          if (active) setLoading(false)
-        })
-    }
-
-    load()
-    // Suscrito: dar de alta a un alumno tiene que verse sin recargar.
-    const unsubscribe = container.students.onChange(load)
-
-    return () => {
-      active = false
-      unsubscribe()
-    }
-  }, [t])
-
-  return { students, loading, error }
+  return { students: data, loading, error }
 }

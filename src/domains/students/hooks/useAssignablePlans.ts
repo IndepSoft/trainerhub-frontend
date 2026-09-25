@@ -1,14 +1,16 @@
-import { useEffect, useState } from 'react'
 import { container } from '@/app/container'
+import { crewScope } from '@/app/crewScope'
+import { useCachedQuery } from '@/shared/hooks/useCachedQuery'
 import type { TrainingPlan } from '@/shared/domain/entities/plan'
-import { useTranslation } from '@/shared/i18n/LanguageContext'
-import { describeError } from '@/shared/i18n/errorMessages'
 
 interface UseAssignablePlansResult {
   plans: TrainingPlan[]
   loading: boolean
   error: string | null
 }
+
+/** Referencia estable para el «todavía nada». */
+const NONE: TrainingPlan[] = []
 
 /**
  * Planes que se le pueden asignar a un alumno.
@@ -18,36 +20,14 @@ interface UseAssignablePlansResult {
  * mismo.
  */
 export function useAssignablePlans(): UseAssignablePlansResult {
-  const { t } = useTranslation()
-  const [plans, setPlans] = useState<TrainingPlan[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { data, loading, error } = useCachedQuery<TrainingPlan[]>({
+    // El equipo activo, en la clave: lo de un equipo no responde por otro.
+    key: ['plans', crewScope.current()],
+    load: () => container.plans.findAll(),
+    subscribe: (reload) => container.plans.onChange(reload),
+    initial: NONE,
+    errorKey: 'students.plansError',
+  })
 
-  useEffect(() => {
-    let active = true
-
-    const load = () => {
-      container.plans
-        .findAll()
-        .then((result) => {
-          if (active) setPlans(result)
-        })
-        .catch((cause: unknown) => {
-          if (active) setError(describeError(cause, t, 'students.plansError'))
-        })
-        .finally(() => {
-          if (active) setLoading(false)
-        })
-    }
-
-    load()
-    const unsubscribe = container.plans.onChange(load)
-
-    return () => {
-      active = false
-      unsubscribe()
-    }
-  }, [t])
-
-  return { plans, loading, error }
+  return { plans: data, loading, error }
 }

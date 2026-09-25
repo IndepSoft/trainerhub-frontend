@@ -1,14 +1,16 @@
-import { useEffect, useState } from 'react'
 import { container } from '@/app/container'
+import { crewScope } from '@/app/crewScope'
+import { useCachedQuery } from '@/shared/hooks/useCachedQuery'
 import type { Routine } from '@/shared/domain/entities/routine'
-import { useTranslation } from '@/shared/i18n/LanguageContext'
-import { describeError } from '@/shared/i18n/errorMessages'
 
 interface UseAssignableRoutinesResult {
   routines: Routine[]
   loading: boolean
   error: string | null
 }
+
+/** Referencia estable para el «todavía nada». */
+const NONE: Routine[] = []
 
 /**
  * Rutinas que se le pueden asignar a un alumno al agendarle una sesión.
@@ -18,36 +20,14 @@ interface UseAssignableRoutinesResult {
  * aunque los tres vean exactamente lo mismo.
  */
 export function useAssignableRoutines(): UseAssignableRoutinesResult {
-  const { t } = useTranslation()
-  const [routines, setRoutines] = useState<Routine[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { data, loading, error } = useCachedQuery<Routine[]>({
+    // El equipo activo, en la clave: lo de un equipo no responde por otro.
+    key: ['routines', crewScope.current()],
+    load: () => container.routines.findAll(),
+    subscribe: (reload) => container.routines.onChange(reload),
+    initial: NONE,
+    errorKey: 'students.routinesError',
+  })
 
-  useEffect(() => {
-    let active = true
-
-    const load = () => {
-      container.routines
-        .findAll()
-        .then((result) => {
-          if (active) setRoutines(result)
-        })
-        .catch((cause: unknown) => {
-          if (active) setError(describeError(cause, t, 'students.routinesError'))
-        })
-        .finally(() => {
-          if (active) setLoading(false)
-        })
-    }
-
-    load()
-    const unsubscribe = container.routines.onChange(load)
-
-    return () => {
-      active = false
-      unsubscribe()
-    }
-  }, [t])
-
-  return { routines, loading, error }
+  return { routines: data, loading, error }
 }

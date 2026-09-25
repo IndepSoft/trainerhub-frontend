@@ -1,31 +1,27 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useMemo } from 'react'
 import { BicepsFlexed, CalendarDays, Users } from 'lucide-react'
 import { container } from '@/app/container'
+import { crewScope } from '@/app/crewScope'
+import { useCachedQuery } from '@/shared/hooks/useCachedQuery'
 import { describeTimeAgo, weekBounds } from '../libs/dashboardTime'
 import { toLocalDateKey } from '@/shared/lib/dateKey'
 import { useTranslation, type Translate } from '@/shared/i18n/LanguageContext'
 import type { DashboardSummary, RecentActivityEntry, UpcomingSession } from '../types/dashboard.types'
 import type { Session } from '@/shared/domain/entities/session'
 import type { Student } from '@/shared/domain/entities/student'
-import { describeError } from '@/shared/i18n/errorMessages'
 
 interface UseDashboardSummaryResult {
   summary: DashboardSummary
   loading: boolean
   error: string | null
   /** Vuelve a pedir los datos. La usa el gesto de tirar para recargar. */
-  refresh: () => Promise<void>
+  /** Vuelve a leer. Lo usa el gesto de tirar para actualizar. */
+  refresh: () => void
 }
 
-/** Cuántas sesiones próximas y cuántas actividades caben sin llenar la página. */
+/** Cuántas caben sin que la primera pantalla se convierta en un listado. */
 const VISIBLE_UPCOMING = 3
 const VISIBLE_ACTIVITY = 4
-
-const EMPTY_SUMMARY: DashboardSummary = {
-  indicators: [],
-  upcomingSessions: [],
-  recentActivity: [],
-}
 
 /**
  * Los datos del panel, DERIVADOS de los puertos.
@@ -43,42 +39,49 @@ const EMPTY_SUMMARY: DashboardSummary = {
  */
 export function useDashboardSummary(): UseDashboardSummaryResult {
   const { t } = useTranslation()
-  const [summary, setSummary] = useState<DashboardSummary>(EMPTY_SUMMARY)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
-  const load = useCallback(async () => {
-    setLoading(true)
-
-    try {
-      // En paralelo: son tres lecturas independientes y encadenarlas sólo
-      // sumaría latencias cuando haya red de verdad.
+  /*
+   * SE GUARDA LO LEÍDO, NO EL RESUMEN. El resumen se arma con `t`, así que
+   * guardarlo dejaría en la caché un texto en el idioma de antes: al cambiar
+   * de idioma, la primera pintada saldría en el anterior. Las tres listas, en
+   * cambio, son las mismas diga lo que diga el selector.
+   */
+  const { data, loading, error, refresh } = useCachedQuery<DashboardSources>({
+    key: ['dashboard', crewScope.current()],
+    // En paralelo: son tres lecturas independientes y encadenarlas sólo
+    // sumaría latencias cuando haya red de verdad.
+    load: async () => {
       const [sessions, students, routines] = await Promise.all([
         container.sessions.findAll(),
         container.students.findAll(),
         container.routines.findAll(),
       ])
-
-      setSummary(buildSummary(sessions, students, routines.length, t))
-      setError(null)
-    } catch (cause: unknown) {
-      setError(describeError(cause, t, 'dashboard.error'))
-    } finally {
-      setLoading(false)
-    }
-  }, [t])
-
-  useEffect(() => {
-    void load()
-
+      return { sessions, students, routineCount: routines.length }
+    },
     // El panel se entera de lo que pasa en la agenda sin recargar: marcar una
     // sesión como completada mueve tanto la lista como la actividad reciente.
-    const unsubscribe = container.sessions.onChange(() => void load())
-    return unsubscribe
-  }, [load])
+    subscribe: (reload) => container.sessions.onChange(reload),
+    initial: NO_SOURCES,
+    errorKey: 'dashboard.error',
+  })
 
-  return { summary, loading, error, refresh: load }
+  const summary = useMemo(
+    () => buildSummary(data.sessions, data.students, data.routineCount, t),
+    [data, t]
+  )
+
+  return { summary, loading, error, refresh }
 }
+
+/** Lo que el panel lee para armar su resumen. */
+interface DashboardSources {
+  sessions: Session[]
+  students: Student[]
+  routineCount: number
+}
+
+/** Referencia estable para el «todavía nada». */
+const NO_SOURCES: DashboardSources = { sessions: [], students: [], routineCount: 0 }
 
 function buildSummary(
   sessions: Session[],
