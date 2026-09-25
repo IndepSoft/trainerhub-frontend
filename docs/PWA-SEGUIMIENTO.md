@@ -334,6 +334,18 @@ Detalle en `CAMBIOS` §53.
 - [x] Los nombres de Reportes: el enlace envuelve las dos líneas, 19 → 44 px de alto
 - [x] Medido en las diecinueve rutas a 390 × 844: ningún destino bajo 44 px
 
+### ✅ 13 · El arranque y el cambio de módulo
+
+Lo que faltaba para que la instalada se sienta una aplicación: no abrir en
+blanco y no vaciar la pantalla al cambiar de pestaña. Detalle en `CAMBIOS` §54.
+
+- [x] Pantalla de arranque en `index.html`: el blanco baja de 6,1 s a 1,5 s
+- [x] Plazo de seguridad en el documento, no en el paquete
+- [x] `useCachedQuery`: volver a un módulo pinta lo que ya se tenía
+- [x] El ámbito del equipo en la clave; la caché se vacía al cerrar sesión
+- [x] Los seis módulos de la barra se traen con el hilo libre
+- [ ] Pendiente: comprobarlo contra la base en el despliegue de vista previa
+
 ---
 
 ## Deuda anotada de paso

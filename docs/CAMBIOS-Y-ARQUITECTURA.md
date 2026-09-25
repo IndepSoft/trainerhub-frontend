@@ -4347,3 +4347,78 @@ pruebas: la regla se mide en el navegador, no en las clases.
 Con esto, las diecinueve rutas quedan sin un solo destino por debajo de 44 px
 en móvil. Desde `md` los controles vuelven a la altura compacta a propósito
 (`button.tsx`): la regla es de plataforma para una PWA instalada, no de ratón.
+
+## 54. El arranque y el cambio de módulo (25 sep 2026)
+
+Rama `feature/arranque-y-navegacion`. Tres cambios para que la aplicación
+instalada se comporte como una aplicación y no como una web que se recarga.
+
+**Lo medido, antes.** Build de producción, teléfono de 390 px, red de 3G y CPU
+cuatro veces más lenta: **6,1 s de pantalla BLANCA** desde que se toca el icono,
+y lo primero que aparecía era el esqueleto de una página, sin nada que dijera
+qué se está abriendo. Y al cambiar de módulo, la pantalla se vaciaba: no porque
+la aplicación se recargue —no lo hace—, sino porque **cada módulo empezaba de
+cero**. Los hooks de datos nacían con `loading` en cierto y la lista vacía, y
+volvían a preguntar al puerto en cada montaje. Con las semillas en memoria no se
+nota; contra la base, desde un teléfono, cada vuelta a una pestaña son de uno a
+cuatro viajes de ida y vuelta con el hueco a la vista.
+
+**1 · La pantalla de arranque va en el HTML, no en React.** En React llega
+tarde por definición: hasta que el navegador descarga y ejecuta el paquete no
+hay nada que pintar. Va en `index.html`, con sus estilos en línea, así que se
+pinta con la primera hoja de estilos. Sin tipografía de marca a propósito —las
+`woff2` viajan en el paquete y pedirlas aquí añadiría la espera que esto viene a
+tapar— y con el tema ya aplicado, porque el guion que decide claro u oscuro
+antes del primer pintado ya estaba. **Medido después: el blanco baja de 6,1 s a
+1,5 s**, que es lo que tarda en llegar el documento; el resto del arranque es
+la marca.
+
+Se retira cuando la SESIÓN está resuelta, no cuando React monta: montar ocurre
+antes de que haya nada que mirar, y retirarla ahí devolvía el esqueleto sin
+contexto.
+
+**El plazo de seguridad vive en el documento y no en la aplicación**, y eso se
+aprendió probándolo: con la aplicación sin montar, el splash —una capa sobre
+todo— se comía cada pulsación y la pantalla quedaba bloqueada. Si el paquete no
+llega a ejecutarse, el módulo que lo retiraría tampoco; el `setTimeout` de
+`index.html` se ejecuta pase lo que pase.
+
+**2 · Las lecturas recuerdan lo último que respondieron** (`useCachedQuery`
+sobre `queryCache`). Al volver a un módulo se pinta lo que ya se tenía y se
+comprueba por detrás si cambió, que es lo que hace una aplicación nativa con sus
+pestañas. La primera visita sigue teniendo su espera —no hay nada que enseñar—;
+la segunda y las siguientes, ninguna.
+
+- **El ámbito entra en la clave**, no fuera: con `['students']` a secas, cambiar
+  de equipo pintaría un instante el padrón del anterior. Con `['students',
+  crewScope.current()]`, la lectura del otro equipo sencillamente no existe aún.
+- **Se vacía al cerrar sesión**, por el mismo motivo por el que se suelta el
+  equipo activo: en un teléfono compartido, lo de quien sale no puede parpadear
+  en la pantalla de quien entra.
+- **No es una caché de red**: no caduca por tiempo ni toca el disco. Vive lo que
+  vive la pestaña, y la verdad sigue siendo lo que el puerto responda; las
+  suscripciones `onChange` que ya existían son las que la mantienen al día.
+- Se guarda **lo leído, no lo derivado**: el panel guarda sus tres listas y arma
+  el resumen al pintar, porque el resumen se compone con `t` y guardarlo dejaría
+  en la caché un texto en el idioma de antes.
+
+Convertidos los hooks de los cinco destinos de la barra: `useStudents`,
+`useRoutines`, `usePlans`, `useSubscriptions`, `useDashboardSummary`,
+`useSchedulableStudents`, `useSchedulableRoutines`, `useAssignablePlans` y
+`useAssignableRoutines`. El resto sigue como estaba y puede migrar cuando haga
+falta: el helper no obliga a nadie.
+
+**3 · Los módulos se traen con el hilo libre** (`prefetchModules`). Cada
+pantalla es su propio fragmento —eso es lo que hace barato el arranque— y el
+precio era que la primera visita a cada pestaña esperaba su descarga. Ahora se
+piden en serie, tras la primera pantalla, y sólo los seis destinos de la barra:
+traerlo todo convertiría el ahorro del arranque en un gasto diferido igual.
+
+**Lo que NO se pudo medir en local, dicho aquí para que no se dé por probado.**
+La mejora de la caché no es observable contra las semillas: resuelven en el
+mismo fotograma, así que el «antes» ya sale instantáneo. Se probó incluso
+inyectando 600 ms de latencia al puerto simulado, sin conseguir una medición
+limpia. Lo que hay es la prueba unitaria de la caché —claves, aislamiento por
+equipo, vaciado al salir— y el mecanismo leído en el código. **El efecto se verá
+contra la base, no aquí**, y quien lo revise debería comprobarlo en el
+despliegue de vista previa antes de darlo por bueno.

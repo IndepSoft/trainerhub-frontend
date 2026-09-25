@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { container } from '@/app/container'
+import { crewScope } from '@/app/crewScope'
+import { useCachedQuery } from '@/shared/hooks/useCachedQuery'
 import type { TrainingPlan } from '@/shared/domain/entities/plan'
 import { useTranslation } from '@/shared/i18n/LanguageContext'
 import { describeError } from '@/shared/i18n/errorMessages'
@@ -16,6 +18,9 @@ interface UsePlanResult {
   error: string | null
 }
 
+/** Referencia estable para el «todavía nada». */
+const NONE: TrainingPlan[] = []
+
 /**
  * Planes de entrenamiento.
  *
@@ -24,38 +29,16 @@ interface UsePlanResult {
  * mismo sitio y ninguno importa del otro. Misma costura que rutinas y sesiones.
  */
 export function usePlans(): UsePlansResult {
-  const { t } = useTranslation()
-  const [plans, setPlans] = useState<TrainingPlan[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { data, loading, error } = useCachedQuery<TrainingPlan[]>({
+    // El equipo activo, en la clave: lo de un equipo no responde por otro.
+    key: ['plans', crewScope.current()],
+    load: () => container.plans.findAll(),
+    subscribe: (reload) => container.plans.onChange(reload),
+    initial: NONE,
+    errorKey: 'plan.loadError',
+  })
 
-  useEffect(() => {
-    let active = true
-
-    const load = () => {
-      container.plans
-        .findAll()
-        .then((result) => {
-          if (active) setPlans(result)
-        })
-        .catch((cause: unknown) => {
-          if (active) setError(describeError(cause, t, 'plan.loadError'))
-        })
-        .finally(() => {
-          if (active) setLoading(false)
-        })
-    }
-
-    load()
-    const unsubscribe = container.plans.onChange(load)
-
-    return () => {
-      active = false
-      unsubscribe()
-    }
-  }, [t])
-
-  return { plans, loading, error }
+  return { plans: data, loading, error }
 }
 
 /**

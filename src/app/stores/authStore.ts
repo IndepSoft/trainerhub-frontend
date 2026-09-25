@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { container } from '@/app/container'
+import { clearQueryCache } from '@/shared/lib/queryCache'
 import { setActiveCrew } from '@/app/crewScope'
 import type { AuthUser } from '@/shared/domain/entities/auth'
 
@@ -32,6 +33,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
      * molestia; con datos reales es una fuga.
      */
     setActiveCrew(null)
+    /*
+     * Y con el ambito se va lo leido. La cache de lecturas existe para que
+     * volver a un modulo no empiece de cero, pero lo de quien acaba de salir no
+     * puede parpadear en la pantalla de quien entre despues en este mismo
+     * telefono. Mismo motivo que soltar el equipo activo.
+     */
+    clearQueryCache()
     set({ user: null })
   },
 

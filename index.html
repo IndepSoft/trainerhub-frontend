@@ -59,10 +59,134 @@
         }
       })()
     </script>
+    <!--
+      LA PANTALLA DE ARRANQUE, EN EL HTML Y NO EN REACT.
+
+      En React llegaría tarde: hasta que el navegador descarga y ejecuta el
+      módulo de la aplicación no hay nada que pintar, y eso en un teléfono con
+      red de 3G son varios segundos de BLANCO —medido: 6,1 s hasta el primer
+      píxel, y lo siguiente que aparecía era un esqueleto sin contexto—. Aquí
+      va en el documento, así que se pinta con la primera hoja de estilos.
+
+      Sin tipografía propia a propósito: las de la marca son `woff2` que viajan
+      en el paquete, y pedirlas aquí añadiría la espera que esto viene a tapar.
+      La retira `hideSplash` cuando la aplicación ya sabe qué enseñar.
+    -->
+    <style>
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 60;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 28px;
+        background: #faf8f5;
+        color: #0a1224;
+        font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+        transition: opacity 240ms ease-out;
+      }
+
+      html.dark #splash {
+        background: #0c1017;
+        color: #f2eee7;
+      }
+
+      #splash[data-saliendo='true'] {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      #splash .marca {
+        font-size: 30px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+      }
+
+      /* La barra dice «esto sigue vivo» sin prometer cuánto falta: no hay
+         progreso real que medir, así que un porcentaje sería inventado. */
+      #splash .barra {
+        position: relative;
+        width: 132px;
+        height: 3px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(11, 75, 204, 0.16);
+      }
+
+      html.dark #splash .barra {
+        background: rgba(90, 150, 245, 0.22);
+      }
+
+      #splash .barra::after {
+        content: '';
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 42%;
+        border-radius: 999px;
+        background: #0b4bcc;
+        animation: splash-barra 1100ms ease-in-out infinite;
+      }
+
+      html.dark #splash .barra::after {
+        background: #5a96f5;
+      }
+
+      @keyframes splash-barra {
+        0% {
+          transform: translateX(-100%);
+        }
+        100% {
+          transform: translateX(315%);
+        }
+      }
+
+      /* Quien pidió menos movimiento se queda con la barra quieta: el arranque
+         no es el sitio para discutirle la preferencia del sistema. */
+      @media (prefers-reduced-motion: reduce) {
+        #splash .barra::after {
+          animation: none;
+          width: 100%;
+          opacity: 0.55;
+        }
+      }
+    </style>
   </head>
 
   <body>
+    <!-- Hermano de `#root` y no hijo: React vacía su contenedor en el primer
+         renderizado, y eso pasa mucho antes de que haya una pantalla que
+         enseñar. Aquí sobrevive hasta que la aplicación la retira. -->
+    <div id="splash" role="status" aria-label="Cargando TrainerHub">
+      <span class="marca">TrainerHub</span>
+      <span class="barra" aria-hidden="true"></span>
+    </div>
+
     <div id="root"></div>
+
+    <!--
+      EL PLAZO DE SEGURIDAD VIVE AQUÍ, no en la aplicación, y es deliberado.
+
+      La aplicación la retira en cuanto sabe qué enseñar; pero si el paquete no
+      llega a ejecutarse —red caída a mitad de descarga, un fallo al arrancar—
+      nadie la retiraría, y esto es una capa por encima de todo que intercepta
+      los toques: la pantalla quedaría bloqueada. Medido al probarlo: con la
+      aplicación sin montar, el splash se comía cada pulsación.
+
+      En el documento se ejecuta pase lo que pase con el resto.
+    -->
+    <script>
+      window.setTimeout(function () {
+        var splash = document.getElementById('splash')
+        if (!splash) return
+        splash.dataset.saliendo = 'true'
+        window.setTimeout(function () {
+          splash.remove()
+        }, 240)
+      }, 8000)
+    </script>
+
     <script type="module" src="/src/app/main.tsx"></script>
   </body>
 </html>

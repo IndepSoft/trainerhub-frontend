@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { container } from '@/app/container'
+import { crewScope } from '@/app/crewScope'
+import { useCachedQuery } from '@/shared/hooks/useCachedQuery'
 import { toLocalDateKey } from '@/shared/lib/dateKey'
 import {
   DEFAULT_PERIOD_DAYS,
@@ -26,6 +28,9 @@ interface UseSubscriptionsResult {
   setPeriod: (studentId: string, crewId: string, periodDays: number) => Promise<void>
 }
 
+/** Referencia estable para el «todavía nada». */
+const NONE: StudentSubscription[] = []
+
 /**
  * Las cuotas del crew activo.
  *
@@ -37,22 +42,25 @@ interface UseSubscriptionsResult {
  * porque las preguntan la ficha, la cola de cobros y el aviso.
  */
 export function useSubscriptions(): UseSubscriptionsResult {
-  const [byStudent, setByStudent] = useState<Map<string, StudentSubscription>>(new Map())
   const [today] = useState(() => toLocalDateKey(new Date()))
-  const [loading, setLoading] = useState(true)
 
-  const load = useCallback(async (): Promise<void> => {
-    const found = await container.subscriptions.findAll()
-    setByStudent(new Map(found.map((entry) => [entry.studentId, entry])))
-    setLoading(false)
-  }, [])
+  /*
+   * Se guarda la LISTA y no el mapa: la caché conserva lo que el puerto
+   * devuelve, y armar el índice es cosa de quien lo va a consultar. Guardar el
+   * mapa obligaría a la caché a saber cómo se indexa cada dominio.
+   */
+  const { data: subscriptions, loading } = useCachedQuery<StudentSubscription[]>({
+    key: ['subscriptions', crewScope.current()],
+    load: () => container.subscriptions.findAll(),
+    subscribe: (reload) => container.subscriptions.onChange(reload),
+    initial: NONE,
+    errorKey: 'students.loadError',
+  })
 
-  useEffect(() => {
-    void load()
-    return container.subscriptions.onChange(() => {
-      void load()
-    })
-  }, [load])
+  const byStudent = useMemo(
+    () => new Map(subscriptions.map((entry) => [entry.studentId, entry])),
+    [subscriptions]
+  )
 
   const standingOf = useCallback(
     (studentId: string) => subscriptionStanding(byStudent.get(studentId), today),
